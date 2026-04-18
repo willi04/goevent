@@ -179,7 +179,7 @@
 
         try {
           // On interroge ton fichier main.py
-          const response = await btApi.post("/scan", { code: decodedText });
+          const response = await btApi.post("/scan", { qr_data: decodedText });
 
           // SUCCÈS : Billet Valide
           iconDiv.className =

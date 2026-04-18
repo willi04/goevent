@@ -595,8 +595,7 @@
         urlParams.append("title", currentEvent.title);
         urlParams.append("tier", selected.name);
         urlParams.append("price", selected.price);
-        urlParams.append("img", currentEvent.cover_image_url || "");
-
+        
         window.location.href = "checkout.html?" + urlParams.toString();
       }
       // ==========================================

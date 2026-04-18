@@ -38,11 +38,6 @@ ALGORITHM    = "HS256"
 
 if not DATABASE_URL:
     raise ValueError("⚠️ ERREUR CRITIQUE : Aucune URL de base de données (DATABASE_URL) n'a été trouvée !")
-# 💰 CinetPay
-CINETPAY_API_KEY = os.getenv("CINETPAY_API_KEY", "TON_API_KEY")
-CINETPAY_SITE_ID = os.getenv("CINETPAY_SITE_ID", "TON_SITE_ID")
-CINETPAY_URL = "https://api-checkout.cinetpay.com/v2/payment"
-CINETPAY_CHECK_URL = "https://api-checkout.cinetpay.com/v2/payment/check"
 
 # Configuration PostgreSQL (sans check_same_thread)
 engine       = create_engine(DATABASE_URL)
@@ -161,8 +156,8 @@ class CancellationRequest(Base):
     organizer = relationship("User")
 
 # ── SÉCURITÉ ───────────────────────────────────────────────────
-def hash_pin(pin): return pwd_context.hash(pin)
-def verify_pin(plain, hashed): return pwd_context.verify(plain, hashed)
+def hash_pin(pin): return pwd_context.hash(pin[:72])
+def verify_pin(plain, hashed): return pwd_context.verify(plain[:72], hashed)
 
 def create_token(user_id, role):
     return jwt.encode(
@@ -420,6 +415,7 @@ app = FastAPI(title="GoEvent API", version="2.0.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        "https://goevent-qk9q.onrender.com",
         "https://goevent-core.vercel.app",
         "https://goevent.africa",
         "http://localhost:5500",

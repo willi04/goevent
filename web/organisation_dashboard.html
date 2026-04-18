@@ -1,0 +1,2004 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+      name="viewport"
+    />
+    <title>GoEvent</title>
+    <link rel="icon" type="image/png" href="icons/favicon.png" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#f9f9f9" />
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: "#00502c",
+              "primary-container": "#006b3c",
+              "secondary-container": "#fecb00",
+              surface: "#f9f9f9",
+              "on-surface": "#1a1c1c",
+            },
+            fontFamily: { headline: ["Plus Jakarta Sans"], body: ["Manrope"] },
+          },
+        },
+      };
+    </script>
+    <style>
+      .material-symbols-outlined {
+        font-variation-settings:
+          "FILL" 0,
+          "wght" 400,
+          "GRAD" 0,
+          "opsz" 24;
+      }
+      .lush-gradient {
+        background: linear-gradient(135deg, #00502c, #006b3c);
+      }
+      /* Sidebar PC */
+      .sb-link {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        border-radius: 14px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: #6b7280;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.15s;
+        margin-bottom: 3px;
+        font-family: Manrope, sans-serif;
+        border: none;
+        background: transparent;
+        width: 100%;
+        text-align: left;
+      }
+      .sb-link:hover,
+      .sb-link.active {
+        background: #ecf9f3;
+        color: #00502c;
+        font-weight: 700;
+      }
+      .sb-link.active .material-symbols-outlined {
+        font-variation-settings: "FILL" 1;
+      }
+
+      /* Mobile Drawer Links */
+      .mo-link-drawer {
+        position: relative;
+        padding: 8px 12px;
+        border-radius: 16px;
+        transition: all 0.3s ease;
+      }
+      .mo-link-drawer.active {
+        background-color: rgba(0, 80, 44, 0.1);
+        color: #00502c;
+        font-weight: 700;
+      }
+      .mo-link-drawer.active .material-symbols-outlined {
+        color: #00502c;
+        font-variation-settings: "FILL" 1;
+      }
+    </style>
+  </head>
+  <body
+    class="bg-gray-50 font-body text-on-surface antialiased pt-[72px] flex flex-col min-h-screen"
+  >
+    <div id="navbar" class="hidden md:block"></div>
+
+    <div
+      class="md:hidden fixed top-0 left-0 right-0 h-[72px] bg-white/95 backdrop-blur border-b border-gray-100 z-40 flex items-center justify-between px-5 shadow-sm"
+    >
+      <a href="index.html" class="flex items-center gap-2 transition-opacity"
+        ><img
+          src="icons/event.png"
+          alt="Logo"
+          class="w-10 h-10 rounded-3xl shadow-sm"
+        /><span
+          class="text-2xl font-bold tracking-tight bg-gradient-to-r from-emerald-900 to-emerald-700 bg-clip-text text-transparent font-headline"
+          >GoEvent</span
+        ></a
+      >
+      <button
+        onclick="toggleMobileMenu()"
+        class="p-2 -mr-2 text-gray-600 hover:text-primary transition-colors focus:outline-none"
+      >
+        <span class="material-symbols-outlined" style="font-size: 32px"
+          >menu</span
+        >
+      </button>
+    </div>
+
+    <div
+      id="mobile-menu"
+      class="fixed inset-0 bg-gray-900/40 z-[100] hidden opacity-0 transition-opacity duration-300"
+    >
+      <div class="absolute inset-0" onclick="toggleMobileMenu()"></div>
+      <div
+        id="mobile-drawer"
+        class="absolute right-0 top-0 bottom-0 w-[85%] max-w-sm bg-white shadow-2xl transform translate-x-full transition-transform duration-300 flex flex-col"
+      >
+        <div
+          class="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50"
+        >
+          <span class="font-headline font-extrabold text-lg text-gray-900"
+            >Mon Espace</span
+          >
+          <button
+            onclick="toggleMobileMenu()"
+            class="p-2 text-gray-500 hover:text-red-500 rounded-full hover:bg-red-50 transition-colors"
+          >
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <div class="p-6 border-b border-gray-100 flex items-center gap-4">
+          <div
+            id="mo-avatar"
+            class="w-12 h-12 rounded-full lush-gradient text-white flex items-center justify-center font-bold text-lg shadow-inner shrink-0"
+          ></div>
+          <div class="flex-1 min-w-0">
+            <p
+              id="mo-name"
+              class="font-extrabold text-base text-gray-900 font-headline tracking-tight truncate dyn-user-name"
+            ></p>
+            <p
+              id="mo-org"
+              class="text-[11px] text-gray-500 font-bold uppercase tracking-widest mt-0.5 truncate dyn-org-name"
+            >
+              Organisation
+            </p>
+          </div>
+        </div>
+
+        <nav class="p-4 flex-1 overflow-y-auto space-y-2">
+          <a
+            href="#"
+            id="mo-link-dash-drawer"
+            onclick="
+              showSection('dash');
+              toggleMobileMenu();
+            "
+            class="mo-link-drawer active flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all"
+          >
+            <span class="material-symbols-outlined opacity-70">dashboard</span>
+            Vue d'ensemble
+          </a>
+          <a
+            href="#"
+            id="mo-link-events-drawer"
+            onclick="
+              showSection('events');
+              toggleMobileMenu();
+            "
+            class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all"
+          >
+            <span class="material-symbols-outlined opacity-70">stadium</span>
+            Mes événements
+          </a>
+          <a
+            href="#"
+            id="mo-link-create-drawer"
+            onclick="
+              showSection('create');
+              toggleMobileMenu();
+            "
+            class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all"
+          >
+            <span class="material-symbols-outlined opacity-70">add_circle</span>
+            Créer un événement
+          </a>
+          <a
+            href="#"
+            id="mo-link-followers-drawer"
+            onclick="
+              showSection('followers');
+              toggleMobileMenu();
+            "
+            class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all"
+          >
+            <span class="material-symbols-outlined opacity-70">groups</span>
+            Abonnés
+          </a>
+          <a
+            href="#"
+            id="mo-link-team-drawer"
+            onclick="
+              showSection('team');
+              toggleMobileMenu();
+            "
+            class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all"
+          >
+            <span class="material-symbols-outlined opacity-70">badge</span> Mon
+            Équipe
+          </a>
+          <a
+            href="#"
+            id="mo-link-settings-drawer"
+            onclick="
+              showSection('settings');
+              toggleMobileMenu();
+            "
+            class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all"
+          >
+            <span class="material-symbols-outlined opacity-70">settings</span>
+            Paramètres
+          </a>
+        </nav>
+
+        <div class="p-6 border-t border-gray-100">
+          <button
+            onclick="logout()"
+            class="w-full flex items-center justify-center gap-2 p-4 rounded-2xl bg-red-50 text-red-600 font-bold hover:bg-red-100 transition-colors"
+          >
+            <span class="material-symbols-outlined" style="font-size: 20px"
+              >logout</span
+            >
+            Se déconnecter
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex flex-1">
+      <aside
+        class="hidden md:flex flex-col w-64 bg-white border-r border-gray-100 fixed left-0 top-20 bottom-0 p-4 overflow-y-auto z-40"
+      >
+        <div class="flex items-center gap-3 bg-gray-50 rounded-xl p-3 mb-4">
+          <div
+            class="w-10 h-10 rounded-full lush-gradient flex items-center justify-center font-bold text-white text-sm overflow-hidden shrink-0"
+            id="sb-avatar"
+          >
+            ?
+          </div>
+          <div class="min-w-0">
+            <p class="font-bold text-sm truncate dyn-user-name" id="sb-name">
+              Chargement...
+            </p>
+            <p class="text-xs text-gray-500 truncate dyn-org-name" id="sb-org">
+              Organisation
+            </p>
+          </div>
+        </div>
+        <nav class="flex-1">
+          <button
+            class="sb-link active"
+            id="link-dash"
+            onclick="showSection('dash')"
+          >
+            <span
+              class="material-symbols-outlined"
+              style="font-variation-settings: &quot;FILL&quot; 1"
+              >dashboard</span
+            >Vue d'ensemble
+          </button>
+          <button
+            class="sb-link"
+            id="link-events"
+            onclick="showSection('events')"
+          >
+            <span class="material-symbols-outlined">stadium</span>Mes événements
+          </button>
+          <button
+            class="sb-link"
+            id="link-create"
+            onclick="showSection('create')"
+          >
+            <span class="material-symbols-outlined">add_circle</span>Créer un
+            événement
+          </button>
+          <button
+            class="sb-link"
+            id="link-followers"
+            onclick="showSection('followers')"
+          >
+            <span class="material-symbols-outlined">groups</span>Abonnés
+          </button>
+          <button class="sb-link" id="link-team" onclick="showSection('team')">
+            <span class="material-symbols-outlined">badge</span>Mon Équipe
+          </button>
+          <button
+            class="sb-link"
+            id="link-settings"
+            onclick="showSection('settings')"
+          >
+            <span class="material-symbols-outlined">settings</span>Paramètres
+          </button>
+        </nav>
+        <button onclick="logout()" class="sb-link mt-2" style="color: #dc2626">
+          <span class="material-symbols-outlined">logout</span>Se déconnecter
+        </button>
+      </aside>
+
+      <main
+        class="flex-1 md:ml-64 flex flex-col min-h-[calc(100vh-64px)] md:pt-0"
+      >
+        <div
+          class="flex-1 p-4 sm:p-6 md:p-8 max-w-6xl mx-auto w-full pb-28 md:pb-8"
+        >
+          <div id="sec-dash" class="block space-y-6 md:space-y-8">
+            <div
+              class="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6"
+            >
+              <div>
+                <h1
+                  id="welcome-msg"
+                  class="text-2xl md:text-3xl font-extrabold font-headline tracking-tight text-gray-900"
+                >
+                  Bonjour 👋
+                </h1>
+                <p class="text-sm md:text-base text-gray-500 font-medium mt-1">
+                  Voici le résumé de votre activité d'organisateur.
+                </p>
+              </div>
+              <button
+                onclick="showSection('create')"
+                class="w-full sm:w-auto bg-primary text-white px-6 py-3.5 rounded-2xl font-bold text-[15px] shadow-sm hover:shadow-md transition-all active:scale-95 text-center"
+              >
+                + Nouvel événement
+              </button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-5">
+              <div
+                class="bg-white p-5 md:p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center justify-between sm:block relative overflow-hidden group"
+              >
+                <div
+                  class="absolute -right-4 -top-4 w-16 h-16 bg-blue-50 group-hover:bg-blue-100/50 rounded-full group-hover:scale-[2.5] transition-all duration-500"
+                ></div>
+                <div class="relative z-10 sm:mb-2">
+                  <p
+                    class="text-[10px] sm:text-[12px] font-bold text-gray-400 uppercase tracking-wider"
+                  >
+                    Billets vendus
+                  </p>
+                  <p
+                    id="s-sold"
+                    class="text-3xl md:text-4xl font-black font-headline tracking-tight text-gray-900 mt-1"
+                  >
+                    0
+                  </p>
+                </div>
+                <div
+                  class="p-2 sm:p-1.5 bg-blue-50 text-blue-700 rounded-xl sm:absolute sm:top-6 sm:right-6 z-10"
+                >
+                  <span class="material-symbols-outlined text-2xl sm:text-base"
+                    >local_activity</span
+                  >
+                </div>
+              </div>
+
+              <div
+                class="bg-white p-5 md:p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center justify-between sm:block relative overflow-hidden group"
+              >
+                <div
+                  class="absolute -right-4 -top-4 w-16 h-16 bg-orange-50 group-hover:bg-orange-100/50 rounded-full group-hover:scale-[2.5] transition-all duration-500"
+                ></div>
+                <div class="relative z-10 sm:mb-2">
+                  <p
+                    class="text-[10px] sm:text-[12px] font-bold text-gray-400 uppercase tracking-wider"
+                  >
+                    Événements
+                  </p>
+                  <p
+                    id="s-events"
+                    class="text-3xl md:text-4xl font-black font-headline tracking-tight text-gray-900 mt-1"
+                  >
+                    0
+                  </p>
+                </div>
+                <div
+                  class="p-2 sm:p-1.5 bg-orange-50 text-orange-700 rounded-xl sm:absolute sm:top-6 sm:right-6 z-10"
+                >
+                  <span class="material-symbols-outlined text-2xl sm:text-base"
+                    >stadium</span
+                  >
+                </div>
+              </div>
+
+              <div
+                class="bg-white p-5 md:p-6 rounded-3xl border border-transparent lush-gradient text-white flex items-center justify-between sm:block relative overflow-hidden shadow-lg shadow-primary/20"
+              >
+                <div
+                  class="absolute -right-4 -top-4 w-16 h-16 bg-white/10 rounded-full scale-[1.5] group-hover:scale-[2.5] transition-all duration-500"
+                ></div>
+                <div class="relative z-10 sm:mb-2">
+                  <p
+                    class="text-[10px] sm:text-[12px] font-bold text-white/80 uppercase tracking-wider"
+                  >
+                    Revenus générés
+                  </p>
+                  <p
+                    id="s-rev"
+                    class="text-2xl md:text-3xl font-black font-headline tracking-tight mt-1"
+                  >
+                    0 FCFA
+                  </p>
+                </div>
+                <div
+                  class="p-2 sm:p-1.5 bg-white/20 text-white rounded-xl sm:absolute sm:top-6 sm:right-6 z-10"
+                >
+                  <span class="material-symbols-outlined text-2xl sm:text-base"
+                    >payments</span
+                  >
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="bg-white p-5 md:p-8 rounded-3xl shadow-sm border border-gray-100"
+            >
+              <h2
+                class="text-lg md:text-xl font-extrabold font-headline tracking-tight text-gray-900 mb-6 border-b border-gray-100 pb-4"
+              >
+                Activité récente
+              </h2>
+              <div id="events-list" class="space-y-4"></div>
+            </div>
+          </div>
+
+          <div id="sec-events" class="hidden pt-16 space-y-6 md:space-y-8">
+            <div
+              class="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4"
+            >
+              <div>
+                <h2
+                  class="text-2xl md:text-3xl font-extrabold font-headline tracking-tight text-gray-900"
+                >
+                  Vos événements
+                </h2>
+                <p class="text-sm md:text-base text-gray-500 font-medium mt-1">
+                  Gérez et suivez les ventes de vos concerts.
+                </p>
+              </div>
+              <button
+                onclick="showSection('create')"
+                class="w-full sm:w-auto bg-primary text-white px-6 py-3.5 rounded-2xl font-bold text-[15px] shadow-sm hover:shadow-md transition-all active:scale-95"
+              >
+                + Nouvel événement
+              </button>
+            </div>
+            <div
+              id="all-events-list"
+              class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
+            ></div>
+          </div>
+
+          <div
+            id="sec-create"
+            class="hidden bg-white p-5 md:p-10 rounded-3xl shadow-sm border border-gray-100 max-w-4xl mx-auto"
+          >
+            <div class="mb-6 md:mb-8 pt-8 border-b border-gray-100 pb-6">
+              <h2
+                class="text-2xl md:text-3xl font-extrabold font-headline tracking-tight text-gray-900"
+              >
+                Publier un événement
+              </h2>
+              <p class="text-sm md:text-base text-gray-500 font-medium mt-2">
+                Remplissez les informations ci-dessous pour mettre vos billets
+                en vente.
+              </p>
+            </div>
+
+            <form
+              onsubmit="
+                event.preventDefault();
+                submitEvent();
+              "
+              class="space-y-6 md:space-y-8"
+            >
+              <div>
+                <label
+                  class="block text-[12px] font-bold text-gray-500 uppercase tracking-wider mb-2"
+                  >Titre de l'événement</label
+                >
+                <input
+                  type="text"
+                  id="ev-title"
+                  class="w-full text-base font-semibold p-3.5 md:p-4 bg-gray-50/50 border border-gray-200 rounded-2xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-gray-900 placeholder-gray-400"
+                  required
+                  placeholder="Ex: Sango Fest 2026"
+                />
+              </div>
+              <div>
+                <label
+                  class="block text-[12px] font-bold text-gray-500 uppercase tracking-wider mb-2"
+                  >Type d'événement</label
+                >
+                <select
+                  id="ev-category"
+                  class="w-full text-base font-semibold p-3.5 md:p-4 bg-gray-50/50 border border-gray-200 rounded-2xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-gray-900"
+                >
+                  <option value="Concert">Concert</option>
+                  <option value="Sport">Sport</option>
+                  <option value="Festival">Festival</option>
+                  <option value="Cinéma">Cinéma</option>
+                  <option value="Autre">Autre</option>
+                </select>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
+                <div>
+                  <label
+                    class="block text-[12px] font-bold text-gray-500 uppercase tracking-wider mb-2"
+                    >Date et Heure</label
+                  >
+                  <input
+                    type="datetime-local"
+                    id="ev-date"
+                    class="w-full text-base font-semibold p-3.5 md:p-4 bg-gray-50/50 border border-gray-200 rounded-2xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-gray-900"
+                    required
+                  />
+                </div>
+                <div>
+                  <label
+                    class="block text-[12px] font-bold text-gray-500 uppercase tracking-wider mb-2"
+                    >Lieu exact</label
+                  >
+                  <input
+                    type="text"
+                    id="ev-location"
+                    class="w-full text-base font-semibold p-3.5 md:p-4 bg-gray-50/50 border border-gray-200 rounded-2xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-gray-900 placeholder-gray-400"
+                    required
+                    placeholder="Ex: Stade 20.000 places"
+                  />
+                </div>
+              </div>
+
+              <div
+                class="border border-gray-200 rounded-3xl p-4 md:p-8 bg-gray-50/50"
+                id="ticket-tiers"
+              >
+                <div
+                  class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 md:mb-6"
+                >
+                  <div>
+                    <label class="block text-sm font-extrabold text-gray-900"
+                      >Catégories et Tarifs</label
+                    >
+                    <p
+                      class="text-[12px] md:text-[13px] text-gray-500 font-medium mt-0.5"
+                    >
+                      Définissez vos types de billets
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onclick="addTierRow()"
+                    class="w-full sm:w-auto flex justify-center items-center gap-1.5 text-[13px] bg-white border border-gray-200 text-gray-700 font-bold px-4 py-3 sm:py-2.5 rounded-xl hover:bg-gray-50 hover:text-primary transition-all shadow-sm active:scale-95"
+                  >
+                    <span
+                      class="material-symbols-outlined"
+                      style="font-size: 18px"
+                      >add</span
+                    >
+                    Ajouter
+                  </button>
+                </div>
+                <div class="w-full">
+                  <div
+                    id="tiers-container"
+                    class="space-y-4 sm:space-y-3 w-full"
+                  ></div>
+                </div>
+              </div>
+              <div class="mb-5">
+                <label
+                  for="event-desc-input"
+                  class="block text-sm font-bold text-gray-700 mb-2"
+                >
+                  Description de l'événement
+                  <span class="text-red-500">*</span>
+                </label>
+                <textarea
+                  id="event-desc-input"
+                  rows="4"
+                  placeholder="Décrivez le programme, les invités, l'ambiance..."
+                  class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all resize-y"
+                  required
+                ></textarea>
+              </div>
+
+              <div>
+                <label
+                  class="block text-[12px] font-bold text-gray-500 uppercase tracking-wider mb-2"
+                  >Affiche officielle <span class="text-red-500">*</span>
+                </label>
+                <div
+                  class="flex flex-col sm:flex-row items-start sm:items-center gap-4 md:gap-6 p-4 border border-dashed border-gray-300 rounded-3xl bg-gray-50/50 hover:bg-gray-50 transition-colors"
+                >
+                  <div class="flex-1 w-full pl-2">
+                    <input
+                      type="file"
+                      id="ev-image-file"
+                      accept=".jpg, .jpeg, .png"
+                      onchange="previewImage(event)"
+                      class="w-full text-[14px] font-medium text-gray-500 file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-[13px] file:font-bold file:bg-white file:border file:border-gray-200 file:text-gray-700 hover:file:bg-gray-50 hover:file:text-primary cursor-pointer transition-all"
+                    />
+                    <p
+                      class="text-[11px] md:text-[12px] text-gray-400 font-medium mt-2"
+                    >
+                      Haute résolution recommandée (JPG, PNG).
+                    </p>
+                  </div>
+                  <div
+                    id="image-preview-container"
+                    class="hidden w-24 h-24 rounded-2xl border border-gray-200 overflow-hidden shrink-0 bg-white shadow-sm self-center sm:self-auto mt-4 sm:mt-0"
+                  >
+                    <img
+                      id="image-preview"
+                      src=""
+                      alt="Prévisualisation"
+                      class="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div class="pt-4 md:pt-6">
+                <button
+                  type="submit"
+                  id="btn-create"
+                  class="w-full bg-primary text-white font-extrabold text-lg py-4 rounded-2xl shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all active:scale-95"
+                >
+                  Mettre en vente
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div id="sec-followers" class="hidden">
+            <h2
+              class="text-2xl md:text-3xl font-extrabold font-headline tracking-tight text-gray-900 mb-6"
+            >
+              Abonnés
+            </h2>
+            <div
+              class="bg-white p-8 md:p-12 rounded-3xl shadow-sm border border-gray-100 text-center"
+            >
+              <div
+                class="w-20 h-20 md:w-24 md:h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6 text-gray-300"
+              >
+                <span
+                  class="material-symbols-outlined text-[40px] md:text-[48px]"
+                  >groups</span
+                >
+              </div>
+              <h3 class="text-xl md:text-2xl font-extrabold text-gray-900">
+                Bientôt disponible
+              </h3>
+              <p class="text-sm md:text-base text-gray-500 font-medium mt-3">
+                La gestion de vos fans arrive dans la prochaine mise à jour.
+              </p>
+            </div>
+          </div>
+
+          <div id="sec-team" class="hidden space-y-6 md:space-y-8">
+            <div
+              class="flex flex-col sm:flex-row justify-between items-end gap-4 mb-2"
+            >
+              <div>
+                <h2
+                  class="text-2xl md:text-3xl font-extrabold font-headline tracking-tight text-gray-900"
+                >
+                  Gestion de l'Équipe
+                </h2>
+                <p class="text-sm md:text-base text-gray-500 font-medium mt-1">
+                  Gérez vos agents contrôleurs pour chaque événement.
+                </p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+              <div class="lg:col-span-1">
+                <div
+                  class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100"
+                >
+                  <h3
+                    class="font-bold text-gray-900 mb-4 border-b border-gray-100 pb-3 flex items-center gap-2"
+                  >
+                    <span class="material-symbols-outlined text-primary"
+                      >person_add</span
+                    >
+                    Nouvel Agent
+                  </h3>
+                  <form
+                    id="form-agent"
+                    onsubmit="
+                      event.preventDefault();
+                      submitAgent();
+                    "
+                    class="space-y-4"
+                  >
+                    <div>
+                      <label
+                        class="block text-xs font-bold text-gray-500 uppercase mb-1"
+                        >Associer à un événement</label
+                      >
+                      <select
+                        id="ag-event"
+                        class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none font-semibold text-gray-700"
+                        required
+                      >
+                        <option value="">
+                          Chargement de vos événements...
+                        </option>
+                      </select>
+                    </div>
+                    <div>
+                      <label
+                        class="block text-xs font-bold text-gray-500 uppercase mb-1"
+                        >Nom de l'agent</label
+                      >
+                      <input
+                        type="text"
+                        id="ag-name"
+                        class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                        placeholder="Ex: Agent Porte Principale"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label
+                        class="block text-xs font-bold text-gray-500 uppercase mb-1"
+                        >Téléphone (Identifiant)</label
+                      >
+                      <input
+                        type="text"
+                        id="ag-phone"
+                        class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                        placeholder="+236..."
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label
+                        class="block text-xs font-bold text-gray-500 uppercase mb-1"
+                        >Code PIN (Mot de passe)</label
+                      >
+                      <input
+                        type="password"
+                        id="ag-pin"
+                        maxlength="4"
+                        class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none transition-all tracking-widest text-center"
+                        placeholder="••••"
+                        required
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      id="btn-agent"
+                      class="w-full mt-2 bg-gray-900 text-white font-bold py-3.5 rounded-xl shadow-md hover:bg-gray-800 transition-all active:scale-95 flex justify-center items-center gap-2"
+                    >
+                      Créer l'agent
+                    </button>
+                  </form>
+                </div>
+              </div>
+
+              <div class="lg:col-span-2">
+                <div
+                  class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 h-full"
+                >
+                  <h3
+                    class="font-bold text-gray-900 mb-4 border-b border-gray-100 pb-3 flex items-center gap-2"
+                  >
+                    <span class="material-symbols-outlined text-primary"
+                      >list_alt</span
+                    >
+                    Agents Actifs
+                  </h3>
+                  <div
+                    id="agents-list"
+                    class="space-y-3 overflow-y-auto max-h-[500px]"
+                  >
+                    <p class="text-center text-gray-400 py-8 text-sm">
+                      Chargement des agents...
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="sec-settings" class="hidden">
+            <h2
+              class="text-2xl md:text-3xl font-extrabold font-headline tracking-tight text-gray-900 mb-6 md:mb-8"
+            >
+              Paramètres du Compte
+            </h2>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+              <div class="space-y-6 md:space-y-8">
+                <div
+                  class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col items-center text-center"
+                >
+                  <div class="relative mb-4">
+                    <img
+                      id="settings-avatar-preview"
+                      src="https://ui-avatars.com/api/?name=Org&background=00502c&color=fff"
+                      class="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover shadow-md border-4 border-white"
+                    />
+                  </div>
+                  <h3 class="font-bold text-lg text-gray-900 dyn-org-name">
+                    Mon Organisation
+                  </h3>
+                  <p
+                    class="text-sm text-gray-500 mb-6 bg-gray-50 px-3 py-1 rounded-full mt-1 dyn-user-name"
+                  >
+                    Administrateur
+                  </p>
+
+                  <input
+                    type="file"
+                    id="avatar-upload"
+                    class="hidden"
+                    accept="image/png, image/jpeg, image/jpg"
+                  />
+                  <label
+                    for="avatar-upload"
+                    class="cursor-pointer w-full py-3 bg-primary/10 text-primary rounded-xl font-bold text-sm hover:bg-primary hover:text-white transition-all active:scale-95"
+                  >
+                    Changer le Logo
+                  </label>
+                  <p class="text-[11px] text-gray-400 mt-3">
+                    Format JPG ou PNG. Max 2MB.
+                  </p>
+                </div>
+
+                <div
+                  class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100"
+                >
+                  <h3
+                    class="font-bold text-gray-900 mb-4 flex items-center gap-2"
+                  >
+                    <span class="material-symbols-outlined text-gray-400"
+                      >lock</span
+                    >
+                    Sécurité
+                  </h3>
+                  <div class="space-y-4">
+                    <div>
+                      <label
+                        class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1"
+                        >Nouveau Code PIN</label
+                      >
+                      <input
+                        type="password"
+                        id="set-pin"
+                        placeholder="••••"
+                        maxlength="4"
+                        class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-center text-lg font-bold tracking-widest"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      id="btn-save-pin"
+                      onclick="updateOrgPin()"
+                      disabled
+                      class="w-full py-3.5 bg-gray-900 text-white rounded-xl font-bold text-sm hover:bg-gray-800 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+                    >
+                      Mettre à jour le PIN
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="lg:col-span-2 space-y-6 md:space-y-8">
+                <div
+                  class="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100"
+                >
+                  <h3
+                    class="font-bold text-lg md:text-xl text-gray-900 mb-6 border-b border-gray-100 pb-4"
+                  >
+                    Informations Générales
+                  </h3>
+
+                  <div
+                    class="grid grid-cols-1 sm:grid-cols-2 gap-5 md:gap-6 mb-6"
+                  >
+                    <div>
+                      <label class="block text-sm font-bold text-gray-700 mb-1"
+                        >Nom du Gérant</label
+                      >
+                      <input
+                        type="text"
+                        id="set-fullname"
+                        class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-sm font-bold text-gray-700 mb-1"
+                        >Téléphone
+                        <span class="text-gray-400 font-normal text-xs"
+                          >(Identifiant)</span
+                        ></label
+                      >
+                      <input
+                        type="text"
+                        id="set-phone"
+                        disabled
+                        class="w-full bg-gray-100 border border-gray-200 text-gray-500 rounded-xl px-4 py-3.5 cursor-not-allowed"
+                      />
+                    </div>
+                  </div>
+
+                  <div
+                    class="grid grid-cols-1 sm:grid-cols-2 gap-5 md:gap-6 mb-2"
+                  >
+                    <div>
+                      <label class="block text-sm font-bold text-gray-700 mb-1"
+                        >Nom de l'Organisation</label
+                      >
+                      <input
+                        type="text"
+                        id="set-orgname"
+                        class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-sm font-bold text-gray-700 mb-1"
+                        >Email de contact</label
+                      >
+                      <input
+                        type="email"
+                        id="set-email"
+                        placeholder="contact@orga.com"
+                        class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  class="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100"
+                >
+                  <h3
+                    class="font-bold text-lg md:text-xl text-gray-900 mb-2 border-b border-gray-100 pb-4 flex items-center gap-2"
+                  >
+                    <span class="material-symbols-outlined text-orange-500"
+                      >account_balance_wallet</span
+                    >
+                    Portefeuille de retrait
+                  </h3>
+                  <p class="text-xs md:text-sm text-gray-500 mb-6 mt-2">
+                    Où souhaitez-vous recevoir l'argent de vos ventes de billets
+                    ?
+                  </p>
+
+                  <div class="mb-6">
+                    <label class="block text-sm font-bold text-gray-700 mb-1"
+                      >Numéro Orange Money</label
+                    >
+                    <input
+                      type="text"
+                      id="set-orangemoney"
+                      placeholder="+236..."
+                      class="w-full sm:w-1/2 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 outline-none transition-all font-semibold"
+                    />
+                  </div>
+
+                  <div
+                    class="flex flex-col sm:flex-row justify-end pt-6 border-t border-gray-100"
+                  >
+                    <button
+                      type="button"
+                      id="btn-save-settings"
+                      onclick="saveOrgSettings()"
+                      disabled
+                      class="w-full sm:w-auto px-8 py-3.5 bg-primary text-white rounded-xl font-bold shadow-md hover:bg-primary-container transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+                    >
+                      Enregistrer les modifications
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          id="dash-footer"
+          class="mt-auto w-full border-t border-gray-100 bg-white"
+        ></div>
+      </main>
+    </div>
+
+    <nav
+      class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex justify-around items-center pt-3 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] z-50 px-1"
+      style="padding-bottom: max(12px, env(safe-area-inset-bottom))"
+    >
+      <a
+        href="index.html"
+        class="flex flex-col items-center gap-1 text-gray-400 w-14 hover:text-primary transition-colors"
+      >
+        <span class="material-symbols-outlined text-[24px]">home</span>
+        <span
+          class="text-[10px] font-medium tracking-wide truncate w-full text-center"
+          >Accueil</span
+        >
+      </a>
+
+      <a
+        href="event.html"
+        class="flex flex-col items-center gap-1 text-gray-400 w-14 hover:text-primary transition-colors"
+      >
+        <span class="material-symbols-outlined text-[24px]">stadium</span>
+        <span
+          class="text-[10px] font-medium tracking-wide truncate w-full text-center"
+          >Événements</span
+        >
+      </a>
+
+      <a
+        href="#"
+        onclick="btShowFavorites()"
+        class="flex flex-col items-center gap-1 text-gray-400 w-14 hover:text-primary transition-colors"
+      >
+        <span class="material-symbols-outlined text-[24px]">favorite</span>
+        <span
+          class="text-[10px] font-medium tracking-wide truncate w-full text-center"
+          >Follow</span
+        >
+      </a>
+
+      <a
+        href="partenaire.html"
+        class="flex flex-col items-center gap-1 text-gray-400 w-14 hover:text-primary transition-colors"
+      >
+        <span class="material-symbols-outlined text-[24px]">handshake</span>
+        <span
+          class="text-[10px] font-medium tracking-wide truncate w-full text-center"
+          >Partenaire</span
+        >
+      </a>
+
+      <a
+        href="about.html"
+        class="flex flex-col items-center gap-1 text-gray-400 w-14 hover:text-primary transition-colors"
+      >
+        <span class="material-symbols-outlined text-[24px]">info</span>
+        <span
+          class="text-[10px] font-medium tracking-wide truncate w-full text-center"
+          >À propos</span
+        >
+      </a>
+    </nav>
+
+    <script src="bt-api.js"></script>
+    <script src="pwa.js"></script>
+    <script>
+      let uploadedImageBase64 = "";
+      let user = {};
+
+      document.addEventListener("DOMContentLoaded", async () => {
+        const nav = document.getElementById("navbar");
+        const footEl = document.getElementById("dash-footer");
+
+        if (nav && typeof btNavbar === "function") nav.innerHTML = btNavbar();
+        if (footEl && typeof btFooter === "function")
+          footEl.innerHTML = btFooter();
+
+        if (!btAuth.isLogged()) {
+          window.location.href = "login.html";
+          return;
+        }
+
+        user = btAuth.getUser() || {};
+
+        const orgName =
+          user.org_name || user.organization_name || "Mon Organisation";
+        const userName = user.full_name || user.name || "Administrateur";
+
+        document
+          .querySelectorAll(".dyn-org-name")
+          .forEach((el) => (el.textContent = orgName));
+        document
+          .querySelectorAll(".dyn-user-name")
+          .forEach((el) => (el.textContent = userName));
+
+        const welcomeEl = document.getElementById("welcome-msg");
+        if (welcomeEl)
+          welcomeEl.textContent = `Bonjour, ${userName.split(" ")[0]} 👋`;
+
+        const inputFullName = document.getElementById("set-fullname");
+        const inputPhone = document.getElementById("set-phone");
+        const inputOrgName = document.getElementById("set-orgname");
+        const inputEmail = document.getElementById("set-email");
+        const inputOrange = document.getElementById("set-orangemoney");
+        const inputPin = document.getElementById("set-pin");
+
+        if (inputFullName) inputFullName.value = userName;
+        if (inputPhone) inputPhone.value = user.phone_number || "";
+        if (inputOrgName) inputOrgName.value = orgName;
+        if (inputEmail) inputEmail.value = user.email || "";
+        if (inputOrange) inputOrange.value = user.orange_money || "";
+
+        // Activation de la validation en temps réel
+        if (inputFullName)
+          inputFullName.addEventListener("input", validateOrgSettingsForm);
+        if (inputOrgName)
+          inputOrgName.addEventListener("input", validateOrgSettingsForm);
+        if (inputEmail)
+          inputEmail.addEventListener("input", validateOrgSettingsForm);
+        if (inputOrange)
+          inputOrange.addEventListener("input", validateOrgSettingsForm);
+        if (inputPin) inputPin.addEventListener("input", validateOrgPinForm);
+
+        validateOrgSettingsForm();
+        validateOrgPinForm();
+
+        setTimeout(initAvatarUpload, 500);
+
+        addTierRow(true);
+        showSection("dash");
+        await loadOrganizerStats();
+        await loadEventsForAgents(); // Charge les événements dans le formulaire
+        await loadAgents();
+      });
+
+      function validateOrgSettingsForm() {
+        const btn = document.getElementById("btn-save-settings");
+        if (!btn) return;
+
+        const name = document.getElementById("set-fullname").value.trim();
+        const orgName = document.getElementById("set-orgname").value.trim();
+        const email = document.getElementById("set-email").value.trim();
+        const orange = document.getElementById("set-orangemoney").value.trim();
+
+        const origName = user.full_name || user.name || "Administrateur";
+        const origOrg =
+          user.org_name || user.organization_name || "Mon Organisation";
+        const origEmail = user.email || "";
+        const origOrange = user.orange_money || "";
+
+        const hasChanged =
+          name !== origName ||
+          orgName !== origOrg ||
+          email !== origEmail ||
+          orange !== origOrange;
+
+        let isValid = name.length >= 2 && orgName.length >= 2;
+
+        if (email !== "") {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(email)) isValid = false;
+        }
+
+        btn.disabled = !(isValid && hasChanged);
+      }
+
+      function validateOrgPinForm() {
+        const btn = document.getElementById("btn-save-pin");
+        const pin = document.getElementById("set-pin");
+        if (!btn || !pin) return;
+        btn.disabled = pin.value.trim().length !== 4;
+      }
+
+      function toggleMobileMenu() {
+        const menu = document.getElementById("mobile-menu");
+        const drawer = document.getElementById("mobile-drawer");
+
+        if (menu.classList.contains("hidden")) {
+          menu.classList.remove("hidden");
+          setTimeout(() => {
+            menu.classList.remove("opacity-0");
+            drawer.classList.remove("translate-x-full");
+          }, 10);
+        } else {
+          menu.classList.add("opacity-0");
+          drawer.classList.add("translate-x-full");
+          setTimeout(() => {
+            menu.classList.add("hidden");
+          }, 300);
+        }
+      }
+
+      function logout() {
+        if (window.btAuth && btAuth.logout) btAuth.logout();
+        else localStorage.clear();
+        window.location.href = "login.html";
+      }
+
+      function showSection(id) {
+        const sections = [
+          "dash",
+          "events",
+          "create",
+          "followers",
+          "team",
+          "settings",
+        ];
+        sections.forEach((s) => {
+          const el = document.getElementById("sec-" + s);
+          const linkPC = document.getElementById("link-" + s);
+          const linkMoDrawer = document.getElementById(
+            "mo-link-" + s + "-drawer",
+          );
+
+          if (el) el.classList.add("hidden");
+          if (linkPC) linkPC.classList.remove("active");
+          if (linkMoDrawer) linkMoDrawer.classList.remove("active");
+        });
+
+        const target = document.getElementById("sec-" + id);
+        const targetLinkPC = document.getElementById("link-" + id);
+        const targetLinkMoDrawer = document.getElementById(
+          "mo-link-" + id + "-drawer",
+        );
+
+        if (target) {
+          target.classList.remove("hidden");
+          target.classList.add("block");
+        }
+        if (targetLinkPC) targetLinkPC.classList.add("active");
+        if (targetLinkMoDrawer) targetLinkMoDrawer.classList.add("active");
+      }
+
+      function addTierRow(isFirst = false) {
+        const container = document.getElementById("tiers-container");
+        const row = document.createElement("div");
+        // FIX : Utilisation d'une grille propre sur mobile qui devient une ligne sur PC
+        row.className =
+          "grid grid-cols-2 sm:flex sm:flex-row gap-2 sm:gap-3 items-center tier-row w-full p-3 sm:p-0 bg-white sm:bg-transparent rounded-xl border border-gray-200 sm:border-none";
+
+        const btnDelete = isFirst
+          ? `<div class="hidden sm:block w-10 sm:w-12 shrink-0"></div>`
+          : `<button type="button" onclick="this.parentElement.remove()" class="w-full col-span-2 sm:w-auto p-2.5 sm:p-3 text-red-500 bg-red-50 hover:bg-red-100 rounded-xl transition-all shrink-0 active:scale-95 flex items-center justify-center gap-1"><span class="material-symbols-outlined" style="font-size:20px;">delete</span><span class="sm:hidden text-xs font-bold">Supprimer</span></button>`;
+
+        row.innerHTML = `
+                  <div class="col-span-2 sm:flex-1 sm:min-w-[120px]">
+                    <input type="text" class="tier-name w-full p-3.5 text-[13px] sm:text-[14px] font-semibold bg-gray-50 sm:bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder-gray-400" placeholder="Ex: VIP" value="${isFirst ? "Standard" : ""}" required>
+                  </div>
+                  <div class="w-full sm:w-[90px] sm:flex-1 sm:min-w-[100px]">
+                    <input type="number" class="tier-price w-full p-3.5 text-[13px] sm:text-[14px] font-semibold bg-gray-50 sm:bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder-gray-400" placeholder="Prix" required>
+                  </div>
+                  <div class="w-full sm:w-[80px] sm:flex-1 sm:min-w-[100px]">
+                    <input type="number" class="tier-seats w-full p-3.5 text-[13px] sm:text-[14px] font-semibold bg-gray-50 sm:bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder-gray-400" placeholder="Places" required>
+                  </div>
+                  ${btnDelete}
+              `;
+        container.appendChild(row);
+      }
+
+      function previewImage(event) {
+        const file = event.target.files[0];
+        const container = document.getElementById("image-preview-container");
+        const img = document.getElementById("image-preview");
+
+        if (file) {
+          if (!file.type.startsWith("image/")) {
+            if (typeof btToast === "function")
+              btToast("Veuillez sélectionner une image valide.", "error");
+            event.target.value = "";
+            return;
+          }
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            img.src = e.target.result;
+            uploadedImageBase64 = e.target.result;
+            container.classList.remove("hidden");
+          };
+          reader.readAsDataURL(file);
+        } else {
+          container.classList.add("hidden");
+          uploadedImageBase64 = "";
+        }
+      }
+
+      function initAvatarUpload() {
+        const avatarInput = document.getElementById("avatar-upload");
+        if (!avatarInput) return;
+
+        const updateAllAvatars = (base64) => {
+          const preview = document.getElementById("settings-avatar-preview");
+          const sbAvatar = document.getElementById("sb-avatar");
+          const moAvatar = document.getElementById("mo-avatar");
+
+          if (preview) preview.src = base64;
+          if (sbAvatar)
+            sbAvatar.innerHTML = `<img src="${base64}" class="w-full h-full rounded-full object-cover">`;
+          if (moAvatar)
+            moAvatar.innerHTML = `<img src="${base64}" class="w-full h-full rounded-full object-cover">`;
+        };
+
+        if (user && user.profile_picture)
+          updateAllAvatars(user.profile_picture);
+
+        avatarInput.addEventListener("change", async (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+
+          if (file.size > 2 * 1024 * 1024) {
+            if (typeof btToast === "function")
+              btToast("L'image est trop lourde (Max 2MB).", "error");
+            return;
+          }
+
+          const reader = new FileReader();
+          reader.onload = async () => {
+            const base64String = reader.result;
+            updateAllAvatars(base64String);
+            if (typeof btToast === "function")
+              btToast("Sauvegarde en cours...", "info");
+
+            try {
+              await btApi.put("/auth/me", { profile_picture: base64String });
+              user.profile_picture = base64String;
+              btAuth.save(btAuth.getToken(), user);
+              if (typeof btToast === "function")
+                btToast("Logo de l'organisation mis à jour !", "success");
+            } catch (err) {
+              if (typeof btToast === "function")
+                btToast("Erreur lors de la sauvegarde.", "error");
+            }
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+
+      async function saveOrgSettings() {
+        const btn = document.getElementById("btn-save-settings");
+        const origText = btn.innerHTML;
+        btn.innerHTML = "Enregistrement...";
+        btn.disabled = true;
+
+        const newFullName = document
+          .getElementById("set-fullname")
+          .value.trim();
+        const newOrgName = document.getElementById("set-orgname").value.trim();
+        const newEmail = document.getElementById("set-email").value.trim();
+
+        let newOrangeMoney = document
+          .getElementById("set-orangemoney")
+          .value.trim();
+        if (newOrangeMoney && !newOrangeMoney.startsWith("+236"))
+          newOrangeMoney = "+236" + newOrangeMoney;
+
+        try {
+          await btApi.put("/auth/me", {
+            full_name: newFullName,
+            org_name: newOrgName,
+            email: newEmail,
+            orange_money: newOrangeMoney,
+          });
+
+          user.full_name = newFullName;
+          user.org_name = newOrgName;
+          user.email = newEmail;
+          user.orange_money = newOrangeMoney;
+          btAuth.save(btAuth.getToken(), user);
+
+          document
+            .querySelectorAll(".dyn-org-name")
+            .forEach((el) => (el.textContent = newOrgName));
+          document
+            .querySelectorAll(".dyn-user-name")
+            .forEach((el) => (el.textContent = newFullName));
+
+          const welcomeMsg = document.getElementById("welcome-msg");
+          if (welcomeMsg)
+            welcomeMsg.textContent = `Bonjour, ${newFullName.split(" ")[0]} 👋`;
+
+          if (typeof btToast === "function")
+            btToast("Paramètres mis à jour avec succès !", "success");
+        } catch (error) {
+          if (typeof btToast === "function")
+            btToast(error.message || "Erreur de sauvegarde", "error");
+        } finally {
+          btn.innerHTML = origText;
+          validateOrgSettingsForm();
+        }
+      }
+
+      async function updateOrgPin() {
+        const btn = document.getElementById("btn-save-pin");
+        const pin = document.getElementById("set-pin").value.trim();
+
+        if (pin.length !== 4) return;
+
+        btn.disabled = true;
+        btn.innerHTML = "Mise à jour...";
+        try {
+          await btApi.put("/auth/me", { pin_code: pin });
+          if (typeof btToast === "function")
+            btToast("Code PIN modifié avec succès !", "success");
+          document.getElementById("set-pin").value = "";
+          validateOrgPinForm();
+        } catch (e) {
+          if (typeof btToast === "function")
+            btToast("Erreur lors de la modification du PIN", "error");
+          validateOrgPinForm();
+        }
+      }
+
+      async function loadOrganizerStats() {
+        try {
+          const stats = await btApi.get("/organizer/stats");
+
+          if (document.getElementById("s-sold"))
+            document.getElementById("s-sold").textContent =
+              stats.total_sold || 0;
+          if (document.getElementById("s-events"))
+            document.getElementById("s-events").textContent =
+              stats.total_events || 0;
+          if (document.getElementById("s-rev"))
+            document.getElementById("s-rev").textContent =
+              (stats.total_revenue || 0).toLocaleString("fr-FR") + " FCFA";
+
+          const eventsList = document.getElementById("events-list");
+          if (eventsList && stats.events) {
+            if (stats.events.length === 0) {
+              eventsList.innerHTML =
+                '<p class="text-gray-500 text-[13px] md:text-[14px] py-4 text-center border border-gray-100 rounded-xl bg-gray-50/50">Aucune activité récente.</p>';
+            } else {
+              eventsList.innerHTML = stats.events
+                .slice(0, 5)
+                .map(
+                  (e) => `
+                      <div class="bg-gray-50/50 rounded-2xl p-3 sm:p-4 flex items-center justify-between border border-gray-100 hover:border-gray-200 transition-colors">
+                          <div class="min-w-0 pr-2 sm:pr-4">
+                              <p class="font-bold text-[13px] sm:text-[15px] text-gray-900 truncate">${e.title}</p>
+                              <p class="text-[11px] sm:text-[13px] font-medium text-gray-500 mt-0.5 truncate">${new Date(e.event_date).toLocaleDateString("fr-FR", { weekday: "short", year: "numeric", month: "short", day: "numeric" })}</p>
+                          </div>
+                          <div class="flex-shrink-0 bg-white px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl border border-gray-100 shadow-sm text-right">
+                              <p class="text-[9px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Vendus</p>
+                              <p class="font-black text-[12px] sm:text-[15px] text-gray-900 leading-none">${e.seats_sold || 0} <span class="text-gray-400 font-bold text-[10px] sm:text-[13px]">/ ${e.total_seats}</span></p>
+                              <div class="w-full h-px bg-gray-100 my-1.5"></div>
+                              <p class="text-[9px] sm:text-[10px] font-bold text-green-500 uppercase tracking-widest mb-0.5">Cagnotte</p>
+                              <p class="font-black text-[12px] sm:text-[14px] text-green-600 leading-none">${(e.cagnotte || 0).toLocaleString("fr-FR")} F</p>
+                          </div>
+                      </div>
+                    `,
+                )
+                .join("");
+            }
+          }
+
+          const allEventsList = document.getElementById("all-events-list");
+          if (allEventsList && stats.events) {
+            if (stats.events.length === 0) {
+              allEventsList.innerHTML =
+                '<p class="col-span-full text-gray-500 text-center py-10">Vous n\'avez publié aucun événement.</p>';
+            } else {
+              allEventsList.innerHTML = stats.events
+                .map(
+                  (e) => `
+                  <div class="bg-white rounded-[24px] md:rounded-[32px] overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col group cursor-pointer">
+                      <div class="h-40 md:h-48 bg-gray-100 relative overflow-hidden shrink-0">
+                          ${
+                            e.cover_image_url
+                              ? `<img src="${e.cover_image_url}" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">`
+                              : '<div class="w-full h-full bg-primary/5 flex items-center justify-center text-primary/40"><span class="material-symbols-outlined text-4xl">image</span></div>'
+                          }
+                          <div class="absolute top-3 right-3 bg-white/95 backdrop-blur-md text-[12px] md:text-[13px] font-black px-3 py-1.5 rounded-xl text-primary shadow-sm z-10 group-hover:bg-primary group-hover:text-white transition-colors duration-300">
+                              ${e.price.toLocaleString("fr-FR")} F
+                          </div>
+                      </div>
+                      <div class="p-5 md:p-6 flex-1 flex flex-col justify-between">
+                          <div>
+                              <h3 class="font-extrabold font-headline text-base md:text-lg text-gray-900 line-clamp-1 group-hover:text-primary transition-colors duration-300">${e.title}</h3>
+                              <p class="text-[12px] md:text-[13px] font-medium text-gray-500 flex items-center gap-1.5 mt-2 mb-4">
+                                  <span class="material-symbols-outlined text-primary text-[16px]">location_on</span> ${e.location}
+                              </p>
+                          </div>
+                          
+                          <div class="pt-4 border-t border-gray-100 flex justify-between items-center mb-4">
+                              <div>
+                                  <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Vendus</p>
+                                  <p class="font-black text-lg md:text-xl text-gray-900">${e.seats_sold || 0} <span class="text-gray-400 text-xs font-bold">/ ${e.total_seats}</span></p>
+                              </div>
+                              <div class="text-right bg-green-50 px-3 py-2 rounded-xl border border-green-100">
+                                  <p class="text-[10px] font-bold text-green-600 uppercase tracking-widest mb-0.5">Cagnotte</p>
+                                  <p class="font-black text-lg md:text-xl text-green-700">${(e.cagnotte || 0).toLocaleString("fr-FR")} F</p>
+                              </div>
+                          </div>
+                          
+                          <button onclick="ouvrirGestionEvenement(${e.id || 0}, '${e.title.replace(/'/g, "\\'")}', ${e.cagnotte || 0})" class="w-full bg-gray-50 text-gray-700 group-hover:bg-primary group-hover:text-white px-4 py-3 rounded-xl font-bold text-[13px] transition-all duration-300 active:scale-95">
+                              Gérer l'événement
+                          </button>
+                      </div>
+                  </div>
+              `,
+                )
+                .join("");
+            }
+          }
+        } catch (error) {
+          console.error("Erreur stats:", error);
+        }
+      }
+
+      // --- FONCTION POUR AJOUTER UNE LIGNE DE BILLET (VIP, VVIP, etc.) ---
+      // --- 1. FONCTION POUR CRÉER UNE LIGNE DE BILLET ---
+      function addTierRow(isDefault = false) {
+        const container = document.getElementById("tiers-container");
+        if (!container) return;
+
+        const row = document.createElement("div");
+        // Design fidèle à ton dashboard : gris clair, arrondi, avec animation
+        row.className =
+          "tier-row flex flex-wrap md:flex-nowrap gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100 mb-3 animate-in fade-in slide-in-from-top-2 duration-300";
+
+        row.innerHTML = `
+          <div class="flex-1 min-w-[140px]">
+            <label class="block text-[10px] font-black uppercase text-gray-400 mb-1 tracking-widest">Catégorie</label>
+            <input type="text" class="tier-name w-full bg-white border-none rounded-xl px-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none shadow-sm" 
+                   placeholder="ex: VIP" value="${isDefault ? "Standard" : ""}" ${isDefault ? "readonly" : ""}>
+          </div>
+
+          <div class="w-full md:w-32">
+            <label class="block text-[10px] font-black uppercase text-gray-400 mb-1 tracking-widest">Prix (FCFA)</label>
+            <input type="number" class="tier-price w-full bg-white border-none rounded-xl px-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none shadow-sm" 
+                   placeholder="0">
+          </div>
+
+          <div class="w-full md:w-32">
+            <label class="block text-[10px] font-black uppercase text-gray-400 mb-1 tracking-widest">Places</label>
+            <input type="number" class="tier-seats w-full bg-white border-none rounded-xl px-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none shadow-sm" 
+                   placeholder="100">
+          </div>
+
+          ${
+            !isDefault
+              ? `
+          <button type="button" onclick="this.parentElement.remove()" class="self-end p-2.5 text-red-400 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all shadow-sm bg-white">
+            <span class="material-symbols-outlined text-xl">delete</span>
+          </button>
+          `
+              : '<div class="w-10 md:block hidden"></div>'
+          }
+        `;
+
+        container.appendChild(row);
+      }
+
+      // --- 2. INITIALISATION AU CHARGEMENT ---
+      document.addEventListener("DOMContentLoaded", () => {
+        const container = document.getElementById("tiers-container");
+        if (container && container.children.length === 0) {
+          addTierRow(true); // 'true' signifie que c'est le billet par défaut
+        }
+      });
+
+      // --- FONCTION DE SOUMISSION D'ÉVÉNEMENT (100% SÉCURISÉE) ---
+      async function submitEvent(event) {
+        // Optionnel : empêche la page de se rafraîchir si on soumet via la touche Entrée
+        if (event && event.preventDefault) event.preventDefault();
+
+        // 1. SÉCURITÉ SUR LE BOUTON
+        const btn =
+          document.getElementById("btn-submit-event") ||
+          document.getElementById("btn-create") ||
+          document.querySelector("form button[type='submit']");
+
+        let origText = "Enregistrer";
+
+        if (btn) {
+          origText = btn.innerHTML;
+          btn.innerHTML = "Publication en cours...";
+          btn.classList.add("opacity-70", "cursor-not-allowed");
+        }
+
+        try {
+          let categories = [];
+          let totalSeats = 0;
+          let basePrice = 0;
+
+          // 2. Récupération sécurisée des billets
+          const tierRows = document.querySelectorAll(
+            "#tiers-container .tier-row",
+          );
+          if (tierRows.length > 0) {
+            tierRows.forEach((row) => {
+              const nameInput = row.querySelector(".tier-name");
+              const priceInput = row.querySelector(".tier-price");
+              const seatsInput = row.querySelector(".tier-seats");
+
+              const name = nameInput ? nameInput.value.trim() : "";
+              const price = priceInput ? parseFloat(priceInput.value) : 0;
+              const seats = seatsInput ? parseInt(seatsInput.value) : 0;
+
+              if (name && !isNaN(price) && !isNaN(seats)) {
+                categories.push({ name, price, seats });
+                totalSeats += seats;
+                if (basePrice === 0 || price < basePrice) basePrice = price;
+              }
+            });
+          }
+
+          // 3. Récupération sécurisée des champs de base
+          const descInput = document.getElementById("event-desc-input");
+          const catInput =
+            document.getElementById("ev-category") ||
+            document.getElementById("event-category-input");
+          const titleInput =
+            document.getElementById("ev-title") ||
+            document.getElementById("event-title-input");
+          const dateInput =
+            document.getElementById("ev-date") ||
+            document.getElementById("event-date-input");
+          const locInput =
+            document.getElementById("ev-location") ||
+            document.getElementById("event-location-input");
+
+          const payload = {
+            title: titleInput ? titleInput.value.trim() : "",
+            category: catInput ? catInput.value : "Événement",
+            event_date: dateInput ? dateInput.value : "",
+            location: locInput ? locInput.value.trim() : "",
+            cover_image_url:
+              typeof uploadedImageBase64 !== "undefined"
+                ? uploadedImageBase64
+                : "",
+            total_seats: totalSeats,
+            price: basePrice,
+            ticket_tiers: categories,
+            description: descInput ? descInput.value.trim() : "",
+          };
+
+          // 4. Envoi au serveur Python
+          await btApi.post("/events", payload);
+
+          if (typeof btToast === "function")
+            btToast("Événement mis en vente avec succès !", "success");
+
+          // 5. Nettoyage de l'interface en toute sécurité
+          const form =
+            document.querySelector("#sec-create form") ||
+            document.querySelector("form");
+          if (form) form.reset();
+
+          const tiersContainer = document.getElementById("tiers-container");
+          if (tiersContainer) tiersContainer.innerHTML = "";
+
+          if (typeof addTierRow === "function") addTierRow(true);
+
+          const previewContainer = document.getElementById(
+            "image-preview-container",
+          );
+          if (previewContainer) previewContainer.classList.add("hidden");
+
+          if (typeof uploadedImageBase64 !== "undefined")
+            uploadedImageBase64 = "";
+
+          // 6. Mise à jour des stats et retour à l'accueil
+          if (typeof loadOrganizerStats === "function")
+            await loadOrganizerStats();
+          if (typeof showSection === "function") showSection("events");
+        } catch (error) {
+          console.error("Erreur de soumission :", error);
+          if (typeof btToast === "function")
+            btToast(error.message || "Erreur lors de la création", "error");
+        } finally {
+          // 7. On rend toujours son état normal au bouton, quoiqu'il arrive
+          if (btn) {
+            btn.innerHTML = origText;
+            btn.classList.remove("opacity-70", "cursor-not-allowed");
+          }
+        }
+      }
+      // 1. Charger la liste des événements dans le menu déroulant
+      async function loadEventsForAgents() {
+        const select = document.getElementById("ag-event");
+        try {
+          const stats = await btApi.get("/organizer/stats");
+          if (stats.events && stats.events.length > 0) {
+            select.innerHTML =
+              '<option value="">Sélectionnez un événement...</option>' +
+              stats.events
+                .map((e) => `<option value="${e.id}">${e.title}</option>`)
+                .join("");
+          } else {
+            select.innerHTML =
+              '<option value="">Aucun événement disponible</option>';
+          }
+        } catch (e) {
+          select.innerHTML = '<option value="">Erreur de chargement</option>';
+        }
+      }
+
+      // 2. Charger l'historique des agents
+      async function loadAgents() {
+        const container = document.getElementById("agents-list");
+        try {
+          const agents = await btApi.get("/organizer/agents");
+          if (agents.length === 0) {
+            container.innerHTML = `<div class="text-center py-10 bg-gray-50 rounded-2xl border border-dashed border-gray-200"><span class="material-symbols-outlined text-4xl text-gray-300 mb-2">person_off</span><p class="text-gray-500 font-medium text-sm">Aucun agent créé pour le moment.</p></div>`;
+            return;
+          }
+
+          container.innerHTML = agents
+            .map(
+              (a) => `
+            <div class="bg-gray-50 rounded-2xl p-4 flex items-center justify-between border border-gray-100 hover:border-primary/20 transition-all">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 bg-primary/10 text-primary rounded-full flex items-center justify-center font-bold">
+                        ${a.full_name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                        <p class="font-bold text-gray-900 text-sm">${a.full_name}</p>
+                        <p class="text-xs text-gray-500 flex items-center gap-1 mt-0.5"><span class="material-symbols-outlined text-[14px]">phone_iphone</span> ${a.phone_number}</p>
+                        <p class="text-[10px] font-bold text-primary mt-1 px-2 py-0.5 bg-primary/10 rounded-full inline-block truncate max-w-[150px] sm:max-w-[200px]">🎟️ ${a.event_name}</p>
+                    </div>
+                </div>
+                <button onclick="deleteAgent(${a.id})" class="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors shrink-0">
+                    <span class="material-symbols-outlined">delete</span>
+                </button>
+            </div>
+        `,
+            )
+            .join("");
+        } catch (error) {
+          container.innerHTML = `<p class="text-red-500 text-center text-sm py-4">Erreur de chargement.</p>`;
+        }
+      }
+
+      // 3. Soumettre le formulaire
+      async function submitAgent() {
+        const btn = document.getElementById("btn-agent");
+        const origText = btn.innerHTML;
+        btn.innerHTML = "Création...";
+        btn.disabled = true;
+
+        let phone = document.getElementById("ag-phone").value.trim();
+        if (!phone.startsWith("+236")) phone = "+236" + phone;
+
+        const payload = {
+          full_name: document.getElementById("ag-name").value.trim(),
+          phone_number: phone,
+          pin_code: document.getElementById("ag-pin").value.trim(),
+          event_id: parseInt(document.getElementById("ag-event").value),
+        };
+
+        try {
+          await btApi.post("/organizer/create-agent", payload);
+          if (typeof btToast === "function")
+            btToast("Agent assigné avec succès !", "success");
+          document.getElementById("form-agent").reset();
+          loadAgents(); // On rafraîchit la liste direct !
+        } catch (error) {
+          let msgErreur = error.message;
+          if (msgErreur === "[object Object]")
+            msgErreur = "Veuillez sélectionner un événement valide.";
+          if (typeof btToast === "function") btToast(msgErreur, "error");
+        } finally {
+          btn.innerHTML = origText;
+          btn.disabled = false;
+        }
+      }
+
+      // 4. Supprimer un agent
+      async function deleteAgent(id) {
+        if (!confirm("Voulez-vous vraiment révoquer l'accès de cet agent ?"))
+          return;
+        try {
+          await btApi.delete("/organizer/agents/" + id);
+          if (typeof btToast === "function")
+            btToast("Agent supprimé", "success");
+          loadAgents(); // Rafraîchit la liste
+        } catch (error) {
+          if (typeof btToast === "function")
+            btToast("Erreur lors de la suppression", "error");
+        }
+      }
+
+      // --- FONCTION POUR AFFICHER LA MODALE DE GESTION ---
+      function ouvrirGestionEvenement(eventId, eventTitle, cagnotte) {
+        const cagnotteFormatee = cagnotte.toLocaleString("fr-FR") + " FCFA";
+
+        // Si la cagnotte est à zéro, on grise le bouton
+        const isZero = cagnotte <= 0;
+        const btnClass = isZero
+          ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+          : "bg-gray-900 text-white hover:bg-gray-800 active:scale-95 shadow-md";
+
+        // On crée le contenu HTML de la modale
+        const modalContent = `
+              <div class="text-center p-2">
+                  <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 text-primary">
+                      <span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1">account_balance_wallet</span>
+                  </div>
+                  <h3 class="text-xl font-black font-headline text-gray-900 mb-1">${eventTitle}</h3>
+                  <p class="text-sm text-gray-500 font-medium mb-6">Gestion financière</p>
+
+                  <div class="bg-green-50 p-6 rounded-3xl border border-green-100 mb-6">
+                      <p class="text-[10px] font-bold text-green-600 uppercase tracking-widest mb-1">Cagnotte disponible</p>
+                      <p class="text-3xl font-black text-green-700">${cagnotteFormatee}</p>
+                  </div>
+
+                  <button onclick="demanderPaiement(${eventId}, ${cagnotte})" ${isZero ? "disabled" : ""} 
+                      class="w-full py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 mb-4 ${btnClass}">
+                      <span class="material-symbols-outlined text-[20px]">payments</span>
+                      Demander mon paiement
+                  </button>
+                  <button onclick="ouvrirModalAnnulation(${eventId}, '${eventTitle.replace(/'/g, "\\'")}')" 
+                      class="w-full py-3.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 bg-red-50 text-red-600 hover:bg-red-100 active:scale-95 border border-red-100">
+                      <span class="material-symbols-outlined text-[20px]">cancel</span>
+                      Annuler l'événement
+                  </button>
+                  <p class="text-[11px] text-gray-400 mt-4 leading-relaxed">
+                      L'argent sera transféré vers le numéro Orange Money configuré dans vos paramètres après validation par GoEvent.
+                  </p>
+              </div>
+          `;
+
+        // On utilise la fonction btModal qui existe déjà dans ton bt-api.js !
+        window.currentPayoutModal = btModal(modalContent);
+      }
+
+      // --- FONCTION POUR ENVOYER LA DEMANDE AU SERVEUR ---
+      async function demanderPaiement(eventId, cagnotte) {
+        if (cagnotte <= 0) return;
+
+        if (
+          !confirm(
+            "Voulez-vous vraiment demander le retrait de " +
+              cagnotte.toLocaleString("fr-FR") +
+              " FCFA ?",
+          )
+        ) {
+          return;
+        }
+
+        try {
+          // 1. Affiche un chargement sur la modale (optionnel mais recommandé)
+          if (typeof btToast === "function")
+            btToast("Envoi de la demande...", "info");
+
+          // 2. Appel à API Python (à créer dans main.py plus tard)
+          // await btApi.post("/organizer/payout-request", { event_id: eventId, amount: cagnotte });
+
+          // 3. Succès !
+          if (typeof btToast === "function")
+            btToast(
+              "Demande envoyée ! Le Super-Admin (Emmanuel) a été notifié.",
+              "success",
+            );
+
+          // 4. On ferme la modale
+          if (window.currentPayoutModal) {
+            window.currentPayoutModal.remove();
+          }
+
+          // 5. Rafraîchir les stats si nécessaire
+          loadOrganizerStats();
+        } catch (error) {
+          if (typeof btToast === "function")
+            btToast(error.message || "Erreur lors de la demande", "error");
+        }
+      }
+      function ouvrirModalAnnulation(eventId, eventTitle) {
+        // Fermer la modale de gestion financière
+        if (window.currentPayoutModal) window.currentPayoutModal.remove();
+
+        const modalContent = `
+              <div class="text-left p-2">
+                  <div class="flex items-center gap-3 mb-4">
+                      <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-600 shrink-0">
+                          <span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1">warning</span>
+                      </div>
+                      <div>
+                          <h3 class="text-xl font-black font-headline text-gray-900">Annuler l'événement</h3>
+                          <p class="text-xs font-bold text-gray-500">${eventTitle}</p>
+                      </div>
+                  </div>
+                  
+                  <div class="bg-orange-50 p-4 rounded-2xl border border-orange-100 mb-6">
+                      <p class="text-xs text-orange-800 font-medium leading-relaxed">
+                          <strong>Attention :</strong> L'annulation est une action sérieuse. L'argent des acheteurs devra leur être reversé intégralement.
+                      </p>
+                  </div>
+
+                  <div class="mb-4">
+                      <label class="block text-sm font-bold text-gray-700 mb-2">Raisons de l'annulation <span class="text-red-500">*</span></label>
+                      <textarea id="cancel-reason" rows="5" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all resize-none text-sm" placeholder="Expliquez en détail pourquoi vous annulez cet événement... (100 caractères min)"></textarea>
+                      <div class="flex justify-between items-center mt-1">
+                          <p id="char-error" class="text-[11px] text-red-500 font-bold hidden">Minimum 100 caractères requis.</p>
+                          <p class="text-right text-[11px] font-bold text-gray-400 ml-auto"><span id="char-count">0</span> / 100 min</p>
+                      </div>
+                  </div>
+
+                  <button id="btn-submit-cancel" onclick="soumettreAnnulation(${eventId})" disabled
+                      class="w-full mt-2 py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 bg-red-600 text-white hover:bg-red-700 active:scale-95 shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
+                      <span class="material-symbols-outlined text-[20px]">send</span>
+                      Soumettre la demande
+                  </button>
+              </div>
+          `;
+
+        window.currentCancelModal = btModal(modalContent);
+
+        const textarea = document.getElementById("cancel-reason");
+        const charCount = document.getElementById("char-count");
+        const btnSubmit = document.getElementById("btn-submit-cancel");
+        const charError = document.getElementById("char-error");
+
+        textarea.addEventListener("input", function () {
+          const len = this.value.trim().length;
+          charCount.textContent = len;
+
+          if (len >= 100) {
+            charCount.parentElement.classList.replace(
+              "text-gray-400",
+              "text-green-600",
+            );
+            charCount.parentElement.classList.replace(
+              "text-red-500",
+              "text-green-600",
+            );
+            charError.classList.add("hidden");
+            btnSubmit.disabled = false;
+          } else {
+            charCount.parentElement.classList.replace(
+              "text-green-600",
+              "text-red-500",
+            );
+            charCount.parentElement.classList.replace(
+              "text-gray-400",
+              "text-red-500",
+            );
+            btnSubmit.disabled = true;
+          }
+        });
+      }
+
+      async function soumettreAnnulation(eventId) {
+        const reasonInput = document.getElementById("cancel-reason");
+        const reason = reasonInput.value.trim();
+
+        if (reason.length < 100) {
+          document.getElementById("char-error").classList.remove("hidden");
+          return;
+        }
+
+        const btn = document.getElementById("btn-submit-cancel");
+        const origText = btn.innerHTML;
+        btn.innerHTML = "Envoi en cours...";
+        btn.disabled = true;
+
+        try {
+          await btApi.post("/organizer/events/" + eventId + "/cancel-request", {
+            reason: reason,
+          });
+
+          if (window.currentCancelModal) window.currentCancelModal.remove();
+
+          // Le message de confirmation exact demandé
+          btModal(`
+                  <div class="text-center p-4">
+                      <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-green-600 shadow-inner">
+                          <span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'FILL' 1">check_circle</span>
+                      </div>
+                      <h3 class="text-xl font-black font-headline text-gray-900 mb-2">Demande soumise avec succès</h3>
+                      <p class="text-sm text-gray-600 font-medium leading-relaxed mb-6">
+                          Votre demande d'annulation est soumis, ceci sera traité dans les 48h. Notez que l'argent des achèteurs va t'être reversé dans leur compte.
+                      </p>
+                      <button onclick="document.querySelector('.bt-overlay:last-child').remove()" class="w-full py-4 bg-gray-900 text-white rounded-xl font-bold hover:bg-gray-800 transition-all active:scale-95 shadow-md">
+                          J'ai compris
+                      </button>
+                  </div>
+              `);
+        } catch (error) {
+          if (typeof btToast === "function")
+            btToast(error.message || "Erreur lors de l'envoi", "error");
+          btn.innerHTML = origText;
+          btn.disabled = false;
+        }
+      }
+    </script>
+  </body>
+</html>

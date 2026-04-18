@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GoEvent Workspace | Connexion Sécurisée</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Manrope:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+      rel="stylesheet"
+    />
+    <script src="bt-api.js"></script>
+    <style>
+      body {
+        font-family: "Manrope", sans-serif;
+      }
+      h1,
+      h2 {
+        font-family: "Plus Jakarta Sans", sans-serif;
+      }
+    </style>
+  </head>
+
+  <body
+    class="bg-[#012212] h-screen flex flex-col items-center justify-center px-6 relative overflow-hidden"
+  >
+    <div
+      class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-[#00d65b] rounded-full mix-blend-overlay filter blur-[100px] opacity-20"
+    ></div>
+    <div
+      class="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-[#00502c] rounded-full mix-blend-overlay filter blur-[100px] opacity-40"
+    ></div>
+
+    <div
+      class="bg-white/5 backdrop-blur-xl border border-white/10 p-8 md:p-10 rounded-[2rem] w-full max-w-md shadow-2xl relative z-10"
+    >
+      <div class="text-center mb-8">
+        <div
+          class="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg"
+        >
+          <img
+            src="icons/event.png"
+            alt="Logo"
+            class="w-10 h-10 object-cover"
+          />
+        </div>
+        <h1 class="text-2xl font-black text-white tracking-tight">
+          GoEvent <span class="text-[#00d65b]">Workspace</span>
+        </h1>
+        <p class="text-gray-400 text-sm mt-2 font-medium">
+          Accès réservé aux collaborateurs.
+        </p>
+      </div>
+
+      <form id="admin-login-form" class="space-y-5">
+        <div>
+          <label
+            class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2"
+            >Numéro de téléphone</label
+          >
+          <div class="relative">
+            <span
+              class="material-symbols-outlined absolute left-4 top-3.5 text-gray-500"
+              >phone</span
+            >
+            <input
+              type="tel"
+              id="phone"
+              required
+              class="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:ring-2 focus:ring-[#00d65b] focus:border-transparent outline-none transition-all placeholder-gray-600"
+              placeholder="+236 ..."
+            />
+          </div>
+        </div>
+
+        <div>
+          <label
+            class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2"
+            >Code PIN (4 chiffres)</label
+          >
+          <div class="relative">
+            <span
+              class="material-symbols-outlined absolute left-4 top-3.5 text-gray-500"
+              >dialpad</span
+            >
+            <input
+              type="password"
+              id="pin"
+              maxlength="4"
+              required
+              class="w-full bg-black/20 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:ring-2 focus:ring-[#00d65b] focus:border-transparent outline-none transition-all placeholder-gray-600"
+              placeholder="••••"
+            />
+          </div>
+        </div>
+
+        <div
+          id="error-msg"
+          class="hidden bg-red-500/10 border border-red-500/20 text-red-400 text-sm p-3 rounded-xl flex items-center gap-2"
+        >
+          <span class="material-symbols-outlined text-base">error</span>
+          <span id="error-text">Identifiants incorrects</span>
+        </div>
+
+        <button
+          type="submit"
+          id="submit-btn"
+          class="w-full bg-[#00d65b] text-[#012212] font-black py-4 rounded-xl hover:bg-white active:scale-95 transition-all shadow-[0_0_20px_rgba(0,214,91,0.3)] mt-4"
+        >
+          Accéder au tableau de bord
+        </button>
+      </form>
+    </div>
+
+    <script>
+      // LE GARDE-BARRIÈRE (La logique de sécurité)
+      // LE GARDE-BARRIÈRE
+      document
+        .getElementById("admin-login-form")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+
+          const phone_number = document.getElementById("phone").value.trim(); // Modifié ici
+          const pin_code = document.getElementById("pin").value.trim(); // Modifié ici
+          const btn = document.getElementById("submit-btn");
+          const errBox = document.getElementById("error-msg");
+          const errText = document.getElementById("error-text");
+
+          btn.innerHTML =
+            '<span class="material-symbols-outlined animate-spin align-middle">progress_activity</span> Authentification...';
+          btn.disabled = true;
+          errBox.classList.add("hidden");
+
+          try {
+            // On appelle ton API avec les bonnes clés !
+            const res = await btApi.post("/auth/login", {
+              phone_number,
+              pin_code,
+            });
+
+            if (
+              res.user.role === "admin" ||
+              res.user.role === "staff" ||
+              res.user.role === "commercial"
+            ) {
+              btAuth.save(res.access_token, res.user);
+              window.location.href = "admin.html";
+            } else {
+              errText.textContent =
+                "Accès refusé : Ce portail est strictement réservé au personnel GoEvent.";
+              errBox.classList.remove("hidden");
+            }
+          } catch (error) {
+            errText.textContent = error.message || "Numéro ou PIN incorrect.";
+            errBox.classList.remove("hidden");
+          } finally {
+            btn.innerHTML = "Accéder au tableau de bord";
+            btn.disabled = false;
+          }
+        });
+    </script>
+  </body>
+</html>

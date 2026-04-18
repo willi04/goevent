@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Mes Billets | Bangui Tickets</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      .material-symbols-outlined {
+        font-variation-settings:
+          "FILL" 0,
+          "wght" 400,
+          "GRAD" 0,
+          "opsz" 24;
+      }
+      .ticket-stub {
+        border-left: 2px dashed #e5e7eb;
+        position: relative;
+      }
+      .ticket-stub::before,
+      .ticket-stub::after {
+        content: "";
+        position: absolute;
+        left: -10px;
+        width: 20px;
+        height: 20px;
+        background-color: #f9f9f9;
+        border-radius: 50%;
+      }
+      .ticket-stub::before {
+        top: -10px;
+      }
+      .ticket-stub::after {
+        bottom: -10px;
+      }
+      .tab-active {
+        border-bottom: 3px solid #00502c;
+        color: #00502c;
+        font-weight: 800;
+      }
+    </style>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: { primary: "#00502c" },
+            fontFamily: { headline: ["Plus Jakarta Sans"], body: ["Manrope"] },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body class="bg-[#f9f9f9] font-body text-[#1a1c1c] min-h-screen">
+    <header
+      class="bg-white border-b border-gray-100 py-4 px-8 sticky top-0 z-50"
+    >
+      <div class="max-w-5xl mx-auto flex justify-between items-center">
+        <a
+          href="index.html"
+          class="font-headline font-black text-xl text-primary flex items-center gap-2"
+        >
+          <span class="material-symbols-outlined">confirmation_number</span>
+          Bangui Tickets
+        </a>
+        <div class="flex items-center gap-4">
+          <span class="text-sm font-bold text-gray-500 hidden md:inline-block"
+            >Mon Espace</span
+          >
+          <div
+            class="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-black"
+          >
+            EM
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto w-full px-4 py-12">
+      <div
+        class="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4"
+      >
+        <div>
+          <h1 class="text-4xl font-black font-headline mb-2">Mes Billets</h1>
+          <p class="text-gray-500 font-medium">
+            Retrouvez tous vos QR Codes pour accéder aux événements.
+          </p>
+        </div>
+        <a
+          href="index.html"
+          class="bg-white border border-gray-200 text-gray-700 px-6 py-3 rounded-xl font-bold text-sm hover:bg-gray-50 transition-colors inline-block text-center"
+        >
+          Découvrir d'autres événements
+        </a>
+      </div>
+
+      <div class="flex gap-8 border-b border-gray-200 mb-8 px-2">
+        <button class="tab-active pb-4 text-lg transition-colors">
+          À venir
+        </button>
+        <button
+          class="text-gray-400 font-bold pb-4 text-lg hover:text-gray-600 transition-colors"
+        >
+          Passés
+        </button>
+      </div>
+
+      <div id="tickets-container" class="space-y-6"></div>
+    </main>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", async () => {
+        const container = document.getElementById("tickets-container");
+
+        // On récupère le numéro de téléphone que l'utilisateur a utilisé lors de son achat
+        const userPhone = localStorage.getItem("bt_user_phone");
+
+        // Si le client n'a jamais rien acheté sur ce navigateur
+        if (!userPhone) {
+          afficherVide(container);
+          return;
+        }
+
+        try {
+          // ON INTERROGE LE SERVEUR PYTHON ! 🧠
+          const response = await fetch(
+            `http://localhost:8000/api/my-tickets?phone=${userPhone}`,
+          );
+          const myTickets = await response.json();
+
+          // Si le serveur répond qu'il n'y a pas de billets pour ce numéro
+          if (!myTickets || myTickets.length === 0) {
+            afficherVide(container);
+            return;
+          }
+
+          // Si on a des billets, on les affiche !
+          container.innerHTML = myTickets
+            .map(
+              (t) => `
+                <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 flex flex-col md:flex-row overflow-hidden hover:shadow-md transition-shadow mb-6">
+                    
+                    <div class="md:w-48 h-40 md:h-auto shrink-0 relative bg-gray-100 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-gray-300 text-6xl">local_activity</span>
+                        <div class="absolute top-3 left-3 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[10px] font-black text-primary uppercase shadow-sm">
+                            ${t.tier_name}
+                        </div>
+                    </div>
+
+                    <div class="p-6 md:p-8 flex-1 flex flex-col justify-center">
+                        <h3 class="font-headline font-black text-xl mb-3 line-clamp-1">${t.event_title}</h3>
+                        <div class="space-y-2">
+                            <div class="flex items-center gap-2 text-gray-500 text-sm font-medium">
+                                <span class="material-symbols-outlined text-lg">calendar_month</span> 
+                                ${new Date(t.event_date).toLocaleString("fr-FR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}
+                            </div>
+                            <div class="flex items-center gap-2 text-gray-500 text-sm font-medium">
+                                <span class="material-symbols-outlined text-lg">location_on</span> ${t.event_location}
+                            </div>
+                            <div class="flex items-center gap-2 text-primary text-sm font-bold mt-2 pt-2 border-t border-gray-50">
+                                Payé : ${t.price_paid} FCFA
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ticket-stub bg-gray-50 p-6 md:w-64 flex flex-row md:flex-col items-center justify-between md:justify-center gap-4 shrink-0">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${t.ticket_id}" class="w-20 h-20 mix-blend-multiply opacity-90" alt="QR Code">
+                        <div class="text-center md:mt-2">
+                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Billet Numéro</p>
+                            <p class="font-black text-gray-900 font-headline tracking-wider">${t.ticket_id}</p>
+                        </div>
+                        <button class="md:hidden w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                            <span class="material-symbols-outlined">download</span>
+                        </button>
+                    </div>
+
+                </div>
+            `,
+            )
+            .join("");
+        } catch (error) {
+          console.error("Erreur API:", error);
+          container.innerHTML = `<p class="text-red-500 font-bold text-center py-10">Erreur de connexion au serveur pour récupérer vos billets.</p>`;
+        }
+      });
+
+      function afficherVide(container) {
+        container.innerHTML = `
+              <div class="text-center py-20 bg-white rounded-[2.5rem] border border-gray-100 shadow-sm">
+                  <span class="material-symbols-outlined text-6xl text-gray-200 mb-4">local_activity</span>
+                  <h3 class="text-xl font-black font-headline text-gray-900 mb-2">Aucun billet</h3>
+                  <p class="text-gray-500 mb-6">Vous n'avez pas encore réservé d'événement.</p>
+              </div>
+          `;
+      }
+    </script>
+  </body>
+</html>

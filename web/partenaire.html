@@ -1,0 +1,676 @@
+<!doctype html>
+<html class="light" lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+      name="viewport"
+    />
+    <title>GoEvent</title>
+    <link rel="icon" type="image/png" href="icons/favicon.png" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#00502c" />
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              background: "#f9f9f9",
+              primary: "#00502c",
+              "outline-variant": "#bec9be",
+              "on-primary-fixed-variant": "#00522d",
+              outline: "#6f7a70",
+              error: "#ba1a1a",
+              "on-surface-variant": "#3f4941",
+              "secondary-fixed": "#ffe08b",
+              "primary-container": "#006b3c",
+              "surface-container": "#eeeeee",
+              surface: "#f9f9f9",
+              "surface-container-high": "#e8e8e8",
+              "surface-container-lowest": "#ffffff",
+              "surface-container-highest": "#e2e2e2",
+              "surface-variant": "#e2e2e2",
+              "primary-fixed": "#9df6b9",
+              secondary: "#745b00",
+              "surface-container-low": "#f3f3f3",
+              "on-surface": "#1a1c1c",
+              "primary-fixed-dim": "#81d99f",
+              "on-secondary": "#ffffff",
+              "on-primary": "#ffffff",
+              "inverse-surface": "#2f3131",
+              "secondary-container": "#fecb00",
+              tertiary: "#8f001e",
+              "on-secondary-container": "#6e5700",
+            },
+            borderRadius: {
+              DEFAULT: "0.25rem",
+              lg: "0.5rem",
+              xl: "0.75rem",
+              full: "9999px",
+            },
+            fontFamily: {
+              headline: ["Plus Jakarta Sans"],
+              body: ["Manrope"],
+              label: ["Manrope"],
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      .material-symbols-outlined {
+        font-variation-settings:
+          "FILL" 0,
+          "wght" 400,
+          "GRAD" 0,
+          "opsz" 24;
+      }
+      .glass-nav {
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+      }
+      .hero-gradient {
+        background: linear-gradient(135deg, #00502c 0%, #006b3c 100%);
+      }
+    </style>
+  </head>
+  <body
+    data-page="partenaire"
+    class="bg-surface text-on-surface font-body flex flex-col min-h-screen"
+  >
+    <div
+      class="md:hidden fixed top-0 left-0 right-0 h-[72px] bg-white/95 backdrop-blur border-b border-gray-100 z-[100] flex items-center justify-between px-6"
+    >
+      <a
+        href="index.html"
+        class="flex items-center gap-2 hover:opacity-80 transition-opacity"
+      >
+        <img
+          src="icons/event.png"
+          alt="Logo GoEvent"
+          class="w-10 h-10 rounded-3xl object-cover shadow-sm"
+        />
+        <span
+          class="font-headline font-black text-2xl text-primary tracking-tight truncate"
+          >GoEvent</span
+        >
+      </a>
+      <button
+        onclick="toggleMobileMenu()"
+        class="p-2 -mr-2 text-gray-700 hover:text-primary transition-colors focus:outline-none"
+      >
+        <span class="material-symbols-outlined" style="font-size: 32px"
+          >menu</span
+        >
+      </button>
+    </div>
+
+    <div id="navbar" class="hidden md:block shrink-0 z-40"></div>
+
+    <div
+      id="mobile-menu"
+      class="fixed inset-0 bg-gray-900/60 z-[200] hidden opacity-0 transition-opacity duration-300"
+    >
+      <div class="absolute inset-0" onclick="toggleMobileMenu()"></div>
+      <div
+        id="mobile-drawer"
+        class="absolute right-0 top-0 bottom-0 w-[80%] max-w-xs bg-white shadow-2xl transform translate-x-full transition-transform duration-300 flex flex-col p-6"
+      >
+        <div
+          class="flex justify-between items-center mb-8 border-b border-gray-100 pb-4"
+        >
+          <span class="font-headline font-black text-xl text-primary"
+            >Menu</span
+          >
+          <button
+            onclick="toggleMobileMenu()"
+            class="p-2 text-gray-400 hover:text-red-500 transition-colors"
+          >
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <nav class="space-y-1 flex-1 overflow-y-auto">
+          <a
+            href="index.html"
+            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
+            ><span class="material-symbols-outlined">home</span> Accueil</a
+          >
+          <a
+            href="event.html"
+            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
+            ><span class="material-symbols-outlined">stadium</span>
+            Événements</a
+          >
+          <a
+            href="follow.html"
+            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
+            ><span class="material-symbols-outlined">favorite</span> Follow</a
+          >
+          <a
+            href="partenaire.html"
+            class="flex items-center gap-3 p-4 bg-primary/10 rounded-2xl text-primary font-bold"
+            ><span class="material-symbols-outlined">handshake</span>
+            Partenaires</a
+          >
+          <a
+            href="a_propos.html"
+            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
+            ><span class="material-symbols-outlined">info</span> À propos</a
+          >
+        </nav>
+
+        <div
+          id="mobile-auth-section"
+          class="mt-4 pt-6 border-t border-gray-100 space-y-3"
+        >
+          <a
+            href="login.html"
+            class="block w-full text-center text-primary font-bold py-3.5 rounded-xl border-2 border-primary hover:bg-primary/5 transition-all"
+            >Se connecter</a
+          >
+          <a
+            href="signup.html"
+            class="block w-full text-center bg-primary text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 active:scale-95 transition-all"
+            >S'inscrire</a
+          >
+        </div>
+      </div>
+    </div>
+
+    <main class="flex-1 pt-[72px] md:pt-20">
+      <section
+        class="relative hero-gradient py-24 px-6 md:px-16 overflow-hidden"
+      >
+        <div class="absolute inset-0 opacity-15">
+          <img
+            class="w-full h-full object-cover"
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuB8sb6fK1TujAIg6Rjb_QIBMLa93vQHGZVDxAVny7Fdaj-kJqPjHyTG08Ab5yWkeKEuK4bTMn8hSUlt7GUCgjsh6ZOhx17cVL_SxT2bm2QKiTBAYblUD7EiNfQorFLlvPfWelgjD5CMriLZ6WOwb_z7TddmaOPq1dQJAQUyutadTrrLG0OZXwKiNY_nKynL9Flmf4D6imUCat8fKOW93A69n1k7_AEdxDYpXSeXgkTwCiUCwUtNQhW7sxAjrRcI6jIyvdDEaiKZfQ"
+            alt=""
+          />
+        </div>
+        <div class="relative z-10 text-center max-w-3xl mx-auto">
+          <span
+            class="inline-block bg-secondary-container text-on-secondary-container px-4 py-1.5 rounded-full text-sm font-black font-headline mb-6"
+            >DEVENIR PARTENAIRE</span
+          >
+          <h1
+            class="text-3xl sm:text-4xl md:text-6xl font-extrabold font-headline text-white leading-tight mb-6"
+          >
+            Associez votre marque<br />à la culture centrafricaine
+          </h1>
+          <p
+            class="text-base sm:text-lg text-primary-fixed/90 max-w-2xl mx-auto"
+          >
+            Rejoignez l'écosystème GoEvent et bénéficiez d'une visibilité unique
+            auprès de milliers de passionnés de culture, sport et événements en
+            RCA.
+          </p>
+        </div>
+      </section>
+
+      <section
+        id="avantages"
+        class="py-16 md:py-24 px-6 md:px-16 bg-surface-container-low/30"
+      >
+        <div class="text-center mb-10 md:mb-14">
+          <span class="text-primary font-bold uppercase tracking-widest text-xs"
+            >Pourquoi nous choisir</span
+          >
+          <h2 class="text-3xl md:text-4xl font-extrabold font-headline mt-3">
+            Les avantages d'un partenariat
+          </h2>
+        </div>
+        <div
+          class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 max-w-5xl mx-auto"
+        >
+          <div
+            class="bg-surface-container-lowest p-6 md:p-8 rounded-xl shadow-sm text-center group hover:-translate-y-1 transition-transform"
+          >
+            <div
+              class="w-16 h-16 md:w-20 md:h-20 rounded-full bg-primary-fixed flex items-center justify-center mx-auto mb-6 shadow-lg shadow-primary/10"
+            >
+              <span
+                class="material-symbols-outlined text-3xl md:text-4xl text-on-primary-fixed"
+                >campaign</span
+              >
+            </div>
+            <h3 class="text-xl font-bold font-headline mb-3">
+              Visibilité maximale
+            </h3>
+            <p class="text-on-surface-variant text-sm leading-relaxed">
+              Logo présent sur tous les billets numériques, pages événements et
+              newsletters envoyées à notre communauté.
+            </p>
+          </div>
+          <div
+            class="bg-surface-container-lowest p-6 md:p-8 rounded-xl shadow-sm text-center group hover:-translate-y-1 transition-transform"
+          >
+            <div
+              class="w-16 h-16 md:w-20 md:h-20 rounded-full bg-primary-fixed flex items-center justify-center mx-auto mb-6 shadow-lg shadow-primary/10"
+            >
+              <span
+                class="material-symbols-outlined text-3xl md:text-4xl text-on-primary-fixed"
+                >groups</span
+              >
+            </div>
+            <h3 class="text-xl font-bold font-headline mb-3">
+              Audience qualifiée
+            </h3>
+            <p class="text-on-surface-variant text-sm leading-relaxed">
+              Atteignez directement les passionnés de culture, sport et
+              événements de la République Centrafricaine.
+            </p>
+          </div>
+          <div
+            class="bg-surface-container-lowest p-6 md:p-8 rounded-xl shadow-sm text-center group hover:-translate-y-1 transition-transform"
+          >
+            <div
+              class="w-16 h-16 md:w-20 md:h-20 rounded-full bg-primary-fixed flex items-center justify-center mx-auto mb-6 shadow-lg shadow-primary/10"
+            >
+              <span
+                class="material-symbols-outlined text-3xl md:text-4xl text-on-primary-fixed"
+                >analytics</span
+              >
+            </div>
+            <h3 class="text-xl font-bold font-headline mb-3">
+              Statistiques détaillées
+            </h3>
+            <p class="text-on-surface-variant text-sm leading-relaxed">
+              Tableau de bord avec données d'impression, taux d'engagement et
+              retour sur investissement en temps réel.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="py-16 md:py-24 px-6 md:px-16">
+        <div class="text-center mb-10 md:mb-12">
+          <h2 class="text-3xl md:text-4xl font-extrabold font-headline">
+            Nos formules
+          </h2>
+        </div>
+        <div
+          class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 max-w-5xl mx-auto"
+        >
+          <div
+            class="bg-surface-container-lowest rounded-xl p-6 md:p-8 border border-outline-variant/30 hover:border-primary/40 transition-all flex flex-col"
+          >
+            <h3 class="text-xl font-bold font-headline mb-2">Essentiel</h3>
+            <p class="text-3xl font-black font-headline text-primary mb-1">
+              Sur devis
+            </p>
+            <p class="text-xs text-outline mb-6">
+              Contactez-nous pour un tarif personnalisé
+            </p>
+            <ul class="space-y-3 text-sm text-on-surface-variant mb-8 flex-1">
+              <li class="flex items-center gap-2">
+                <span
+                  class="material-symbols-outlined text-primary text-base"
+                  style="font-variation-settings: &quot;FILL&quot; 1"
+                  >check_circle</span
+                >Logo sur les billets
+              </li>
+              <li class="flex items-center gap-2">
+                <span
+                  class="material-symbols-outlined text-primary text-base"
+                  style="font-variation-settings: &quot;FILL&quot; 1"
+                  >check_circle</span
+                >Mention dans les newsletters
+              </li>
+              <li class="flex items-center gap-2">
+                <span
+                  class="material-symbols-outlined text-primary text-base"
+                  style="font-variation-settings: &quot;FILL&quot; 1"
+                  >check_circle</span
+                >Statistiques mensuelles
+              </li>
+            </ul>
+            <a
+              href="#contact"
+              class="block w-full py-3 border border-primary text-primary text-center rounded-xl font-bold hover:bg-primary-fixed transition-all mt-auto"
+              >Nous contacter</a
+            >
+          </div>
+          <div
+            class="bg-primary rounded-xl p-6 md:p-8 relative overflow-hidden flex flex-col"
+          >
+            <div
+              class="absolute top-4 right-4 bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full text-xs font-black"
+            >
+              POPULAIRE
+            </div>
+            <h3 class="text-xl font-bold font-headline text-white mb-2">
+              Premium
+            </h3>
+            <p
+              class="text-3xl font-black font-headline text-primary-fixed mb-1"
+            >
+              Sur devis
+            </p>
+            <p class="text-xs text-primary-fixed/70 mb-6">
+              Visibilité renforcée
+            </p>
+            <ul class="space-y-3 text-sm text-primary-fixed mb-8 flex-1">
+              <li class="flex items-center gap-2">
+                <span
+                  class="material-symbols-outlined text-primary-fixed text-base"
+                  style="font-variation-settings: &quot;FILL&quot; 1"
+                  >check_circle</span
+                >Tout l'essentiel
+              </li>
+              <li class="flex items-center gap-2">
+                <span
+                  class="material-symbols-outlined text-primary-fixed text-base"
+                  style="font-variation-settings: &quot;FILL&quot; 1"
+                  >check_circle</span
+                >Bannière sur la page d'accueil
+              </li>
+              <li class="flex items-center gap-2">
+                <span
+                  class="material-symbols-outlined text-primary-fixed text-base"
+                  style="font-variation-settings: &quot;FILL&quot; 1"
+                  >check_circle</span
+                >Événement sponsorisé mis en avant
+              </li>
+              <li class="flex items-center gap-2">
+                <span
+                  class="material-symbols-outlined text-primary-fixed text-base"
+                  style="font-variation-settings: &quot;FILL&quot; 1"
+                  >check_circle</span
+                >Rapport hebdomadaire
+              </li>
+            </ul>
+            <a
+              href="#contact"
+              class="block w-full py-3 bg-secondary-container text-on-secondary-container text-center rounded-xl font-bold hover:opacity-90 transition-all mt-auto"
+              >Nous contacter</a
+            >
+          </div>
+          <div
+            class="bg-surface-container-lowest rounded-xl p-6 md:p-8 border border-outline-variant/30 hover:border-primary/40 transition-all flex flex-col"
+          >
+            <h3 class="text-xl font-bold font-headline mb-2">Exclusif</h3>
+            <p class="text-3xl font-black font-headline text-primary mb-1">
+              Sur devis
+            </p>
+            <p class="text-xs text-outline mb-6">
+              Partenariat global personnalisé
+            </p>
+            <ul class="space-y-3 text-sm text-on-surface-variant mb-8 flex-1">
+              <li class="flex items-center gap-2">
+                <span
+                  class="material-symbols-outlined text-primary text-base"
+                  style="font-variation-settings: &quot;FILL&quot; 1"
+                  >check_circle</span
+                >Tout le Premium
+              </li>
+              <li class="flex items-center gap-2">
+                <span
+                  class="material-symbols-outlined text-primary text-base"
+                  style="font-variation-settings: &quot;FILL&quot; 1"
+                  >check_circle</span
+                >Co-branding sur toute la plateforme
+              </li>
+              <li class="flex items-center gap-2">
+                <span
+                  class="material-symbols-outlined text-primary text-base"
+                  style="font-variation-settings: &quot;FILL&quot; 1"
+                  >check_circle</span
+                >Accompagnement dédié
+              </li>
+              <li class="flex items-center gap-2">
+                <span
+                  class="material-symbols-outlined text-primary text-base"
+                  style="font-variation-settings: &quot;FILL&quot; 1"
+                  >check_circle</span
+                >Dashboard temps réel
+              </li>
+            </ul>
+            <a
+              href="#contact"
+              class="block w-full py-3 border border-primary text-primary text-center rounded-xl font-bold hover:bg-primary-fixed transition-all mt-auto"
+              >Nous contacter</a
+            >
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="contact"
+        class="py-16 px-6 md:px-16 bg-surface-container-low/30"
+      >
+        <div class="max-w-2xl mx-auto">
+          <div class="text-center mb-10">
+            <span
+              class="text-primary font-bold uppercase tracking-widest text-xs"
+              >Contact</span
+            >
+            <h2 class="text-3xl font-extrabold font-headline mt-3">
+              Discutons de votre partenariat
+            </h2>
+            <p class="text-on-surface-variant mt-3">
+              Nous vous répondons sous 48 heures.
+            </p>
+          </div>
+          <div
+            class="bg-surface-container-lowest rounded-2xl p-6 md:p-8 shadow-sm"
+          >
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+              <div>
+                <label
+                  class="block text-xs font-bold uppercase tracking-widest text-outline mb-2"
+                  >Nom de l'entreprise</label
+                >
+                <input
+                  id="p-company"
+                  class="w-full px-4 py-4 bg-surface-container-low rounded-xl border-none focus:ring-2 focus:ring-primary/20 transition-all font-body"
+                  placeholder="Votre entreprise ou organisation"
+                />
+              </div>
+              <div>
+                <label
+                  class="block text-xs font-bold uppercase tracking-widest text-outline mb-2"
+                  >Email professionnel *</label
+                >
+                <input
+                  id="p-email"
+                  type="email"
+                  class="w-full px-4 py-4 bg-surface-container-low rounded-xl border-none focus:ring-2 focus:ring-primary/20 transition-all font-body"
+                  placeholder="contact@votre-entreprise.cf"
+                />
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+              <div>
+                <label
+                  class="block text-xs font-bold uppercase tracking-widest text-outline mb-2"
+                  >Téléphone</label
+                >
+                <input
+                  id="p-phone"
+                  type="tel"
+                  class="w-full px-4 py-4 bg-surface-container-low rounded-xl border-none focus:ring-2 focus:ring-primary/20 transition-all font-body"
+                  placeholder="+236 ..."
+                />
+              </div>
+              <div>
+                <label
+                  class="block text-xs font-bold uppercase tracking-widest text-outline mb-2"
+                  >Type de partenariat</label
+                >
+                <select
+                  id="p-type"
+                  class="w-full px-4 py-4 bg-surface-container-low rounded-xl border-none focus:ring-2 focus:ring-primary/20 transition-all font-body"
+                >
+                  <option>Sponsoring d'événement</option>
+                  <option>Visibilité digitale</option>
+                  <option>Partenariat stratégique</option>
+                  <option>Autre</option>
+                </select>
+              </div>
+            </div>
+            <div class="mb-5">
+              <label
+                class="block text-xs font-bold uppercase tracking-widest text-outline mb-2"
+                >Message *</label
+              >
+              <textarea
+                id="p-msg"
+                rows="4"
+                class="w-full px-4 py-4 bg-surface-container-low rounded-xl border-none focus:ring-2 focus:ring-primary/20 transition-all font-body resize-none"
+                placeholder="Décrivez votre projet de partenariat, vos objectifs..."
+              ></textarea>
+            </div>
+            <button
+              onclick="submitPartner()"
+              class="w-full py-4 bg-gradient-to-r from-primary to-primary-container text-white rounded-xl font-bold font-headline text-lg shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center"
+            >
+              <span class="material-symbols-outlined align-middle mr-2"
+                >send</span
+              >
+              Envoyer la demande
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div id="footer"></div>
+    <div id="footer"></div>
+
+    <script src="bt-api.js"></script>
+    <script src="pwa.js"></script>
+    <script>
+      if (document.getElementById("navbar")) {
+        document.getElementById("navbar").innerHTML = btNavbar("partenaire");
+      }
+
+      function toggleMobileMenu() {
+        const menu = document.getElementById("mobile-menu");
+        const drawer = document.getElementById("mobile-drawer");
+        if (menu.classList.contains("hidden")) {
+          menu.classList.remove("hidden");
+          setTimeout(() => {
+            menu.classList.remove("opacity-0");
+            drawer.classList.remove("translate-x-full");
+          }, 10);
+        } else {
+          menu.classList.add("opacity-0");
+          drawer.classList.add("translate-x-full");
+          setTimeout(() => {
+            menu.classList.add("hidden");
+          }, 300);
+        }
+      }
+      function renderMobileAuth() {
+        const authContainer = document.getElementById("mobile-auth-section");
+        if (!authContainer) return;
+
+        if (btAuth.isLogged()) {
+          const user = btAuth.getUser();
+
+          // On récupère le nom : on essaie 'full_name', sinon 'name', sinon 'username'
+          const affichageNom =
+            user.full_name || user.name || user.username || "Membre GoEvent";
+
+          authContainer.innerHTML = `
+            <div class="bg-primary/5 p-5 rounded-3xl mb-4 border border-primary/10">
+                <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Session active</p>
+                <p class="text-xl font-black text-gray-900 truncate">${affichageNom}</p>
+            </div>
+            
+            <a href="${btDashRoute(user.role)}" class="flex items-center justify-center gap-2 w-full py-4 rounded-2xl bg-primary text-white font-black shadow-lg shadow-green-900/20 active:scale-95 transition-transform">
+                <span class="material-symbols-outlined">grid_view</span>
+                Accéder à mon espace
+            </a>
+            
+            <button onclick="btAuth.logout(); window.location.reload();" class="mt-3 flex items-center justify-center gap-2 w-full py-4 rounded-2xl text-red-600 bg-red-50 font-bold active:scale-95 transition-all hover:bg-red-100">
+                <span class="material-symbols-outlined text-sm">power_settings_new</span>
+                Déconnexion
+            </button>
+        `;
+        }
+      }
+
+      // NOUVEAU : On s'assure d'exécuter cette vérification dès que la page s'ouvre !
+      document.addEventListener("DOMContentLoaded", renderMobileAuth);
+
+      async function submitPartner() {
+        // 1. On récupère le bouton pour le griser pendant l'envoi
+        const btn = document.querySelector('button[onclick="submitPartner()"]');
+        const origText = btn.innerHTML;
+
+        // 2. On récupère toutes les valeurs du formulaire
+        const company = document.getElementById("p-company").value.trim();
+        const email = document.getElementById("p-email").value.trim();
+        const phone = document.getElementById("p-phone").value.trim();
+        const type = document.getElementById("p-type").value;
+        const msg = document.getElementById("p-msg").value.trim();
+
+        // 3. Validation
+        if (!email) {
+          if (typeof btToast === "function")
+            btToast("Email professionnel requis", "error");
+          return;
+        }
+        if (!msg) {
+          if (typeof btToast === "function")
+            btToast("Décrivez votre projet de partenariat", "error");
+          return;
+        }
+
+        // 4. On indique le chargement
+        btn.disabled = true;
+        btn.innerHTML =
+          '<span class="material-symbols-outlined animate-spin mr-2">sync</span> Envoi en cours...';
+        btn.classList.add("opacity-70", "cursor-not-allowed");
+
+        try {
+          // 5. Envoi des données à ton backend Python
+          await btApi.post("/partner-request", {
+            company_name: company,
+            email: email,
+            phone: phone,
+            partnership_type: type,
+            message: msg,
+          });
+
+          // 6. Succès !
+          if (typeof btToast === "function") {
+            btToast(
+              "Demande envoyée ! Nous vous contactons sous 48h.",
+              "success",
+            );
+          }
+
+          // 7. On vide le formulaire pour faire propre
+          document.getElementById("p-company").value = "";
+          document.getElementById("p-email").value = "";
+          document.getElementById("p-phone").value = "";
+          document.getElementById("p-msg").value = "";
+        } catch (error) {
+          if (typeof btToast === "function") {
+            btToast(error.message || "Erreur de connexion au serveur", "error");
+          }
+        } finally {
+          // 8. On remet le bouton à son état normal
+          btn.disabled = false;
+          btn.innerHTML = origText;
+          btn.classList.remove("opacity-70", "cursor-not-allowed");
+        }
+      }
+      document.getElementById("footer").innerHTML = btFooter();
+    </script>
+  </body>
+</html>

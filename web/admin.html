@@ -1,0 +1,1223 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>Console Admin | GoEvent</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Manrope:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1"
+      rel="stylesheet"
+    />
+    <script src="bt-api.js"></script>
+    <style>
+      body {
+        font-family: "Manrope", sans-serif;
+        background: #f4f6f4;
+      }
+      h1,
+      h2,
+      h3,
+      h4 {
+        font-family: "Plus Jakarta Sans", sans-serif;
+      }
+      .gold {
+        background: linear-gradient(135deg, #fecb00, #c9a000);
+      }
+      .lush {
+        background: linear-gradient(135deg, #00502c, #008a4a);
+      }
+      .tab-btn {
+        padding: 10px 20px;
+        border-radius: 9999px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+        border: none;
+        background: transparent;
+        color: #6b7280;
+        font-family: "Manrope", sans-serif;
+      }
+      .tab-btn.active {
+        background: #00502c;
+        color: #fff;
+      }
+      .tab-btn:hover:not(.active) {
+        background: #e8f0e8;
+        color: #00502c;
+      }
+      .card {
+        background: #fff;
+        border-radius: 1.5rem;
+        border: 1px solid #f0f0f0;
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 3px 10px;
+        border-radius: 9999px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .badge-green {
+        background: #d1fae5;
+        color: #065f46;
+      }
+      .badge-yellow {
+        background: #fef9c3;
+        color: #854d0e;
+      }
+      .badge-red {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      .badge-gray {
+        background: #f3f4f6;
+        color: #374151;
+      }
+      .badge-blue {
+        background: #dbeafe;
+        color: #1e40af;
+      }
+      .action-btn {
+        padding: 8px 16px;
+        border-radius: 0.75rem;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        border: none;
+        transition: all 0.15s;
+        font-family: "Manrope", sans-serif;
+      }
+      .btn-danger {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      .btn-danger:hover {
+        background: #fecaca;
+      }
+      .btn-success {
+        background: #d1fae5;
+        color: #065f46;
+      }
+      .btn-success:hover {
+        background: #a7f3d0;
+      }
+      .btn-primary {
+        background: #00502c;
+        color: #fff;
+      }
+      .btn-primary:hover {
+        background: #006b3c;
+      }
+      .btn-gold {
+        background: linear-gradient(135deg, #fecb00, #c9a000);
+        color: #1a0f00;
+      }
+      .input-field {
+        width: 100%;
+        background: #f9f9f9;
+        border: 1.5px solid #e5e7eb;
+        color: #111;
+        border-radius: 0.75rem;
+        padding: 11px 14px;
+        font-size: 14px;
+        font-family: "Manrope", sans-serif;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+      .input-field:focus {
+        border-color: #00502c;
+        background: #fff;
+      }
+      .stat-card {
+        background: #fff;
+        border-radius: 1.25rem;
+        padding: 1.25rem;
+        border: 1px solid #f0f0f0;
+      }
+      .section-hidden {
+        display: none;
+      }
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+      }
+      .modal-box {
+        background: #fff;
+        border-radius: 1.5rem;
+        padding: 28px;
+        width: 100%;
+        max-width: 440px;
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+      tr:hover td {
+        background: #f9f9f9;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      th {
+        text-align: left;
+        padding: 10px 12px;
+        font-size: 11px;
+        font-weight: 700;
+        color: #9ca3af;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        border-bottom: 1px solid #f3f4f6;
+      }
+      td {
+        padding: 12px 12px;
+        border-bottom: 1px solid #f9f9f9;
+        color: #374151;
+        vertical-align: middle;
+      }
+      .empty-state {
+        text-align: center;
+        padding: 48px 24px;
+        color: #9ca3af;
+      }
+      .empty-state span {
+        font-size: 48px;
+        display: block;
+        margin-bottom: 12px;
+      }
+      .sidebar {
+        width: 220px;
+        flex-shrink: 0;
+      }
+      @media (max-width: 768px) {
+        .sidebar {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body class="min-h-screen">
+    <!-- Header -->
+    <header
+      class="bg-white border-b border-gray-100 sticky top-0 z-30 px-6 py-4 flex justify-between items-center"
+    >
+      <div class="flex items-center gap-3">
+        <div
+          class="w-10 h-10 gold rounded-xl flex items-center justify-center shadow-sm"
+        >
+          <span
+            class="material-symbols-outlined text-yellow-900 text-xl"
+            style="font-variation-settings: &quot;FILL&quot; 1"
+            >shield_person</span
+          >
+        </div>
+        <div>
+          <h1 class="text-base font-black text-gray-900 leading-tight">
+            GoEvent Admin
+          </h1>
+          <p
+            class="text-[10px] font-bold text-green-700 uppercase tracking-widest"
+          >
+            Console Super-Admin
+          </p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <span
+          id="admin-name"
+          class="text-sm font-bold text-gray-500 hidden md:block"
+        ></span>
+        <button
+          onclick="btAuth.logout()"
+          class="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 hover:text-red-500 transition-all border border-gray-100"
+        >
+          <span class="material-symbols-outlined text-xl">logout</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="flex">
+      <!-- Sidebar desktop -->
+      <aside
+        class="sidebar bg-white border-r border-gray-100 min-h-screen p-4 space-y-1"
+      >
+        <button
+          onclick="showTab('dashboard')"
+          data-tab="dashboard"
+          class="tab-btn active w-full text-left flex items-center gap-3"
+        >
+          <span class="material-symbols-outlined text-lg">dashboard</span>
+          Dashboard
+        </button>
+        <button
+          onclick="showTab('events')"
+          data-tab="events"
+          class="tab-btn w-full text-left flex items-center gap-3"
+        >
+          <span class="material-symbols-outlined text-lg">stadium</span>
+          Événements
+        </button>
+        <button
+          onclick="showTab('users')"
+          data-tab="users"
+          class="tab-btn w-full text-left flex items-center gap-3"
+        >
+          <span class="material-symbols-outlined text-lg">group</span>
+          Utilisateurs
+        </button>
+        <button
+          onclick="showTab('finance')"
+          data-tab="finance"
+          class="tab-btn w-full text-left flex items-center gap-3"
+        >
+          <span class="material-symbols-outlined text-lg">payments</span>
+          Finance
+        </button>
+        <button
+          onclick="showTab('partners')"
+          data-tab="partners"
+          class="tab-btn w-full text-left flex items-center gap-3"
+        >
+          <span class="material-symbols-outlined text-lg">handshake</span>
+          Partenaires
+        </button>
+        <button
+          onclick="showTab('cancellations')"
+          data-tab="cancellations"
+          class="tab-btn w-full text-left flex items-center gap-3 text-red-600"
+        >
+          <span class="material-symbols-outlined text-lg">cancel</span>
+          Annulations
+        </button>
+        <button
+          onclick="showTab('team')"
+          data-tab="team"
+          class="tab-btn w-full text-left flex items-center gap-3"
+        >
+          <span class="material-symbols-outlined text-lg">badge</span> Équipe
+        </button>
+      </aside>
+
+      <!-- Main content -->
+      <main class="flex-1 p-6 space-y-6 overflow-x-hidden">
+        <!-- Tabs mobile -->
+        <div class="md:hidden flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
+          <button
+            onclick="showTab('dashboard')"
+            data-tab="dashboard"
+            class="tab-btn active flex-shrink-0"
+          >
+            Dashboard
+          </button>
+          <button
+            onclick="showTab('events')"
+            data-tab="events"
+            class="tab-btn flex-shrink-0"
+          >
+            Événements
+          </button>
+          <button
+            onclick="showTab('users')"
+            data-tab="users"
+            class="tab-btn flex-shrink-0"
+          >
+            Utilisateurs
+          </button>
+          <button
+            onclick="showTab('finance')"
+            data-tab="finance"
+            class="tab-btn flex-shrink-0"
+          >
+            Finance
+          </button>
+          <button
+            onclick="showTab('partners')"
+            data-tab="partners"
+            class="tab-btn flex-shrink-0"
+          >
+            Partenaires
+          </button>
+          <button
+            onclick="showTab('cancellations')"
+            data-tab="cancellations"
+            class="tab-btn flex-shrink-0 text-red-600"
+          >
+            Annulations
+          </button>
+          <button
+            onclick="showTab('team')"
+            data-tab="team"
+            class="tab-btn flex-shrink-0"
+          >
+            Équipe
+          </button>
+        </div>
+
+        <!-- ── SECTION DASHBOARD ── -->
+        <section id="section-dashboard">
+          <h2 class="text-xl font-black text-gray-900 mb-5">Vue d'ensemble</h2>
+
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="stat-card">
+              <p
+                class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1"
+              >
+                Bénéfices nets
+              </p>
+              <p id="stat-revenue" class="text-2xl font-black text-green-700">
+                —
+              </p>
+              <p class="text-[10px] text-gray-400 mt-1">Commissions GoEvent</p>
+            </div>
+            <div class="stat-card">
+              <p
+                class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1"
+              >
+                Volume CA
+              </p>
+              <p id="stat-ca" class="text-2xl font-black text-gray-900">—</p>
+              <p class="text-[10px] text-gray-400 mt-1">Total brut encaissé</p>
+            </div>
+            <div class="stat-card">
+              <p
+                class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1"
+              >
+                Billets vendus
+              </p>
+              <p id="stat-tickets" class="text-2xl font-black text-gray-900">
+                —
+              </p>
+              <p class="text-[10px] text-gray-400 mt-1">
+                Tous statuts confondus
+              </p>
+            </div>
+            <div class="stat-card">
+              <p
+                class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1"
+              >
+                Utilisateurs
+              </p>
+              <p id="stat-users" class="text-2xl font-black text-gray-900">—</p>
+              <p class="text-[10px] text-gray-400 mt-1">Fans + Organisateurs</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="stat-card flex items-center gap-4">
+              <div
+                class="w-12 h-12 rounded-2xl bg-green-50 text-green-700 flex items-center justify-center flex-shrink-0"
+              >
+                <span
+                  class="material-symbols-outlined"
+                  style="font-variation-settings: &quot;FILL&quot; 1"
+                  >stadium</span
+                >
+              </div>
+              <div>
+                <p id="stat-events" class="text-xl font-black text-gray-900">
+                  —
+                </p>
+                <p class="text-[10px] font-bold text-gray-400 uppercase">
+                  Événements actifs
+                </p>
+              </div>
+            </div>
+            <div class="stat-card flex items-center gap-4">
+              <div
+                class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center flex-shrink-0"
+              >
+                <span
+                  class="material-symbols-outlined"
+                  style="font-variation-settings: &quot;FILL&quot; 1"
+                  >groups</span
+                >
+              </div>
+              <div>
+                <p id="stat-orgas" class="text-xl font-black text-gray-900">
+                  —
+                </p>
+                <p class="text-[10px] font-bold text-gray-400 uppercase">
+                  Organisateurs
+                </p>
+              </div>
+            </div>
+            <div class="stat-card flex items-center gap-4">
+              <div
+                class="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center flex-shrink-0"
+              >
+                <span
+                  class="material-symbols-outlined animate-pulse"
+                  style="font-variation-settings: &quot;FILL&quot; 1"
+                  >pending</span
+                >
+              </div>
+              <div>
+                <p id="stat-payouts" class="text-xl font-black text-gray-900">
+                  —
+                </p>
+                <p class="text-[10px] font-bold text-gray-400 uppercase">
+                  Retraits en attente
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── SECTION ÉVÉNEMENTS ── -->
+        <section id="section-events" class="section-hidden">
+          <div class="flex justify-between items-center mb-5">
+            <h2 class="text-xl font-black text-gray-900">
+              Gestion des événements
+            </h2>
+            <span id="events-count" class="badge badge-gray">0 événements</span>
+          </div>
+          <div class="card overflow-hidden">
+            <div class="overflow-x-auto">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Événement</th>
+                    <th>Organisateur</th>
+                    <th>Date</th>
+                    <th>Places</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="events-tbody">
+                  <tr>
+                    <td colspan="6">
+                      <div class="empty-state">
+                        <span class="material-symbols-outlined"
+                          >hourglass_empty</span
+                        >Chargement...
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── SECTION UTILISATEURS ── -->
+        <section id="section-users" class="section-hidden">
+          <div class="flex flex-wrap justify-between items-center gap-3 mb-5">
+            <h2 class="text-xl font-black text-gray-900">
+              Gestion des utilisateurs
+            </h2>
+            <div class="flex gap-2">
+              <button
+                onclick="filterUsers('all')"
+                id="uf-all"
+                class="action-btn btn-primary text-xs"
+              >
+                Tous
+              </button>
+              <button
+                onclick="filterUsers('fan')"
+                id="uf-fan"
+                class="action-btn btn-gold text-xs"
+              >
+                Fans
+              </button>
+              <button
+                onclick="filterUsers('organizer')"
+                id="uf-org"
+                class="action-btn"
+                style="background: #dbeafe; color: #1e40af"
+              >
+                Organisateurs
+              </button>
+            </div>
+          </div>
+          <div class="card overflow-hidden">
+            <div class="overflow-x-auto">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nom</th>
+                    <th>Téléphone</th>
+                    <th>Rôle</th>
+                    <th>Email</th>
+                    <th>Inscrit le</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="users-tbody">
+                  <tr>
+                    <td colspan="6">
+                      <div class="empty-state">
+                        <span class="material-symbols-outlined"
+                          >hourglass_empty</span
+                        >Chargement...
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── SECTION FINANCE ── -->
+        <section id="section-finance" class="section-hidden">
+          <h2 class="text-xl font-black text-gray-900 mb-5">
+            Finance & Retraits
+          </h2>
+
+          <div
+            class="lush p-6 rounded-2xl text-white mb-6 relative overflow-hidden"
+          >
+            <p
+              class="text-[10px] font-bold uppercase text-white/60 tracking-widest mb-1"
+            >
+              Bénéfices nets GoEvent
+            </p>
+            <h3 id="finance-revenue" class="text-3xl font-black mb-1">—</h3>
+            <p class="text-[10px] text-white/50">
+              Commissions 4% acheteur + 7% organisateur
+            </p>
+            <span
+              class="material-symbols-outlined absolute -right-4 -bottom-4 text-white/10 text-9xl"
+              >payments</span
+            >
+          </div>
+
+          <h3
+            class="text-base font-black text-gray-900 mb-4 flex items-center gap-2"
+          >
+            Retraits à valider
+            <span
+              id="payouts-badge"
+              class="w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-black flex items-center justify-center animate-pulse"
+              >0</span
+            >
+          </h3>
+          <div id="payouts-list" class="space-y-3"></div>
+        </section>
+
+        <!-- ── SECTION PARTENAIRES ── -->
+        <section id="section-partners" class="section-hidden">
+          <div class="flex justify-between items-center mb-5">
+            <h2 class="text-xl font-black text-gray-900">
+              Demandes partenaires
+            </h2>
+            <span id="partners-count" class="badge badge-yellow"
+              >0 demandes</span
+            >
+          </div>
+          <div id="partners-list" class="space-y-3"></div>
+        </section>
+
+        <!-- SECTION ANNULATION EVENEMENT-->
+        <section id="section-cancellations" class="section-hidden">
+          <div class="flex justify-between items-center mb-5">
+            <h2 class="text-xl font-black text-gray-900">
+              Demandes d'annulation
+            </h2>
+            <span id="cancellations-count" class="badge badge-red"
+              >0 demandes</span
+            >
+          </div>
+          <div id="cancellations-list" class="space-y-3"></div>
+        </section>
+
+        <!-- ── SECTION ÉQUIPE ── -->
+        <section id="section-team" class="section-hidden">
+          <div class="flex justify-between items-center mb-5">
+            <h2 class="text-xl font-black text-gray-900">Équipe GoEvent</h2>
+            <button
+              onclick="openEmployeeModal()"
+              class="action-btn btn-primary flex items-center gap-2"
+            >
+              <span class="material-symbols-outlined text-base"
+                >person_add</span
+              >
+              Créer un employé
+            </button>
+          </div>
+
+          <div class="card p-6">
+            <div class="empty-state">
+              <span class="material-symbols-outlined text-gray-300">badge</span>
+              <p class="font-bold text-gray-400 mt-2">
+                Aucun employé créé pour l'instant
+              </p>
+              <p class="text-sm text-gray-400 mt-1">
+                Utilisez le bouton ci-dessus pour ajouter un membre de l'équipe.
+              </p>
+              <button
+                onclick="openEmployeeModal()"
+                class="action-btn btn-primary mt-4 inline-flex items-center gap-2"
+              >
+                <span class="material-symbols-outlined text-base">add</span>
+                Créer le premier employé
+              </button>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- Modal : Créer un employé -->
+    <div id="employee-modal" class="modal-overlay hidden">
+      <div class="modal-box">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-lg font-black text-gray-900">Créer un employé</h3>
+          <button
+            onclick="closeEmployeeModal()"
+            class="text-gray-400 hover:text-red-500 transition-colors"
+          >
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <div class="space-y-4">
+          <div>
+            <label
+              class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2"
+              >Nom complet</label
+            >
+            <input
+              id="emp-name"
+              type="text"
+              class="input-field"
+              placeholder="Prénom Nom"
+            />
+          </div>
+          <div>
+            <label
+              class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2"
+              >Numéro de téléphone</label
+            >
+            <input
+              id="emp-phone"
+              type="tel"
+              class="input-field"
+              placeholder="+236 7X XXX XXX"
+            />
+          </div>
+          <div>
+            <label
+              class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2"
+              >Email</label
+            >
+            <input
+              id="emp-email"
+              type="email"
+              class="input-field"
+              placeholder="email@goevent.africa"
+            />
+          </div>
+          <div>
+            <label
+              class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2"
+              >Rôle</label
+            >
+            <select id="emp-role" class="input-field">
+              <option value="agent">Agent / Contrôleur</option>
+              <option value="organizer">Modérateur événements</option>
+            </select>
+          </div>
+          <div>
+            <label
+              class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2"
+              >PIN (4 chiffres)</label
+            >
+            <input
+              id="emp-pin"
+              type="password"
+              maxlength="4"
+              class="input-field"
+              placeholder="XXXX"
+            />
+          </div>
+        </div>
+
+        <p id="emp-error" class="text-red-500 text-xs mt-3 min-h-4"></p>
+
+        <button
+          onclick="createEmployee()"
+          class="action-btn btn-primary w-full mt-5 py-3 text-sm"
+        >
+          Créer l'employé
+        </button>
+      </div>
+    </div>
+
+    <style>
+      .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .hide-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+    </style>
+
+    <script>
+      let allUsers = [];
+      let currentTab = "dashboard";
+
+      // ── AUTH CHECK ──────────────────────────────────────────────
+      document.addEventListener("DOMContentLoaded", () => {
+        const user = btAuth.getUser();
+        if (!user || user.role !== "admin") {
+          window.location.href = "admin-login.html";
+          return;
+        }
+        document.getElementById("admin-name").textContent =
+          user.name || "Admin";
+        loadDashboard();
+      });
+
+      // ── NAVIGATION ──────────────────────────────────────────────
+      function showTab(tab) {
+        currentTab = tab;
+        document.querySelectorAll("[data-tab]").forEach((b) => {
+          b.classList.toggle("active", b.dataset.tab === tab);
+        });
+        document.querySelectorAll('section[id^="section-"]').forEach((s) => {
+          s.classList.toggle("section-hidden", s.id !== `section-${tab}`);
+        });
+        if (tab === "dashboard") loadDashboard();
+        if (tab === "events") loadEvents();
+        if (tab === "users") loadUsers();
+        if (tab === "finance") loadFinance();
+        if (tab === "partners") loadPartners();
+        if (tab === "cancellations") loadCancellations();
+      }
+
+      // ── DASHBOARD ───────────────────────────────────────────────
+      async function loadDashboard() {
+        try {
+          const s = await btApi.get("/admin/global-stats");
+          document.getElementById("stat-revenue").textContent =
+            (s.revenue_net || 0).toLocaleString() + " FCFA";
+          document.getElementById("stat-ca").textContent =
+            (s.ca_total || 0).toLocaleString() + " FCFA";
+          document.getElementById("stat-tickets").textContent =
+            s.total_tickets || 0;
+          document.getElementById("stat-users").textContent =
+            s.total_users || 0;
+          document.getElementById("stat-events").textContent =
+            s.total_events || 0;
+          document.getElementById("stat-orgas").textContent =
+            s.total_orgas || 0;
+          document.getElementById("stat-payouts").textContent =
+            s.pending_payouts || 0;
+        } catch (e) {
+          console.error("Stats:", e);
+        }
+      }
+
+      // ── ÉVÉNEMENTS ──────────────────────────────────────────────
+      async function loadEvents() {
+        const tbody = document.getElementById("events-tbody");
+        try {
+          const res = await btApi.get("/admin/events");
+          document.getElementById("events-count").textContent =
+            `${res.length} événements`;
+          if (!res.length) {
+            tbody.innerHTML =
+              '<tr><td colspan="6"><div class="empty-state"><span class="material-symbols-outlined">stadium</span>Aucun événement</div></td></tr>';
+            return;
+          }
+          tbody.innerHTML = res
+            .map(
+              (e) => `
+          <tr>
+            <td>
+              <p class="font-bold text-gray-900 max-w-[180px] truncate">${e.title}</p>
+              <p class="text-[11px] text-gray-400">${e.category}</p>
+            </td>
+            <td><span class="text-xs">${e.organizer || "—"}</span></td>
+            <td><span class="text-xs">${e.event_date ? new Date(e.event_date).toLocaleDateString("fr-FR") : "—"}</span></td>
+            <td>
+              <span class="text-xs font-bold">${e.seats_sold}/${e.total_seats}</span>
+              <div class="w-16 h-1 bg-gray-100 rounded-full mt-1">
+                <div class="h-1 bg-green-500 rounded-full" style="width:${Math.min(100, (e.seats_sold / e.total_seats) * 100)}%"></div>
+              </div>
+            </td>
+            <td><span class="badge ${e.is_active ? "badge-green" : "badge-gray"}">${e.is_active ? "Actif" : "Inactif"}</span></td>
+            <td>
+              <div class="flex gap-2">
+                <button onclick="toggleEvent(${e.id}, ${e.is_active})" class="action-btn ${e.is_active ? "btn-danger" : "btn-success"} text-xs">
+                  ${e.is_active ? "Désactiver" : "Activer"}
+                </button>
+              </div>
+            </td>
+          </tr>
+        `,
+            )
+            .join("");
+        } catch (e) {
+          tbody.innerHTML =
+            '<tr><td colspan="6" class="text-center text-red-500 py-8 text-sm">Erreur de chargement</td></tr>';
+        }
+      }
+
+      async function toggleEvent(id, isActive) {
+        const action = isActive ? "désactiver" : "activer";
+        if (!confirm(`Confirmer : ${action} cet événement ?`)) return;
+        try {
+          await btApi.put(`/admin/events/${id}`, { is_active: !isActive });
+          btToast(
+            `Événement ${action === "désactiver" ? "désactivé" : "activé"}`,
+            "success",
+          );
+          loadEvents();
+        } catch (e) {
+          btToast(e.message, "error");
+        }
+      }
+
+      // ── UTILISATEURS ────────────────────────────────────────────
+      async function loadUsers() {
+        const tbody = document.getElementById("users-tbody");
+        try {
+          allUsers = await btApi.get("/admin/users");
+          renderUsers(allUsers);
+        } catch (e) {
+          tbody.innerHTML =
+            '<tr><td colspan="6" class="text-center text-red-500 py-8 text-sm">Erreur de chargement</td></tr>';
+        }
+      }
+
+      function filterUsers(role) {
+        const filtered =
+          role === "all" ? allUsers : allUsers.filter((u) => u.role === role);
+        renderUsers(filtered);
+      }
+
+      function renderUsers(users) {
+        const tbody = document.getElementById("users-tbody");
+        if (!users.length) {
+          tbody.innerHTML =
+            '<tr><td colspan="6"><div class="empty-state"><span class="material-symbols-outlined">group_off</span>Aucun utilisateur</div></td></tr>';
+          return;
+        }
+        const roleBadge = (r) => {
+          if (r === "admin")
+            return '<span class="badge" style="background:#fef3c7;color:#92400e">Admin</span>';
+          if (r === "organizer")
+            return '<span class="badge badge-blue">Organisateur</span>';
+          if (r === "agent")
+            return '<span class="badge badge-gray">Agent</span>';
+          return '<span class="badge badge-green">Fan</span>';
+        };
+        tbody.innerHTML = users
+          .map(
+            (u) => `
+        <tr>
+          <td>
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full bg-green-50 text-green-700 flex items-center justify-center text-xs font-black flex-shrink-0">
+                ${(u.name || u.phone || "U").slice(0, 2).toUpperCase()}
+              </div>
+              <span class="font-bold text-gray-900 text-sm">${u.name || "—"}</span>
+            </div>
+          </td>
+          <td><span class="text-xs font-mono">${u.phone || "—"}</span></td>
+          <td>${roleBadge(u.role)}</td>
+          <td><span class="text-xs text-gray-500">${u.email || "—"}</span></td>
+          <td><span class="text-xs text-gray-400">${u.created_at ? new Date(u.created_at).toLocaleDateString("fr-FR") : "—"}</span></td>
+          <td>
+            <button onclick="toggleUser(${u.id}, ${u.is_active})" class="action-btn ${u.is_active ? "btn-danger" : "btn-success"} text-xs">
+              ${u.is_active ? "Désactiver" : "Activer"}
+            </button>
+          </td>
+        </tr>
+      `,
+          )
+          .join("");
+      }
+
+      async function toggleUser(id, isActive) {
+        if (
+          !confirm(
+            `Confirmer : ${isActive ? "désactiver" : "activer"} ce compte ?`,
+          )
+        )
+          return;
+        try {
+          await btApi.put(`/admin/users/${id}`, { is_active: !isActive });
+          btToast("Compte mis à jour", "success");
+          loadUsers();
+        } catch (e) {
+          btToast(e.message, "error");
+        }
+      }
+
+      // ── FINANCE ─────────────────────────────────────────────────
+      async function loadFinance() {
+        try {
+          const s = await btApi.get("/admin/global-stats");
+          document.getElementById("finance-revenue").textContent =
+            (s.revenue_net || 0).toLocaleString() + " FCFA";
+          document.getElementById("stat-payouts").textContent =
+            s.pending_payouts || 0;
+        } catch (e) {}
+
+        const list = document.getElementById("payouts-list");
+        try {
+          const payouts = await btApi.get("/admin/payouts/pending");
+          document.getElementById("payouts-badge").textContent = payouts.length;
+          if (!payouts.length) {
+            list.innerHTML =
+              '<div class="card p-6 text-center text-gray-400 text-sm">Aucun retrait en attente</div>';
+            return;
+          }
+          list.innerHTML = payouts
+            .map(
+              (p) => `
+          <div class="card p-5 flex justify-between items-center gap-4">
+            <div>
+              <p class="font-black text-gray-900">${p.org_name || "Organisateur"}</p>
+              <div class="flex items-center gap-2 mt-1">
+                <span class="text-sm font-bold text-green-700">${(p.amount || 0).toLocaleString()} FCFA</span>
+                <span class="text-[10px] text-gray-400 uppercase font-bold">Événement #${p.event_id}</span>
+              </div>
+              <p class="text-xs text-gray-400 mt-1">Orange Money : ${p.phone_number || "Non renseigné"}</p>
+            </div>
+            <button onclick="validerRetrait(${p.id}, ${p.amount}, '${p.phone_number || ""}')"
+                    class="action-btn btn-primary text-xs flex-shrink-0">
+              Valider le paiement
+            </button>
+          </div>
+        `,
+            )
+            .join("");
+        } catch (e) {
+          list.innerHTML =
+            '<div class="text-center text-red-500 text-sm py-8">Erreur de chargement</div>';
+        }
+      }
+
+      async function validerRetrait(id, amount, phone) {
+        if (
+          !confirm(
+            `Confirmer l'envoi de ${amount.toLocaleString()} FCFA au ${phone || "numéro de l'organisateur"} via Orange Money ?`,
+          )
+        )
+          return;
+        try {
+          await btApi.post(`/admin/payouts/${id}/validate`, {});
+          btToast("Versement validé et clôturé", "success");
+          loadFinance();
+        } catch (e) {
+          btToast(e.message, "error");
+        }
+      }
+
+      // ── PARTENAIRES ─────────────────────────────────────────────
+      async function loadPartners() {
+        const list = document.getElementById("partners-list");
+        try {
+          const partners = await btApi.get("/admin/partners");
+          document.getElementById("partners-count").textContent =
+            `${partners.length} demandes`;
+          if (!partners.length) {
+            list.innerHTML =
+              '<div class="card p-6 text-center text-gray-400 text-sm">Aucune demande partenaire</div>';
+            return;
+          }
+          const statusBadge = (s) => {
+            if (s === "traite")
+              return '<span class="badge badge-green">Traité</span>';
+            if (s === "rejete")
+              return '<span class="badge badge-red">Rejeté</span>';
+            return '<span class="badge badge-yellow">Nouveau</span>';
+          };
+          list.innerHTML = partners
+            .map(
+              (p) => `
+          <div class="card p-5">
+            <div class="flex justify-between items-start gap-4 mb-3">
+              <div>
+                <p class="font-black text-gray-900">${p.company_name}</p>
+                <p class="text-xs text-gray-500 mt-1">${p.partnership_type}</p>
+              </div>
+              ${statusBadge(p.status)}
+            </div>
+            <p class="text-sm text-gray-600 mb-3 leading-relaxed">${p.message}</p>
+            <div class="flex flex-wrap items-center gap-3">
+              <span class="text-xs text-gray-400 flex items-center gap-1">
+                <span class="material-symbols-outlined text-sm">email</span>${p.email}
+              </span>
+              <span class="text-xs text-gray-400 flex items-center gap-1">
+                <span class="material-symbols-outlined text-sm">phone</span>${p.phone}
+              </span>
+              ${
+                p.status === "nouveau"
+                  ? `
+                <div class="flex gap-2 ml-auto">
+                  <button onclick="updatePartner(${p.id}, 'traite')" class="action-btn btn-success text-xs">Marquer traité</button>
+                  <button onclick="updatePartner(${p.id}, 'rejete')" class="action-btn btn-danger text-xs">Rejeter</button>
+                </div>
+              `
+                  : ""
+              }
+            </div>
+          </div>
+        `,
+            )
+            .join("");
+        } catch (e) {
+          list.innerHTML =
+            '<div class="text-center text-red-500 text-sm py-8">Erreur de chargement</div>';
+        }
+      }
+
+      async function updatePartner(id, status) {
+        try {
+          await btApi.put(`/admin/partners/${id}`, { status });
+          btToast("Demande mise à jour", "success");
+          loadPartners();
+        } catch (e) {
+          btToast(e.message, "error");
+        }
+      }
+
+      // ── ÉQUIPE ──────────────────────────────────────────────────
+      function openEmployeeModal() {
+        document.getElementById("employee-modal").classList.remove("hidden");
+      }
+      function closeEmployeeModal() {
+        document.getElementById("employee-modal").classList.add("hidden");
+        document.getElementById("emp-error").textContent = "";
+        ["emp-name", "emp-phone", "emp-email", "emp-pin"].forEach(
+          (id) => (document.getElementById(id).value = ""),
+        );
+      }
+
+      async function createEmployee() {
+        const name = document.getElementById("emp-name").value.trim();
+        const phone = document.getElementById("emp-phone").value.trim();
+        const email = document.getElementById("emp-email").value.trim();
+        const role = document.getElementById("emp-role").value;
+        const pin = document.getElementById("emp-pin").value.trim();
+        const errEl = document.getElementById("emp-error");
+
+        if (!name || !phone || !pin) {
+          errEl.textContent = "Nom, téléphone et PIN sont obligatoires";
+          return;
+        }
+        if (pin.length !== 4 || !/^\d+$/.test(pin)) {
+          errEl.textContent = "Le PIN doit être 4 chiffres";
+          return;
+        }
+
+        try {
+          await btApi.post("/auth/register", {
+            full_name: name,
+            phone_number: phone,
+            email: email || null,
+            pin_code: pin,
+            role,
+          });
+          btToast(`Employé "${name}" créé avec succès`, "success");
+          closeEmployeeModal();
+        } catch (e) {
+          errEl.textContent = e.message || "Erreur lors de la création";
+        }
+      }
+      // ── ANNULATIONS ─────────────────────────────────────────────
+      async function loadCancellations() {
+        const list = document.getElementById("cancellations-list");
+        list.innerHTML =
+          '<div class="text-center py-8"><span class="material-symbols-outlined spin">sync</span></div>';
+
+        try {
+          const cancels = await btApi.get("/admin/cancellations");
+          document.getElementById("cancellations-count").textContent =
+            `${cancels.length} demandes`;
+
+          if (!cancels.length) {
+            list.innerHTML =
+              '<div class="card p-6 text-center text-gray-400 text-sm">Aucune demande d\'annulation.</div>';
+            return;
+          }
+
+          list.innerHTML = cancels
+            .map(
+              (c) => `
+          <div class="card p-5 border-l-4 ${c.status === "traite" ? "border-green-500" : "border-red-500"}">
+            <div class="flex justify-between items-start gap-4 mb-3">
+              <div>
+                <p class="font-black text-gray-900">${c.event_title}</p>
+                <p class="text-xs font-bold text-gray-500 mt-1 flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[14px]">storefront</span> ${c.organizer_name}
+                </p>
+              </div>
+              <span class="badge ${c.status === "traite" ? "badge-green" : "badge-red"}">
+                ${c.status === "traite" ? "Traité" : "Urgent - En attente"}
+              </span>
+            </div>
+            <div class="bg-red-50 p-4 rounded-xl mb-3 border border-red-100">
+                <p class="text-[10px] font-bold text-red-600 uppercase tracking-widest mb-2">Raison détaillée (Min 100 caractères) :</p>
+                <p class="text-sm text-gray-800 italic leading-relaxed">"${c.reason}"</p>
+            </div>
+            ${
+              c.status !== "traite"
+                ? `
+            <div class="mt-4 pt-4 border-t border-red-100 flex justify-end">
+                <button onclick="approuverAnnulation(${c.id})" class="px-5 py-2.5 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 active:scale-95 transition-all flex items-center gap-2 text-sm shadow-md">
+                    <span class="material-symbols-outlined text-[18px]">delete_forever</span>
+                    Valider & Supprimer l'événement
+                </button>
+            </div>
+            `
+                : ""
+            }
+            <p class="text-[11px] font-bold text-gray-400 uppercase">
+                Reçue le : ${new Date(c.created_at).toLocaleDateString("fr-FR")} à ${new Date(c.created_at).toLocaleTimeString("fr-FR")}
+            </p>
+          </div>
+        `,
+            )
+            .join("");
+        } catch (e) {
+          list.innerHTML =
+            '<div class="text-center text-red-500 text-sm py-8">Erreur de chargement des annulations</div>';
+        }
+      }
+      async function approuverAnnulation(requestId) {
+        if (
+          !confirm(
+            "⚠️ ATTENTION : Cela va supprimer l'événement et tous les billets associés. Êtes-vous sûr ?",
+          )
+        )
+          return;
+
+        try {
+          await btApi.post("/admin/cancellations/" + requestId + "/approve");
+          btToast("L'événement a été supprimé !", "success");
+          loadCancellations(); // Rafraîchit la liste
+          loadEvents(); // Rafraîchit aussi les stats de base
+        } catch (error) {
+          btToast(error.message || "Erreur lors de la suppression", "error");
+        }
+      }
+    </script>
+  </body>
+</html>

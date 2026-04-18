@@ -1,0 +1,570 @@
+<!doctype html>
+<html class="light" lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+      name="viewport"
+    />
+    <title>GoEvent</title>
+    <link rel="icon" type="image/png" href="icons/favicon.png" />
+    <meta
+      name="description"
+      content="Achetez vos billets d'événements en République Centrafricaine via Orange Money. Concerts, spectacles, sport et plus."
+    />
+    <meta property="og:title" content="GoEvent" />
+    <meta
+      property="og:description"
+      content="La billetterie événementielle de la RCA — payez via Orange Money"
+    />
+    <meta property="og:image" content="/icons/icon-512.png" />
+    <meta property="og:type" content="website" />
+    <meta name="bt-page" content="apropos" />
+
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#00502c" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="GoEvent" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="application-name" content="GoEvent" />
+
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+      rel="stylesheet"
+    />
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              background: "#f9f9f9",
+              primary: "#00502c",
+              "outline-variant": "#bec9be",
+              "on-primary-fixed-variant": "#00522d",
+              outline: "#6f7a70",
+              error: "#ba1a1a",
+              "on-surface-variant": "#3f4941",
+              "secondary-fixed": "#ffe08b",
+              "primary-container": "#006b3c",
+              "surface-container": "#eeeeee",
+              surface: "#f9f9f9",
+              "inverse-on-surface": "#f1f1f1",
+              "inverse-primary": "#81d99f",
+              "surface-container-high": "#e8e8e8",
+              "surface-container-lowest": "#ffffff",
+              "surface-container-highest": "#e2e2e2",
+              "surface-variant": "#e2e2e2",
+              "primary-fixed": "#9df6b9",
+              secondary: "#745b00",
+              "surface-container-low": "#f3f3f3",
+              "on-surface": "#1a1c1c",
+              "primary-fixed-dim": "#81d99f",
+              "on-tertiary-container": "#ffc9c8",
+              "on-secondary": "#ffffff",
+              "on-primary": "#ffffff",
+              "inverse-surface": "#2f3131",
+              "secondary-container": "#fecb00",
+              tertiary: "#8f001e",
+              "on-secondary-container": "#6e5700",
+              "secondary-fixed-dim": "#f1c100",
+              "on-primary-container": "#90e9ad",
+              "error-container": "#ffdad6",
+              "on-primary-fixed": "#00210f",
+            },
+            borderRadius: {
+              DEFAULT: "0.25rem",
+              lg: "1rem",
+              xl: "1.5rem",
+              full: "9999px",
+            },
+            fontFamily: {
+              headline: ["Plus Jakarta Sans"],
+              body: ["Manrope"],
+              label: ["Manrope"],
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      .lush-gradient {
+        background: linear-gradient(135deg, #00502c 0%, #006b3c 100%);
+      }
+      .glow-shadow-primary {
+        box-shadow: 0 10px 25px -5px rgba(0, 80, 44, 0.2);
+      }
+    </style>
+  </head>
+  <body
+    data-page="apropos"
+    class="bg-surface font-body text-on-surface antialiased flex flex-col min-h-screen"
+  >
+    <div
+      class="md:hidden fixed top-0 left-0 right-0 h-[72px] bg-white/95 backdrop-blur border-b border-gray-100 z-[100] flex items-center justify-between px-6"
+    >
+      <a
+        href="index.html"
+        class="flex items-center gap-2 hover:opacity-80 transition-opacity"
+      >
+        <img
+          src="icons/event.png"
+          alt="Logo GoEvent"
+          class="w-10 h-10 rounded-xl object-cover shadow-sm"
+        />
+        <span
+          class="font-headline font-black text-2xl text-primary tracking-tight truncate"
+          >GoEvent</span
+        >
+      </a>
+      <button
+        onclick="toggleMobileMenu()"
+        class="p-2 -mr-2 text-gray-700 hover:text-primary transition-colors focus:outline-none"
+      >
+        <span class="material-symbols-outlined" style="font-size: 32px"
+          >menu</span
+        >
+      </button>
+    </div>
+
+    <div id="navbar" class="hidden md:block shrink-0 z-40"></div>
+
+    <div
+      id="mobile-menu"
+      class="fixed inset-0 bg-gray-900/60 z-[200] hidden opacity-0 transition-opacity duration-300"
+    >
+      <div class="absolute inset-0" onclick="toggleMobileMenu()"></div>
+      <div
+        id="mobile-drawer"
+        class="absolute right-0 top-0 bottom-0 w-[80%] max-w-xs bg-white shadow-2xl transform translate-x-full transition-transform duration-300 flex flex-col p-6"
+      >
+        <div
+          class="flex justify-between items-center mb-8 border-b border-gray-100 pb-4"
+        >
+          <span class="font-headline font-black text-xl text-primary"
+            >Menu</span
+          >
+          <button
+            onclick="toggleMobileMenu()"
+            class="p-2 text-gray-400 hover:text-red-500 transition-colors"
+          >
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <nav class="space-y-1 flex-1 overflow-y-auto">
+          <a
+            href="index.html"
+            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
+            ><span class="material-symbols-outlined">home</span> Accueil</a
+          >
+          <a
+            href="event.html"
+            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
+            ><span class="material-symbols-outlined">stadium</span>
+            Événements</a
+          >
+          <a
+            href="partenaire.html"
+            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
+            ><span class="material-symbols-outlined">handshake</span>
+            Partenaires</a
+          >
+          <a
+            href="a_propos.html"
+            class="flex items-center gap-3 p-4 bg-primary/10 rounded-2xl text-primary font-bold"
+            ><span class="material-symbols-outlined">info</span> À propos</a
+          >
+        </nav>
+
+        <div
+          id="mobile-auth-section"
+          class="mt-4 pt-6 border-t border-gray-100 space-y-3"
+        >
+          <a
+            href="login.html"
+            class="block w-full text-center text-primary font-bold py-3.5 rounded-xl border-2 border-primary hover:bg-primary/5 transition-all"
+            >Se connecter</a
+          >
+          <a
+            href="signup.html"
+            class="block w-full text-center bg-primary text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 active:scale-95 transition-all"
+            >S'inscrire</a
+          >
+        </div>
+      </div>
+    </div>
+
+    <main class="flex-1 pt-[72px] md:pt-20">
+      <section
+        class="lush-gradient py-16 md:py-24 px-6 md:px-16 text-center relative overflow-hidden"
+      >
+        <div
+          class="absolute inset-0 opacity-10"
+          style="
+            background-image: radial-gradient(
+              circle,
+              white 1px,
+              transparent 1px
+            );
+            background-size: 32px 32px;
+          "
+        ></div>
+        <div class="relative z-10 max-w-3xl mx-auto">
+          <span
+            class="inline-block bg-white/20 text-white px-4 py-2 rounded-full text-xs md:text-sm font-bold mb-6 tracking-wider"
+            >🇨🇫 MADE IN CENTRAFRIQUE</span
+          >
+          <h1
+            class="text-3xl sm:text-4xl md:text-5xl font-headline font-extrabold text-white mb-6 leading-tight"
+          >
+            La billetterie qui
+            <span class="text-primary-fixed">célèbre la culture</span>
+            centrafricaine
+          </h1>
+          <p
+            class="text-primary-fixed text-lg md:text-xl opacity-90 leading-relaxed"
+          >
+            GoEvent connecte les artistes, les organisations et le public autour
+            des événements qui font vibrer la République Centrafricaine.
+          </p>
+        </div>
+      </section>
+
+      <section class="max-w-5xl mx-auto px-6 md:px-16 py-16 md:py-20">
+        <div class="text-center mb-12 md:mb-16">
+          <p
+            class="text-primary font-bold text-xs md:text-sm uppercase tracking-widest mb-3"
+          >
+            Notre Mission
+          </p>
+          <h2
+            class="text-3xl md:text-4xl font-headline font-extrabold text-on-surface"
+          >
+            Rendre la culture accessible à tous
+          </h2>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+          <div
+            class="text-center p-6 md:p-8 bg-white rounded-2xl shadow-sm border border-neutral-100 group hover:-translate-y-1 transition-transform"
+          >
+            <div
+              class="w-16 h-16 lush-gradient rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-primary/20"
+            >
+              <span class="material-symbols-outlined text-white text-3xl"
+                >confirmation_number</span
+              >
+            </div>
+            <h3 class="font-headline font-bold text-lg mb-3">
+              Billets instantanés
+            </h3>
+            <p class="text-on-surface-variant text-sm leading-relaxed">
+              Achetez votre billet en quelques secondes via Orange Money. Votre
+              QR Code arrive directement sur votre téléphone.
+            </p>
+          </div>
+          <div
+            class="text-center p-6 md:p-8 bg-white rounded-2xl shadow-sm border border-neutral-100 group hover:-translate-y-1 transition-transform"
+          >
+            <div
+              class="w-16 h-16 lush-gradient rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-primary/20"
+            >
+              <span class="material-symbols-outlined text-white text-3xl"
+                >groups</span
+              >
+            </div>
+            <h3 class="font-headline font-bold text-lg mb-3">
+              Pour tous les acteurs
+            </h3>
+            <p class="text-on-surface-variant text-sm leading-relaxed">
+              Artistes, ONG, entreprises locales et internationales — tous
+              peuvent publier et gérer leurs événements sur notre plateforme.
+            </p>
+          </div>
+          <div
+            class="text-center p-6 md:p-8 bg-white rounded-2xl shadow-sm border border-neutral-100 group hover:-translate-y-1 transition-transform"
+          >
+            <div
+              class="w-16 h-16 lush-gradient rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-primary/20"
+            >
+              <span class="material-symbols-outlined text-white text-3xl"
+                >verified_user</span
+              >
+            </div>
+            <h3 class="font-headline font-bold text-lg mb-3">
+              Sécurisé & local
+            </h3>
+            <p class="text-on-surface-variant text-sm leading-relaxed">
+              Paiement certifié Orange Money RCA. Vos données et transactions
+              sont protégées et restent en Centrafrique.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-surface-container-lowest py-16 md:py-20 px-6 md:px-16">
+        <div class="max-w-5xl mx-auto">
+          <div class="text-center mb-10 md:mb-12">
+            <h2 class="text-3xl md:text-4xl font-headline font-extrabold">
+              Qui peut utiliser
+              <span
+                class="font-headline font-black text-4xl text-primary tracking-tight truncate"
+                >GoEvent</span
+              >
+              ?
+            </h2>
+            <p class="text-on-surface-variant mt-3 text-sm md:text-base">
+              Une plateforme ouverte à tous les acteurs culturels et économiques
+              de la RCA
+            </p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+            <div
+              class="flex items-start gap-4 p-5 md:p-6 border border-neutral-100 rounded-2xl hover:border-primary/30 transition-colors duration-300 bg-white group"
+            >
+              <div
+                class="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary transition-colors duration-300"
+              >
+                <span
+                  class="material-symbols-outlined text-primary text-[28px] group-hover:text-white transition-colors duration-300"
+                  >music_note</span
+                >
+              </div>
+              <div>
+                <h3
+                  class="font-bold text-lg mb-1 text-gray-900 group-hover:text-primary transition-colors"
+                >
+                  Artistes & Musiciens
+                </h3>
+                <p class="text-on-surface-variant text-sm">
+                  Concerts, showcases, albums release — gérez vos événements et
+                  vendez vos billets directement à vos fans.
+                </p>
+              </div>
+            </div>
+
+            <div
+              class="flex items-start gap-4 p-5 md:p-6 border border-neutral-100 rounded-2xl hover:border-primary/30 transition-colors duration-300 bg-white group"
+            >
+              <div
+                class="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary transition-colors duration-300"
+              >
+                <span
+                  class="material-symbols-outlined text-primary text-[28px] group-hover:text-white transition-colors duration-300"
+                  >volunteer_activism</span
+                >
+              </div>
+              <div>
+                <h3
+                  class="font-bold text-lg mb-1 text-gray-900 group-hover:text-primary transition-colors"
+                >
+                  ONG & Associations
+                </h3>
+                <p class="text-on-surface-variant text-sm">
+                  Conférences, formations, galas de charité — mobilisez votre
+                  communauté et gérez vos inscriptions simplement.
+                </p>
+              </div>
+            </div>
+
+            <div
+              class="flex items-start gap-4 p-5 md:p-6 border border-neutral-100 rounded-2xl hover:border-primary/30 transition-colors duration-300 bg-white group"
+            >
+              <div
+                class="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary transition-colors duration-300"
+              >
+                <span
+                  class="material-symbols-outlined text-primary text-[28px] group-hover:text-white transition-colors duration-300"
+                  >business_center</span
+                >
+              </div>
+              <div>
+                <h3
+                  class="font-bold text-lg mb-1 text-gray-900 group-hover:text-primary transition-colors"
+                >
+                  Entreprises locales & intl.
+                </h3>
+                <p class="text-on-surface-variant text-sm">
+                  Séminaires, lancements produits, réceptions d'entreprise — une
+                  solution professionnelle pour vos événements corporate.
+                </p>
+              </div>
+            </div>
+
+            <div
+              class="flex items-start gap-4 p-5 md:p-6 border border-neutral-100 rounded-2xl hover:border-primary/30 transition-colors duration-300 bg-white group"
+            >
+              <div
+                class="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary transition-colors duration-300"
+              >
+                <span
+                  class="material-symbols-outlined text-primary text-[28px] group-hover:text-white transition-colors duration-300"
+                  >account_balance</span
+                >
+              </div>
+              <div>
+                <h3
+                  class="font-bold text-lg mb-1 text-gray-900 group-hover:text-primary transition-colors"
+                >
+                  Institutions publiques
+                </h3>
+                <p class="text-on-surface-variant text-sm">
+                  Événements officiels, cérémonies culturelles, journées
+                  nationales — une plateforme fiable pour les institutions de la
+                  RCA.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="lush-gradient py-12 md:py-16 px-6 md:px-16">
+        <div class="max-w-5xl mx-auto">
+          <div
+            class="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 text-center"
+          >
+            <div>
+              <div
+                class="text-3xl md:text-4xl font-extrabold text-white mb-1 md:mb-2"
+              >
+                500+
+              </div>
+              <div class="text-primary-fixed text-xs md:text-sm font-medium">
+                Événements organisés
+              </div>
+            </div>
+            <div>
+              <div
+                class="text-3xl md:text-4xl font-extrabold text-white mb-1 md:mb-2"
+              >
+                50K+
+              </div>
+              <div class="text-primary-fixed text-xs md:text-sm font-medium">
+                Billets vendus
+              </div>
+            </div>
+            <div>
+              <div
+                class="text-3xl md:text-4xl font-extrabold text-white mb-1 md:mb-2"
+              >
+                200+
+              </div>
+              <div class="text-primary-fixed text-xs md:text-sm font-medium">
+                Artistes & Orgas
+              </div>
+            </div>
+            <div>
+              <div
+                class="text-3xl md:text-4xl font-extrabold text-white mb-1 md:mb-2"
+              >
+                100%
+              </div>
+              <div class="text-primary-fixed text-xs md:text-sm font-medium">
+                Orange Money intégré
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="max-w-3xl mx-auto px-6 md:px-16 py-16 md:py-20 text-center"
+      >
+        <h2 class="text-2xl md:text-3xl font-headline font-extrabold mb-4">
+          Rejoignez GoEvent
+        </h2>
+        <p class="text-on-surface-variant mb-8 md:mb-10 text-base md:text-lg">
+          Créez votre compte en 2 minutes et commencez à publier vos événements
+          ou acheter vos billets dès aujourd'hui.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <a
+            href="signup.html"
+            class="w-full sm:w-auto px-8 py-4 lush-gradient text-white font-bold rounded-full glow-shadow-primary text-base md:text-lg hover:opacity-90 transition-opacity"
+          >
+            Créer un compte gratuitement
+          </a>
+          <a
+            href="event.html"
+            class="w-full sm:w-auto px-8 py-4 border-2 border-primary text-primary font-bold rounded-full text-base md:text-lg hover:bg-emerald-50 transition-colors"
+          >
+            Voir les événements
+          </a>
+        </div>
+      </section>
+    </main>
+
+    <div id="footer"></div>
+    <div id="footer"></div>
+
+    <script src="bt-api.js"></script>
+    <script src="pwa.js"></script>
+    <script>
+      if (document.getElementById("navbar")) {
+        document.getElementById("navbar").innerHTML = btNavbar("apropos");
+      }
+
+      function toggleMobileMenu() {
+        const menu = document.getElementById("mobile-menu");
+        const drawer = document.getElementById("mobile-drawer");
+        if (menu.classList.contains("hidden")) {
+          menu.classList.remove("hidden");
+          setTimeout(() => {
+            menu.classList.remove("opacity-0");
+            drawer.classList.remove("translate-x-full");
+          }, 10);
+        } else {
+          menu.classList.add("opacity-0");
+          drawer.classList.add("translate-x-full");
+          setTimeout(() => {
+            menu.classList.add("hidden");
+          }, 300);
+        }
+      }
+      function renderMobileAuth() {
+        const authContainer = document.getElementById("mobile-auth-section");
+        if (!authContainer) return;
+
+        if (btAuth.isLogged()) {
+          const user = btAuth.getUser();
+
+          // On récupère le nom : on essaie 'full_name', sinon 'name', sinon 'username'
+          const affichageNom =
+            user.full_name || user.name || user.username || "Membre GoEvent";
+
+          authContainer.innerHTML = `
+            <div class="bg-primary/5 p-5 rounded-3xl mb-4 border border-primary/10">
+                <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Session active</p>
+                <p class="text-xl font-black text-gray-900 truncate">${affichageNom}</p>
+            </div>
+            
+            <a href="${btDashRoute(user.role)}" class="flex items-center justify-center gap-2 w-full py-4 rounded-2xl bg-primary text-white font-black shadow-lg shadow-green-900/20 active:scale-95 transition-transform">
+                <span class="material-symbols-outlined">grid_view</span>
+                Accéder à mon espace
+            </a>
+            
+            <button onclick="btAuth.logout(); window.location.reload();" class="mt-3 flex items-center justify-center gap-2 w-full py-4 rounded-2xl text-red-600 bg-red-50 font-bold active:scale-95 transition-all hover:bg-red-100">
+                <span class="material-symbols-outlined text-sm">power_settings_new</span>
+                Déconnexion
+            </button>
+        `;
+        }
+      }
+
+      // NOUVEAU : On s'assure d'exécuter cette vérification dès que la page s'ouvre !
+      document.addEventListener("DOMContentLoaded", renderMobileAuth);
+      document.getElementById("footer").innerHTML = btFooter();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,568 @@
+<!doctype html>
+
+<html class="light" lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="bt-page" content="" />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#00502c" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>S'inscrire | GoEvent</title>
+    <link rel="icon" type="image/png" href="icons/favicon.png" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Manrope:wght@400;500;600;700;800&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              background: "#f9f9f9",
+              primary: "#00502c",
+              "outline-variant": "#bec9be",
+              "on-primary-fixed-variant": "#00522d",
+              "error-container": "#ffdad6",
+              "surface-dim": "#dadada",
+              "on-background": "#1a1c1c",
+              "tertiary-fixed-dim": "#ffb3b2",
+              "tertiary-container": "#bc002b",
+              "on-primary-fixed": "#00210f",
+              "on-tertiary": "#ffffff",
+              outline: "#6f7a70",
+              error: "#ba1a1a",
+              "on-surface-variant": "#3f4941",
+              "secondary-fixed": "#ffe08b",
+              "on-error": "#ffffff",
+              "primary-container": "#006b3c",
+              "surface-container": "#eeeeee",
+              "on-tertiary-fixed-variant": "#92001f",
+              surface: "#f9f9f9",
+              "inverse-on-surface": "#f1f1f1",
+              "inverse-primary": "#81d99f",
+              "on-error-container": "#93000a",
+              "surface-container-high": "#e8e8e8",
+              "surface-bright": "#f9f9f9",
+              "on-tertiary-fixed": "#410008",
+              "surface-container-lowest": "#ffffff",
+              "surface-container-highest": "#e2e2e2",
+              "on-secondary-fixed-variant": "#584400",
+              "surface-variant": "#e2e2e2",
+              "primary-fixed": "#9df6b9",
+              secondary: "#745b00",
+              "surface-container-low": "#f3f3f3",
+              "on-surface": "#1a1c1c",
+              "on-secondary-fixed": "#241a00",
+              "primary-fixed-dim": "#81d99f",
+              "on-tertiary-container": "#ffc9c8",
+              "on-secondary": "#ffffff",
+              "on-primary": "#ffffff",
+              "tertiary-fixed": "#ffdad9",
+              "inverse-surface": "#2f3131",
+              "surface-tint": "#046d3e",
+              "secondary-container": "#fecb00",
+              tertiary: "#8f001e",
+              "on-secondary-container": "#6e5700",
+              "secondary-fixed-dim": "#f1c100",
+              "on-primary-container": "#90e9ad",
+            },
+            borderRadius: {
+              DEFAULT: "0.25rem",
+              lg: "16px",
+              xl: "24px",
+              full: "9999px",
+            },
+            fontFamily: {
+              headline: ["Plus Jakarta Sans"],
+              body: ["Manrope"],
+              label: ["Manrope"],
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      .material-symbols-outlined {
+        font-variation-settings:
+          "FILL" 0,
+          "wght" 400,
+          "GRAD" 0,
+          "opsz" 24;
+      }
+      .click-bounce:active {
+        transform: scale(0.97);
+      }
+    </style>
+  </head>
+  <body class="bg-surface font-body text-on-surface">
+    <main class="min-h-screen flex flex-col md:flex-row">
+      <!-- Left Panel: Hero & Gradient -->
+      <section
+        class="relative w-full md:w-5/12 min-h-[409px] md:min-h-screen flex flex-col justify-between p-8 md:p-16 overflow-hidden"
+      >
+        <!-- Background Image with Gradient Overlay -->
+        <div class="absolute inset-0 z-0">
+          <img
+            class="w-full h-full object-cover"
+            data-alt="Vibrant night concert in Bangui with colorful stage lights and a large energetic crowd silhouetted against the glow"
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuAEVjqwRoX7auYEvNEEEOUeYVTdHs0su3-XQljGYS7mqJnz5F8vYBYg_sB-ho1pcVKABfPec_HiusUiU6Z3uMXHMV4ZSwRs7fntsMBrV0oWV5NqjAih6KA7HICEysTpXNBq-gyUFDCweG80P4iChdsgHuo_UC8BS45GTOn_PaSxDxZVvasyTMYsFzu8HDcMeJKP76OgbBothVZ-BBlD25nQw36w2zG1inN2ukOQON-ylghiXM-Wx6OZwcwxCFoxY7j2Fki7H3yGRw"
+          />
+          <div
+            class="absolute inset-0 bg-gradient-to-br from-primary via-primary-container/90 to-primary/80 mix-blend-multiply"
+          ></div>
+        </div>
+        <!-- Content -->
+        <div class="relative z-10">
+          <div class="flex items-center gap-2 mb-12">
+            <a
+              href="index.html"
+              class="flex items-center gap-2 transition-opacity"
+              ><img
+                src="icons/event.png"
+                alt="Logo"
+                class="w-10 h-10 rounded-3xl shadow-sm"
+              /><span
+                class="text-2xl font-bold tracking-tight bg-gradient-to-r from-emerald-900 to-emerald-700 bg-clip-text text-transparent text-white font-headline"
+                >GoEvent</span
+              ></a
+            >
+          </div>
+          <h1
+            class="text-4xl md:text-6xl font-extrabold font-headline text-white leading-tight tracking-tighter"
+          >
+            Rejoignez la plus grande scène événementielle de Bangui
+          </h1>
+        </div>
+        <div class="relative z-10 mt-auto pt-8">
+          <div class="flex -space-x-4 mb-4">
+            <img
+              class="w-12 h-12 rounded-full border-2 border-primary-container object-cover"
+              data-alt="Portrait of a young Central African woman smiling"
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuCY76KEuh1q8yt7eMgMwj0f84omdhaD0l5RkbH_nS73P4Ok0UKgeWtQNH0TeupQJ4ZIyEV-0UKecZBG3-MjYX758qTo3YzY_umaymPKQ03DDxoUf_6TO1w9dA03CGoOmIlryGtb3WQ6xZ910VGfLzLwFTEt3D8id5two_ibS7JRPptq1IacKnrvkGEaU56rShhyoPQbTgnSUPaEKZmAQfWduYRNZZ50qL24G-9yIK1IKZrcHMJyqFvXSUrQC_HE7dToFu1qj_xXDA"
+            />
+            <img
+              class="w-12 h-12 rounded-full border-2 border-primary-container object-cover"
+              data-alt="Portrait of a stylish African man in a hat"
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuDd5HPHApfF_Sr9xZm9kohEQPvGwygX8zdKiRUNuijMdh6CJJacXUtufi2f6ij1wQO3_yvAf0lavClo43lYI9pga_8RQ3QCZgeeCE5E2lG1KFIReGTAZrA1XuAZ9jDO-9VTljUD7cABBesm1d9IXI4LWqjpO9e8pQx__oKZXoW1ObLZbBrHXOPOFsZ0vGfuSxjNksYNB_CHNvKE0lVqG4gYsN0UPCB3MfiFrMyjE2xDmLPNCjbewxsS_a4gkXRVgKTKitxFy3NxCw"
+            />
+            <img
+              class="w-12 h-12 rounded-full border-2 border-primary-container object-cover"
+              data-alt="Portrait of a professional African woman"
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuBkHHMsrR6L81djCkfEgtpI0tz8xT9bKjbGl6fJewcZ1uThGfxvv52oAVVueeP2mOyNdyTmU0Kbcm6rCquuwAMp5sxtf-23P0YiMNG8pVOcZysapps5GsCjysoX_IQm3mewTghapC1emsdQjgDMLFpKJTPXCcx4pXdV1DkHvXx7_GK0ogngq1wWu8IJWpsiPN4sozRGzyIvW-DYmPiY0T0PRoLYTW5pFheWlX3bicBeA3lNH0LWQ4_rtaKkNDiix2_QlVkvtBsusA"
+            />
+            <div
+              class="w-12 h-12 rounded-full border-2 border-primary-container bg-secondary-container flex items-center justify-center text-on-secondary-container font-bold text-sm"
+            >
+              +2k
+            </div>
+          </div>
+          <p class="text-white/80 font-medium max-w-sm">
+            Plus de 2000 passionnés de culture nous ont déjà rejoint ce mois-ci.
+          </p>
+        </div>
+      </section>
+      <!-- Right Panel: Sign Up Form -->
+      <section
+        class="w-full md:w-7/12 bg-surface flex items-center justify-center p-6 md:p-12 lg:p-20"
+      >
+        <div class="w-full max-w-xl space-y-8">
+          <div class="space-y-2">
+            <h2
+              class="text-3xl md:text-4xl font-bold font-headline text-on-surface tracking-tight"
+            >
+              Créez votre compte
+            </h2>
+            <p class="text-on-surface-variant font-medium">
+              Commencez votre voyage culturel dès aujourd'hui.
+            </p>
+          </div>
+          <form class="space-y-6">
+            <!-- Full Name -->
+            <div class="space-y-2">
+              <label
+                class="text-sm font-bold uppercase tracking-wider text-on-surface-variant ml-1"
+                for="fullname"
+                >Nom complet</label
+              >
+              <div class="relative group">
+                <span
+                  class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors"
+                  >person</span
+                >
+                <input
+                  class="w-full pl-12 pr-4 py-4 bg-surface-container-high rounded-xl border-none focus:ring-0 focus:bg-surface-container-lowest transition-all duration-300 placeholder:text-outline/60"
+                  id="fullname"
+                  name="fullname"
+                  placeholder="Jean-Pierre Mbari"
+                  required=""
+                  type="text"
+                />
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Phone Number -->
+              <div class="space-y-2">
+                <label
+                  class="text-sm font-bold uppercase tracking-wider text-on-surface-variant ml-1"
+                  for="phone"
+                  >Téléphone</label
+                >
+                <div class="flex gap-2">
+                  <div
+                    class="flex items-center px-4 py-4 bg-surface-container-high rounded-xl text-on-surface font-bold border-none"
+                  >
+                    <span class="text-sm">+236</span>
+                  </div>
+                  <div class="relative flex-1 group">
+                    <span
+                      class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors"
+                      >call</span
+                    >
+                    <input
+                      class="w-full pl-12 pr-4 py-4 bg-surface-container-high rounded-xl border-none focus:ring-0 focus:bg-surface-container-lowest transition-all duration-300 placeholder:text-outline/60"
+                      id="phone"
+                      name="phone"
+                      placeholder="7X XX XX XX"
+                      required=""
+                      type="tel"
+                      maxlength="8"
+                      oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                    />
+                  </div>
+                </div>
+              </div>
+              <!-- PIN -->
+              <div class="space-y-2">
+                <label
+                  class="text-sm font-bold uppercase tracking-wider text-on-surface-variant ml-1"
+                  for="pin"
+                  >Code PIN (4 chiffres)</label
+                >
+                <div class="relative group">
+                  <span
+                    class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors"
+                    >lock</span
+                  >
+                  <input
+                    class="w-full pl-12 pr-4 py-4 bg-surface-container-high rounded-xl border-none focus:ring-0 focus:bg-surface-container-lowest transition-all duration-300 placeholder:text-outline/60 tracking-[0.5em]"
+                    id="pin"
+                    maxlength="4"
+                    name="pin"
+                    pattern="\d{4}"
+                    placeholder="••••"
+                    required=""
+                    type="password"
+                  />
+                </div>
+              </div>
+            </div>
+            <!-- Email (Optional) -->
+            <div class="space-y-2">
+              <label
+                class="text-sm font-bold uppercase tracking-wider text-on-surface-variant ml-1"
+                for="email"
+                >E-mail
+              </label>
+              <div class="relative group">
+                <span
+                  class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors"
+                  >mail</span
+                >
+                <input
+                  class="w-full pl-12 pr-4 py-4 bg-surface-container-high rounded-xl border-none focus:ring-0 focus:bg-surface-container-lowest transition-all duration-300 placeholder:text-outline/60"
+                  id="email"
+                  name="email"
+                  placeholder="nom@exemple.com"
+                  type="email"
+                />
+              </div>
+            </div>
+            <!-- Role Selector -->
+            <div class="space-y-3">
+              <label
+                class="text-sm font-bold uppercase tracking-wider text-on-surface-variant ml-1"
+                >Je suis un...</label
+              >
+              <div class="grid grid-cols-2 gap-4">
+                <label
+                  class="relative flex flex-col items-center justify-center p-4 bg-surface-container-high rounded-xl cursor-pointer hover:bg-surface-container-highest transition-colors group"
+                >
+                  <input
+                    checked=""
+                    class="peer absolute opacity-0"
+                    name="role"
+                    type="radio"
+                    value="fan"
+                  />
+                  <div
+                    class="peer-checked:bg-primary-fixed peer-checked:ring-1 peer-checked:ring-primary absolute inset-0 rounded-xl transition-all pointer-events-none"
+                  ></div>
+                  <span
+                    class="material-symbols-outlined relative z-10 mb-2 text-on-surface-variant peer-checked:text-on-primary-fixed"
+                    >person</span
+                  >
+                  <span
+                    class="text-xs font-bold relative z-10 text-on-surface-variant peer-checked:text-on-primary-fixed"
+                    >Fan</span
+                  >
+                </label>
+
+                <label
+                  class="relative flex flex-col items-center justify-center p-4 bg-surface-container-high rounded-xl cursor-pointer hover:bg-surface-container-highest transition-colors group"
+                >
+                  <input
+                    class="peer absolute opacity-0"
+                    name="role"
+                    type="radio"
+                    value="organizer"
+                  />
+                  <div
+                    class="peer-checked:bg-primary-fixed peer-checked:ring-1 peer-checked:ring-primary absolute inset-0 rounded-xl transition-all pointer-events-none"
+                  ></div>
+                  <span
+                    class="material-symbols-outlined relative z-10 mb-2 text-on-surface-variant peer-checked:text-on-primary-fixed"
+                    >business</span
+                  >
+                  <span
+                    class="text-xs font-bold relative z-10 text-on-surface-variant peer-checked:text-on-primary-fixed"
+                    >Organisateur</span
+                  >
+                </label>
+              </div>
+            </div>
+            <!-- CGU Checkbox -->
+            <div class="flex items-start gap-3 py-2">
+              <input
+                class="mt-1 w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary/20"
+                id="cgu"
+                name="cgu"
+                required=""
+                type="checkbox"
+              />
+              <label class="text-sm text-on-surface-variant" for="cgu">
+                J'accepte les
+                <a class="text-primary font-bold hover:underline" href="#"
+                  >Conditions Générales d'Utilisation</a
+                >
+                et la
+                <a class="text-primary font-bold hover:underline" href="#"
+                  >Politique de Confidentialité</a
+                >.
+              </label>
+            </div>
+            <!-- Submit Button -->
+            <button
+              class="w-full py-4 bg-gradient-to-r from-primary to-primary-container text-white font-bold rounded-full text-lg shadow-[0_12px_24px_-8px_rgba(0,80,44,0.3)] hover:shadow-[0_16px_32px_-8px_rgba(0,80,44,0.4)] click-bounce transition-all duration-300 flex items-center justify-center gap-2"
+              type="button"
+              onclick="doSignup()"
+            >
+              S'inscrire
+              <span class="material-symbols-outlined">arrow_forward</span>
+            </button>
+            <!-- Login Link -->
+            <p class="text-center text-on-surface-variant font-medium pt-4">
+              Déjà un compte ?
+              <a
+                class="text-primary font-bold hover:underline"
+                href="login.html"
+                >Se connecter</a
+              >
+            </p>
+          </form>
+          <!-- Payment Context Badge -->
+          <div
+            class="mt-12 p-6 bg-secondary-container/10 border border-secondary-container/20 rounded-xl flex items-center gap-4"
+          >
+            <div
+              class="w-12 h-12 bg-secondary-container rounded-full flex items-center justify-center flex-shrink-0"
+            >
+              <span
+                class="material-symbols-outlined text-on-secondary-container"
+                >payments</span
+              >
+            </div>
+            <div>
+              <h4 class="text-sm font-bold text-on-secondary-container">
+                Compatible Orange Money
+              </h4>
+              <p class="text-xs text-on-secondary-fixed-variant">
+                Achetez vos billets instantanément avec votre solde mobile.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <!-- Footer-like simple navigation for transactional page -->
+    <div class="fixed bottom-6 right-6 hidden md:block">
+      <div
+        class="bg-surface-container-lowest/80 backdrop-blur-lg px-6 py-3 rounded-full shadow-lg flex items-center gap-4 border border-outline-variant/10"
+      >
+        <span
+          class="text-[10px] font-bold text-outline uppercase tracking-widest"
+          >Aide &amp; Support</span
+        >
+        <div class="w-px h-4 bg-outline-variant/30"></div>
+        <button
+          class="text-xs font-bold text-on-surface-variant hover:text-primary transition-colors"
+        >
+          Besoin d'aide ?
+        </button>
+      </div>
+    </div>
+
+    <script src="bt-api.js"></script>
+    <script src="pwa.js"></script>
+    <script>
+      if (btAuth.isLogged()) {
+        var u = btAuth.getUser();
+        window.location.href = btDashRoute(u && u.role);
+      }
+
+      // 1. Ajouter dynamiquement le champ "Organisation" sous le choix du rôle
+      (function () {
+        var roleSection = document
+          .querySelector('input[name="role"]')
+          ?.closest("div.space-y-3");
+        if (roleSection && !document.getElementById("bt-org-wrap")) {
+          var orgWrap = document.createElement("div");
+          orgWrap.id = "bt-org-wrap";
+          orgWrap.style.display = "none"; // Caché par défaut (Fan)
+          orgWrap.style.marginTop = "16px";
+          orgWrap.innerHTML =
+            '<label class="text-xs font-bold uppercase tracking-widest text-outline ml-1">Nom de l\'organisation</label>' +
+            '<div class="relative mt-2"><input id="f-org" class="w-full pl-4 pr-4 py-4 bg-surface-container-high rounded-xl border-none focus:ring-2 focus:ring-primary/20 transition-all" placeholder="Ex: Soutien aux orphelins, Sango Corp..."></div>';
+
+          roleSection.after(orgWrap);
+        }
+
+        // 2. Écouter les clics sur "Fan" ou "Organisateur"
+        document
+          .querySelectorAll('input[name="role"]')
+          .forEach(function (input) {
+            input.addEventListener("change", function () {
+              var orgWrap = document.getElementById("bt-org-wrap");
+              if (this.value === "organizer") {
+                orgWrap.style.display = "block"; // On affiche le champ
+              } else {
+                orgWrap.style.display = "none"; // On cache le champ
+              }
+            });
+          });
+      })();
+
+      // 3. Empêcher la page de recharger quand on tape sur "Entrée"
+      var form = document.querySelector("form");
+      if (form) {
+        form.addEventListener("submit", function (e) {
+          e.preventDefault();
+          doSignup();
+        });
+      }
+
+      // 4. L'envoi des données à FastAPI
+      async function doSignup() {
+        const name = document.getElementById("fullname")?.value;
+        const phone = document.getElementById("phone")?.value.trim();
+        const pin = document.getElementById("pin")?.value;
+        const email = document.getElementById("email")?.value;
+        const roleEl = document.querySelector('input[name="role"]:checked');
+        const selectedRole = roleEl ? roleEl.value : "fan";
+        const cgu = document.getElementById("cgu")?.checked;
+
+        const orgName = document.getElementById("f-org")
+          ? document.getElementById("f-org").value.trim()
+          : "";
+
+        // 1. Vérification générale
+        if (!name || !phone || !pin || pin.length < 4 || !email) {
+          btToast(
+            "Veuillez remplir Nom, Téléphone, PIN (4 chiffres) et email ! ",
+            "error",
+          );
+          return;
+        }
+
+        // 2. VÉRIFICATION DU TÉLÉPHONE (Exactement 8 chiffres)
+        if (phone.length !== 8) {
+          btToast(
+            "Le numéro de téléphone doit comporter exactement 8 chiffres.",
+            "error",
+          );
+          return;
+        }
+
+        // 3. VÉRIFICATION DES PRÉFIXES (Opérateurs Centrafricains)
+        const allowedPrefixes = ["70", "72", "73", "74", "75", "76", "77"];
+        const phonePrefix = phone.substring(0, 2); // On prend les 2 premiers chiffres
+
+        if (!allowedPrefixes.includes(phonePrefix)) {
+          btToast(
+            "Le numéro doit commencer par 70, 72, 73, 74, 75, 76 ou 77.",
+            "error",
+          );
+          return;
+        }
+
+        // 4. Vérification pour les organisateurs et CGU
+        if (selectedRole === "organizer" && !orgName) {
+          btToast("Veuillez renseigner le nom de votre organisation", "error");
+          return;
+        }
+        if (!cgu) {
+          btToast("Veuillez accepter les conditions d'utilisation", "error");
+          return;
+        }
+
+        const btn =
+          document.querySelector('button[type="button"]') ||
+          document.querySelector("button.w-full");
+        const orig = btn.innerHTML;
+        btn.innerHTML = "Création en cours...";
+        btn.disabled = true;
+
+        // L'objet exact que ton main.py (UserRegister) attend !
+        const body = {
+          full_name: name,
+          phone_number: phone.startsWith("+236") ? phone : "+236" + phone,
+          pin_code: pin,
+          role: selectedRole,
+          email: email || "",
+          organization_name: orgName,
+        };
+
+        try {
+          const data = await btApi.post("/auth/register", body);
+          btToast("Compte créé avec succès !");
+
+          // On sauvegarde le token secret
+          btAuth.save(data.access_token, data.user);
+
+          // Redirection intelligente !
+          setTimeout(() => {
+            if (selectedRole === "organizer") {
+              window.location.href = "organisation_dashboard.html";
+            } else {
+              window.location.href = "user_dashboard.html";
+            }
+          }, 1000);
+        } catch (error) {
+          console.error(error);
+          btToast(error.message || "Erreur lors de l'inscription", "error");
+          btn.innerHTML = orig;
+          btn.disabled = false;
+        }
+      }
+    </script>
+  </body>
+</html>

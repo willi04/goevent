@@ -1,0 +1,1037 @@
+<!doctype html>
+<html class="light" lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+      name="viewport"
+    />
+    <title>GoEvent</title>
+    <link rel="icon" type="image/png" href="icons/favicon.png" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#00502c" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="GoEvent" />
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              background: "#f9f9f9",
+              primary: "#00502c",
+              "outline-variant": "#bec9be",
+              "on-primary-fixed-variant": "#00522d",
+              "error-container": "#ffdad6",
+              "surface-dim": "#dadada",
+              "on-background": "#1a1c1c",
+              "tertiary-container": "#bc002b",
+              "on-primary-fixed": "#00210f",
+              "on-tertiary": "#ffffff",
+              outline: "#6f7a70",
+              error: "#ba1a1a",
+              "on-surface-variant": "#3f4941",
+              "secondary-fixed": "#ffe08b",
+              "on-error": "#ffffff",
+              "primary-container": "#006b3c",
+              "surface-container": "#eeeeee",
+              surface: "#f9f9f9",
+              "inverse-on-surface": "#f1f1f1",
+              "inverse-primary": "#81d99f",
+              "on-error-container": "#93000a",
+              "surface-container-high": "#e8e8e8",
+              "surface-bright": "#f9f9f9",
+              "surface-container-lowest": "#ffffff",
+              "surface-container-highest": "#e2e2e2",
+              "surface-variant": "#e2e2e2",
+              "primary-fixed": "#9df6b9",
+              secondary: "#745b00",
+              "surface-container-low": "#f3f3f3",
+              "on-surface": "#1a1c1c",
+              "primary-fixed-dim": "#81d99f",
+              "on-tertiary-container": "#ffc9c8",
+              "on-secondary": "#ffffff",
+              "on-primary": "#ffffff",
+              "tertiary-fixed": "#ffdad9",
+              "inverse-surface": "#2f3131",
+              "surface-tint": "#046d3e",
+              "secondary-container": "#fecb00",
+              tertiary: "#8f001e",
+              "on-secondary-container": "#6e5700",
+              "secondary-fixed-dim": "#f1c100",
+              "on-primary-container": "#90e9ad",
+              "on-secondary-fixed": "#241a00",
+              "on-secondary-fixed-variant": "#584400",
+            },
+            borderRadius: {
+              DEFAULT: "0.25rem",
+              lg: "1rem",
+              xl: "1.5rem",
+              full: "9999px",
+            },
+            fontFamily: {
+              headline: ["Plus Jakarta Sans"],
+              body: ["Manrope"],
+              label: ["Manrope"],
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      .material-symbols-outlined {
+        font-variation-settings:
+          "FILL" 0,
+          "wght" 400,
+          "GRAD" 0,
+          "opsz" 24;
+        display: inline-block;
+        line-height: 1;
+      }
+      .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .hide-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+
+      .carousel-track {
+        display: flex;
+        gap: 24px;
+        transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      }
+      .carousel-card {
+        flex: 0 0 calc(33.333% - 16px);
+        background: #fff;
+        border-radius: 1rem;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        cursor: pointer;
+        transition:
+          transform 0.2s,
+          box-shadow 0.2s;
+      }
+      @media (max-width: 768px) {
+        .carousel-card {
+          flex: 0 0 calc(85% - 16px);
+        }
+      }
+      .cat-btn {
+        padding: 12px 24px;
+        border-radius: 9999px;
+        background: #f3f3f3;
+        color: #3f4941;
+        font-weight: 700;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-family: Manrope, sans-serif;
+        font-size: 0.9rem;
+        white-space: nowrap;
+      }
+      .cat-btn.active {
+        background: #9df6b9;
+        color: #00210f;
+      }
+    </style>
+  </head>
+  <body
+    data-page="accueil"
+    class="bg-background text-on-background font-body selection:bg-primary-fixed selection:text-on-primary-fixed flex flex-col min-h-screen"
+  >
+    <div
+      id="goevent-splash"
+      class="md: hidden inset-0 z-[9999] flex items-center justify-center bg-[#00502c] transition-opacity duration-700"
+    >
+      <div
+        id="splash-logo"
+        class="absolute opacity-0 scale-75 transition-all duration-700 ease-out flex flex-col items-center"
+      >
+        <img
+          src="icons/event.png"
+          class="w-24 h-24 mb-4 rounded-2xl shadow-lg"
+          alt="Logo"
+        />
+        <h2 class="text-2xl font-bold text-white tracking-[0.3em]">GOEVENT</h2>
+      </div>
+      <div
+        id="splash-text-wrapper"
+        class="transition-all duration-500 ease-in-out"
+      >
+        <h1
+          class="text-5xl md:text-6xl font-black text-white border-r-4 border-blue-500 pr-1 animate-pulse-cursor"
+        >
+          <span id="typewriter-text"></span
+          ><span
+            id="typewriter-dot"
+            class="text-blue-500 opacity-0 transition-opacity"
+            >.</span
+          >
+        </h1>
+      </div>
+    </div>
+    <style>
+      @keyframes blink {
+        0%,
+        100% {
+          border-color: transparent;
+        }
+        50% {
+          border-color: #3b82f6;
+        }
+      }
+      .animate-pulse-cursor {
+        animation: blink 0.8s step-end infinite;
+      }
+      .zoom-text {
+        transform: scale(1.25);
+      }
+      .hide-text {
+        opacity: 0;
+        transform: scale(0.8);
+      }
+    </style>
+    <div
+      class="md:hidden fixed top-0 left-0 right-0 h-[72px] bg-white/95 backdrop-blur border-b border-gray-100 z-[100] flex items-center justify-between px-6"
+    >
+      <a
+        href="index.html"
+        class="flex items-center gap-2 hover:opacity-80 transition-opacity"
+      >
+        <img
+          src="icons/event.png"
+          alt="Logo GoEvent"
+          class="w-10 h-10 rounded-xl object-cover shadow-sm"
+        />
+        <span
+          class="font-headline font-black text-2xl text-primary tracking-tight truncate"
+          >GoEvent</span
+        >
+      </a>
+      <button
+        onclick="toggleMobileMenu()"
+        class="p-2 -mr-2 text-gray-700 hover:text-primary transition-colors focus:outline-none"
+      >
+        <span class="material-symbols-outlined" style="font-size: 32px"
+          >menu</span
+        >
+      </button>
+    </div>
+
+    <div id="navbar" class="hidden md:block shrink-0 z-40"></div>
+
+    <div
+      id="mobile-menu"
+      class="fixed inset-0 bg-gray-900/60 z-[200] hidden opacity-0 transition-opacity duration-300"
+    >
+      <div class="absolute inset-0" onclick="toggleMobileMenu()"></div>
+      <div
+        id="mobile-drawer"
+        class="absolute right-0 top-0 bottom-0 w-[80%] max-w-xs bg-white shadow-2xl transform translate-x-full transition-transform duration-300 flex flex-col p-6"
+      >
+        <div
+          class="flex justify-between items-center mb-8 border-b border-gray-100 pb-4"
+        >
+          <span class="font-headline font-black text-xl text-primary"
+            >Menu</span
+          >
+          <button
+            onclick="toggleMobileMenu()"
+            class="p-2 text-gray-400 hover:text-red-500 transition-colors"
+          >
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <nav class="space-y-1 flex-1 overflow-y-auto">
+          <a
+            href="index.html"
+            class="flex items-center gap-3 p-4 bg-primary/10 rounded-2xl text-primary font-bold"
+            ><span class="material-symbols-outlined">home</span> Accueil</a
+          >
+          <a
+            href="event.html"
+            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
+            ><span class="material-symbols-outlined">stadium</span>
+            Événements</a
+          >
+          <a
+            href="follow.html"
+            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
+            ><span class="material-symbols-outlined">favorite</span> Follow</a
+          >
+          <a
+            href="partenaire.html"
+            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
+            ><span class="material-symbols-outlined">handshake</span>
+            Partenaires</a
+          >
+          <a
+            href="a_propos.html"
+            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
+            ><span class="material-symbols-outlined">info</span> À propos</a
+          >
+        </nav>
+
+        <div
+          id="mobile-auth-section"
+          class="mt-4 pt-6 border-t border-gray-100 space-y-3"
+        >
+          <a
+            href="login.html"
+            class="block w-full text-center text-primary font-bold py-3.5 rounded-xl border-2 border-primary hover:bg-primary/5 transition-all"
+            >Se connecter</a
+          >
+          <a
+            href="signup.html"
+            class="block w-full text-center bg-primary text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 active:scale-95 transition-all"
+            >S'inscrire</a
+          >
+        </div>
+      </div>
+    </div>
+
+    <main class="flex-1 pt-[72px] md:pt-20">
+      <div class="block md:hidden">
+        <section class="bg-[#03361e] pt-12 pb-24 px-6 relative">
+          <div
+            class="inline-flex items-center gap-2 bg-green-500/20 text-[#00d65b] border border-green-500/20 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest mb-6"
+          >
+            <span
+              class="w-1.5 h-1.5 rounded-full bg-[#00d65b] animate-pulse"
+            ></span>
+            Billetterie officielle RCA
+          </div>
+
+          <h1
+            class="text-[40px] font-black font-headline text-white leading-[1.05] mb-4 tracking-tight"
+          >
+            Vivez la <span class="text-[#00d65b]">culture</span
+            ><br />centrafricaine
+          </h1>
+
+          <p
+            class="text-gray-300 text-[13px] font-medium mb-8 leading-relaxed pr-4"
+          >
+            Achetez vos billets en ligne, payez via Orange Money. Sécurisé,
+            rapide et local.
+          </p>
+
+          <div class="flex items-center gap-3">
+            <button
+              onclick="window.location.href = 'event.html'"
+              class="flex-[3] bg-[#00d65b] text-gray-900 font-extrabold py-3.5 rounded-[14px] text-sm shadow-lg hover:brightness-110 active:scale-95 transition-all"
+            >
+              Découvrir les events
+            </button>
+            <button
+              onclick="window.location.href = 'user_dashboard.html'"
+              class="flex-[2] bg-white/5 border border-white/20 text-white font-extrabold py-3.5 rounded-[14px] text-sm hover:bg-white/10 active:scale-95 transition-all"
+            >
+              Mes billets
+            </button>
+          </div>
+        </section>
+
+        <section class="px-6 relative z-10 -mt-12 mb-8">
+          <div
+            class="bg-white p-2 rounded-2xl shadow-xl shadow-gray-200/50 flex items-center gap-2 mb-6"
+          >
+            <span class="material-symbols-outlined text-gray-400 pl-2 text-xl"
+              >search</span
+            >
+            <input
+              type="text"
+              id="mobile-search"
+              placeholder="Concert, festival, sport..."
+              class="w-full bg-transparent border-none focus:ring-0 text-sm text-gray-900 font-medium placeholder-gray-400"
+            />
+            <button
+              onclick="
+                const q = document.getElementById('mobile-search').value.trim();
+                if (q)
+                  window.location.href =
+                    'event.html?search=' + encodeURIComponent(q);
+              "
+              class="w-10 h-10 bg-gray-50 hover:bg-gray-100 rounded-xl flex items-center justify-center text-gray-500 transition-colors shrink-0"
+            >
+              <span class="material-symbols-outlined text-lg">filter_list</span>
+            </button>
+          </div>
+
+          <div
+            class="bg-white rounded-[20px] shadow-sm border border-gray-100 py-5 flex divide-x divide-gray-100"
+          >
+            <div class="flex-1 text-center px-1">
+              <p class="text-xl font-black text-gray-900 font-headline">500+</p>
+              <p class="text-[10px] text-gray-400 font-medium mt-0.5">
+                Événements
+              </p>
+            </div>
+            <div class="flex-1 text-center px-1">
+              <p class="text-xl font-black text-gray-900 font-headline">50K+</p>
+              <p class="text-[10px] text-gray-400 font-medium mt-0.5">
+                Billets vendus
+              </p>
+            </div>
+            <div class="flex-1 text-center px-1">
+              <p class="text-xl font-black text-gray-900 font-headline">200+</p>
+              <p class="text-[10px] text-gray-400 font-medium mt-0.5">
+                Artistes
+              </p>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <section
+        class="hidden md:flex relative min-h-[60vh] md:h-[670px] items-center px-6 md:px-16 overflow-hidden"
+      >
+        <div class="absolute inset-0 z-0">
+          <img
+            class="w-full h-full object-cover brightness-50"
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuBLgDK-_QkFA7YCZQAtSH6m1rbySJFBnLlXxmapfO0X-x4Im4k-29hluoN5MZidYlINb7qZU7f1T0vqBAB4KffEYNgaTVsggqeYMOSWTwjUmKMcs_SyJ6IgfsmyPzAFaT3gt-CTcIBeJ2Wv9m1VH9MTy1HS_IbFMxgvFDliXYMLsfB_Js0M08u9wjMaEII1GyjgHN0xKAR53UxQtBR5Dkagtbzl01pQqj_xKfn0ji2XT7VN9ZCuHFNgBDcrtWtRddBvnGq57cb8Mw"
+            alt="Concert Bangui"
+          />
+          <div
+            class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-90"
+          ></div>
+        </div>
+        <div class="relative z-10 max-w-4xl">
+          <h1
+            class="text-4xl md:text-7xl font-extrabold font-headline text-white leading-tight mb-6"
+          >
+            Vivez la <span class="text-primary-fixed">culture</span
+            ><br />centrafricaine
+          </h1>
+          <p
+            class="text-lg md:text-xl text-surface-container-lowest/90 font-medium mb-10 max-w-xl"
+          >
+            Achetez vos billets en ligne, payez via Orange Money. Sécurisé,
+            rapide et local.
+          </p>
+        </div>
+      </section>
+
+      <section
+        class="hidden md:block px-6 md:px-16 -mt-12 md:-mt-16 relative z-20"
+      >
+        <div
+          class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 max-w-7xl mx-auto"
+        >
+          <div
+            class="bg-surface-container-lowest p-6 md:p-8 rounded-xl shadow-sm flex items-center gap-6 group hover:-translate-y-1 transition-transform border border-gray-100"
+          >
+            <div
+              class="w-16 h-16 rounded-full bg-primary-fixed flex items-center justify-center shrink-0"
+            >
+              <span
+                class="material-symbols-outlined text-3xl text-on-primary-fixed"
+                >confirmation_number</span
+              >
+            </div>
+            <div>
+              <div
+                class="text-2xl md:text-3xl font-black font-headline text-primary"
+              >
+                500+
+              </div>
+              <div
+                class="text-on-surface-variant font-medium text-sm md:text-base"
+              >
+                Événements
+              </div>
+            </div>
+          </div>
+          <div
+            class="bg-surface-container-lowest p-6 md:p-8 rounded-xl shadow-sm flex items-center gap-6 group hover:-translate-y-1 transition-transform border border-gray-100"
+          >
+            <div
+              class="w-16 h-16 rounded-full bg-secondary-fixed flex items-center justify-center shrink-0"
+            >
+              <span
+                class="material-symbols-outlined text-3xl text-on-secondary-fixed"
+                style="font-variation-settings: &quot;FILL&quot; 1"
+                >sell</span
+              >
+            </div>
+            <div>
+              <div
+                class="text-2xl md:text-3xl font-black font-headline text-primary"
+              >
+                50K+
+              </div>
+              <div
+                class="text-on-surface-variant font-medium text-sm md:text-base"
+              >
+                Billets vendus
+              </div>
+            </div>
+          </div>
+          <div
+            class="bg-surface-container-lowest p-6 md:p-8 rounded-xl shadow-sm flex items-center gap-6 group hover:-translate-y-1 transition-transform border border-gray-100"
+          >
+            <div
+              class="w-16 h-16 rounded-full bg-tertiary-fixed flex items-center justify-center shrink-0"
+            >
+              <span
+                class="material-symbols-outlined text-3xl text-on-primary-fixed"
+                >group</span
+              >
+            </div>
+            <div>
+              <div
+                class="text-2xl md:text-3xl font-black font-headline text-primary"
+              >
+                200+
+              </div>
+              <div
+                class="text-on-surface-variant font-medium text-sm md:text-base"
+              >
+                Artistes & Organisateurs
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="p-2 pb-12 px-6 md:px-16 bg-surface-container-low/30 overflow-hidden"
+      >
+        <div class="flex justify-between items-end mb-12">
+          <div>
+            <span
+              class="text-primary font-bold uppercase tracking-widest text-xs"
+              >À ne pas manquer</span
+            >
+            <h2
+              class="text-3xl md:text-4xl font-extrabold font-headline mt-2 text-gray-900"
+            >
+              Événements en vedette
+            </h2>
+          </div>
+        </div>
+        <div class="-mx-6 md:mx-0" id="carousel-container">
+          <div class="carousel-track" id="ct"></div>
+        </div>
+      </section>
+
+      <section class="p-2 pb-16 px-6 md:px-16 max-w-[1600px] mx-auto">
+        <div class="flex justify-between items-center mb-10">
+          <h2
+            class="text-2xl md:text-3xl font-extrabold font-headline text-gray-900"
+          >
+            Événements à venir
+          </h2>
+          <span
+            id="ecount"
+            class="text-primary font-bold text-xs md:text-sm bg-primary-fixed px-4 py-1.5 rounded-full"
+            >Chargement...</span
+          >
+        </div>
+        <div
+          id="egrid"
+          class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8"
+        ></div>
+        <div
+          id="eempty"
+          class="hidden text-center py-20 bg-gray-50 rounded-3xl border border-gray-100"
+        >
+          <span
+            class="material-symbols-outlined text-6xl text-outline block mb-4"
+            >event_busy</span
+          >
+          <p class="text-on-surface-variant text-lg font-medium">
+            Aucun événement trouvé.
+          </p>
+        </div>
+      </section>
+
+      <section
+        class="py-20 md:py-24 px-6 md:px-16 text-center border-t border-gray-100"
+      >
+        <h2
+          class="text-3xl md:text-4xl font-extrabold font-headline mb-16 text-gray-900"
+        >
+          Comment ça marche ?
+        </h2>
+        <div
+          class="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-16 relative max-w-6xl mx-auto"
+        >
+          <div
+            class="hidden md:block absolute top-12 left-1/4 right-1/4 h-0.5 border-t-2 border-dashed border-outline-variant/30"
+          ></div>
+          <div class="relative z-10">
+            <div
+              class="w-20 h-20 md:w-24 md:h-24 rounded-full bg-primary-fixed mx-auto flex items-center justify-center mb-6 shadow-xl shadow-primary/10"
+            >
+              <span
+                class="material-symbols-outlined text-4xl text-on-primary-fixed"
+                >search</span
+              >
+            </div>
+            <h3 class="text-xl font-bold font-headline mb-3 text-gray-900">
+              Trouvez
+            </h3>
+            <p
+              class="text-on-surface-variant text-sm md:text-base max-w-xs mx-auto leading-relaxed"
+            >
+              Explorez les meilleurs événements culturels et sportifs de la
+              capitale.
+            </p>
+          </div>
+          <div class="relative z-10">
+            <div
+              class="w-20 h-20 md:w-24 md:h-24 rounded-full bg-primary-fixed mx-auto flex items-center justify-center mb-6 shadow-xl shadow-primary/10"
+            >
+              <span
+                class="material-symbols-outlined text-4xl text-on-primary-fixed"
+                >payments</span
+              >
+            </div>
+            <h3 class="text-xl font-bold font-headline mb-3 text-gray-900">
+              Payez
+            </h3>
+            <p
+              class="text-on-surface-variant text-sm md:text-base max-w-xs mx-auto leading-relaxed"
+            >
+              Utilisez Orange Money pour un paiement instantané et sécurisé.
+            </p>
+          </div>
+          <div class="relative z-10">
+            <div
+              class="w-20 h-20 md:w-24 md:h-24 rounded-full bg-primary-fixed mx-auto flex items-center justify-center mb-6 shadow-xl shadow-primary/10"
+            >
+              <span
+                class="material-symbols-outlined text-4xl text-on-primary-fixed"
+                >qr_code_2</span
+              >
+            </div>
+            <h3 class="text-xl font-bold font-headline mb-3 text-gray-900">
+              Recevez
+            </h3>
+            <p
+              class="text-on-surface-variant text-sm md:text-base max-w-xs mx-auto leading-relaxed"
+            >
+              Votre billet numérique avec QR Code est envoyé par SMS et e-mail.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="mx-6 md:mx-16 my-16 bg-primary rounded-[2rem] md:rounded-[3rem] overflow-hidden relative"
+      >
+        <div class="absolute inset-0 z-0 opacity-20">
+          <img
+            class="w-full h-full object-cover"
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuB8sb6fK1TujAIg6Rjb_QIBMLa93vQHGZVDxAVny7Fdaj-kJqPjHyTG08Ab5yWkeKEuK4bTMn8hSUlt7GUCgjsh6ZOhx17cVL_SxT2bm2QKiTBAYblUD7EiNfQorFLlvPfWelgjD5CMriLZ6WOwb_z7TddmaOPq1dQJAQUyutadTrrLG0OZXwKiNY_nKynL9Flmf4D6imUCat8fKOW93A69n1k7_AEdxDYpXSeXgkTwCiUCwUtNQhW7sxAjrRcI6jIyvdDEaiKZfQ"
+            alt=""
+          />
+        </div>
+        <div
+          class="relative z-10 p-8 md:p-20 flex flex-col md:flex-row items-center justify-between gap-12"
+        >
+          <div class="max-w-2xl text-center md:text-left">
+            <h2
+              class="text-3xl md:text-5xl font-black font-headline text-white mb-6 leading-tight"
+            >
+              Vous êtes artiste ou organisateur ?
+            </h2>
+            <p class="text-base md:text-lg text-primary-fixed mb-8">
+              Propulsez vos événements avec la plateforme numéro 1 en République
+              Centrafricaine.
+            </p>
+            <a
+              href="signup.html"
+              class="bg-secondary-container text-on-secondary-container px-10 py-5 rounded-full font-black font-headline text-lg shadow-2xl hover:scale-105 active:scale-95 transition-all inline-block w-full md:w-auto"
+              >Créer un événement</a
+            >
+          </div>
+          <div class="w-full max-w-md hidden lg:block">
+            <div
+              class="bg-white/10 backdrop-blur-xl p-8 rounded-2xl border border-white/10"
+            >
+              <div class="flex items-center gap-4 mb-6">
+                <div class="w-12 h-12 rounded-full bg-primary-container"></div>
+                <div class="flex-1 h-3 bg-white/20 rounded-full"></div>
+              </div>
+              <div class="space-y-4">
+                <div class="h-4 bg-white/10 rounded-full w-full"></div>
+                <div class="h-4 bg-white/10 rounded-full w-3/4"></div>
+                <div class="h-24 bg-primary-fixed/20 rounded-xl w-full"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div id="footer"></div>
+    <div id="footer"></div>
+
+    <script src="bt-api.js"></script>
+    <script>
+      // 0. Style Netflix Infini (3 événements sur desktop)
+      const netflixStyle = document.createElement("style");
+      netflixStyle.innerHTML = `
+        .netflix-card { flex: 0 0 85%; scroll-snap-align: start; transition: transform 0.3s; position: relative; cursor: pointer; }
+        @media(min-width: 640px) { .netflix-card { flex: 0 0 calc(50% - 10px); } }
+        @media(min-width: 1024px) { .netflix-card { flex: 0 0 calc(33.333% - 14px); } }
+        .netflix-card:hover { transform: scale(1.03); z-index: 10; }
+        .netflix-track-inner { display: flex; gap: 20px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 20px; scroll-behavior: smooth; }
+        .netflix-track-inner::-webkit-scrollbar { display: none; }
+      `;
+      document.head.appendChild(netflixStyle);
+
+      // 1. Navbar et Menu Mobile
+      if (typeof btNavbar === "function") {
+        document.getElementById("navbar").innerHTML = btNavbar("accueil");
+      }
+
+      function toggleMobileMenu() {
+        const menu = document.getElementById("mobile-menu");
+        const drawer = document.getElementById("mobile-drawer");
+        if (menu.classList.contains("hidden")) {
+          menu.classList.remove("hidden");
+          setTimeout(() => {
+            menu.classList.remove("opacity-0");
+            drawer.classList.remove("translate-x-full");
+          }, 10);
+        } else {
+          menu.classList.add("opacity-0");
+          drawer.classList.add("translate-x-full");
+          setTimeout(() => {
+            menu.classList.add("hidden");
+          }, 300);
+        }
+      }
+      function renderMobileAuth() {
+        const authContainer = document.getElementById("mobile-auth-section");
+        if (!authContainer) return;
+
+        if (btAuth.isLogged()) {
+          const user = btAuth.getUser();
+
+          // On récupère le nom : on essaie 'full_name', sinon 'name', sinon 'username'
+          const affichageNom =
+            user.full_name || user.name || user.username || "Membre GoEvent";
+
+          authContainer.innerHTML = `
+            <div class="bg-primary/5 p-5 rounded-3xl mb-4 border border-primary/10">
+                <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Session active</p>
+                <p class="text-xl font-black text-gray-900 truncate">${affichageNom}</p>
+            </div>
+            
+            <a href="${btDashRoute(user.role)}" class="flex items-center justify-center gap-2 w-full py-4 rounded-2xl bg-primary text-white font-black shadow-lg shadow-green-900/20 active:scale-95 transition-transform">
+                <span class="material-symbols-outlined">grid_view</span>
+                Accéder à mon espace
+            </a>
+            
+            <button onclick="btAuth.logout(); window.location.reload();" class="mt-3 flex items-center justify-center gap-2 w-full py-4 rounded-2xl text-red-600 bg-red-50 font-bold active:scale-95 transition-all hover:bg-red-100">
+                <span class="material-symbols-outlined text-sm">power_settings_new</span>
+                Déconnexion
+            </button>
+        `;
+        }
+      }
+
+      // NOUVEAU : On s'assure d'exécuter cette vérification dès que la page s'ouvre !
+      document.addEventListener("DOMContentLoaded", renderMobileAuth);
+
+      // 2. MOTEUR INFINI PARFAIT (Sans aucun va-et-vient)
+      let carouselTimer = null;
+
+      // Fonction pour les flèches manuelles
+      window.scrollNetflix = function (direction) {
+        const track = document.getElementById("netflix-track-inner");
+        if (!track) return;
+        const cardWidth = track.querySelector(".netflix-card").clientWidth + 20;
+        track.scrollBy({ left: direction * cardWidth, behavior: "smooth" });
+        resetTimer();
+      };
+
+      // Fonction automatique de boucle infinie
+      const autoSlide = () => {
+        const track = document.getElementById("netflix-track-inner");
+        // S'il n'y a pas assez de cartes pour faire un joli carrousel, on ne fait rien
+        if (!track || track.children.length < 4) return;
+
+        const firstCard = track.firstElementChild;
+        const cardWidth = firstCard.clientWidth + 20; // Largeur de la carte + l'espace (gap)
+
+        // On avance doucement d'une case
+        track.scrollBy({ left: cardWidth, behavior: "smooth" });
+
+        // LE SECRET DE LA BOUCLE INFINIE :
+        // 400ms après (quand l'animation est finie), on prend la carte de gauche et on la remet à droite
+        setTimeout(() => {
+          track.style.scrollBehavior = "auto"; // On coupe l'animation temporairement
+          track.style.scrollSnapType = "none";
+
+          track.appendChild(firstCard); // La première carte passe à la fin
+          track.scrollLeft -= cardWidth; // On recule la vue pour que l'utilisateur ne voie pas le saut
+
+          // On réactive les animations
+          requestAnimationFrame(() => {
+            track.style.scrollBehavior = "smooth";
+            track.style.scrollSnapType = "x mandatory";
+          });
+        }, 400);
+      };
+
+      function resetTimer() {
+        if (carouselTimer) clearInterval(carouselTimer);
+        carouselTimer = setInterval(autoSlide, 5000); // 1.2 seconde
+      }
+
+      function startAutoCarousel() {
+        resetTimer();
+        const wrapper = document.getElementById("netflix-wrapper");
+        if (wrapper) {
+          // Pause si l'utilisateur met la souris dessus
+          wrapper.onmouseenter = () => clearInterval(carouselTimer);
+          wrapper.onmouseleave = () => resetTimer();
+          // Pause sur mobile
+          wrapper.ontouchstart = () => clearInterval(carouselTimer);
+          wrapper.ontouchend = () => resetTimer();
+        }
+      }
+
+      // 3. Chargement et Logique d'affichage
+      async function loadPublicEvents(category = "") {
+        const grid = document.getElementById("egrid");
+        const countEl = document.getElementById("ecount");
+        const emptyState = document.getElementById("eempty");
+        const carouselTrack = document.getElementById("ct");
+
+        try {
+          // 1. On récupère les événements (jusqu'à 50 pour être large)
+          const response = await btApi.get("/events?limit=50");
+          let allEvents =
+            response.events || (Array.isArray(response) ? response : []);
+
+          if (category && category !== "") {
+            allEvents = allEvents.filter((e) => e.category === category);
+          }
+
+          if (!grid) return;
+
+          if (allEvents.length === 0) {
+            grid.innerHTML = "";
+            if (emptyState) emptyState.classList.remove("hidden");
+            if (carouselTrack) carouselTrack.innerHTML = "";
+            if (countEl) countEl.textContent = "0 événement";
+            return;
+          }
+
+          if (emptyState) emptyState.classList.add("hidden");
+
+          // --- LOGIQUE DE SÉPARATION ---
+
+          // A. VEDETTE (Sponsors/Pub) : On garde les 6 plus récents pour le carrousel
+          const featuredEvents = allEvents.slice(0, 6);
+
+          // B. À VENIR : On affiche les 8 événements les plus proches dans le temps
+          // On trie TOUTE la liste par date, puis on prend les 8 premiers
+          let upcomingEvents = [...allEvents]
+            .sort((a, b) => new Date(a.event_date) - new Date(b.event_date))
+            .slice(0, 8);
+
+          // MISE À JOUR DU COMPTEUR (Seulement pour la grille du bas)
+          if (countEl) {
+            countEl.textContent = `${upcomingEvents.length} événement${upcomingEvents.length > 1 ? "s" : ""}`;
+          }
+
+          // --- AFFICHAGE DE LA GRILLE ---
+          grid.innerHTML = upcomingEvents
+            .map((event) => renderEventCard(event))
+            .join("");
+
+          // AJOUT DU BOUTON PERMANENT "DÉCOUVREZ PLUS"
+          const btnContainer = document.createElement("div");
+          btnContainer.className = "col-span-full flex justify-center mt-12";
+          btnContainer.innerHTML = `
+            <button onclick="window.location.href='event.html'" class="px-8 py-4 rounded-2xl bg-white border-2 border-primary text-primary font-bold hover:bg-primary hover:text-white transition-all duration-300 shadow-sm flex items-center gap-2 group">
+                Découvrez plus d'événements
+                <span class="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>
+            </button>
+          `;
+          grid.appendChild(btnContainer);
+
+          // --- AFFICHAGE DU CARROUSEL VEDETTE (Sponsors) ---
+          if (carouselTrack && category === "" && featuredEvents.length > 0) {
+            if (featuredEvents.length > 3) {
+              carouselTrack.innerHTML = `
+                      <div id="netflix-wrapper" class="relative group w-full">
+                          <button onclick="scrollNetflix(-1)" class="absolute left-0 top-0 bottom-0 z-20 bg-black/40 hover:bg-black/70 text-white w-10 md:w-14 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all rounded-l-2xl">
+                              <span class="material-symbols-outlined text-3xl">chevron_left</span>
+                          </button>
+                          <div id="netflix-track-inner" class="netflix-track-inner px-6 md:px-0">
+                              ${featuredEvents.map((event) => renderNetflixCard(event)).join("")}
+                          </div>
+                          <button onclick="scrollNetflix(1)" class="absolute right-0 top-0 bottom-0 z-20 bg-black/40 hover:bg-black/70 text-white w-10 md:w-14 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all rounded-r-2xl">
+                              <span class="material-symbols-outlined text-3xl">chevron_right</span>
+                          </button>
+                      </div>
+                  `;
+              startAutoCarousel();
+            } else {
+              carouselTrack.innerHTML = `
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        ${featuredEvents.map((event) => renderNetflixCard(event, false)).join("")}
+                    </div>`;
+            }
+          }
+        } catch (error) {
+          console.error("Erreur:", error);
+        }
+      }
+
+      // Fonction pour dessiner une carte dans la grille
+      function renderEventCard(event) {
+        const d = new Date(event.event_date);
+        const dateStr = !isNaN(d)
+          ? d.toLocaleDateString("fr-FR", {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            })
+          : "Bientôt";
+        const priceAffichage =
+          event.price > 0
+            ? event.price.toLocaleString("fr-FR") + " FCFA"
+            : "Gratuit";
+        const cat = event.category || "Événement";
+
+        return `
+            <div class="bg-white rounded-[1.5rem] p-3 shadow-sm border border-gray-100 hover:shadow-lg hover:border-primary/30 transition-all duration-300 cursor-pointer group flex flex-col" onclick="window.location.href='event_detail.html?id=${event.id}'">
+                <div class="relative h-44 rounded-2xl overflow-hidden mb-4 bg-gray-100 shrink-0">
+                    <img src="${event.cover_image_url || "https://via.placeholder.com/400x300?text=GoEvent"}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">
+                    <div class="absolute top-3 left-3 bg-white/95 backdrop-blur px-3 py-1.5 rounded-lg text-[10px] font-black uppercase text-primary tracking-wider shadow-sm">
+                        ${cat}
+                    </div>
+                </div>
+                <div class="px-2 flex flex-col flex-grow">
+                    <h3 class="font-headline font-extrabold text-gray-900 text-lg line-clamp-2 mb-2 leading-tight group-hover:text-primary transition-colors">${event.title}</h3>
+                    <p class="text-xs text-gray-500 flex items-center gap-1.5 mb-4 font-medium mt-auto">
+                        <span class="material-symbols-outlined text-[15px]">calendar_today</span> ${dateStr}
+                    </p>
+                    <div class="flex items-center justify-between pt-3 border-t border-gray-100">
+                        <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Dès</span>
+                        <span class="font-black text-primary text-base">${priceAffichage}</span>
+                    </div>
+                </div>
+            </div>
+          `;
+      }
+
+      // Fonction helper pour dessiner une carte standard (Événements à venir)
+      function renderEventCard(event) {
+        const d = new Date(event.event_date);
+        const dateStr = !isNaN(d)
+          ? d.toLocaleDateString("fr-FR", {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            })
+          : "Bientôt";
+        const priceAffichage =
+          event.price > 0
+            ? event.price.toLocaleString("fr-FR") + " FCFA"
+            : "Gratuit";
+        const vraieCategorie = event.category ? event.category : "Événement";
+
+        return `
+            <div class="bg-white rounded-[1.5rem] p-3 shadow-sm border border-gray-100 hover:shadow-lg hover:border-primary/30 transition-all duration-300 cursor-pointer group flex flex-col" onclick="window.location.href='event_detail.html?id=${event.id}'">
+                <div class="relative h-44 rounded-2xl overflow-hidden mb-4 bg-gray-100 shrink-0">
+                    <img src="${event.cover_image_url || "https://via.placeholder.com/400x300?text=GoEvent"}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">
+                    <div class="absolute top-3 left-3 bg-white/95 backdrop-blur px-3 py-1.5 rounded-lg text-[10px] font-black uppercase text-primary tracking-wider shadow-sm">
+                        ${vraieCategorie}
+                    </div>
+                </div>
+                <div class="px-2 flex flex-col flex-grow">
+                    <h3 class="font-headline font-extrabold text-gray-900 text-lg line-clamp-2 mb-2 leading-tight group-hover:text-primary transition-colors">${event.title}</h3>
+                    <p class="text-xs text-gray-500 flex items-center gap-1.5 mb-4 font-medium mt-auto">
+                        <span class="material-symbols-outlined text-[15px]">calendar_today</span> ${dateStr}
+                    </p>
+                    <div class="flex items-center justify-between pt-3 border-t border-gray-100">
+                        <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">À partir de</span>
+                        <span class="font-black text-primary text-base">${priceAffichage}</span>
+                    </div>
+                </div>
+            </div>
+          `;
+      }
+      // Construction de la carte (Avec vraie catégorie dynamique !)
+      function renderNetflixCard(event, isCarousel = true) {
+        const d = new Date(event.event_date);
+        const dateStr = !isNaN(d)
+          ? d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })
+          : "Bientôt";
+        const cardClass = isCarousel ? "netflix-card" : "w-full";
+
+        // ICI : On récupère vraiment la catégorie de l'événement depuis la base de données
+        const vraieCategorie = event.category ? event.category : "Événement";
+
+        return `
+            <div class="${cardClass}" onclick="window.location.href='event_detail.html?id=${event.id}'">
+                <div class="relative h-56 md:h-64 rounded-2xl overflow-hidden shadow-lg bg-gray-900 border border-gray-800">
+                    <img src="${event.cover_image_url || "default-event.jpg"}" class="w-full h-full object-cover opacity-80 transition-opacity duration-300 hover:opacity-100">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-transparent"></div>
+                    
+                    <div class="absolute top-3 right-3 bg-secondary-container text-on-secondary-container text-[9px] font-black uppercase px-2 py-1 rounded shadow-md">
+                        Sponsorisé
+                    </div>
+                    
+                    <div class="absolute bottom-4 left-4 right-4">
+                        <h3 class="text-white font-extrabold text-base md:text-lg line-clamp-1 leading-tight">${event.title}</h3>
+                        <p class="text-primary-fixed font-bold text-[10px] uppercase mt-1">
+                            ${vraieCategorie} • ${dateStr}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        `;
+      }
+
+      // 4. Boutons de tri par catégories
+      document.querySelectorAll(".cat-btn").forEach((btn) => {
+        btn.addEventListener("click", async function () {
+          document
+            .querySelectorAll(".cat-btn")
+            .forEach((b) => b.classList.remove("active"));
+          this.classList.add("active");
+          const grid = document.getElementById("egrid");
+          if (grid) grid.style.opacity = "0.3";
+          await loadPublicEvents(this.getAttribute("data-cat"));
+          if (grid) grid.style.opacity = "1";
+        });
+      });
+
+      // Lancement immédiat
+      window.addEventListener("DOMContentLoaded", () => loadPublicEvents(""));
+
+      function doSearch() {
+        const query = document.getElementById("si").value.trim();
+        if (query)
+          window.location.href = `event.html?search=${encodeURIComponent(query)}`;
+      }
+      document.getElementById("footer").innerHTML = btFooter();
+    </script>
+    <script src="pwa.js"></script>
+  </body>
+</html>

@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="fr" class="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+      name="viewport"
+    />
+    <title>GoEvent</title>
+    <link rel="icon" type="image/png" href="icons/favicon.png" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#00502c" />
+
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              background: "#f9f9f9",
+              primary: "#00502c",
+              "outline-variant": "#bec9be",
+              "on-primary-fixed-variant": "#00522d",
+              outline: "#6f7a70",
+              error: "#ba1a1a",
+              "on-surface-variant": "#3f4941",
+              "secondary-fixed": "#ffe08b",
+              "primary-container": "#006b3c",
+              "surface-container": "#eeeeee",
+              surface: "#f9f9f9",
+              "surface-container-high": "#e8e8e8",
+              "surface-container-lowest": "#ffffff",
+              "surface-container-highest": "#e2e2e2",
+              "surface-variant": "#e2e2e2",
+              "primary-fixed": "#9df6b9",
+              secondary: "#745b00",
+              "surface-container-low": "#f3f3f3",
+              "on-surface": "#1a1c1c",
+              "primary-fixed-dim": "#81d99f",
+              "on-secondary": "#ffffff",
+              "on-primary": "#ffffff",
+              "inverse-surface": "#2f3131",
+              "secondary-container": "#fecb00",
+              tertiary: "#8f001e",
+              "on-secondary-container": "#6e5700",
+            },
+            borderRadius: {
+              DEFAULT: "0.25rem",
+              lg: "1rem",
+              xl: "1.5rem",
+              full: "9999px",
+            },
+            fontFamily: {
+              headline: ["Plus Jakarta Sans"],
+              body: ["Manrope"],
+              label: ["Manrope"],
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      .material-symbols-outlined {
+        font-variation-settings:
+          "FILL" 0,
+          "wght" 400,
+          "GRAD" 0,
+          "opsz" 24;
+      }
+      .spinner {
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: #fff;
+        width: 24px;
+        height: 24px;
+        animation: spin 1s ease-in-out infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+
+  <body
+    class="bg-surface font-body text-[#1a1c1c] flex flex-col min-h-screen overflow-x-hidden"
+  >
+    <div
+      class="md:hidden fixed top-0 left-0 right-0 h-[72px] bg-white/95 backdrop-blur border-b border-gray-100 z-[100] flex items-center justify-between px-6"
+    >
+      <a
+        href="index.html"
+        class="flex items-center gap-2 hover:opacity-80 transition-opacity"
+      >
+        <img
+          src="icons/event.png"
+          alt="Logo GoEvent"
+          class="w-10 h-10 rounded-3xl object-cover shadow-sm"
+        />
+        <span
+          class="font-headline font-black text-2xl text-primary tracking-tight truncate"
+          >GoEvent</span
+        >
+      </a>
+      <button
+        onclick="toggleMobileMenu()"
+        class="p-2 -mr-2 text-gray-700 hover:text-primary transition-colors focus:outline-none"
+      >
+        <span class="material-symbols-outlined" style="font-size: 32px"
+          >menu</span
+        >
+      </button>
+    </div>
+
+    <header
+      class="hidden md:flex fixed top-0 w-full bg-white border-b border-gray-100 py-4 px-8 z-[999] shadow-sm"
+    >
+      <div class="max-w-5xl mx-auto w-full flex justify-between items-center">
+        <a
+          href="index.html"
+          class="flex items-center gap-2 hover:opacity-80 transition-opacity"
+        >
+          <img
+            src="icons/event.png"
+            alt="Logo GoEvent"
+            class="w-10 h-10 rounded-3xl object-cover shadow-sm"
+          />
+          <span
+            class="font-headline font-black text-2xl text-primary tracking-tight truncate"
+            >GoEvent</span
+          >
+        </a>
+        <div
+          class="flex items-center gap-2 text-primary font-bold uppercase tracking-widest text-sm bg-primary/5 px-4 py-2 rounded-full"
+        >
+          <span class="material-symbols-outlined text-sm">lock</span> Paiement
+          sécurisé
+        </div>
+      </div>
+    </header>
+
+    <div
+      id="mobile-menu"
+      class="fixed inset-0 bg-gray-900/60 z-[200] hidden opacity-0 transition-opacity duration-300"
+    >
+      <div class="absolute inset-0" onclick="toggleMobileMenu()"></div>
+      <div
+        id="mobile-drawer"
+        class="absolute right-0 top-0 bottom-0 w-[80%] max-w-xs bg-white shadow-2xl transform translate-x-full transition-transform duration-300 flex flex-col p-6"
+      >
+        <div
+          class="flex justify-between items-center mb-8 border-b border-gray-100 pb-4"
+        >
+          <span class="font-headline font-black text-xl text-primary"
+            >Menu</span
+          >
+          <button
+            onclick="toggleMobileMenu()"
+            class="p-2 text-gray-400 hover:text-red-500 transition-colors"
+          >
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <nav class="space-y-1 flex-1 overflow-y-auto">
+          <a
+            href="index.html"
+            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
+            ><span class="material-symbols-outlined">home</span> Accueil</a
+          >
+          <a
+            href="event.html"
+            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
+            ><span class="material-symbols-outlined">stadium</span>
+            Événements</a
+          >
+          <a
+            href="follow.html"
+            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
+            ><span class="material-symbols-outlined">favorite</span> Follow</a
+          >
+          <a
+            href="partenaire.html"
+            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
+            ><span class="material-symbols-outlined">handshake</span>
+            Partenaires</a
+          >
+          <a
+            href="a_propos.html"
+            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
+            ><span class="material-symbols-outlined">info</span> À propos</a
+          >
+        </nav>
+        <div class="mt-4 pt-6 border-t border-gray-100 space-y-3">
+          <a
+            href="login.html"
+            class="block w-full text-center text-primary font-bold py-3.5 rounded-xl border-2 border-primary hover:bg-primary/5 transition-all"
+            >Se connecter</a
+          >
+          <a
+            href="signup.html"
+            class="block w-full text-center bg-primary text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 active:scale-95 transition-all"
+            >S'inscrire</a
+          >
+        </div>
+      </div>
+    </div>
+
+    <main
+      class="flex-1 max-w-5xl mx-auto w-full px-4 pt-[96px] md:pt-[120px] pb-16"
+    >
+      <div class="mb-8 md:mb-12">
+        <button
+          onclick="history.back()"
+          class="flex items-center gap-2 text-gray-500 hover:text-primary font-bold text-sm transition-colors mb-4"
+        >
+          <span class="material-symbols-outlined text-lg">arrow_back</span>
+          Retour
+        </button>
+        <div class="flex items-center gap-3">
+          <h1
+            class="text-3xl md:text-5xl font-black font-headline tracking-tight text-gray-900"
+          >
+            Finalisez votre achat
+          </h1>
+          <span
+            class="md:hidden material-symbols-outlined text-primary text-2xl"
+            style="font-variation-settings: &quot;FILL&quot; 1"
+            >lock</span
+          >
+        </div>
+      </div>
+
+      <div class="flex flex-col-reverse md:flex-row gap-8 lg:gap-16">
+        <div class="flex-1">
+          <form id="payment-form" class="space-y-8">
+            <div
+              class="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-gray-100"
+            >
+              <h2
+                class="font-headline font-extrabold text-lg mb-6 flex items-center gap-2"
+              >
+                <span
+                  class="bg-primary/10 text-primary w-8 h-8 rounded-full flex items-center justify-center text-sm"
+                  >1</span
+                >
+                Vos informations
+              </h2>
+              <div class="space-y-5">
+                <div>
+                  <label
+                    class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2"
+                    >Nom complet</label
+                  >
+                  <input
+                    type="text"
+                    id="buyer-name"
+                    required
+                    class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-colors font-medium text-gray-900"
+                  />
+                </div>
+                <div>
+                  <label
+                    class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2"
+                    >Adresse Email</label
+                  >
+                  <input
+                    type="email"
+                    id="buyer-email"
+                    class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-colors font-medium text-gray-900"
+                    placeholder="Pour recevoir le reçu"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-gray-100 relative overflow-hidden"
+            >
+              <h2
+                class="font-headline font-extrabold text-lg mb-6 flex items-center gap-2 relative z-10"
+              >
+                <span
+                  class="bg-primary/10 text-primary w-8 h-8 rounded-full flex items-center justify-center text-sm"
+                  >2</span
+                >
+                Paiement Mobile
+              </h2>
+
+              <div
+                class="mb-6 p-4 border-2 border-orange-500 bg-orange-50 rounded-2xl flex items-center gap-4 cursor-pointer relative z-10"
+              >
+                <div
+                  class="w-4 h-4 rounded-full bg-orange-500 ring-4 ring-orange-200"
+                ></div>
+                <img
+                  src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/Orange_logo.svg/1200px-Orange_logo.svg.png"
+                  class="h-6 object-contain"
+                  alt="Orange Money"
+                />
+                <span class="font-bold text-gray-900 ml-auto text-sm"
+                  >Orange Money RCA</span
+                >
+              </div>
+
+              <div class="relative z-10">
+                <label
+                  class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2"
+                  >Numéro de téléphone payeur</label
+                >
+                <div class="flex">
+                  <span
+                    class="inline-flex items-center px-4 rounded-l-xl border border-r-0 border-gray-200 bg-gray-100 text-gray-500 font-bold text-sm select-none"
+                  >
+                    +236
+                  </span>
+                  <input
+                    type="tel"
+                    id="buyer-phone"
+                    required
+                    maxlength="8"
+                    placeholder="7X XX XX XX"
+                    oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                    class="flex-1 w-full bg-white border border-gray-200 rounded-r-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-primary transition-colors font-bold text-lg tracking-wider text-gray-900"
+                  />
+                </div>
+                <p class="text-[11px] text-gray-400 font-medium mt-2">
+                  Vous recevrez un code USSD sur ce numéro pour valider la
+                  transaction.
+                </p>
+              </div>
+
+              <div
+                class="absolute -bottom-10 -right-10 w-40 h-40 bg-orange-500/5 rounded-full blur-2xl z-0"
+              ></div>
+            </div>
+
+            <button
+              type="button"
+              onclick="validerPaiement(event)"
+              id="btn-pay"
+              disabled
+              class="w-full bg-gray-400 text-white py-4 md:py-5 rounded-2xl font-black text-lg opacity-50 cursor-not-allowed transition-all shadow-sm flex items-center justify-center gap-3"
+            >
+              <span id="btn-text"
+                >Payer <span id="btn-price-display">...</span> FCFA</span
+              >
+              <span class="material-symbols-outlined">lock</span>
+            </button>
+            <div
+              class="flex items-center justify-center gap-2 text-gray-400 mt-4"
+            >
+              <span class="material-symbols-outlined text-sm"
+                >verified_user</span
+              >
+              <p class="text-[10px] font-bold uppercase tracking-widest">
+                Transaction 100% chiffrée
+              </p>
+            </div>
+          </form>
+        </div>
+
+        <div class="md:w-80 lg:w-96">
+          <div
+            class="bg-white p-6 md:p-8 rounded-[2rem] shadow-xl border border-gray-100 lg:sticky lg:top-28"
+          >
+            <h3 class="font-headline font-black text-xl mb-6">Récapitulatif</h3>
+
+            <div class="flex gap-4 mb-6 pb-6 border-b border-gray-100">
+              <div
+                class="w-20 h-24 bg-gray-100 rounded-xl overflow-hidden shrink-0"
+              >
+                <img
+                  id="summary-img"
+                  src=""
+                  class="w-full h-full object-cover"
+                  alt=""
+                  onerror="
+                    this.src = 'https://via.placeholder.com/150?text=Billet'
+                  "
+                />
+              </div>
+              <div>
+                <h4
+                  id="summary-title"
+                  class="font-bold text-gray-900 line-clamp-2 leading-tight mb-2"
+                >
+                  Chargement...
+                </h4>
+                <span
+                  id="summary-tier"
+                  class="inline-block bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-bold"
+                  >...</span
+                >
+              </div>
+            </div>
+
+            <div class="space-y-3 mb-6 text-sm">
+              <div class="flex justify-between text-gray-500 font-medium">
+                <span>Sous-total</span>
+                <span id="summary-subtotal" class="font-bold text-gray-800"
+                  >... FCFA</span
+                >
+              </div>
+              <div class="flex justify-between text-gray-500 font-medium">
+                <span>Frais de plateforme (4%)</span>
+                <span id="summary-fee" class="font-bold text-gray-800"
+                  >... FCFA</span
+                >
+              </div>
+            </div>
+
+            <div
+              class="flex justify-between items-center pt-6 border-t border-gray-100"
+            >
+              <span
+                class="text-xs font-bold text-gray-400 uppercase tracking-widest"
+                >Total à payer</span
+              >
+              <span id="summary-total" class="font-black text-2xl text-primary"
+                >... FCFA</span
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <div
+      id="success-modal"
+      class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[1000] flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300"
+    >
+      <div
+        class="bg-white rounded-[2.5rem] p-8 max-w-sm w-full text-center transform scale-95 transition-transform duration-300"
+        id="success-card"
+      >
+        <div
+          class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6"
+        >
+          <span class="material-symbols-outlined text-green-500 text-4xl"
+            >check_circle</span
+          >
+        </div>
+        <h2 class="font-headline font-black text-2xl mb-2">
+          Paiement Réussi !
+        </h2>
+        <p class="text-gray-500 text-sm mb-6 font-medium">
+          Votre réservation a été confirmée. Voici votre code d'accès.
+        </p>
+
+        <div
+          class="bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl p-4 mb-8"
+        >
+          <p
+            class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1"
+          >
+            Billet #<span id="ticket-id"></span>
+          </p>
+          <img
+            src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=GoEvent-Ticket"
+            class="mx-auto mix-blend-multiply opacity-80"
+            alt="QR Code"
+          />
+        </div>
+
+        <button
+          onclick="window.location.href = 'index.html'"
+          class="w-full bg-primary text-white py-4 rounded-xl font-bold hover:bg-primary-container transition-all"
+        >
+          Retour à l'accueil
+        </button>
+      </div>
+    </div>
+
+    <div id="footer"></div>
+    <div id="footer"></div>
+
+    <script src="bt-api.js"></script>
+    <script src="pwa.js"></script>
+
+    <script>
+      // Menu Hamburger Mobile
+      function toggleMobileMenu() {
+        const menu = document.getElementById("mobile-menu");
+        const drawer = document.getElementById("mobile-drawer");
+        if (menu.classList.contains("hidden")) {
+          menu.classList.remove("hidden");
+          setTimeout(() => {
+            menu.classList.remove("opacity-0");
+            drawer.classList.remove("translate-x-full");
+          }, 10);
+        } else {
+          menu.classList.add("opacity-0");
+          drawer.classList.add("translate-x-full");
+          setTimeout(() => {
+            menu.classList.add("hidden");
+          }, 300);
+        }
+      }
+
+      // Injection et affichage des données envoyées par l'URL
+      document.addEventListener("DOMContentLoaded", () => {
+        const params = new URLSearchParams(window.location.search);
+
+        if (!params.has("title")) return;
+
+        const title = params.get("title");
+        const tier = params.get("tier");
+        const price = parseInt(params.get("price"));
+        const imgUrl = params.get("img");
+
+        document.getElementById("summary-title").textContent = title;
+        document.getElementById("summary-tier").textContent = tier;
+        if (imgUrl) {
+          document.getElementById("summary-img").src = imgUrl;
+        }
+
+        // --- 💰 LA MAGIE FINANCIÈRE ICI ---
+        const fraisPlateforme = Math.ceil(price * 0.04); // On calcule 4% et on arrondit au dessus
+        const totalAPayer = price + fraisPlateforme;
+
+        // Mise à jour de l'affichage
+        document.getElementById("summary-subtotal").textContent =
+          price.toLocaleString("fr-FR") + " FCFA";
+        document.getElementById("summary-fee").textContent =
+          fraisPlateforme.toLocaleString("fr-FR") + " FCFA";
+        document.getElementById("summary-total").textContent =
+          totalAPayer.toLocaleString("fr-FR") + " FCFA";
+        document.getElementById("btn-price-display").textContent =
+          totalAPayer.toLocaleString("fr-FR");
+      });
+
+      // =========================================================================
+      // FONCTION D'ORIGINE INTACTE POUR GARANTIR LE LIEN AVEC TON API
+      // =========================================================================
+      async function validerPaiement(e) {
+        // Si la fonction est appelée par un bouton de formulaire, on empêche le rechargement de la page
+        if (e) e.preventDefault();
+
+        // 1. ON RÉCUPÈRE L'ID DANS L'ADRESSE WEB (URL)
+        const urlParams = new URLSearchParams(window.location.search);
+        const eventId = urlParams.get("id");
+
+        // 2. Vérification de sécurité
+        if (!eventId) {
+          if (typeof btToast === "function")
+            btToast("Erreur : Impossible de trouver l'événement.", "error");
+          return;
+        }
+
+        // 3. Préparation des données pour ton Python
+        const payload = {
+          event_id: parseInt(eventId), // On s'assure que c'est bien un nombre pour ta base de données
+          email: document.getElementById("buyer-email").value,
+          full_name: document.getElementById("buyer-name").value,
+        };
+
+        // 4. On appelle ta route de test
+        try {
+          const response = await btApi.post("/payment/test-confirm", payload);
+
+          if (response && response.status === "success") {
+            if (typeof btToast === "function")
+              btToast("Paiement simulé ! Vérifiez vos emails.", "success");
+
+            // Redirection vers une page de succès après 2 secondes (optionnel)
+            setTimeout(() => {
+              // Si tu n'as pas de success.html, tu peux rediriger vers user_dashboard.html
+              window.location.href = "user_dashboard.html";
+            }, 2000);
+          }
+        } catch (error) {
+          console.error("Erreur de paiement fantôme :", error);
+          if (typeof btToast === "function")
+            btToast("Erreur lors de la création du billet.", "error");
+        }
+      }
+      // Validation dynamique du formulaire de paiement
+      document.addEventListener("DOMContentLoaded", () => {
+        const nameInput = document.getElementById("buyer-name");
+        const emailInput = document.getElementById("buyer-email");
+        const phoneInput = document.getElementById("buyer-phone");
+        const btnPay = document.getElementById("btn-pay");
+
+        function checkForm() {
+          const phoneVal = phoneInput.value.trim();
+
+          // On vérifie que le numéro commence bien par 72, 73 ou 74
+          const isPrefixValid =
+            phoneVal.startsWith("72") ||
+            phoneVal.startsWith("73") ||
+            phoneVal.startsWith("74");
+
+          // Le bouton s'active si : Nom OK + Email OK + 8 chiffres EXACTEMENT + Bon préfixe
+          const isValid =
+            nameInput.value.trim() !== "" &&
+            emailInput.value.includes("@") &&
+            phoneVal.length === 8 &&
+            isPrefixValid;
+
+          if (isValid) {
+            btnPay.disabled = false;
+            // On remet le beau vert GoEvent
+            btnPay.className =
+              "w-full bg-primary text-white py-4 md:py-5 rounded-2xl font-black text-lg hover:bg-primary-container transition-all shadow-lg flex items-center justify-center gap-3 active:scale-95";
+          } else {
+            btnPay.disabled = true;
+            // On grise le bouton
+            btnPay.className =
+              "w-full bg-gray-400 text-white py-4 md:py-5 rounded-2xl font-black text-lg opacity-50 cursor-not-allowed transition-all shadow-sm flex items-center justify-center gap-3";
+          }
+        }
+
+        // On écoute chaque frappe sur le clavier
+        nameInput.addEventListener("input", checkForm);
+        emailInput.addEventListener("input", checkForm);
+        phoneInput.addEventListener("input", checkForm);
+      });
+      document.getElementById("footer").innerHTML = btFooter();
+    </script>
+  </body>
+</html>

@@ -1416,13 +1416,21 @@ async def payment_notify(request: Request, db: Session = Depends(get_db)):
 # --- 1. ROUTE POUR RÉCUPÉRER LE NOM DE L'ÉVÉNEMENT ---
 @app.get("/agent/current-event")
 def get_agent_event(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    # On cherche le premier événement créé par le patron de cet agent
-    event = db.query(Event).join(User, Event.organizer_id == User.id).filter(
-        User.org_name == current_user.org_name).first()
+    # Cas 1 : L'utilisateur est un Agent assigné à un événement précis
+    if current_user.role == "agent" and current_user.agent_event_id:
+        event = db.query(Event).filter(Event.id == current_user.agent_event_id).first()
+        if event:
+            return {"event_name": event.title}
 
-    if event:
-        return {"event_name": event.title}
-    return {"event_name": "Événement en cours"}
+    # Cas 2 : C'est l'organisateur lui-même qui teste son scanner
+    if current_user.role in ["organizer", "organisation"]:
+        # On prend son événement le plus récent
+        event = db.query(Event).filter(Event.organizer_id == current_user.id).order_by(Event.id.desc()).first()
+        if event:
+            return {"event_name": event.title}
+
+    # Sécurité par défaut
+    return {"event_name": "Contrôle des billets"}
 
 
 # --- 2. ROUTE POUR AUTODÉTRUIRE L'AGENT ---

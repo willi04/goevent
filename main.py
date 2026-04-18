@@ -419,7 +419,13 @@ app = FastAPI(title="GoEvent API", version="2.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://goevent-core.vercel.app",
+        "https://goevent.africa",
+        "http://localhost:5500",
+        "http://localhost:8000",
+        "http://127.0.0.1",
+        "null",],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

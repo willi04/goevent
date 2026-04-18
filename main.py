@@ -160,9 +160,6 @@ class CancellationRequest(Base):
     event = relationship("Event")
     organizer = relationship("User")
 
-# Assure-toi que Base.metadata.create_all(bind=engine) est bien en dessous pour créer la table !
-Base.metadata.create_all(bind=engine)
-
 # ── SÉCURITÉ ───────────────────────────────────────────────────
 def hash_pin(pin): return pwd_context.hash(pin)
 def verify_pin(plain, hashed): return pwd_context.verify(plain, hashed)
@@ -394,6 +391,9 @@ class PasswordReset(Base):
     email = Column(String)
     code = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+# Assure-toi que Base.metadata.create_all(bind=engine) est bien en dessous pour créer la table !
+Base.metadata.create_all(bind=engine)
 
 def _event_dict(e, include_organizer=True):
     org = e.organizer_user

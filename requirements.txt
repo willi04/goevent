@@ -10,7 +10,3 @@ python-jose[cryptography]==3.3.0
 httpx==0.27.2
 python-dotenv==1.0.1
 pydantic==2.9.0
-# --- AJOUTS POUR LA PRODUCTION VERCEL / NEON / CINETPAY ---
-psycopg2-binary==2.9.9
-requests==2.31.0
-python-multipart==0.0.9

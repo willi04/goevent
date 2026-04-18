@@ -191,11 +191,11 @@
             "text-3xl font-black mb-2 uppercase tracking-wide text-green-600";
 
           // On cherche le nom du client de manière super sécurisée
-          fanEl.textContent =
-            response?.ticket?.owner_name ||
-            response?.owner_name ||
-            response?.client ||
-            "Client vérifié";
+         // On récupère le nom du client depuis le message du serveur ("Validé ! Nom peut entrer.")
+          fanEl.textContent = response.message ? response.message.replace("Validé ! ", "").replace(" peut entrer.", "") : "Client vérifié";
+
+          // On affiche le vrai titre de l'événement !
+          document.getElementById("result-event").textContent = response.event || "Événement";
           reasonEl.classList.add("hidden");
         } catch (error) {
           // ÉCHEC : Faux billet ou déjà utilisé

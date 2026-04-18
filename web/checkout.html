@@ -508,36 +508,38 @@
       }
 
       // Injection et affichage des données envoyées par l'URL
-      document.addEventListener("DOMContentLoaded", () => {
-        const params = new URLSearchParams(window.location.search);
+      document.addEventListener("DOMContentLoaded", async () => {
+  const params = new URLSearchParams(window.location.search);
+  const eventId = params.get("id");
 
-        if (!params.has("title")) return;
+  if (!eventId) return;
 
-        const title = params.get("title");
-        const tier = params.get("tier");
-        const price = parseInt(params.get("price"));
-        const imgUrl = params.get("img");
+  try {
+    // 1. On interroge ton API pour avoir les VRAIES infos (Sécurisé)
+    const event = await btApi.get("/events/" + eventId);
 
-        document.getElementById("summary-title").textContent = title;
-        document.getElementById("summary-tier").textContent = tier;
-        if (imgUrl) {
-          document.getElementById("summary-img").src = imgUrl;
-        }
+    // 2. On met à jour l'image et le titre
+    document.getElementById("summary-title").textContent = event.title;
+    if (event.cover_image_url) {
+      document.getElementById("summary-img").src = event.cover_image_url;
+    }
+    document.getElementById("summary-tier").textContent = params.get("tier") || "Standard";
 
-        // --- 💰 LA MAGIE FINANCIÈRE ICI ---
-        const fraisPlateforme = Math.ceil(price * 0.04); // On calcule 4% et on arrondit au dessus
-        const totalAPayer = price + fraisPlateforme;
+    // 3. On calcule les vrais prix depuis la base de données
+    const price = event.price || 0;
+    const fraisPlateforme = Math.ceil(price * 0.04);
+    const totalAPayer = price + fraisPlateforme;
 
-        // Mise à jour de l'affichage
-        document.getElementById("summary-subtotal").textContent =
-          price.toLocaleString("fr-FR") + " FCFA";
-        document.getElementById("summary-fee").textContent =
-          fraisPlateforme.toLocaleString("fr-FR") + " FCFA";
-        document.getElementById("summary-total").textContent =
-          totalAPayer.toLocaleString("fr-FR") + " FCFA";
-        document.getElementById("btn-price-display").textContent =
-          totalAPayer.toLocaleString("fr-FR");
-      });
+    // 4. Affichage
+    document.getElementById("summary-subtotal").textContent = price.toLocaleString("fr-FR") + " FCFA";
+    document.getElementById("summary-fee").textContent = fraisPlateforme.toLocaleString("fr-FR") + " FCFA";
+    document.getElementById("summary-total").textContent = totalAPayer.toLocaleString("fr-FR") + " FCFA";
+    document.getElementById("btn-price-display").textContent = totalAPayer.toLocaleString("fr-FR");
+
+  } catch (error) {
+    console.error("Erreur lors du chargement de l'événement:", error);
+  }
+});
 
       // =========================================================================
       // FONCTION D'ORIGINE INTACTE POUR GARANTIR LE LIEN AVEC TON API

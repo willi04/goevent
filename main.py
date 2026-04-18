@@ -1545,36 +1545,36 @@ def follow_organizer(org_id: int, db: Session = Depends(get_db), current_user: U
 # TEST SUR BILLET ACHETE
 
 @app.post("/payment/test-confirm")
-async def test_confirm_payment(data: dict, db: Session = Depends(get_db)):
-    # 1. On récupère les infos envoyées par le frontend
+async def test_confirm_payment(data: dict, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    # 1. On récupère l'ID de l'événement et l'email du formulaire
     event_id = data.get("event_id")
-    email = data.get("email")
+    email_saisi = data.get("email")
 
-    # 2. LA CORRECTION : On cherche le véritable utilisateur dans la base de données
-    user = db.query(User).filter(User.email == email).first()
+    # 2. SÉCURITÉ : On lie le billet au compte actuellement connecté !
+    user = current_user
 
-    if not user:
-        # Sécurité : Si l'email tapé ne correspond à aucun compte
-        raise HTTPException(status_code=404, detail="Aucun compte trouvé avec cet email")
+    # (Bonus) S'il n'avait pas d'email dans son profil, on sauvegarde celui qu'il vient de taper
+    if email_saisi and not user.email:
+        user.email = email_saisi
+        db.commit()
 
-    # 3. On génère le faux code QR
+    # 3. On génère le faux code QR de test
     qr_code = f"BT-TEST-{random.randint(1000, 9999)}"
 
-    # 4. On crée le ticket en utilisant `user_id` (comme l'exige ton modèle)
+    # 4. On crée le ticket et on le relie au compte
     new_ticket = Ticket(
         event_id=event_id,
-        user_id=user.id,  # <-- C'EST LA CLÉ ! On relie le billet au compte.
+        user_id=user.id,
         payment_status="paye",
         qr_hash=qr_code
     )
     db.add(new_ticket)
     db.commit()
 
-    # 5. On déclenche l'envoi de l'email
+    # 5. On déclenche l'envoi de l'email (si la fonction envoyer_billet_email est bien configurée)
     event = db.query(Event).filter(Event.id == event_id).first()
-
-    # On récupère le nom depuis le compte utilisateur pour l'email
-    nom_client = user.full_name if hasattr(user, 'full_name') else "Client GoEvent"
-    envoyer_billet_email(email, nom_client, new_ticket, event, event.price)
+    email_envoi = email_saisi or user.email
+    if event and email_envoi:
+        envoyer_billet_email(email_envoi, user.full_name, new_ticket, event, event.price)
 
     return {"status": "success", "ticket_id": new_ticket.id}

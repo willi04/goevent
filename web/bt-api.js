@@ -3,7 +3,7 @@
 //  Design fidèle Stitch · Material Symbols · Pas d'émojis
 // ============================================================
 
-const BT_API ="https://goevent-core.vercel.app";
+const BT_API ="https://goevent-core.vercel.app/";
 
 // ── Auth ──────────────────────────────────────────────────────
 const btAuth = {

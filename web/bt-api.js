@@ -3,11 +3,7 @@
 //  Design fidèle Stitch · Material Symbols · Pas d'émojis
 // ============================================================
 
-const BT_API =
-  window.location.hostname === "localhost" ||
-  window.location.hostname === "127.0.0.1"
-    ? "https://goevent-core.vercel.app"
-    : "https://goevent-core.onrender.com";
+const BT_API ="https://goevent-core.vercel.app";
 
 // ── Auth ──────────────────────────────────────────────────────
 const btAuth = {

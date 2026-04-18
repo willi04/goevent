@@ -1,0 +1,987 @@
+<!doctype html>
+<html class="light" lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="bt-page" content="evenements" />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#00502c" />
+    <meta
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+      name="viewport"
+    />
+    <title>GoEvent</title>
+    <link rel="icon" type="image/png" href="icons/favicon.png" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+      rel="stylesheet"
+    />
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              background: "#f9f9f9",
+              primary: "#00502c",
+              "outline-variant": "#bec9be",
+              "on-primary-fixed-variant": "#00522d",
+              outline: "#6f7a70",
+              error: "#ba1a1a",
+              "on-surface-variant": "#3f4941",
+              "secondary-fixed": "#ffe08b",
+              "primary-container": "#006b3c",
+              "surface-container": "#eeeeee",
+              surface: "#f9f9f9",
+              "inverse-on-surface": "#f1f1f1",
+              "inverse-primary": "#81d99f",
+              "surface-container-high": "#e8e8e8",
+              "surface-container-lowest": "#ffffff",
+              "surface-container-highest": "#e2e2e2",
+              "surface-variant": "#e2e2e2",
+              "primary-fixed": "#9df6b9",
+              secondary: "#745b00",
+              "surface-container-low": "#f3f3f3",
+              "on-surface": "#1a1c1c",
+              "primary-fixed-dim": "#81d99f",
+              "on-tertiary-container": "#ffc9c8",
+              "on-secondary": "#ffffff",
+              "on-primary": "#ffffff",
+              "inverse-surface": "#2f3131",
+              "secondary-container": "#fecb00",
+              tertiary: "#8f001e",
+              "on-secondary-container": "#6e5700",
+              "secondary-fixed-dim": "#f1c100",
+              "on-primary-container": "#90e9ad",
+              "error-container": "#ffdad6",
+              "on-primary-fixed": "#00210f",
+            },
+            borderRadius: {
+              DEFAULT: "0.25rem",
+              lg: "1rem",
+              xl: "1.5rem",
+              full: "9999px",
+            },
+            fontFamily: {
+              headline: ["Plus Jakarta Sans"],
+              body: ["Manrope"],
+              label: ["Manrope"],
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      .material-symbols-outlined {
+        font-variation-settings:
+          "FILL" 0,
+          "wght" 400,
+          "GRAD" 0,
+          "opsz" 24;
+      }
+      .glass-nav {
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+      }
+      .hero-gradient {
+        background: linear-gradient(135deg, #00502c 0%, #006b3c 100%);
+      }
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 4px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #bec9be;
+        border-radius: 10px;
+      }
+    </style>
+  </head>
+  <body
+    data-page="evenements"
+    class="bg-surface text-on-surface font-body selection:bg-primary-fixed selection:text-on-primary-fixed flex flex-col min-h-screen"
+  >
+    <div
+      class="md:hidden fixed top-0 left-0 right-0 h-[72px] bg-white/95 backdrop-blur border-b border-gray-100 z-[100] flex items-center justify-between px-6"
+    >
+      <a
+        href="index.html"
+        class="flex items-center gap-2 hover:opacity-80 transition-opacity"
+      >
+        <img
+          src="icons/event.png"
+          alt="Logo GoEvent"
+          class="w-10 h-10 rounded-xl object-cover shadow-sm"
+        />
+        <span
+          class="font-headline font-black text-2xl text-primary tracking-tight truncate"
+          >GoEvent</span
+        >
+      </a>
+      <button
+        onclick="toggleMobileMenu()"
+        class="p-2 -mr-2 text-gray-700 hover:text-primary transition-colors focus:outline-none"
+      >
+        <span class="material-symbols-outlined" style="font-size: 32px"
+          >menu</span
+        >
+      </button>
+    </div>
+
+    <div id="navbar" class="hidden md:block fixed w-full top-0 z-[999]"></div>
+
+    <div
+      id="mobile-menu"
+      class="fixed inset-0 bg-gray-900/60 z-[200] hidden opacity-0 transition-opacity duration-300"
+    >
+      <div class="absolute inset-0" onclick="toggleMobileMenu()"></div>
+      <div
+        id="mobile-drawer"
+        class="absolute right-0 top-0 bottom-0 w-[80%] max-w-xs bg-white shadow-2xl transform translate-x-full transition-transform duration-300 flex flex-col p-6"
+      >
+        <div
+          class="flex justify-between items-center mb-8 border-b border-gray-100 pb-4"
+        >
+          <span class="font-headline font-black text-xl text-primary"
+            >Menu</span
+          >
+          <button
+            onclick="toggleMobileMenu()"
+            class="p-2 text-gray-400 hover:text-red-500 transition-colors"
+          >
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <nav class="space-y-1 flex-1 overflow-y-auto">
+          <a
+            href="index.html"
+            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
+            ><span class="material-symbols-outlined">home</span> Accueil</a
+          >
+          <a
+            href="event.html"
+            class="flex items-center gap-3 p-4 bg-primary/10 rounded-2xl text-primary font-bold"
+            ><span class="material-symbols-outlined">stadium</span>
+            Événements</a
+          >
+          <a
+            href="follow.html"
+            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
+            ><span class="material-symbols-outlined">favorite</span> Follow</a
+          >
+          <a
+            href="partenaire.html"
+            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
+            ><span class="material-symbols-outlined">handshake</span>
+            Partenaires</a
+          >
+          <a
+            href="a_propos.html"
+            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
+            ><span class="material-symbols-outlined">info</span> À propos</a
+          >
+        </nav>
+        <div
+          id="mobile-auth-section"
+          class="mt-4 pt-6 border-t border-gray-100 space-y-3"
+        >
+          <a
+            href="login.html"
+            class="block w-full text-center text-primary font-bold py-3.5 rounded-xl border-2 border-primary hover:bg-primary/5 transition-all"
+            >Se connecter</a
+          >
+          <a
+            href="signup.html"
+            class="block w-full text-center bg-primary text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 active:scale-95 transition-all"
+            >S'inscrire</a
+          >
+        </div>
+      </div>
+    </div>
+
+    <main class="flex-1 pt-[72px] md:pt-20">
+      <section
+        class="relative h-[400px] flex items-center justify-center overflow-hidden"
+      >
+        <div class="absolute inset-0 z-0">
+          <img
+            class="w-full h-full object-cover"
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuDYrO4AdsJ1jzIg-Cpdg3nB8XV6gdqIBMK2bvR5f_n22Ar07kZhASMKWw1wCbNaxC0T1uVCUb4C2wFWmlfqGcgkiA-1g8Ga-QvWqFK_lsAG4QSrEa9iFJeK4T149VhnHiYS3ZI7pGjbq5nyLwmhjbpTW-1-mDUGpfi9tNLIr-QmWBR205QckolaescsuA7lp1S6yMR1b8QKBs4uYABdMQusHtNFahR8ZT_xLhGXPSQOxp4FYG-ingUsOw-uPoleJXlOYtah2Pk_Kg"
+          />
+          <div class="absolute inset-0 bg-primary/60 backdrop-blur-[2px]"></div>
+        </div>
+        <div class="relative z-10 w-full max-w-4xl px-6 text-center">
+          <h1
+            class="text-4xl md:text-5xl lg:text-6xl font-headline font-extrabold text-white mb-8 tracking-tight"
+          >
+            Tous les événements
+          </h1>
+          <div
+            class="bg-surface-container-lowest p-2 rounded-2xl md:rounded-full shadow-2xl flex flex-col md:flex-row items-center transition-all focus-within:ring-4 focus-within:ring-primary/10 gap-3 md:gap-0"
+          >
+            <div class="flex items-center w-full">
+              <span class="material-symbols-outlined ml-2 md:ml-6 text-outline"
+                >search</span
+              >
+              <input
+                class="w-full border-none focus:ring-0 bg-transparent text-base md:text-lg px-3 md:px-4 py-3 placeholder:text-outline/60"
+                placeholder="Rechercher un concert, un festival, un artiste..."
+                type="text"
+              />
+            </div>
+            <button
+              class="w-full md:w-auto bg-primary text-white px-8 py-3.5 rounded-xl md:rounded-full font-bold hover:bg-primary-container transition-colors"
+            >
+              Rechercher
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <div class="max-w-7xl mx-auto px-6 py-16">
+        <div class="flex flex-col md:flex-row gap-12">
+          <aside class="w-full md:w-72 flex-shrink-0 space-y-10">
+            <div>
+              <h3
+                class="text-on-primary-fixed-variant font-headline font-bold text-lg mb-6 flex items-center gap-2"
+              >
+                <span class="material-symbols-outlined">filter_list</span>
+                Filtres
+              </h3>
+
+              <div class="mb-8">
+                <span
+                  class="text-xs font-label uppercase tracking-widest text-outline mb-4 block"
+                  >Catégories</span
+                >
+                <div class="space-y-3" id="filter-categories">
+                  <label class="flex items-center group cursor-pointer">
+                    <input
+                      value="Concert"
+                      class="cat-checkbox rounded border-outline-variant text-primary focus:ring-primary w-5 h-5 transition-all"
+                      type="checkbox"
+                    />
+                    <span
+                      class="ml-3 text-on-surface group-hover:text-primary transition-colors"
+                      >Concerts & Live</span
+                    >
+                  </label>
+                  <label class="flex items-center group cursor-pointer">
+                    <input
+                      value="Festival"
+                      class="cat-checkbox rounded border-outline-variant text-primary focus:ring-primary w-5 h-5 transition-all"
+                      type="checkbox"
+                    />
+                    <span
+                      class="ml-3 text-on-surface group-hover:text-primary transition-colors"
+                      >Festivals Culturels</span
+                    >
+                  </label>
+                  <label class="flex items-center group cursor-pointer">
+                    <input
+                      value="Theatre"
+                      class="cat-checkbox rounded border-outline-variant text-primary focus:ring-primary w-5 h-5 transition-all"
+                      type="checkbox"
+                    />
+                    <span
+                      class="ml-3 text-on-surface group-hover:text-primary transition-colors"
+                      >Théâtre & Danse</span
+                    >
+                  </label>
+                  <label class="flex items-center group cursor-pointer">
+                    <input
+                      value="Exposition"
+                      class="cat-checkbox rounded border-outline-variant text-primary focus:ring-primary w-5 h-5 transition-all"
+                      type="checkbox"
+                    />
+                    <span
+                      class="ml-3 text-on-surface group-hover:text-primary transition-colors"
+                      >Expositions</span
+                    >
+                  </label>
+                </div>
+              </div>
+
+              <div class="mb-8">
+                <span
+                  class="text-xs font-label uppercase tracking-widest text-outline mb-4 block"
+                  >Prix Max (FCFA)</span
+                >
+                <input
+                  id="price-filter"
+                  class="w-full accent-primary mb-2"
+                  max="100000"
+                  min="0"
+                  step="5000"
+                  value="100000"
+                  type="range"
+                />
+                <div
+                  class="flex justify-between text-xs text-outline font-medium"
+                >
+                  <span>0 FCFA</span>
+                  <span id="price-display">100.000 FCFA</span>
+                </div>
+              </div>
+
+              <div class="mb-8">
+                <span
+                  class="text-xs font-label uppercase tracking-widest text-outline mb-4 block"
+                  >Lieu</span
+                >
+                <select
+                  id="location-filter"
+                  class="w-full border-none bg-surface-container-high rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20"
+                >
+                  <option value="">Tous les lieux</option>
+                  <option value="Stade 20,000 places">
+                    Stade 20,000 places
+                  </option>
+                  <option value="Alliance Française">Alliance Française</option>
+                  <option value="Palais de la CEMAC">Palais de la CEMAC</option>
+                </select>
+              </div>
+            </div>
+          </aside>
+
+          <div class="flex-1">
+            <div
+              class="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-8 gap-4 sm:gap-0"
+            >
+              <div>
+                <h2
+                  class="text-2xl font-headline font-bold text-on-surface"
+                  id="events-count-header"
+                >
+                  Chargement...
+                </h2>
+                <p class="text-outline text-sm mt-1">
+                  Spectacles en RCA et alentours
+                </p>
+              </div>
+              <div class="flex items-center gap-2 text-sm">
+                <span class="text-outline">Trier par:</span>
+
+                <div class="relative">
+                  <select
+                    id="sort-select"
+                    class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    onchange="
+                      document.getElementById('sort-text').innerText =
+                        this.options[this.selectedIndex].text
+                    "
+                  >
+                    <option value="date_asc">Plus récents</option>
+                    <option value="date_desc">Plus lointains</option>
+                    <option value="price_asc">Prix croissant</option>
+                    <option value="price_desc">Prix décroissant</option>
+                  </select>
+
+                  <button
+                    class="font-bold text-primary flex items-center gap-1 pointer-events-none"
+                  >
+                    <span id="sort-text">Plus récents</span>
+                    <span class="material-symbols-outlined text-sm"
+                      >keyboard_arrow_down</span
+                    >
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+              id="events-grid-container"
+            >
+              <div
+                class="group bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300"
+              >
+                <div class="relative h-48 overflow-hidden">
+                  <img
+                    class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJffm-eyWFWXKeshY2wvUuQG22Hfkn_W3oy3YeRbd7wpsVBd-lx7BoppaY-8k-2JuiAKK_2BCnI8fTGTKm5_8dKv1Z3ElM7sSDKXD4gOGRMx9cUFhs3c1Rt5FrJgwS-VV06sq4328RfaLRnz0axDPT9UHLdycS42BKTlL_bgiQ6VhVmfasfSN6zJqK1aj6x3_5yJQbNZHOC0CHanLDxg9r8nowFEcu1vdOL_d4YQbBKHjj8pNyMmMfhNrMP7HhiGHOE6QMkVcWig"
+                  />
+                  <div
+                    class="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-primary"
+                  >
+                    Concert
+                  </div>
+                  <div
+                    class="absolute top-4 right-4 bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                  >
+                    Populaire
+                  </div>
+                </div>
+                <div class="p-6">
+                  <div
+                    class="flex items-center gap-2 text-xs text-outline mb-2"
+                  >
+                    <span class="material-symbols-outlined text-sm"
+                      >calendar_today</span
+                    ><span>Sam, 15 Décembre • 20:00</span>
+                  </div>
+                  <h3
+                    class="text-lg font-headline font-bold text-on-surface mb-3 group-hover:text-primary leading-tight"
+                  >
+                    Bangui Music Festival - Edition 2024
+                  </h3>
+                  <div
+                    class="flex items-center gap-2 text-sm text-outline mb-6"
+                  >
+                    <span class="material-symbols-outlined text-sm"
+                      >location_on</span
+                    ><span>Stade de 20.000 Places</span>
+                  </div>
+                  <div class="flex items-center justify-between mt-auto">
+                    <span class="text-lg font-extrabold text-secondary"
+                      >5.000 FCFA</span
+                    >
+                    <button
+                      class="p-3 bg-primary/5 text-primary rounded-full hover:bg-primary hover:text-white transition-all"
+                    >
+                      <span class="material-symbols-outlined"
+                        >shopping_cart</span
+                      >
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="group bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300"
+              >
+                <div class="relative h-48 overflow-hidden">
+                  <img
+                    class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuAd3x7z9jbKe1ckZO85BfWo3H6cHv-qPODPhnk68TnriqZhFvyfH2I6mSvuJRRp3J5IjAtDTumH0vVbLOOwxTnpi3klr3q8OSGXi5W5y0BO3Kn28aa4r2BG-2XV1wGf2YJgKcJ0vjRUAcYY2AEpSodHEQnyJ07js8x6rjoo7laiKZNGCL6jdwxmuUxbZQpOq7GsWaOZ5r3-xzecGzXxD055y-pOvNF0HbSsyFAcFMSrY5i0a0of_X2VISmgy84XiNYscyBHQDWvug"
+                  />
+                  <div
+                    class="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-primary"
+                  >
+                    Live Jazz
+                  </div>
+                </div>
+                <div class="p-6">
+                  <div
+                    class="flex items-center gap-2 text-xs text-outline mb-2"
+                  >
+                    <span class="material-symbols-outlined text-sm"
+                      >calendar_today</span
+                    ><span>Ven, 21 Décembre • 19:30</span>
+                  </div>
+                  <h3
+                    class="text-lg font-headline font-bold text-on-surface mb-3 group-hover:text-primary leading-tight"
+                  >
+                    Soirée Jazz & Gastronomie Sango
+                  </h3>
+                  <div
+                    class="flex items-center gap-2 text-sm text-outline mb-6"
+                  >
+                    <span class="material-symbols-outlined text-sm"
+                      >location_on</span
+                    ><span>Alliance Française</span>
+                  </div>
+                  <div class="flex items-center justify-between mt-auto">
+                    <span class="text-lg font-extrabold text-secondary"
+                      >15.000 FCFA</span
+                    >
+                    <button
+                      class="p-3 bg-primary/5 text-primary rounded-full hover:bg-primary hover:text-white transition-all"
+                    >
+                      <span class="material-symbols-outlined"
+                        >shopping_cart</span
+                      >
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="group bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300"
+              >
+                <div class="relative h-48 overflow-hidden">
+                  <img
+                    class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuASzDcMEPPqQqDQZzouaL668exAME_DvAie8RggTbjXDTe3M-bwqjsbZsVs8TNDM4XfByK28eftc0YcfdcxVagkSO7VUTxb631SBneLpUa37wqRh761KPIM-2NGitjcsF1ZwsdtB0idqcHVb1NHxzNvAfp1oQVsS_0vtb2jdkoNN5pQy5xX3vqAbGLTx_VBnHzrPHAxeVLpaQxf_Gq4mGttwiGvhqEVmI9TdggXJ0tN1FFckX8JSmYXC1fw389rkQjw7PMC2JdEXA"
+                  />
+                  <div
+                    class="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-primary"
+                  >
+                    Culture
+                  </div>
+                </div>
+                <div class="p-6">
+                  <div
+                    class="flex items-center gap-2 text-xs text-outline mb-2"
+                  >
+                    <span class="material-symbols-outlined text-sm"
+                      >calendar_today</span
+                    ><span>Dim, 23 Décembre • 14:00</span>
+                  </div>
+                  <h3
+                    class="text-lg font-headline font-bold text-on-surface mb-3 group-hover:text-primary leading-tight"
+                  >
+                    Danses Traditionnelles de l'Oubangui
+                  </h3>
+                  <div
+                    class="flex items-center gap-2 text-sm text-outline mb-6"
+                  >
+                    <span class="material-symbols-outlined text-sm"
+                      >location_on</span
+                    ><span>Palais de la CEMAC</span>
+                  </div>
+                  <div class="flex items-center justify-between mt-auto">
+                    <span class="text-lg font-extrabold text-secondary"
+                      >Gratuit</span
+                    >
+                    <button
+                      class="p-3 bg-primary/5 text-primary rounded-full hover:bg-primary hover:text-white transition-all"
+                    >
+                      <span class="material-symbols-outlined"
+                        >confirmation_number</span
+                      >
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="group bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300"
+              >
+                <div class="relative h-48 overflow-hidden">
+                  <img
+                    class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuBIRY7P8KgjpkMX_uUGfnc5a5gyZmwBBeSGkleJ06YbuLwHCBSCiAEWYozAnimWIC93vElXJTVLbbeo10-59TTsx7NkH9Zhj7UDKxpRym6J6E6TuWAER9YL6vv7HDOlhWOvlyhZU9C1KJgnaMZLdPejuMQDS9R25_OGNAAZ_pouO9X6wBsPbKNBEBI-V_Xl7kowMBc73FLNpBWQ6Y7Upn1KdpCaYUtA9GgY1kVmZRzINZGuO0XXNuAamwcCoBCBnmTOHGq1-IprKw"
+                  />
+                  <div
+                    class="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-primary"
+                  >
+                    Rap/Hip-Hop
+                  </div>
+                </div>
+                <div class="p-6">
+                  <div
+                    class="flex items-center gap-2 text-xs text-outline mb-2"
+                  >
+                    <span class="material-symbols-outlined text-sm"
+                      >calendar_today</span
+                    ><span>Mer, 26 Décembre • 21:00</span>
+                  </div>
+                  <h3
+                    class="text-lg font-headline font-bold text-on-surface mb-3 group-hover:text-primary leading-tight"
+                  >
+                    Bangui Urban Night - Showcase
+                  </h3>
+                  <div
+                    class="flex items-center gap-2 text-sm text-outline mb-6"
+                  >
+                    <span class="material-symbols-outlined text-sm"
+                      >location_on</span
+                    ><span>Espace Culturel Linga</span>
+                  </div>
+                  <div class="flex items-center justify-between mt-auto">
+                    <span class="text-lg font-extrabold text-secondary"
+                      >2.500 FCFA</span
+                    >
+                    <button
+                      class="p-3 bg-primary/5 text-primary rounded-full hover:bg-primary hover:text-white transition-all"
+                    >
+                      <span class="material-symbols-outlined"
+                        >shopping_cart</span
+                      >
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="group bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300"
+              >
+                <div class="relative h-48 overflow-hidden">
+                  <img
+                    class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuBVjex8nFRrTu33L-9-4p4TYddLQ0vWomQutOYpWS1dnK-g_A4AHn7ytUVKVIZRVamMSV35CucppWjyXqcIidS8tsFmlBKiPjrgrz-c9beRi7Q9eD6gZssouShoAZ6UEfRZQSKfsPngcFchVLgEHlHaVN1-xiyuNOaHg0r8UVOKowH90yZ7kUl4vgp7osP6zQci_rrtbtndnIwCkk062udisQ5AtKfiEeeLEA6Ke9W1xYRYsh4z5tEpHZCisNaS6Cnp0C6bkLO8jA"
+                  />
+                  <div
+                    class="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-primary"
+                  >
+                    Art Expo
+                  </div>
+                </div>
+                <div class="p-6">
+                  <div
+                    class="flex items-center gap-2 text-xs text-outline mb-2"
+                  >
+                    <span class="material-symbols-outlined text-sm"
+                      >calendar_today</span
+                    ><span>Jeu, 27 Décembre • 10:00</span>
+                  </div>
+                  <h3
+                    class="text-lg font-headline font-bold text-on-surface mb-3 group-hover:text-primary leading-tight"
+                  >
+                    Couleurs de l'Oubangui: Expo Peinture
+                  </h3>
+                  <div
+                    class="flex items-center gap-2 text-sm text-outline mb-6"
+                  >
+                    <span class="material-symbols-outlined text-sm"
+                      >location_on</span
+                    ><span>Musée Boganda</span>
+                  </div>
+                  <div class="flex items-center justify-between mt-auto">
+                    <span class="text-lg font-extrabold text-secondary"
+                      >1.000 FCFA</span
+                    >
+                    <button
+                      class="p-3 bg-primary/5 text-primary rounded-full hover:bg-primary hover:text-white transition-all"
+                    >
+                      <span class="material-symbols-outlined"
+                        >shopping_cart</span
+                      >
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="group bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300"
+              >
+                <div class="relative h-48 overflow-hidden">
+                  <img
+                    class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuAmJ2bp69jkrAlmKe17haZPyeEd2bhHJwgKsmGPeWMv_Zbo5acZfXkAUfn_Zhs4ESUT2E6NMGtVd00x8FoELHaQb6_YIz_OxH9gsL5LLSfGDkeABvqQL6UsUzi3wBA1jWw_QRVlRroukBzJ8BQtxWlMpJelpRjYJzk9EOVwM3pkk0HqFXXO8iAeLDd6xB3h5ug02iwA5NiPX8yD4Rq0QoYpJYbbPlDZyeOcnwROMP6eLlXTGlG4WtXrXOBZL1EFUTrIBLSe_1GLnA"
+                  />
+                  <div
+                    class="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-primary"
+                  >
+                    Electro
+                  </div>
+                </div>
+                <div class="p-6">
+                  <div
+                    class="flex items-center gap-2 text-xs text-outline mb-2"
+                  >
+                    <span class="material-symbols-outlined text-sm"
+                      >calendar_today</span
+                    ><span>Lun, 31 Décembre • 22:00</span>
+                  </div>
+                  <h3
+                    class="text-lg font-headline font-bold text-on-surface mb-3 group-hover:text-primary leading-tight"
+                  >
+                    Réveillon 2025: La Grande Soirée
+                  </h3>
+                  <div
+                    class="flex items-center gap-2 text-sm text-outline mb-6"
+                  >
+                    <span class="material-symbols-outlined text-sm"
+                      >location_on</span
+                    ><span>Hôtel Ledger Plaza</span>
+                  </div>
+                  <div class="flex items-center justify-between mt-auto">
+                    <span class="text-lg font-extrabold text-secondary"
+                      >25.000 FCFA</span
+                    >
+                    <button
+                      class="p-3 bg-primary/5 text-primary rounded-full hover:bg-primary hover:text-white transition-all"
+                    >
+                      <span class="material-symbols-outlined"
+                        >shopping_cart</span
+                      >
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              id="pagination-container"
+              class="mt-16 flex flex-wrap justify-center items-center gap-3"
+            ></div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <div id="footer"></div>
+    <div id="footer"></div>
+
+    <script src="bt-api.js"></script>
+    <script>
+      // 1. Initialisation de la Navbar
+      if (document.getElementById("navbar") && typeof btNavbar === "function") {
+        document.getElementById("navbar").innerHTML = btNavbar("evenements");
+      }
+
+      // 2. Gestion du menu mobile
+      function toggleMobileMenu() {
+        const menu = document.getElementById("mobile-menu");
+        const drawer = document.getElementById("mobile-drawer");
+        if (menu.classList.contains("hidden")) {
+          menu.classList.remove("hidden");
+          setTimeout(() => {
+            menu.classList.remove("opacity-0");
+            drawer.classList.remove("translate-x-full");
+          }, 10);
+        } else {
+          menu.classList.add("opacity-0");
+          drawer.classList.add("translate-x-full");
+          setTimeout(() => {
+            menu.classList.add("hidden");
+          }, 300);
+        }
+      }
+      function renderMobileAuth() {
+        const authContainer = document.getElementById("mobile-auth-section");
+        if (!authContainer) return;
+
+        if (btAuth.isLogged()) {
+          const user = btAuth.getUser();
+
+          // On récupère le nom : on essaie 'full_name', sinon 'name', sinon 'username'
+          const affichageNom =
+            user.full_name || user.name || user.username || "Membre GoEvent";
+
+          authContainer.innerHTML = `
+            <div class="bg-primary/5 p-5 rounded-3xl mb-4 border border-primary/10">
+                <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Session active</p>
+                <p class="text-xl font-black text-gray-900 truncate">${affichageNom}</p>
+            </div>
+            
+            <a href="${btDashRoute(user.role)}" class="flex items-center justify-center gap-2 w-full py-4 rounded-2xl bg-primary text-white font-black shadow-lg shadow-green-900/20 active:scale-95 transition-transform">
+                <span class="material-symbols-outlined">grid_view</span>
+                Accéder à mon espace
+            </a>
+            
+            <button onclick="btAuth.logout(); window.location.reload();" class="mt-3 flex items-center justify-center gap-2 w-full py-4 rounded-2xl text-red-600 bg-red-50 font-bold active:scale-95 transition-all hover:bg-red-100">
+                <span class="material-symbols-outlined text-sm">power_settings_new</span>
+                Déconnexion
+            </button>
+        `;
+        }
+      }
+
+      // NOUVEAU : On s'assure d'exécuter cette vérification dès que la page s'ouvre !
+      document.addEventListener("DOMContentLoaded", renderMobileAuth);
+
+      // 3. Dessiner les cartes d'événements
+      function renderDynamicEvents(events) {
+        const container = document.getElementById("events-grid-container");
+        if (!container) return;
+
+        if (!events || events.length === 0) {
+          container.innerHTML =
+            '<p class="text-outline col-span-full py-12 text-center text-lg font-medium">Aucun événement ne correspond à votre recherche. 😔</p>';
+          return;
+        }
+
+        container.innerHTML = events
+          .map((e) => {
+            const prixFormate =
+              typeof btPrice === "function"
+                ? btPrice(e.price)
+                : e.price > 0
+                  ? e.price.toLocaleString("fr-FR") + " FCFA"
+                  : "Gratuit";
+            const dateObj = new Date(e.event_date);
+            const dateString = dateObj
+              .toLocaleDateString("fr-FR", {
+                weekday: "short",
+                day: "numeric",
+                month: "short",
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+              .replace(",", " •");
+
+            return `
+            <div class="group bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col" onclick="window.location.href='event_detail.html?id=${e.id}'">
+              <div class="relative h-48 overflow-hidden shrink-0">
+                <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" src="${e.cover_image_url || "https://via.placeholder.com/600x400?text=GoEvent"}" onerror="this.src='https://via.placeholder.com/600x400?text=GoEvent'" alt="${e.title}" />
+                <div class="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-primary shadow-sm">
+                  ${e.category || "Événement"}
+                </div>
+              </div>
+              <div class="p-6 flex-1 flex flex-col">
+                <div class="flex items-center gap-2 text-xs text-outline mb-2">
+                  <span class="material-symbols-outlined text-sm">calendar_today</span>
+                  <span class="capitalize">${dateString}</span>
+                </div>
+                <h3 class="text-lg font-headline font-bold text-on-surface mb-3 group-hover:text-primary leading-tight line-clamp-2">
+                  ${e.title}
+                </h3>
+                <div class="flex items-center gap-2 text-sm text-outline mb-6">
+                  <span class="material-symbols-outlined text-sm">location_on</span>
+                  <span class="truncate">${e.location}</span>
+                </div>
+                <div class="flex items-center justify-between mt-auto">
+                  <span class="text-lg font-extrabold text-secondary">${prixFormate}</span>
+                  <button onclick="event.stopPropagation(); window.location.href='event_detail.html?id=${e.id}'" class="p-3 bg-primary/5 text-primary rounded-full hover:bg-primary hover:text-white transition-all shadow-sm active:scale-95">
+                    <span class="material-symbols-outlined">shopping_cart</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+          })
+          .join("");
+      }
+
+      // 4. LE CODE QUE TU M'AS ENVOYÉ (avec la pagination corrigée)
+      document.addEventListener("DOMContentLoaded", async () => {
+        const container = document.getElementById("events-grid-container");
+        const countHeader = document.getElementById("events-count-header");
+
+        // Filtres
+        const searchInput = document.querySelector('input[type="text"]');
+        const catCheckboxes = document.querySelectorAll(".cat-checkbox");
+        const priceFilter = document.getElementById("price-filter");
+        const priceDisplay = document.getElementById("price-display");
+        const locationFilter = document.getElementById("location-filter");
+
+        // Nouveaux venus : Tri et Pagination
+        const sortSelect = document.getElementById("sort-select");
+        const paginationContainer = document.getElementById(
+          "pagination-container",
+        );
+
+        // Variables d'état
+        let currentPage = 1;
+        const itemsPerPage = 6; // Combien de cartes on affiche par page
+
+        async function fetchAndRenderEvents() {
+          if (container) container.style.opacity = "0.5";
+
+          try {
+            const params = new URLSearchParams();
+
+            // Ajout de la page, limite et tri
+            params.append("page", currentPage);
+            params.append("limit", itemsPerPage);
+            if (sortSelect) params.append("sort_by", sortSelect.value);
+
+            if (searchInput && searchInput.value.trim() !== "") {
+              params.append("q", searchInput.value.trim());
+            }
+            const checkedCats = Array.from(catCheckboxes)
+              .filter((cb) => cb.checked)
+              .map((cb) => cb.value);
+            if (checkedCats.length > 0) {
+              params.append("categories", checkedCats.join(","));
+            }
+            if (priceFilter && priceFilter.value < 100000) {
+              params.append("max_price", priceFilter.value);
+            }
+            if (locationFilter && locationFilter.value !== "") {
+              params.append("location", locationFilter.value);
+            }
+
+            // Appel API
+            const url = "/events?" + params.toString();
+            const response = await btApi.get(url);
+
+            // La réponse est maintenant un objet avec .events et .total
+            const events = response.events;
+            const total = response.total;
+
+            // 1. Titre
+            if (countHeader) {
+              if (
+                params.toString().includes("q=") ||
+                params.toString().includes("categories=") ||
+                params.toString().includes("max_price=") ||
+                params.toString().includes("location=")
+              ) {
+                countHeader.textContent =
+                  total +
+                  (total > 1 ? " événements trouvés" : " événement trouvé");
+              } else {
+                countHeader.textContent = "Tous nos événements";
+              }
+            }
+
+            // 2. Grille d'événements
+            renderDynamicEvents(events);
+
+            // 3. Dessiner la pagination
+            renderPagination(total);
+          } catch (error) {
+            console.error("Erreur :", error);
+          } finally {
+            if (container) container.style.opacity = "1";
+          }
+        }
+
+        // --- LE MOTEUR DE PAGINATION (Avec TON design) ---
+        function renderPagination(total) {
+          if (!paginationContainer) return;
+          const totalPages = Math.ceil(total / itemsPerPage);
+
+          if (totalPages <= 1) {
+            paginationContainer.innerHTML = ""; // Cache la pagination s'il n'y a qu'une page
+            return;
+          }
+
+          let html = "";
+
+          // Bouton Précédent (chevron_left)
+          html += `<button onclick="changePage(${currentPage - 1})" class="w-12 h-12 rounded-xl border border-outline-variant flex items-center justify-center hover:bg-surface-container-high transition-colors disabled:opacity-30 disabled:cursor-not-allowed" ${currentPage === 1 ? "disabled" : ""}>
+                        <span class="material-symbols-outlined">chevron_left</span>
+                     </button>`;
+
+          // Les numéros (1, 2, 3...)
+          for (let i = 1; i <= totalPages; i++) {
+            if (i === currentPage) {
+              html += `<button class="w-12 h-12 rounded-xl bg-primary text-white font-bold">${i}</button>`;
+            } else {
+              html += `<button onclick="changePage(${i})" class="w-12 h-12 rounded-xl border border-outline-variant flex items-center justify-center hover:bg-surface-container-high font-bold transition-colors">${i}</button>`;
+            }
+          }
+
+          // Bouton Suivant (chevron_right)
+          html += `<button onclick="changePage(${currentPage + 1})" class="w-12 h-12 rounded-xl border border-outline-variant flex items-center justify-center hover:bg-surface-container-high transition-colors disabled:opacity-30 disabled:cursor-not-allowed" ${currentPage === totalPages ? "disabled" : ""}>
+                        <span class="material-symbols-outlined">chevron_right</span>
+                     </button>`;
+
+          paginationContainer.innerHTML = html;
+        }
+
+        // Fonction globale pour changer de page
+        window.changePage = function (newPage) {
+          currentPage = newPage;
+          fetchAndRenderEvents();
+          // Remonte doucement en haut de la liste quand on change de page
+          if (countHeader)
+            countHeader.scrollIntoView({ behavior: "smooth", block: "start" });
+        };
+
+        // --- ECOUTEURS (Quand on touche à un filtre, on retourne à la page 1) ---
+        function updateFilters() {
+          currentPage = 1;
+          fetchAndRenderEvents();
+        }
+
+        if (searchInput) searchInput.addEventListener("input", updateFilters);
+        catCheckboxes.forEach((cb) =>
+          cb.addEventListener("change", updateFilters),
+        );
+        if (locationFilter)
+          locationFilter.addEventListener("change", updateFilters);
+        if (sortSelect) sortSelect.addEventListener("change", updateFilters);
+        if (priceFilter) {
+          priceFilter.addEventListener(
+            "input",
+            (e) =>
+              (priceDisplay.textContent =
+                Number(e.target.value).toLocaleString("fr-FR") + " FCFA"),
+          );
+          priceFilter.addEventListener("change", updateFilters);
+        }
+
+        // Chargement initial
+        await fetchAndRenderEvents();
+      });
+      document.getElementById("footer").innerHTML = btFooter();
+    </script>
+    <script src="pwa.js"></script>
+  </body>
+</html>

@@ -1,0 +1,582 @@
+<!doctype html>
+<html class="light" lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="bt-page" content="" />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#00502c" />
+    <meta
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+      name="viewport"
+    />
+    <title>GoEvent</title>
+    <link rel="icon" type="image/png" href="icons/favicon.png" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+      rel="stylesheet"
+    />
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              background: "#f9f9f9",
+              primary: "#00502c",
+              "outline-variant": "#bec9be",
+              "on-primary-fixed-variant": "#00522d",
+              "error-container": "#ffdad6",
+              "surface-dim": "#dadada",
+              "on-background": "#1a1c1c",
+              "tertiary-fixed-dim": "#ffb3b2",
+              "tertiary-container": "#bc002b",
+              "on-primary-fixed": "#00210f",
+              "on-tertiary": "#ffffff",
+              outline: "#6f7a70",
+              error: "#ba1a1a",
+              "on-surface-variant": "#3f4941",
+              "secondary-fixed": "#ffe08b",
+              "on-error": "#ffffff",
+              "primary-container": "#006b3c",
+              "surface-container": "#eeeeee",
+              "on-tertiary-fixed-variant": "#92001f",
+              surface: "#f9f9f9",
+              "inverse-on-surface": "#f1f1f1",
+              "inverse-primary": "#81d99f",
+              "on-error-container": "#93000a",
+              "surface-container-high": "#e8e8e8",
+              "surface-bright": "#f9f9f9",
+              "on-tertiary-fixed": "#410008",
+              "surface-container-lowest": "#ffffff",
+              "surface-container-highest": "#e2e2e2",
+              "on-secondary-fixed-variant": "#584400",
+              "surface-variant": "#e2e2e2",
+              "primary-fixed": "#9df6b9",
+              secondary: "#745b00",
+              "surface-container-low": "#f3f3f3",
+              "on-surface": "#1a1c1c",
+              "on-secondary-fixed": "#241a00",
+              "primary-fixed-dim": "#81d99f",
+              "on-tertiary-container": "#ffc9c8",
+              "on-secondary": "#ffffff",
+              "on-primary": "#ffffff",
+              "tertiary-fixed": "#ffdad9",
+              "inverse-surface": "#2f3131",
+              "surface-tint": "#046d3e",
+              "secondary-container": "#fecb00",
+              tertiary: "#8f001e",
+              "on-secondary-container": "#6e5700",
+              "secondary-fixed-dim": "#f1c100",
+              "on-primary-container": "#90e9ad",
+            },
+            borderRadius: {
+              DEFAULT: "0.25rem",
+              lg: "1rem",
+              xl: "1.5rem",
+              full: "9999px",
+            },
+            fontFamily: {
+              headline: ["Plus Jakarta Sans"],
+              body: ["Manrope"],
+              label: ["Manrope"],
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      .material-symbols-outlined {
+        font-variation-settings:
+          "FILL" 0,
+          "wght" 400,
+          "GRAD" 0,
+          "opsz" 24;
+      }
+      .lush-gradient {
+        background: linear-gradient(135deg, #00502c 0%, #006b3c 100%);
+      }
+      .glow-shadow-primary {
+        box-shadow: 0 10px 25px -5px rgba(0, 80, 44, 0.2);
+      }
+    </style>
+  </head>
+  <body
+    class="bg-surface font-body text-on-surface antialiased overflow-x-hidden"
+  >
+    <main class="min-h-screen flex flex-col md:flex-row">
+      <section
+        class="w-full md:w-1/2 md:min-h-screen h-[300px] md:h-auto lush-gradient flex flex-col md:justify-between p-8 md:p-16 relative overflow-hidden"
+      >
+        <div
+          class="absolute inset-0 opacity-10 pointer-events-none"
+          style="
+            background-image: url(&quot;https://lh3.googleusercontent.com/aida-public/AB6AXuBSKVMAAbDD7sSH23aOm8RMZDl5k2ifRdp0LmMwbNdF6k8tabA-2qNlVk3V0CSyDAevWd2TprQrhWAOwb7Z5_zS7dc-U5Pi2rGquVj4XgXS0uo-_09vbcEQN7xceGPzNLoorPvpnpJp6lPI1icpqWCm2lSRT1KLApkk4DKL9bu__x7oRXS7Ijfq0vBA499S6R81nClT27jFaAJLTobaRnzUo_ik0G12WSMmQU4BkLj0VtFrvkWoXTAASXdZPFyrnAgqBcrsVJH23g&quot;);
+          "
+        ></div>
+        <div class="relative z-10">
+          <div class="flex items-center space-x-3">
+            <img
+              src="icons/event.png"
+              alt="Logo"
+              class="w-12 h-12 rounded-xl border-2 border-white/50 shadow-lg object-cover"
+            />
+            <span
+              class="text-3xl md:text-2xl font-headline font-extrabold tracking-tight text-surface-container-lowest"
+              >GoEvent</span
+            >
+          </div>
+
+          <div class="mt-24 space-y-6 hidden md:block">
+            <h1
+              class="text-6xl font-headline font-extrabold text-white leading-tight"
+            >
+              Vivez la culture <br />
+              <span class="text-primary-fixed">sans frontières.</span>
+            </h1>
+            <p
+              class="text-primary-fixed text-xl max-w-md opacity-90 leading-relaxed"
+            >
+              Accédez aux événements les plus exclusifs de la République
+              Centrafricaine en quelques clics.
+            </p>
+          </div>
+        </div>
+
+        <div class="relative z-10 mt-auto hidden md:block">
+          <div class="grid grid-cols-2 gap-8">
+            <div
+              class="flex items-center space-x-4 bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/10"
+            >
+              <span
+                class="material-symbols-outlined text-secondary-fixed text-3xl"
+                >verified_user</span
+              >
+              <div>
+                <p class="text-white font-bold text-sm">Paiement Sécurisé</p>
+                <p class="text-primary-fixed text-xs">Certifié Orange Money</p>
+              </div>
+            </div>
+            <div
+              class="flex items-center space-x-4 bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/10"
+            >
+              <span
+                class="material-symbols-outlined text-secondary-fixed text-3xl"
+                >local_activity</span
+              >
+              <div>
+                <p class="text-white font-bold text-sm">Billets Instantanés</p>
+                <p class="text-primary-fixed text-xs">QR Code par SMS/Email</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="w-full md:w-1/2 bg-surface flex items-center justify-center p-8 md:p-24"
+      >
+        <div class="w-full max-w-md space-y-10">
+          <header class="space-y-3">
+            <h2 class="text-4xl font-headline font-extrabold text-on-surface">
+              Connexion
+            </h2>
+            <p class="text-on-surface-variant font-medium">
+              Bon retour ! Accédez à vos billets et réservations.
+            </p>
+          </header>
+          <form
+            class="space-y-6"
+            onsubmit="
+              event.preventDefault();
+              doLogin();
+            "
+          >
+            <div class="space-y-2">
+              <label
+                class="text-xs font-bold uppercase tracking-widest text-outline ml-1"
+                >Numéro de Téléphone</label
+              >
+              <div class="relative group">
+                <div
+                  class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none"
+                >
+                  <span
+                    class="text-on-surface-variant font-bold border-r border-outline-variant pr-3 mr-1"
+                    >+236</span
+                  >
+                </div>
+                <input
+                  class="w-full pl-20 pr-4 py-4 bg-surface-container-high rounded-xl border-none focus:ring-2 focus:ring-primary/20 focus:bg-surface-container-lowest transition-all text-on-surface font-bold text-lg placeholder:text-outline/50"
+                  placeholder="00 00 00 00"
+                  type="tel"
+                  id="phone"
+                />
+              </div>
+            </div>
+            <div class="space-y-2">
+              <div class="flex justify-between items-center px-1">
+                <label
+                  class="text-xs font-bold uppercase tracking-widest text-outline"
+                  >Code PIN (4 chiffres)</label
+                >
+                <a
+                  class="text-xs font-bold text-primary hover:underline"
+                  href="#"
+                  onclick="openForgotModal()"
+                  >Oublié ?</a
+                >
+              </div>
+              <div class="relative group">
+                <div
+                  class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none"
+                >
+                  <span
+                    class="material-symbols-outlined text-outline group-focus-within:text-primary transition-colors"
+                    >lock</span
+                  >
+                </div>
+                <input
+                  class="w-full pl-12 pr-4 py-4 bg-surface-container-high rounded-xl border-none focus:ring-2 focus:ring-primary/20 focus:bg-surface-container-lowest transition-all tracking-[0.5em] text-on-surface font-bold text-lg placeholder:text-outline/50"
+                  maxlength="4"
+                  placeholder="••••"
+                  type="password"
+                  id="pin"
+                />
+              </div>
+            </div>
+            <div
+              class="bg-secondary-container/30 p-4 rounded-xl flex items-center space-x-4 border border-secondary-container/50"
+            >
+              <div class="bg-secondary-container p-2 rounded-lg shrink-0">
+                <span
+                  class="material-symbols-outlined text-on-secondary-container"
+                  style="font-variation-settings: &quot;FILL&quot; 1"
+                  >payments</span
+                >
+              </div>
+              <p class="text-sm text-on-secondary-fixed-variant leading-tight">
+                Connectez-vous avec vos identifiants sécurisés
+                <strong>Orange Money</strong>.
+              </p>
+            </div>
+            <div class="pt-4 space-y-6">
+              <button
+                class="w-full py-4 lush-gradient text-white font-headline font-bold rounded-full glow-shadow-primary hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center space-x-2"
+                type="button"
+                onclick="doLogin()"
+              >
+                <span>Se connecter</span>
+                <span class="material-symbols-outlined text-xl"
+                  >arrow_forward</span
+                >
+              </button>
+              <div class="text-center">
+                <p class="text-on-surface-variant font-medium">
+                  Pas encore de compte ?
+                  <a
+                    class="text-primary font-bold hover:underline ml-1"
+                    href="signup.html"
+                    >Créer un compte</a
+                  >
+                </p>
+              </div>
+            </div>
+          </form>
+        </div>
+      </section>
+      <div
+        id="forgot-modal"
+        class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[1000] hidden items-center justify-center p-4 opacity-0 transition-opacity duration-300"
+      >
+        <div
+          class="bg-white rounded-[2.5rem] p-8 max-w-sm w-full shadow-2xl transform scale-95 transition-transform duration-300 relative"
+          id="forgot-card"
+        >
+          <button
+            onclick="closeForgotModal()"
+            class="absolute top-5 right-5 text-gray-400 hover:text-gray-900 transition-colors bg-gray-50 rounded-full w-8 h-8 flex items-center justify-center"
+          >
+            <span class="material-symbols-outlined text-[20px]">close</span>
+          </button>
+
+          <div id="forgot-step-1">
+            <div
+              class="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-6 mx-auto"
+            >
+              <span class="material-symbols-outlined text-3xl">mail</span>
+            </div>
+            <h3
+              class="text-2xl font-black font-headline text-center mb-2 text-gray-900"
+            >
+              Code Oublié ?
+            </h3>
+            <p class="text-sm text-gray-500 text-center mb-6 font-medium">
+              Entrez l'adresse email associée à votre compte. Nous allons vous
+              envoyer un code de sécurité.
+            </p>
+
+            <div class="space-y-4">
+              <input
+                type="email"
+                id="forgot-email"
+                placeholder="Adresse email"
+                class="w-full px-4 py-4 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-primary/20 transition-all font-bold text-center text-gray-900 outline-none"
+              />
+              <button
+                onclick="sendForgotCode()"
+                id="btn-forgot-send"
+                class="w-full py-4 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 active:scale-95 transition-all"
+              >
+                Envoyer le code
+              </button>
+            </div>
+          </div>
+
+          <div id="forgot-step-2" class="hidden">
+            <div
+              class="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-6 mx-auto"
+            >
+              <span class="material-symbols-outlined text-3xl">key</span>
+            </div>
+            <h3
+              class="text-2xl font-black font-headline text-center mb-2 text-gray-900"
+            >
+              Vérification
+            </h3>
+            <p class="text-[13px] text-gray-500 text-center mb-6 font-medium">
+              Consultez vos emails. Entrez le code à 6 lettres reçu, puis
+              choisissez votre nouveau code PIN.
+            </p>
+
+            <div class="space-y-4">
+              <div>
+                <label
+                  class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 text-center"
+                  >Code reçu (6 lettres)</label
+                >
+                <input
+                  type="text"
+                  id="forgot-code"
+                  maxlength="6"
+                  placeholder="ABCDEF"
+                  class="w-full px-4 py-4 bg-orange-50 border border-orange-100 rounded-xl focus:ring-2 focus:ring-orange-500/20 transition-all font-black text-2xl tracking-[0.2em] text-center uppercase outline-none text-orange-600"
+                />
+              </div>
+              <div>
+                <label
+                  class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 text-center"
+                  >Nouveau PIN (4 chiffres)</label
+                >
+                <input
+                  type="password"
+                  id="forgot-new-pin"
+                  maxlength="4"
+                  placeholder="••••"
+                  class="w-full px-4 py-4 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-primary/20 transition-all font-black text-2xl tracking-[0.5em] text-center outline-none text-gray-900"
+                />
+              </div>
+              <button
+                onclick="resetPassword()"
+                id="btn-forgot-reset"
+                class="w-full py-4 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 active:scale-95 transition-all"
+              >
+                Valider le nouveau PIN
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script src="bt-api.js"></script>
+    <script src="pwa.js"></script>
+    <script>
+      if (btAuth.isLogged()) {
+        var u = btAuth.getUser();
+        window.location.href = btDashRoute(u && u.role);
+      }
+
+      async function doLogin() {
+        var phoneInput = document.getElementById("phone");
+        var pinInput = document.getElementById("pin");
+        if (!phoneInput || !pinInput) return;
+
+        var phone = phoneInput.value.trim();
+        var pin = pinInput.value.trim();
+
+        if (!phone || pin.length < 4) {
+          btToast("Numéro de téléphone et PIN (4 chiffres) requis.", "error");
+          return;
+        }
+
+        var btn = document.querySelector('button[type="button"]');
+        var originalHTML = btn.innerHTML;
+        btn.innerHTML = "Connexion en cours...";
+
+        try {
+          var formattedPhone = phone.startsWith("+236")
+            ? phone
+            : "+236" + phone;
+          var responseData = await btApi.post("/auth/login", {
+            phone_number: formattedPhone,
+            pin_code: pin,
+          });
+
+          btAuth.save(responseData.access_token, responseData.user);
+          btToast("Connexion réussie ! Redirection...");
+
+          setTimeout(function () {
+            window.location.href = btDashRoute(
+              responseData.user && responseData.user.role,
+            );
+          }, 700);
+        } catch (error) {
+          btToast(error.message || "Erreur de connexion", "error");
+          btn.innerHTML = originalHTML;
+        }
+      }
+      // --- LOGIQUE MOT DE PASSE OUBLIÉ ---
+
+      function openForgotModal() {
+        const modal = document.getElementById("forgot-modal");
+        const card = document.getElementById("forgot-card");
+
+        // Réinitialisation de l'affichage (retour à l'étape 1)
+        document.getElementById("forgot-step-1").classList.remove("hidden");
+        document.getElementById("forgot-step-2").classList.add("hidden");
+        document.getElementById("forgot-email").value = "";
+        document.getElementById("forgot-code").value = "";
+        document.getElementById("forgot-new-pin").value = "";
+
+        // Animation d'ouverture
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+        setTimeout(() => {
+          modal.classList.remove("opacity-0");
+          card.classList.remove("scale-95");
+        }, 10);
+      }
+
+      function closeForgotModal() {
+        const modal = document.getElementById("forgot-modal");
+        const card = document.getElementById("forgot-card");
+
+        localStorage.removeItem("bt_reset_email");
+
+        // Animation de fermeture
+        modal.classList.add("opacity-0");
+        card.classList.add("scale-95");
+        setTimeout(() => {
+          modal.classList.add("hidden");
+          modal.classList.remove("flex");
+        }, 300);
+      }
+
+      async function sendForgotCode() {
+        const email = document.getElementById("forgot-email").value.trim();
+        if (!email || !email.includes("@")) {
+          if (typeof btToast === "function")
+            btToast("Veuillez entrer un email valide.", "error");
+          return;
+        }
+
+        const btn = document.getElementById("btn-forgot-send");
+        const origText = btn.innerHTML;
+        btn.innerHTML =
+          '<span class="material-symbols-outlined animate-spin align-middle mr-2">sync</span>Envoi...';
+        btn.disabled = true;
+
+        try {
+          // APPEL AU SERVEUR (Étape 1)
+          await btApi.post("/auth/forgot-password", { email: email });
+
+          if (typeof btToast === "function")
+            btToast("Code envoyé ! Vérifiez votre boîte mail.", "success");
+
+          localStorage.setItem("bt_reset_email", email);
+
+          // On passe à l'étape 2
+          document.getElementById("forgot-step-1").classList.add("hidden");
+          document.getElementById("forgot-step-2").classList.remove("hidden");
+        } catch (e) {
+          if (typeof btToast === "function")
+            btToast(e.message || "Cet email n'est pas reconnu.", "error");
+        } finally {
+          btn.innerHTML = origText;
+          btn.disabled = false;
+        }
+      }
+
+      async function resetPassword() {
+        const email = document.getElementById("forgot-email").value.trim();
+        const code = document
+          .getElementById("forgot-code")
+          .value.trim()
+          .toUpperCase();
+        const newPin = document.getElementById("forgot-new-pin").value.trim();
+
+        if (code.length !== 6) {
+          if (typeof btToast === "function")
+            btToast("Le code doit contenir exactement 6 lettres.", "error");
+          return;
+        }
+        if (newPin.length !== 4) {
+          if (typeof btToast === "function")
+            btToast("Le PIN doit contenir exactement 4 chiffres.", "error");
+          return;
+        }
+
+        const btn = document.getElementById("btn-forgot-reset");
+        const origText = btn.innerHTML;
+        btn.innerHTML = "Validation...";
+        btn.disabled = true;
+
+        try {
+          // APPEL AU SERVEUR (Étape 2)
+          await btApi.post("/auth/reset-password", {
+            email: email,
+            code: code,
+            new_password: newPin,
+          });
+
+          if (typeof btToast === "function")
+            btToast(
+              "Code PIN modifié ! Vous pouvez vous connecter.",
+              "success",
+            );
+
+          localStorage.removeItem("bt_reset_email");
+
+          closeForgotModal();
+        } catch (e) {
+          if (typeof btToast === "function")
+            btToast(e.message || "Code invalide ou expiré.", "error");
+        } finally {
+          btn.innerHTML = origText;
+          btn.disabled = false;
+        }
+      }
+      // NOUVEAU : Vérification de sauvegarde au chargement de la page
+      document.addEventListener("DOMContentLoaded", () => {
+        const emailEnAttente = localStorage.getItem("bt_reset_email");
+
+        if (emailEnAttente) {
+          // On remplit le champ caché
+          document.getElementById("forgot-email").value = emailEnAttente;
+
+          // On ouvre la modale
+          openForgotModal();
+
+          // On saute directement à l'étape 2 (saisie du code)
+          document.getElementById("forgot-step-1").classList.add("hidden");
+          document.getElementById("forgot-step-2").classList.remove("hidden");
+        }
+      });
+    </script>
+  </body>
+</html>

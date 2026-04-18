@@ -1,0 +1,658 @@
+<!doctype html>
+<html class="light" lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+      name="viewport"
+    />
+    <title>GoEvent</title>
+    <link rel="icon" type="image/png" href="icons/favicon.png" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#00502c" />
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              background: "#f9f9f9",
+              primary: "#00502c",
+              "outline-variant": "#bec9be",
+              "on-primary-fixed-variant": "#00522d",
+              outline: "#6f7a70",
+              error: "#ba1a1a",
+              "on-surface-variant": "#3f4941",
+              "secondary-fixed": "#ffe08b",
+              "primary-container": "#006b3c",
+              "surface-container": "#eeeeee",
+              surface: "#f9f9f9",
+              "surface-container-high": "#e8e8e8",
+              "surface-container-lowest": "#ffffff",
+              "surface-container-highest": "#e2e2e2",
+              "surface-variant": "#e2e2e2",
+              "primary-fixed": "#9df6b9",
+              secondary: "#745b00",
+              "surface-container-low": "#f3f3f3",
+              "on-surface": "#1a1c1c",
+              "primary-fixed-dim": "#81d99f",
+              "on-secondary": "#ffffff",
+              "on-primary": "#ffffff",
+              "inverse-surface": "#2f3131",
+              "secondary-container": "#fecb00",
+              tertiary: "#8f001e",
+              "on-secondary-container": "#6e5700",
+            },
+            borderRadius: {
+              DEFAULT: "0.25rem",
+              lg: "0.5rem",
+              xl: "0.75rem",
+              full: "9999px",
+            },
+            fontFamily: {
+              headline: ["Plus Jakarta Sans"],
+              body: ["Manrope"],
+              label: ["Manrope"],
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      .material-symbols-outlined {
+        font-variation-settings:
+          "FILL" 0,
+          "wght" 400,
+          "GRAD" 0,
+          "opsz" 24;
+      }
+      .glass-nav {
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+      }
+      .hero-gradient {
+        background: linear-gradient(135deg, #00502c 0%, #006b3c 100%);
+      }
+    </style>
+  </head>
+  <body
+    data-page="follow"
+    class="bg-surface text-on-surface font-body flex flex-col min-h-screen"
+  >
+    <div
+      class="md:hidden fixed top-0 left-0 right-0 h-[72px] bg-white/95 backdrop-blur border-b border-gray-100 z-[100] flex items-center justify-between px-6"
+    >
+      <a
+        href="index.html"
+        class="flex items-center gap-2 hover:opacity-80 transition-opacity"
+      >
+        <img
+          src="icons/event.png"
+          alt="Logo GoEvent"
+          class="w-10 h-10 rounded-3xl object-cover shadow-sm"
+        />
+        <span
+          class="font-headline font-black text-2xl text-primary tracking-tight truncate"
+          >GoEvent</span
+        >
+      </a>
+      <div class="flex items-center gap-1">
+        <button
+          onclick="requestNotif()"
+          class="p-2 text-gray-500 hover:text-primary transition-colors relative"
+        >
+          <span class="material-symbols-outlined" style="font-size: 28px"
+            >notifications</span
+          >
+          <span
+            class="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"
+          ></span>
+        </button>
+        <button
+          onclick="toggleMobileMenu()"
+          class="p-2 -mr-2 text-gray-700 hover:text-primary transition-colors focus:outline-none"
+        >
+          <span class="material-symbols-outlined" style="font-size: 32px"
+            >menu</span
+          >
+        </button>
+      </div>
+    </div>
+
+    <div id="navbar" class="hidden md:block shrink-0 z-40"></div>
+
+    <div
+      id="mobile-menu"
+      class="fixed inset-0 bg-gray-900/60 z-[200] hidden opacity-0 transition-opacity duration-300"
+    >
+      <div class="absolute inset-0" onclick="toggleMobileMenu()"></div>
+      <div
+        id="mobile-drawer"
+        class="absolute right-0 top-0 bottom-0 w-[80%] max-w-xs bg-white shadow-2xl transform translate-x-full transition-transform duration-300 flex flex-col p-6"
+      >
+        <div
+          class="flex justify-between items-center mb-8 border-b border-gray-100 pb-4"
+        >
+          <span class="font-headline font-black text-xl text-primary"
+            >Menu</span
+          >
+          <button
+            onclick="toggleMobileMenu()"
+            class="p-2 text-gray-400 hover:text-red-500 transition-colors"
+          >
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <nav class="space-y-1 flex-1 overflow-y-auto">
+          <a
+            href="index.html"
+            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
+            ><span class="material-symbols-outlined">home</span> Accueil</a
+          >
+          <a
+            href="event.html"
+            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
+            ><span class="material-symbols-outlined">stadium</span>
+            Événements</a
+          >
+          <a
+            href="follow.html"
+            class="flex items-center gap-3 p-4 bg-primary/10 rounded-2xl text-primary font-bold"
+            ><span class="material-symbols-outlined">favorite</span> Follow</a
+          >
+          <a
+            href="partenaire.html"
+            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
+            ><span class="material-symbols-outlined">handshake</span>
+            Partenaires</a
+          >
+          <a
+            href="a_propos.html"
+            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
+            ><span class="material-symbols-outlined">info</span> À propos</a
+          >
+        </nav>
+
+        <div
+          id="mobile-auth-section"
+          class="mt-4 pt-6 border-t border-gray-100 space-y-3"
+        >
+          <a
+            href="login.html"
+            class="block w-full text-center text-primary font-bold py-3.5 rounded-xl border-2 border-primary hover:bg-primary/5 transition-all"
+            >Se connecter</a
+          >
+          <a
+            href="signup.html"
+            class="block w-full text-center bg-primary text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 active:scale-95 transition-all"
+            >S'inscrire</a
+          >
+        </div>
+      </div>
+    </div>
+
+    <main class="flex-1 pt-[72px] md:pt-20">
+      <section
+        class="relative hero-gradient py-20 px-6 md:px-16 overflow-hidden"
+      >
+        <div class="absolute inset-0 opacity-10">
+          <img
+            class="w-full h-full object-cover"
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuBLgDK-_QkFA7YCZQAtSH6m1rbySJFBnLlXxmapfO0X-x4Im4k-29hluoN5MZidYlINb7qZU7f1T0vqBAB4KffEYNgaTVsggqeYMOSWTwjUmKMcs_SyJ6IgfsmyPzAFaT3gt-CTcIBeJ2Wv9m1VH9MTy1HS_IbFMxgvFDliXYMLsfB_Js0M08u9wjMaEII1GyjgHN0xKAR53UxQtBR5Dkagtbzl01pQqj_xKfn0ji2XT7VN9ZCuHFNgBDcrtWtRddBvnGq57cb8Mw"
+            alt=""
+          />
+        </div>
+        <div class="relative z-10 max-w-3xl">
+          <span
+            class="text-primary-fixed font-bold uppercase tracking-widest text-xs"
+            >Découverte</span
+          >
+          <h1
+            class="text-3xl sm:text-4xl md:text-6xl font-extrabold font-headline text-white leading-tight mt-3 mb-6 break-words"
+          >
+            Suivez vos artistes<br />& organisateurs
+          </h1>
+          <p class="text-base sm:text-lg text-primary-fixed/90 max-w-xl">
+            Recevez une notification dès qu'un artiste ou une organisation que
+            vous suivez publie un nouvel événement sur GoEvent.
+          </p>
+        </div>
+      </section>
+
+      <section class="py-16 px-6 md:px-16 w-full max-w-[100vw]">
+        <div class="max-w-2xl mb-12">
+          <div
+            class="bg-white p-2 rounded-full shadow-md border border-gray-100 flex items-center gap-2 focus-within:ring-2 focus-within:ring-primary/20 transition-all"
+          >
+            <span class="material-symbols-outlined text-gray-400 ml-3 shrink-0"
+              >search</span
+            >
+            <input
+              id="artist-search"
+              type="text"
+              placeholder="Rechercher un organisateur..."
+              class="flex-1 min-w-0 w-full border-none focus:ring-0 bg-transparent text-gray-900 font-medium py-3 outline-none"
+            />
+            <button
+              onclick="applyFilters()"
+              class="bg-primary text-white px-6 py-3 rounded-full font-bold text-sm hover:bg-primary-container active:scale-95 transition-all shadow-sm shrink-0"
+            >
+              Rechercher
+            </button>
+          </div>
+        </div>
+        <div
+          class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-6"
+          id="artists-grid"
+        >
+          <div
+            class="bg-surface-container-lowest rounded-xl overflow-hidden group hover:shadow-xl transition-shadow"
+          >
+            <div class="h-32 hero-gradient relative">
+              <div class="absolute inset-0 opacity-20">
+                <img
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuBLgDK-_QkFA7YCZQAtSH6m1rbySJFBnLlXxmapfO0X-x4Im4k-29hluoN5MZidYlINb7qZU7f1T0vqBAB4KffEYNgaTVsggqeYMOSWTwjUmKMcs_SyJ6IgfsmyPzAFaT3gt-CTcIBeJ2Wv9m1VH9MTy1HS_IbFMxgvFDliXYMLsfB_Js0M08u9wjMaEII1GyjgHN0xKAR53UxQtBR5Dkagtbzl01pQqj_xKfn0ji2XT7VN9ZCuHFNgBDcrtWtRddBvnGq57cb8Mw"
+                  class="w-full h-full object-cover"
+                  alt=""
+                />
+              </div>
+            </div>
+            <div class="p-5 text-center">
+              <div
+                class="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-primary-container flex items-center justify-center font-extrabold text-xl text-white mx-auto -mt-12 mb-3 border-4 border-surface-container-lowest shadow-lg"
+              >
+                SB
+              </div>
+              <h3 class="font-bold font-headline text-on-surface truncate">
+                Sango Breeze
+              </h3>
+              <p
+                class="text-xs text-outline mb-1 flex items-center justify-center gap-1"
+              >
+                <span class="material-symbols-outlined text-xs">music_note</span
+                >Artiste
+              </p>
+              <p class="text-xs text-on-surface-variant mb-4">12 événements</p>
+              <button
+                onclick="followArtist(this, 'Sango Breeze')"
+                class="w-full py-2.5 bg-gradient-to-r from-primary to-primary-container text-white rounded-xl font-bold text-sm hover:opacity-90 transition-all"
+              >
+                <span class="material-symbols-outlined text-sm align-middle"
+                  >person_add</span
+                >
+                Suivre
+              </button>
+            </div>
+          </div>
+
+          <div
+            class="bg-surface-container-lowest rounded-xl overflow-hidden group hover:shadow-xl transition-shadow"
+          >
+            <div
+              class="h-32 bg-gradient-to-br from-purple-700 to-purple-900 relative"
+            ></div>
+            <div class="p-5 text-center">
+              <div
+                class="w-16 h-16 rounded-full bg-gradient-to-br from-purple-600 to-purple-800 flex items-center justify-center font-extrabold text-xl text-white mx-auto -mt-12 mb-3 border-4 border-surface-container-lowest shadow-lg"
+              >
+                BE
+              </div>
+              <h3 class="font-bold font-headline text-on-surface truncate">
+                GoEvent Pro
+              </h3>
+              <p
+                class="text-xs text-outline mb-1 flex items-center justify-center gap-1"
+              >
+                <span class="material-symbols-outlined text-xs">business</span
+                >Organisation
+              </p>
+              <p class="text-xs text-on-surface-variant mb-4">28 événements</p>
+              <button
+                onclick="followArtist(this, 'GoEvent Pro')"
+                class="w-full py-2.5 bg-gradient-to-r from-primary to-primary-container text-white rounded-xl font-bold text-sm hover:opacity-90 transition-all"
+              >
+                <span class="material-symbols-outlined text-sm align-middle"
+                  >person_add</span
+                >
+                Suivre
+              </button>
+            </div>
+          </div>
+
+          <div
+            class="bg-surface-container-lowest rounded-xl overflow-hidden group hover:shadow-xl transition-shadow"
+          >
+            <div
+              class="h-32 bg-gradient-to-br from-orange-600 to-red-700 relative"
+            ></div>
+            <div class="p-5 text-center">
+              <div
+                class="w-16 h-16 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center font-extrabold text-xl text-white mx-auto -mt-12 mb-3 border-4 border-surface-container-lowest shadow-lg"
+              >
+                R2
+              </div>
+              <h3 class="font-bold font-headline text-on-surface truncate">
+                Rire 236
+              </h3>
+              <p
+                class="text-xs text-outline mb-1 flex items-center justify-center gap-1"
+              >
+                <span class="material-symbols-outlined text-xs">music_note</span
+                >Artiste
+              </p>
+              <p class="text-xs text-on-surface-variant mb-4">7 événements</p>
+              <button
+                onclick="followArtist(this, 'Rire 236')"
+                class="w-full py-2.5 bg-gradient-to-r from-primary to-primary-container text-white rounded-xl font-bold text-sm hover:opacity-90 transition-all"
+              >
+                <span class="material-symbols-outlined text-sm align-middle"
+                  >person_add</span
+                >
+                Suivre
+              </button>
+            </div>
+          </div>
+
+          <div
+            class="bg-surface-container-lowest rounded-xl overflow-hidden group hover:shadow-xl transition-shadow"
+          >
+            <div
+              class="h-32 bg-gradient-to-br from-blue-600 to-blue-900 relative"
+            ></div>
+            <div class="p-5 text-center">
+              <div
+                class="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center font-extrabold text-xl text-white mx-auto -mt-12 mb-3 border-4 border-surface-container-lowest shadow-lg"
+              >
+                FC
+              </div>
+              <h3 class="font-bold font-headline text-on-surface truncate">
+                Fondation Culture
+              </h3>
+              <p
+                class="text-xs text-outline mb-1 flex items-center justify-center gap-1"
+              >
+                <span class="material-symbols-outlined text-xs"
+                  >account_balance</span
+                >Institution
+              </p>
+              <p class="text-xs text-on-surface-variant mb-4">15 événements</p>
+              <button
+                onclick="followArtist(this, 'Fondation Culture')"
+                class="w-full py-2.5 bg-gradient-to-r from-primary to-primary-container text-white rounded-xl font-bold text-sm hover:opacity-90 transition-all"
+              >
+                <span class="material-symbols-outlined text-sm align-middle"
+                  >person_add</span
+                >
+                Suivre
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="mt-12 bg-[#ebf7ee] rounded-2xl p-5 md:p-6 flex flex-col md:flex-row items-center gap-6 border border-[#d3ecd9]"
+        >
+          <div
+            class="w-12 h-12 md:w-14 md:h-14 rounded-full bg-[#a3f0b9] flex items-center justify-center flex-shrink-0"
+          >
+            <span
+              class="material-symbols-outlined text-2xl text-[#00381f]"
+              style="font-variation-settings: &quot;FILL&quot; 1"
+              >notifications</span
+            >
+          </div>
+
+          <div class="flex-1 text-center md:text-left">
+            <h3
+              class="text-lg md:text-xl font-black font-headline text-[#00502c] mb-1"
+            >
+              Activez les notifications
+            </h3>
+            <p class="text-gray-600 text-sm">
+              Soyez alerté en temps réel dès qu'un artiste que vous suivez
+              publie un événement.
+            </p>
+          </div>
+
+          <button
+            id="btn-notif"
+            onclick="requestNotif()"
+            class="flex-shrink-0 w-full md:w-auto px-8 py-3.5 bg-[#00502c] text-white rounded-full font-bold shadow-lg shadow-green-900/20 hover:bg-[#003d21] active:scale-95 transition-all flex items-center justify-center gap-2"
+          >
+            <span
+              class="material-symbols-outlined text-[18px]"
+              style="font-variation-settings: &quot;FILL&quot; 1"
+              >notification_add</span
+            >
+            Activer
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <div id="footer"></div>
+    <div id="footer"></div>
+
+    <script src="bt-api.js"></script>
+    <script src="pwa.js"></script>
+    <script>
+      // 1. Initialisation des menus et footers
+      if (document.getElementById("navbar")) {
+        document.getElementById("navbar").innerHTML = btNavbar("follow");
+      }
+      document.getElementById("footer").innerHTML = btFooter();
+
+      function toggleMobileMenu() {
+        const menu = document.getElementById("mobile-menu");
+        const drawer = document.getElementById("mobile-drawer");
+        if (menu.classList.contains("hidden")) {
+          menu.classList.remove("hidden");
+          setTimeout(() => {
+            menu.classList.remove("opacity-0");
+            drawer.classList.remove("translate-x-full");
+          }, 10);
+        } else {
+          menu.classList.add("opacity-0");
+          drawer.classList.add("translate-x-full");
+          setTimeout(() => {
+            menu.classList.add("hidden");
+          }, 300);
+        }
+      }
+
+      function renderMobileAuth() {
+        const authContainer = document.getElementById("mobile-auth-section");
+        if (!authContainer) return;
+        if (btAuth.isLogged()) {
+          const user = btAuth.getUser();
+          const affichageNom =
+            user.full_name || user.name || user.username || "Membre";
+          authContainer.innerHTML = `
+            <div class="bg-primary/5 p-5 rounded-3xl mb-4 border border-primary/10">
+                <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Session active</p>
+                <p class="text-xl font-black text-gray-900 truncate">${affichageNom}</p>
+            </div>
+            <a href="${btDashRoute(user.role)}" class="flex items-center justify-center gap-2 w-full py-4 rounded-2xl bg-primary text-white font-black shadow-lg shadow-green-900/20 active:scale-95 transition-transform">
+                <span class="material-symbols-outlined">grid_view</span> Mon espace
+            </a>
+            <button onclick="btAuth.logout(); window.location.reload();" class="mt-3 flex items-center justify-center gap-2 w-full py-4 rounded-2xl text-red-600 bg-red-50 font-bold active:scale-95 transition-all hover:bg-red-100">
+                <span class="material-symbols-outlined text-sm">power_settings_new</span> Déconnexion
+            </button>
+          `;
+        }
+      }
+
+      // ==========================================
+      // 🚀 LE MOTEUR DE L'APPLICATION
+      // ==========================================
+
+      let organizers = []; // Notre liste locale
+
+      // 2. Charger les données depuis le serveur
+      async function loadOrganizers() {
+        const grid = document.getElementById("artists-grid");
+        grid.innerHTML =
+          '<div class="col-span-full text-center py-12"><div class="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div><p class="text-gray-500 font-bold">Chargement des organisateurs...</p></div>';
+
+        try {
+          organizers = await btApi.get("/organizers");
+          applyFilters(); // Affiche la liste initiale
+        } catch (error) {
+          console.error("Erreur API :", error);
+          grid.innerHTML =
+            '<div class="col-span-full py-12 text-center bg-red-50 rounded-3xl"><p class="text-red-500 font-bold">Erreur de connexion au serveur.</p></div>';
+        }
+      }
+
+      // 3. LA FONCTION MANQUANTE : Le Filtrage !
+      function applyFilters() {
+        const searchInput = document.getElementById("artist-search");
+        const query = searchInput ? searchInput.value.toLowerCase().trim() : "";
+
+        let filtered = organizers;
+
+        // Si on a tapé quelque chose, on filtre par nom
+        if (query !== "") {
+          filtered = filtered.filter((org) =>
+            org.name.toLowerCase().includes(query),
+          );
+        }
+
+        renderGrid(filtered); // On dessine les résultats
+      }
+
+      // 4. Le rendu visuel (Design Premium)
+      function renderGrid(data) {
+        const grid = document.getElementById("artists-grid");
+        if (!grid) return;
+
+        if (data.length === 0) {
+          grid.innerHTML =
+            '<div class="col-span-full py-12 text-center bg-white rounded-3xl border border-gray-100 shadow-sm"><span class="material-symbols-outlined text-5xl text-gray-300 mb-3 block">search_off</span><p class="text-gray-500 font-bold">Aucun résultat.</p></div>';
+          return;
+        }
+
+        grid.innerHTML = data
+          .map((org) => {
+            const btnText = org.is_followed ? "Abonné" : "Suivre";
+            const btnColor = org.is_followed
+              ? "bg-green-50 text-green-800 border border-green-200"
+              : "bg-primary text-white";
+            const iconFollow = org.is_followed ? "check" : "add";
+
+            return `
+                  <div class="bg-white rounded-[2rem] p-4 md:p-6 shadow-sm border border-gray-100 text-center transition-all hover:shadow-xl flex flex-col h-full group">
+                      
+                      <div class="w-16 h-16 md:w-24 md:h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-3 md:mb-5 text-xl md:text-3xl font-black text-primary shadow-[0_8px_24px_-8px_rgba(0,80,44,0.2)] border-2 border-gray-50 group-hover:scale-105 transition-transform">
+                          ${org.initials || "GO"}
+                      </div>
+                      
+                      <h3 class="font-black font-headline text-sm md:text-xl text-gray-900 mb-1 leading-tight line-clamp-1">${org.name}</h3>
+                      <p class="text-[9px] md:text-[10px] text-gray-400 uppercase tracking-widest font-bold mb-4 md:mb-6">${org.type}</p>
+                      
+                      <div class="flex gap-2 md:gap-3 mb-4 md:mb-8 mt-auto">
+                          <div class="bg-gray-50 rounded-xl md:rounded-2xl py-2 md:py-3 px-1 md:px-2 flex-1 border border-gray-100 transition-colors group-hover:bg-primary/5">
+                              <span class="block font-black text-sm md:text-xl text-gray-900">${org.eventsCount}</span>
+                              <span class="text-[8px] md:text-[9px] text-gray-500 uppercase tracking-widest font-bold mt-1 block">Events</span>
+                          </div>
+                          <div class="bg-gray-50 rounded-xl md:rounded-2xl py-2 md:py-3 px-1 md:px-2 flex-1 border border-gray-100 transition-colors group-hover:bg-primary/5">
+                              <span class="block font-black text-sm md:text-xl text-gray-900">${org.followersCount}</span>
+                              <span class="text-[8px] md:text-[9px] text-gray-500 uppercase tracking-widest font-bold mt-1 block">Followers</span>
+                          </div>
+                      </div>
+
+                      <button onclick="toggleFollow(${org.id})" class="w-full py-2.5 md:py-3.5 rounded-xl font-bold text-[11px] md:text-sm transition-all active:scale-95 flex items-center justify-center gap-1 md:gap-2 ${btnColor}">
+                          <span class="material-symbols-outlined text-base md:text-lg">${iconFollow}</span>
+                          ${btnText}
+                      </button>
+                  </div>
+              `;
+          })
+          .join("");
+      }
+
+      // 5. Action d'abonnement
+      async function toggleFollow(id) {
+        if (!btAuth.isLogged()) {
+          btToast("Connectez-vous pour suivre cet organisateur", "error");
+          setTimeout(() => (window.location.href = "login.html"), 1500);
+          return;
+        }
+        try {
+          const res = await btApi.post(`/organizers/${id}/follow`);
+
+          // Mise à jour magique sans recharger la page
+          const org = organizers.find((o) => o.id === id);
+          if (org) {
+            org.is_followed = res.is_followed;
+            org.followersCount += res.is_followed ? 1 : -1;
+          }
+          applyFilters(); // Redessiner avec les nouvelles données
+          if (typeof btToast === "function") btToast(res.message);
+        } catch (error) {
+          if (typeof btToast === "function")
+            btToast(error.message || "Erreur", "error");
+        }
+      }
+
+      // 6. Action de notification (Cloche)
+      function requestNotif() {
+        const btn = document.getElementById("btn-notif");
+        if (!("Notification" in window)) {
+          if (typeof btToast === "function")
+            btToast("Navigateur incompatible", "error");
+          return;
+        }
+        Notification.requestPermission().then(function (permission) {
+          if (permission === "granted") {
+            if (typeof btToast === "function")
+              btToast("Notifications activées !");
+            if (btn) {
+              btn.innerHTML =
+                '<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: \'FILL\' 1">notifications_active</span> Activé';
+              btn.classList.remove(
+                "bg-[#00502c]",
+                "hover:bg-[#003d21]",
+                "text-white",
+              );
+              btn.classList.add(
+                "bg-[#a3f0b9]",
+                "text-[#00381f]",
+                "cursor-default",
+                "shadow-none",
+              );
+              btn.disabled = true;
+            }
+          } else {
+            if (typeof btToast === "function")
+              btToast("Permission refusée.", "error");
+          }
+        });
+      }
+
+      // 7. Lancement automatique au démarrage
+      document.addEventListener("DOMContentLoaded", () => {
+        if (typeof renderMobileAuth === "function") renderMobileAuth();
+        loadOrganizers();
+
+        // BONUS : Permettre de chercher en appuyant sur la touche "Entrée"
+        const searchInput = document.getElementById("artist-search");
+        if (searchInput) {
+          searchInput.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") applyFilters();
+          });
+        }
+      });
+    </script>
+  </body>
+</html>

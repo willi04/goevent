@@ -1,0 +1,1263 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+      name="viewport"
+    />
+    <title>GoEvent</title>
+    <link rel="icon" type="image/png" href="icons/favicon.png" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#f9f9f9" />
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: "#00502c",
+              "primary-container": "#006b3c",
+              "secondary-container": "#fecb00",
+              surface: "#f9f9f9",
+              "on-surface": "#1a1c1c",
+            },
+            fontFamily: { headline: ["Plus Jakarta Sans"], body: ["Manrope"] },
+          },
+        },
+      };
+    </script>
+    <style>
+      .material-symbols-outlined {
+        font-variation-settings:
+          "FILL" 0,
+          "wght" 400,
+          "GRAD" 0,
+          "opsz" 24;
+      }
+      .lush-gradient {
+        background: linear-gradient(135deg, #00502c, #006b3c);
+      }
+      /* Sidebar PC */
+      .sb-link {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        border-radius: 14px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: #6b7280;
+        cursor: pointer;
+        transition: all 0.15s;
+        margin-bottom: 3px;
+        font-family: Manrope, sans-serif;
+        border: none;
+        background: transparent;
+        width: 100%;
+        text-align: left;
+      }
+      .sb-link:hover,
+      .sb-link.active {
+        background: #ecf9f3;
+        color: #00502c;
+        font-weight: 700;
+      }
+      .sb-link.active .material-symbols-outlined {
+        font-variation-settings: "FILL" 1;
+      }
+
+      /* Mobile Drawer Links */
+      .mo-link-drawer {
+        position: relative;
+        padding: 8px 12px;
+        border-radius: 16px;
+        transition: all 0.3s ease;
+      }
+      .mo-link-drawer.active {
+        background-color: rgba(0, 80, 44, 0.1);
+        color: #00502c;
+        font-weight: 700;
+      }
+      .mo-link-drawer.active .material-symbols-outlined {
+        color: #00502c;
+        font-variation-settings: "FILL" 1;
+      }
+    </style>
+  </head>
+  <body
+    class="bg-gray-50 font-body text-on-surface antialiased pt-[72px] flex-col min-h-screen"
+  >
+    <div id="navbar" class="hidden md:block"></div>
+
+    <div
+      class="md:hidden fixed top-0 left-0 right-0 h-[72px] bg-white/95 backdrop-blur border-b border-gray-100 z-40 flex items-center justify-between px-5 shadow-sm"
+    >
+      <a href="index.html" class="flex items-center gap-2 transition-opacity"
+        ><img
+          src="icons/event.png"
+          alt="Logo"
+          class="w-10 h-10 rounded-3xl shadow-sm"
+        /><span
+          class="text-2xl font-bold tracking-tight bg-gradient-to-r from-emerald-900 to-emerald-700 bg-clip-text text-transparent font-headline"
+          >GoEvent</span
+        ></a
+      >
+      <button
+        onclick="toggleMobileMenu()"
+        class="p-2 -mr-2 text-gray-600 hover:text-primary transition-colors focus:outline-none"
+      >
+        <span class="material-symbols-outlined" style="font-size: 32px"
+          >menu</span
+        >
+      </button>
+    </div>
+
+    <div
+      id="mobile-menu"
+      class="fixed inset-0 bg-gray-900/40 z-[100] opacity-0 transition-opacity duration-300"
+    >
+      <div class="absolute inset-0" onclick="toggleMobileMenu()"></div>
+      <div
+        id="mobile-drawer"
+        class="absolute right-0 top-0 bottom-0 w-[85%] max-w-sm bg-white shadow-2xl transform translate-x-full transition-transform duration-300 flex flex-col"
+      >
+        <div
+          class="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50"
+        >
+          <span
+            class="font-headline #00502c font-extrabold text-lg text-gray-900"
+            >Mon Espace</span
+          >
+          <button
+            onclick="toggleMobileMenu()"
+            class="p-2 text-gray-500 hover:text-red-500 rounded-full hover:bg-red-50 transition-colors"
+          >
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <div class="p-6 border-gray-100 flex items-center gap-4">
+          <div
+            id="mo-avatar"
+            class="w-12 h-12 rounded-full lush-gradient text-white flex items-center justify-center font-bold text-lg shadow-inner shrink-0"
+          ></div>
+          <div class="flex-1 min-w-0">
+            <p
+              id="mo-name"
+              class="font-extrabold text-base text-gray-900 font-headline tracking-tight truncate dyn-user-name"
+            ></p>
+            <p
+              class="text-[11px] text-gray-500 font-bold uppercase tracking-widest mt-0.5 truncate"
+            >
+              Fan
+            </p>
+          </div>
+        </div>
+
+        <nav class="p-4 flex-1 overflow-y-auto space-y-2">
+          <a
+            href="#"
+            id="mo-link-dash-drawer"
+            onclick="
+              showSection('dash');
+              toggleMobileMenu();
+            "
+            class="mo-link-drawer active flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all"
+          >
+            <span class="material-symbols-outlined opacity-70">dashboard</span>
+            Tableau de bord
+          </a>
+          <a
+            href="#"
+            id="mo-link-tickets-drawer"
+            onclick="
+              showSection('tickets');
+              chargerMesBillets();
+              toggleMobileMenu();
+            "
+            class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all"
+          >
+            <span class="material-symbols-outlined opacity-70"
+              >confirmation_number</span
+            >
+            Mes Billets
+          </a>
+          <a
+            href="#"
+            id="mo-link-favorites-drawer"
+            onclick="
+              btShowFavorites();
+              toggleMobileMenu();
+            "
+            class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all"
+          >
+            <span class="material-symbols-outlined opacity-70">favorite</span>
+            Favoris
+          </a>
+          <a
+            href="#"
+            id="mo-link-payment-drawer"
+            onclick="
+              showSection('payment');
+              toggleMobileMenu();
+            "
+            class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all"
+          >
+            <span class="material-symbols-outlined opacity-70">payments</span>
+            Paiements
+          </a>
+          <a
+            href="#"
+            id="mo-link-settings-drawer"
+            onclick="
+              showSection('settings');
+              toggleMobileMenu();
+            "
+            class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all"
+          >
+            <span class="material-symbols-outlined opacity-70">settings</span>
+            Paramètres
+          </a>
+          <a
+            href="#"
+            onclick="
+              btShowFeedback();
+              toggleMobileMenu();
+            "
+            class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all"
+          >
+            <span class="material-symbols-outlined opacity-70">star</span> Noter
+            l'app
+          </a>
+        </nav>
+
+        <div class="p-6 border-t border-gray-100">
+          <button
+            onclick="btAuth.logout()"
+            class="w-full flex items-center justify-center gap-2 p-4 rounded-2xl bg-red-50 text-red-600 font-bold hover:bg-red-100 transition-colors"
+          >
+            <span class="material-symbols-outlined" style="font-size: 20px"
+              >logout</span
+            >
+            Se déconnecter
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex flex-1">
+      <aside
+        class="hidden md:flex flex-col w-64 bg-white border-r border-gray-100 fixed left-0 top-16 bottom-0 p-4 overflow-y-auto z-40"
+      >
+        <div class="flex items-center gap-3 bg-gray-50 rounded-xl p-3 mb-4">
+          <div
+            class="w-10 h-10 rounded-full lush-gradient flex items-center justify-center font-bold text-white text-sm overflow-hidden shrink-0"
+            id="sb-avatar"
+          >
+            ?
+          </div>
+          <div class="min-w-0">
+            <p class="font-bold text-sm truncate dyn-user-name" id="sb-name">
+              Chargement...
+            </p>
+            <p class="text-xs text-gray-500">Fan</p>
+          </div>
+        </div>
+        <nav class="flex-1">
+          <button
+            class="sb-link active"
+            id="link-dash"
+            onclick="showSection('dash')"
+          >
+            <span
+              class="material-symbols-outlined"
+              style="font-variation-settings: &quot;FILL&quot; 1"
+              >dashboard</span
+            >Tableau de bord
+          </button>
+          <button
+            class="sb-link"
+            id="link-tickets"
+            onclick="
+              showSection('tickets');
+              chargerMesBillets();
+            "
+          >
+            <span class="material-symbols-outlined">confirmation_number</span
+            >Mes Billets
+          </button>
+          <button
+            class="sb-link"
+            id="link-favorites"
+            onclick="btShowFavorites()"
+          >
+            <span class="material-symbols-outlined">favorite</span>Favoris
+          </button>
+          <button
+            class="sb-link"
+            id="link-payment"
+            onclick="showSection('payment')"
+          >
+            <span class="material-symbols-outlined">payments</span>Paiements
+          </button>
+          <button
+            class="sb-link"
+            id="link-settings"
+            onclick="showSection('settings')"
+          >
+            <span class="material-symbols-outlined">settings</span>Paramètres
+          </button>
+          <button class="sb-link" onclick="btShowFeedback()">
+            <span class="material-symbols-outlined">star</span>Noter l'app
+          </button>
+        </nav>
+      </aside>
+
+      <main
+        class="flex-1 md:ml-64 flex flex-col min-h-[calc(100vh-64px)] md:pt-0"
+      >
+        <div class="flex-1 p-4 sm:p-6 md:p-8 max-w-6xl mx-auto w-full">
+          <div id="sec-dash">
+            <div
+              class="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6"
+            >
+              <div>
+                <h2
+                  class="text-2xl md:text-3xl font-extrabold font-headline"
+                  id="welcome-msg"
+                >
+                  Bonjour 👋
+                </h2>
+                <p class="text-gray-500 text-sm mt-1">
+                  Prêt pour votre prochaine immersion culturelle ?
+                </p>
+              </div>
+              <span
+                class="inline-flex w-fit items-center gap-2 bg-white border border-green-200 px-3 py-1.5 rounded-full text-xs font-bold text-green-700 shadow-sm"
+              >
+                <span
+                  class="w-2 h-2 bg-green-500 rounded-full animate-pulse"
+                ></span>
+                Orange Money Actif
+              </span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+              <div
+                class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between sm:block group transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1"
+              >
+                <div>
+                  <p
+                    class="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wide group-hover:text-primary transition-colors"
+                  >
+                    TOTAL BILLETS
+                  </p>
+                  <p
+                    class="text-3xl font-extrabold text-gray-900"
+                    id="s-tickets"
+                  >
+                    —
+                  </p>
+                </div>
+                <span
+                  class="material-symbols-outlined text-primary text-3xl sm:mb-2 sm:hidden block group-hover:scale-110 transition-transform"
+                  style="font-variation-settings: &quot;FILL&quot; 1"
+                  >confirmation_number</span
+                >
+                <p class="text-xs text-gray-400 hidden sm:block">
+                  Billets réservés
+                </p>
+              </div>
+
+              <div
+                class="lush-gradient rounded-2xl p-5 text-white shadow-md flex items-center justify-between sm:block transition-all duration-300 hover:shadow-lg hover:shadow-primary/30 hover:-translate-y-1 hover:brightness-110"
+              >
+                <div>
+                  <p
+                    class="text-[10px] sm:text-xs font-bold text-white/70 uppercase tracking-wide"
+                  >
+                    À VENIR
+                  </p>
+                  <p class="text-3xl font-extrabold" id="s-upcoming">—</p>
+                </div>
+                <span
+                  class="material-symbols-outlined text-white opacity-80 text-3xl sm:mb-2 sm:hidden block hover:scale-110 transition-transform"
+                  style="font-variation-settings: &quot;FILL&quot; 1"
+                  >event</span
+                >
+                <p class="text-xs text-white/70 hidden sm:block">
+                  Événements à venir
+                </p>
+              </div>
+
+              <div
+                class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between sm:block group transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1"
+              >
+                <div>
+                  <p
+                    class="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wide group-hover:text-primary transition-colors"
+                  >
+                    DÉPENSES
+                  </p>
+                  <p
+                    class="text-2xl sm:text-3xl font-extrabold text-gray-900"
+                    id="s-spend"
+                  >
+                    —
+                  </p>
+                </div>
+                <span
+                  class="material-symbols-outlined text-yellow-500 text-3xl sm:mb-2 sm:hidden block group-hover:scale-110 transition-transform"
+                  style="font-variation-settings: &quot;FILL&quot; 1"
+                  >payments</span
+                >
+                <p class="text-xs text-gray-400 hidden sm:block">
+                  FCFA total dépensé
+                </p>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-extrabold font-headline text-gray-900">
+                Mes billets récents
+              </h3>
+              <button
+                onclick="
+                  showSection('tickets');
+                  chargerMesBillets();
+                "
+                class="text-sm text-primary font-bold hover:underline"
+              >
+                Voir tout →
+              </button>
+            </div>
+            <div id="tickets-list" class="space-y-3 mb-8">
+              <div
+                class="bg-white rounded-xl p-4 text-center text-gray-400 text-sm border border-gray-100 shadow-sm"
+              >
+                Chargement...
+              </div>
+            </div>
+
+            <h3 class="text-lg font-extrabold font-headline mb-4 text-gray-900">
+              Événements recommandés
+            </h3>
+            <div
+              id="rec-grid"
+              class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+            ></div>
+          </div>
+
+          <div id="sec-payment" class="hidden">
+            <h2
+              class="text-2xl font-extrabold font-headline mb-6 text-gray-900"
+            >
+              Paiements Orange Money
+            </h2>
+            <div
+              class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 max-w-lg"
+            >
+              <div class="flex items-center gap-4 mb-6">
+                <div
+                  class="w-14 h-14 bg-yellow-400 rounded-2xl flex items-center justify-center text-2xl shadow-sm"
+                >
+                  💳
+                </div>
+                <div>
+                  <p class="font-bold text-gray-900">Orange Money RCA</p>
+                  <p class="text-sm text-gray-500">
+                    Moyen de paiement principal
+                  </p>
+                  <span
+                    class="inline-flex items-center gap-1 text-xs font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-full mt-1"
+                    >✓ Connecté</span
+                  >
+                </div>
+              </div>
+              <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                <p class="text-sm text-gray-600">
+                  Pour payer un billet, composez
+                  <strong class="text-gray-900">#150*50#</strong> sur votre
+                  téléphone Orange Money après la réservation.
+                </p>
+              </div>
+              <div id="pay-history" class="mt-4">
+                <p class="text-center text-gray-400 text-sm py-6">
+                  Aucune transaction récente
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div id="sec-tickets" class="hidden">
+            <h2
+              class="text-2xl font-extrabold font-headline mb-6 text-gray-900"
+            >
+              Mes Billets & QR Codes
+            </h2>
+            <div id="tickets-container" class="max-w-2xl space-y-4">
+              <p class="text-gray-500 text-sm text-center py-8">
+                Chargement de vos billets...
+              </p>
+            </div>
+          </div>
+
+          <div id="sec-settings" class="hidden">
+            <h2
+              class="text-2xl font-extrabold font-headline mb-6 text-gray-900"
+            >
+              Paramètres du compte
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+              <div class="space-y-6">
+                <div
+                  class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center"
+                >
+                  <div class="relative mb-4">
+                    <img
+                      id="settings-avatar-preview"
+                      src="https://ui-avatars.com/api/?name=User&background=00502c&color=fff"
+                      class="w-32 h-32 rounded-full object-cover shadow-md border-2 border-white"
+                    />
+                  </div>
+                  <h3 class="font-bold text-gray-900 dyn-user-name text-lg">
+                    Chargement...
+                  </h3>
+                  <p
+                    class="text-sm text-gray-500 mb-6 bg-gray-50 px-3 py-1 rounded-full mt-1"
+                  >
+                    Compte Fan
+                  </p>
+
+                  <input
+                    type="file"
+                    id="avatar-upload"
+                    class="hidden"
+                    accept="image/png, image/jpeg, image/jpg"
+                  />
+                  <label
+                    for="avatar-upload"
+                    class="cursor-pointer w-full py-3 bg-primary/10 text-primary rounded-xl font-bold text-sm hover:bg-primary hover:text-white transition-all active:scale-95"
+                  >
+                    Modifier la photo
+                  </label>
+                  <p class="text-[11px] text-gray-400 mt-3">
+                    Format JPG ou PNG. Max 2MB.
+                  </p>
+                </div>
+
+                <div
+                  class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100"
+                >
+                  <h3
+                    class="font-bold text-gray-900 mb-4 flex items-center gap-2"
+                  >
+                    <span class="material-symbols-outlined text-gray-400"
+                      >lock</span
+                    >
+                    Sécurité
+                  </h3>
+                  <div class="space-y-4">
+                    <div>
+                      <label
+                        class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1"
+                        >Nouveau Code PIN</label
+                      >
+                      <input
+                        type="password"
+                        id="set-pin"
+                        placeholder="••••"
+                        maxlength="4"
+                        class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all tracking-widest text-center text-lg font-bold"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onclick="updatePin()"
+                      id="btn-save-pin"
+                      disabled
+                      class="w-full py-3 bg-gray-900 text-white rounded-xl font-bold text-sm hover:bg-gray-800 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+                    >
+                      Mettre à jour le PIN
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                class="md:col-span-2 bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 h-fit"
+              >
+                <h3
+                  class="font-bold text-lg text-gray-900 mb-6 border-b border-gray-100 pb-3"
+                >
+                  Informations Personnelles
+                </h3>
+
+                <div class="space-y-5">
+                  <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1"
+                      >Nom complet</label
+                    >
+                    <input
+                      type="text"
+                      id="set-fullname"
+                      class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1"
+                      >Adresse Email</label
+                    >
+                    <input
+                      type="email"
+                      id="set-email"
+                      placeholder="votre@email.com"
+                      class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1"
+                      >Téléphone
+                      <span class="text-gray-400 font-normal text-xs"
+                        >(Identifiant)</span
+                      ></label
+                    >
+                    <input
+                      type="text"
+                      id="set-phone"
+                      disabled
+                      class="w-full bg-gray-100 border border-gray-200 text-gray-500 rounded-xl px-4 py-3 cursor-not-allowed"
+                    />
+                    <p
+                      class="text-[11px] text-gray-400 mt-1.5 flex items-center gap-1"
+                    >
+                      <span class="material-symbols-outlined text-[14px]"
+                        >info</span
+                      >
+                      Le numéro de connexion ne peut pas être modifié.
+                    </p>
+                  </div>
+
+                  <div class="pt-6 border-t border-gray-100 mt-6">
+                    <h3
+                      class="font-bold text-lg text-gray-900 mb-4 flex items-center gap-2"
+                    >
+                      <span class="material-symbols-outlined text-orange-500"
+                        >account_balance_wallet</span
+                      >
+                      Portefeuille Orange Money
+                    </h3>
+                    <div>
+                      <label class="block text-sm font-bold text-gray-700 mb-1"
+                        >Numéro associé</label
+                      >
+                      <input
+                        type="text"
+                        id="set-orangemoney"
+                        placeholder="+236..."
+                        class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 outline-none transition-all font-semibold"
+                      />
+                      <p class="text-xs text-gray-500 mt-1.5">
+                        Ce numéro sera pré-rempli lors de vos achats rapides.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div
+                    class="pt-6 mt-6 md:flex md:justify-end border-t border-gray-100"
+                  >
+                    <button
+                      type="button"
+                      id="btn-save-settings"
+                      onclick="saveUserSettings()"
+                      disabled
+                      class="w-full md:w-auto px-8 py-3.5 bg-primary text-white rounded-xl font-bold shadow-md hover:bg-primary-container transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+                    >
+                      Enregistrer les modifications
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="w-full mt-auto pb-24 md:pb-0">
+          <div
+            id="dash-footer"
+            class="border-t border-gray-100 bg-white shadow-sm"
+          ></div>
+        </div>
+      </main>
+    </div>
+
+    <nav
+      class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex justify-around items-center pt-3 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] z-50 px-1"
+      style="padding-bottom: max(12px, env(safe-area-inset-bottom))"
+    >
+      <a
+        href="index.html"
+        class="flex flex-col items-center gap-1 text-gray-400 w-14 hover:text-primary transition-colors"
+      >
+        <span class="material-symbols-outlined text-[24px]">home</span>
+        <span
+          class="text-[10px] font-medium tracking-wide truncate w-full text-center"
+          >Accueil</span
+        >
+      </a>
+
+      <a
+        href="event.html"
+        class="flex flex-col items-center gap-1 text-gray-400 w-14 hover:text-primary transition-colors"
+      >
+        <span class="material-symbols-outlined text-[24px]">stadium</span>
+        <span
+          class="text-[10px] font-medium tracking-wide truncate w-full text-center"
+          >Événements</span
+        >
+      </a>
+
+      <a
+        href="#"
+        onclick="btShowFavorites()"
+        class="flex flex-col items-center gap-1 text-gray-400 w-14 hover:text-primary transition-colors"
+      >
+        <span class="material-symbols-outlined text-[24px]">favorite</span>
+        <span
+          class="text-[10px] font-medium tracking-wide truncate w-full text-center"
+          >Follow</span
+        >
+      </a>
+
+      <a
+        href="partenaire.html"
+        class="flex flex-col items-center gap-1 text-gray-400 w-14 hover:text-primary transition-colors"
+      >
+        <span class="material-symbols-outlined text-[24px]">handshake</span>
+        <span
+          class="text-[10px] font-medium tracking-wide truncate w-full text-center"
+          >Partenaire</span
+        >
+      </a>
+
+      <a
+        href="about.html"
+        class="flex flex-col items-center gap-1 text-gray-400 w-14 hover:text-primary transition-colors"
+      >
+        <span class="material-symbols-outlined text-[24px]">info</span>
+        <span
+          class="text-[10px] font-medium tracking-wide truncate w-full text-center"
+          >À propos</span
+        >
+      </a>
+    </nav>
+
+    <script src="bt-api.js"></script>
+    <script src="pwa.js"></script>
+    <script>
+      let user = {};
+
+      document.addEventListener("DOMContentLoaded", async () => {
+        const navEl = document.getElementById("navbar");
+        const footEl = document.getElementById("dash-footer");
+
+        if (navEl && typeof btNavbar === "function")
+          navEl.innerHTML = btNavbar();
+        if (footEl && typeof btFooter === "function")
+          footEl.innerHTML = btFooter();
+
+        if (!btAuth.isLogged()) {
+          window.location.href = "login.html";
+          return;
+        }
+
+        user = btAuth.getUser() || {};
+
+        const personalName = user.full_name || user.name || "Fan";
+        document
+          .querySelectorAll(".dyn-user-name")
+          .forEach((el) => (el.textContent = personalName));
+
+        const sbName = document.getElementById("sb-name");
+        const welcomeMsg = document.getElementById("welcome-msg");
+        const avatar = document.getElementById("sb-avatar");
+        const moAvatar = document.getElementById("mo-avatar");
+
+        if (sbName) sbName.textContent = personalName;
+        if (welcomeMsg)
+          welcomeMsg.textContent =
+            "Bonjour, " + personalName.split(" ")[0] + " 👋";
+
+        const initialText =
+          typeof btInitials === "function"
+            ? btInitials(personalName)
+            : personalName.charAt(0);
+        if (avatar && !user.profile_picture) avatar.textContent = initialText;
+        if (moAvatar && !user.profile_picture)
+          moAvatar.textContent = initialText;
+
+        const inputFullName = document.getElementById("set-fullname");
+        const inputEmail = document.getElementById("set-email");
+        const inputPhone = document.getElementById("set-phone");
+        const inputOrange = document.getElementById("set-orangemoney");
+        const inputPin = document.getElementById("set-pin");
+
+        if (inputFullName) inputFullName.value = personalName;
+        if (inputEmail) inputEmail.value = user.email || "";
+        if (inputPhone) inputPhone.value = user.phone_number || "";
+        if (inputOrange) inputOrange.value = user.orange_money || "";
+
+        setTimeout(initAvatarUpload, 500);
+
+        if (inputFullName)
+          inputFullName.addEventListener("input", validateSettingsForm);
+        if (inputEmail)
+          inputEmail.addEventListener("input", validateSettingsForm);
+        if (inputOrange)
+          inputOrange.addEventListener("input", validateSettingsForm);
+        if (inputPin) inputPin.addEventListener("input", validatePinForm);
+
+        validateSettingsForm();
+        validatePinForm();
+
+        try {
+          await loadDashboardData();
+        } catch (e) {
+          console.error("Erreur chargement dashboard:", e);
+        }
+      });
+
+      // Gestion de l'ouverture/fermeture du menu Hamburger
+      function toggleMobileMenu() {
+        const menu = document.getElementById("mobile-menu");
+        const drawer = document.getElementById("mobile-drawer");
+
+        if (menu.classList.contains("hidden")) {
+          menu.classList.remove("hidden");
+          setTimeout(() => {
+            menu.classList.remove("opacity-0");
+            drawer.classList.remove("translate-x-full");
+          }, 10);
+        } else {
+          menu.classList.add("opacity-0");
+          drawer.classList.add("translate-x-full");
+          setTimeout(() => {
+            menu.classList.add("hidden");
+          }, 300);
+        }
+      }
+
+      function validateSettingsForm() {
+        const btn = document.getElementById("btn-save-settings");
+        if (!btn) return;
+
+        const name = document.getElementById("set-fullname").value.trim();
+        const email = document.getElementById("set-email").value.trim();
+        const orange = document.getElementById("set-orangemoney").value.trim();
+
+        const origName = user.full_name || user.name || "Fan";
+        const origEmail = user.email || "";
+        const origOrange = user.orange_money || "";
+
+        const hasChanged =
+          name !== origName || email !== origEmail || orange !== origOrange;
+
+        let isValid = name.length >= 2;
+
+        if (email !== "") {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(email)) isValid = false;
+        }
+
+        btn.disabled = !(isValid && hasChanged);
+      }
+
+      function validatePinForm() {
+        const btn = document.getElementById("btn-save-pin");
+        const pin = document.getElementById("set-pin");
+        if (!btn || !pin) return;
+        btn.disabled = pin.value.trim().length !== 4;
+      }
+
+      function showSection(id) {
+        ["dash", "payment", "tickets", "settings"].forEach(function (s) {
+          const el = document.getElementById("sec-" + s);
+          if (el) el.classList.add("hidden");
+        });
+
+        const target = document.getElementById("sec-" + id);
+        if (target) target.classList.remove("hidden");
+
+        // Gérer les menus PC
+        document.querySelectorAll(".sb-link").forEach(function (l) {
+          l.classList.remove("active");
+        });
+        const linkPC = document.getElementById("link-" + id);
+        if (linkPC) linkPC.classList.add("active");
+
+        // Gérer le Drawer Menu Mobile (Menu Tiroir)
+        document.querySelectorAll(".mo-link-drawer").forEach(function (l) {
+          l.classList.remove("active");
+        });
+        const linkDrawer = document.getElementById("mo-link-" + id + "-drawer");
+        if (linkDrawer) linkDrawer.classList.add("active");
+      }
+
+      function initAvatarUpload() {
+        const avatarInput = document.getElementById("avatar-upload");
+        if (!avatarInput) return;
+
+        const updateAllAvatars = (base64) => {
+          const preview = document.getElementById("settings-avatar-preview");
+          const sbAvatar = document.getElementById("sb-avatar");
+          const moAvatar = document.getElementById("mo-avatar");
+
+          if (preview) preview.src = base64;
+          if (sbAvatar)
+            sbAvatar.innerHTML = `<img src="${base64}" class="w-full h-full rounded-full object-cover">`;
+          if (moAvatar)
+            moAvatar.innerHTML = `<img src="${base64}" class="w-full h-full rounded-full object-cover">`;
+        };
+
+        if (user && user.profile_picture)
+          updateAllAvatars(user.profile_picture);
+
+        avatarInput.addEventListener("change", async (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+
+          if (file.size > 2 * 1024 * 1024) {
+            if (typeof btToast === "function")
+              btToast("L'image est trop lourde (Max 2MB).", "error");
+            else alert("L'image est trop lourde (Max 2MB).");
+            return;
+          }
+
+          const reader = new FileReader();
+          reader.onload = async () => {
+            const base64String = reader.result;
+            updateAllAvatars(base64String);
+            if (typeof btToast === "function")
+              btToast("Sauvegarde en cours...", "info");
+
+            try {
+              await btApi.put("/auth/me", { profile_picture: base64String });
+              user.profile_picture = base64String;
+              btAuth.save(btAuth.getToken(), user);
+              if (typeof btToast === "function")
+                btToast("Photo de profil mise à jour !", "success");
+            } catch (err) {
+              if (typeof btToast === "function")
+                btToast("Erreur lors de la sauvegarde.", "error");
+            }
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+
+      async function saveUserSettings() {
+        const btn = document.getElementById("btn-save-settings");
+        const origText = btn.innerHTML;
+        btn.innerHTML = "Enregistrement...";
+        btn.disabled = true;
+
+        const newFullName = document
+          .getElementById("set-fullname")
+          .value.trim();
+        const newEmail = document.getElementById("set-email").value.trim();
+
+        let newOrangeMoney = document
+          .getElementById("set-orangemoney")
+          .value.trim();
+        if (newOrangeMoney && !newOrangeMoney.startsWith("+236"))
+          newOrangeMoney = "+236" + newOrangeMoney;
+
+        try {
+          await btApi.put("/auth/me", {
+            full_name: newFullName,
+            email: newEmail,
+            orange_money: newOrangeMoney,
+          });
+
+          user.full_name = newFullName;
+          user.email = newEmail;
+          user.orange_money = newOrangeMoney;
+          btAuth.save(btAuth.getToken(), user);
+
+          document
+            .querySelectorAll(".dyn-user-name")
+            .forEach((el) => (el.textContent = newFullName));
+
+          const welcomeMsg = document.getElementById("welcome-msg");
+          if (welcomeMsg)
+            welcomeMsg.textContent =
+              "Bonjour, " + newFullName.split(" ")[0] + " 👋";
+
+          if (typeof btToast === "function")
+            btToast("Paramètres mis à jour avec succès !", "success");
+        } catch (error) {
+          if (typeof btToast === "function")
+            btToast(error.message || "Erreur lors de la sauvegarde", "error");
+          else alert("Erreur lors de la sauvegarde");
+        } finally {
+          btn.innerHTML = origText;
+          validateSettingsForm();
+        }
+      }
+
+      async function updatePin() {
+        const btn = document.getElementById("btn-save-pin");
+        const pin = document.getElementById("set-pin").value.trim();
+
+        if (pin.length !== 4) return;
+
+        btn.disabled = true;
+        btn.innerHTML = "Mise à jour...";
+        try {
+          await btApi.put("/auth/me", { pin_code: pin });
+          if (typeof btToast === "function")
+            btToast("Code PIN modifié avec succès !", "success");
+          document.getElementById("set-pin").value = "";
+          validatePinForm();
+        } catch (e) {
+          if (typeof btToast === "function")
+            btToast("Erreur lors de la modification du PIN", "error");
+          validatePinForm();
+        }
+      }
+
+      function formatPrice(price) {
+        if (typeof window.btPrice === "function") return btPrice(price);
+        return price === 0
+          ? "Gratuit"
+          : price.toLocaleString("fr-FR") + " FCFA";
+      }
+
+      async function loadDashboardData() {
+        try {
+          // 1. Stats
+          const statsData = await btApi.get("/dashboard/stats");
+          document.getElementById("s-tickets").textContent =
+            statsData.total_tickets || 0;
+          document.getElementById("s-upcoming").textContent = String(
+            statsData.upcoming_events || 0,
+          ).padStart(2, "0");
+          document.getElementById("s-spend").textContent = (
+            statsData.total_spend || 0
+          ).toLocaleString("fr-FR");
+
+          renderTickets(statsData.tickets || []);
+
+          // 2. Événements recommandés (Le correctif est ici)
+          const response = await btApi.get("/events");
+
+          // On force 'events' à être un tableau, même si l'API l'enveloppe dans un objet
+          const eventsList = Array.isArray(response)
+            ? response
+            : response.events || [];
+
+          renderRecommended(eventsList);
+        } catch (error) {
+          console.error("Erreur dashboard:", error);
+        }
+      }
+
+      function renderTickets(tickets) {
+        const list = document.getElementById("tickets-list");
+        if (!list) return;
+
+        if (!tickets.length) {
+          // Remplacement de l'émoji par l'icône moderne
+          list.innerHTML = `<div class="bg-white rounded-xl p-8 text-center text-gray-400 text-sm border border-gray-100 shadow-sm flex flex-col items-center justify-center gap-2">
+            <span class="material-symbols-outlined text-gray-300 text-4xl">confirmation_number</span>
+            Aucun billet pour le moment
+          </div>`;
+          return;
+        }
+
+        // Ajout de l'icône, du hover et de l'animation pour les billets
+        list.innerHTML = tickets
+          .map(function (t) {
+            return `
+      <div class="bg-white rounded-xl p-4 flex items-center gap-4 shadow-sm border border-gray-100 transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-primary/20 group">
+        <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary transition-colors">
+          <span class="material-symbols-outlined text-primary group-hover:text-white transition-colors">confirmation_number</span>
+        </div>
+        <div class="flex-1">
+          <p class="font-bold text-sm text-gray-900">${t.event_title || "Événement"}</p>
+          <p class="text-[11px] text-gray-500 mt-0.5">📍 ${t.event_location || "-"}</p>
+        </div>
+        <div class="text-right">
+          <p class="font-bold text-primary">${formatPrice(t.price)}</p>
+          <span class="text-[10px] font-bold uppercase tracking-wider ${t.payment_status === "paye" ? "text-green-600" : "text-yellow-600"}">
+            ${t.payment_status || ""}
+          </span>
+        </div>
+      </div>`;
+          })
+          .join("");
+      }
+
+      function renderRecommended(events) {
+        const recGrid = document.getElementById("rec-grid");
+        if (!recGrid) return;
+
+        // On garde tes 4 colonnes
+        recGrid.className =
+          "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6";
+
+        if (!events || events.length === 0) {
+          recGrid.innerHTML =
+            '<p class="text-sm text-gray-400 col-span-full text-center py-12">Aucun événement à découvrir</p>';
+          return;
+        }
+
+        const randomSelection = [...events]
+          .sort(() => 0.5 - Math.random())
+          .slice(0, 4);
+
+        recGrid.innerHTML = randomSelection
+          .map((e) => {
+            // On vérifie le bon nom de l'image (cover_image_url)
+            const sourceImg = e.cover_image_url || e.image_url;
+            const hasImage = sourceImg && sourceImg.trim() !== "";
+            const imageUrl = hasImage
+              ? sourceImg.startsWith("http")
+                ? sourceImg
+                : "http://127.0.0.1:8000" + sourceImg
+              : null;
+
+            return `
+        <div class="bg-white rounded-[2.5rem] overflow-hidden border border-gray-100 shadow-sm cursor-pointer transition-all duration-500 hover:shadow-2xl hover:-translate-y-4 active:scale-[0.97] group flex flex-col h-[400px]" 
+             onclick="location.href='event_detail.html?id=${e.id}'">
+            
+            <div class="relative h-3/5 overflow-hidden bg-gray-50 flex items-center justify-center lush-gradient">
+                
+                <div class="absolute inset-0 flex items-center justify-center z-0">
+                    <span class="text-white font-black text-3xl tracking-tighter italic">GoEvent</span>
+                </div>
+
+                ${
+                  hasImage
+                    ? `
+                    <img src="${imageUrl}" 
+                         alt="${e.title}" 
+                         class="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 z-10"
+                         onerror="this.style.display='none'">
+                `
+                    : ``
+                }
+                
+                <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-20 pointer-events-none"></div>
+            </div>
+
+            <div class="p-6 flex-1 flex flex-col justify-between bg-white z-30 relative">
+                <div>
+                    <p class="text-[10px] font-bold text-primary uppercase tracking-[0.2em] mb-2 opacity-60">Recommandé</p>
+                    <p class="font-black text-lg text-gray-900 line-clamp-2 leading-tight group-hover:text-primary transition-colors">
+                        ${e.title}
+                    </p>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-primary/10 transition-colors shrink-0">
+                            <span class="material-symbols-outlined text-[18px] text-primary">location_on</span>
+                        </div>
+                        <p class="text-xs text-gray-500 font-semibold truncate">${e.location || "Bangui"}</p>
+                    </div>
+                    
+                    <div class="flex items-center justify-between pt-2 border-t border-gray-50">
+                        <p class="text-primary font-black text-lg">${(e.price || 0).toLocaleString("fr-FR")} <span class="text-[10px]">FCFA</span></p>
+                        <div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center shadow-lg shadow-green-900/20 translate-x-4 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-500 shrink-0">
+                            <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+          })
+          .join("");
+      }
+
+      async function chargerMesBillets() {
+        const container = document.getElementById("tickets-container");
+        if (!container) return;
+
+        container.innerHTML = `<div class="py-10 text-center"><span class="material-symbols-outlined animate-spin text-primary text-3xl">refresh</span></div>`;
+
+        try {
+          const billets = await btApi.get("/tickets/my");
+
+          if (!billets.length) {
+            container.innerHTML = `<div class="bg-white p-8 rounded-2xl text-center border border-gray-100 shadow-sm"><p class="font-bold text-gray-500">Aucun billet trouvé.</p></div>`;
+            return;
+          }
+
+          container.innerHTML = billets
+            .map((b) => {
+              // 1. Vérification du statut de paiement réel du billet
+              const isPaid = b.payment_status === "paye";
+
+              // 2. Génération de l'URL du QR Code (uniquement si payé)
+              // On utilise l'ID ou le hash unique du billet stocké dans ta base
+              const qrUrl = isPaid
+                ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${b.qr_hash}`
+                : "";
+
+              return `
+                  <div class="bg-white p-6 rounded-[2.5rem] mb-6 border border-gray-100 shadow-sm relative overflow-hidden">
+                      <div class="flex justify-between items-start mb-4">
+                          <div>
+                              <h3 class="font-black text-xl text-gray-900">${b.event_title}</h3>
+                              <p class="text-sm font-bold text-gray-500 mt-1">📍 ${b.event_location || "Lieu à confirmer"}</p>
+                          </div>
+                          <span class="${isPaid ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"} px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
+                              ${isPaid ? "Billet Valide" : "Paiement en attente"}
+                          </span>
+                      </div>
+
+                      <div class="flex items-center gap-3 text-gray-900 font-black text-lg mb-6">
+                          <span class="material-symbols-outlined text-gray-400">payments</span>
+                          ${b.price.toLocaleString("fr-FR")} FCFA
+                      </div>
+
+                      ${
+                        isPaid
+                          ? `
+                        <div class="bg-gray-50 rounded-3xl p-6 flex flex-col items-center border border-dashed border-gray-200">
+                            <img src="${qrUrl}" class="w-40 h-40 mb-4 rounded-xl shadow-inner bg-white p-2" alt="QR Code" />
+                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">ID: ${b.qr_hash.substring(0, 8)}</p>
+                            <p class="text-xs font-bold text-primary mt-2">Présentez ce code à l'entrée</p>
+                        </div>
+                      `
+                          : `
+                        <div class="bg-orange-50/50 rounded-3xl p-8 text-center border border-dashed border-orange-200">
+                            <p class="text-sm font-bold text-gray-800">Finalisez votre achat pour obtenir votre QR Code</p>
+                        </div>
+                      `
+                      }
+                  </div>
+              `;
+            })
+            .join("");
+        } catch (e) {
+          container.innerHTML = `<div class="bg-red-50 p-4 rounded-xl text-red-600 font-bold text-sm text-center">Erreur de chargement</div>`;
+        }
+      }
+    </script>
+  </body>
+</html>

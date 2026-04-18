@@ -1,0 +1,50 @@
+{
+  "name": "GoEvent",
+  "short_name": "GoEvent",
+  "description": "La billetterie événementielle de la République Centrafricaine — Achetez vos billets facilement et en toute sécurité.",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#00502c",
+  "theme_color": "#00502c",
+  "orientation": "portrait-primary",
+  "lang": "fr",
+  "categories": ["entertainment", "lifestyle"],
+  "icons": [
+    {
+      "src": "icons/event.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/event.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "icons/screenshot-mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Accueil GoEvent"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Explorer les événements",
+      "short_name": "Événements",
+      "description": "Voir les événements à venir",
+      "url": "/index.html",
+      "icons": [
+        {
+          "src": "icons/event.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,729 @@
+<!doctype html>
+<html lang="fr" class="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+      name="viewport"
+    />
+    <title>GoEvent</title>
+    <link rel="icon" type="image/png" href="icons/favicon.png" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#00502c" />
+
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              background: "#f9f9f9",
+              primary: "#00502c",
+              "outline-variant": "#bec9be",
+              "on-primary-fixed-variant": "#00522d",
+              outline: "#6f7a70",
+              error: "#ba1a1a",
+              "on-surface-variant": "#3f4941",
+              "secondary-fixed": "#ffe08b",
+              "primary-container": "#006b3c",
+              "surface-container": "#eeeeee",
+              surface: "#f9f9f9",
+              "surface-container-high": "#e8e8e8",
+              "surface-container-lowest": "#ffffff",
+              "surface-container-highest": "#e2e2e2",
+              "surface-variant": "#e2e2e2",
+              "primary-fixed": "#9df6b9",
+              secondary: "#745b00",
+              "surface-container-low": "#f3f3f3",
+              "on-surface": "#1a1c1c",
+              "primary-fixed-dim": "#81d99f",
+              "on-secondary": "#ffffff",
+              "on-primary": "#ffffff",
+              "inverse-surface": "#2f3131",
+              "secondary-container": "#fecb00",
+              tertiary: "#8f001e",
+              "on-secondary-container": "#6e5700",
+            },
+            borderRadius: {
+              DEFAULT: "0.25rem",
+              lg: "1rem",
+              xl: "1.5rem",
+              full: "9999px",
+            },
+            fontFamily: {
+              headline: ["Plus Jakarta Sans"],
+              body: ["Manrope"],
+              label: ["Manrope"],
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      .material-symbols-outlined {
+        font-variation-settings:
+          "FILL" 0,
+          "wght" 400,
+          "GRAD" 0,
+          "opsz" 24;
+      }
+      .tier-card.selected {
+        border-color: #00502c;
+        background-color: rgba(0, 80, 44, 0.05);
+        transform: scale(1.02);
+      }
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+    </style>
+  </head>
+
+  <body class="bg-surface font-body text-[#1a1c1c] flex flex-col min-h-screen">
+    <div
+      class="md:hidden fixed top-0 left-0 right-0 h-[72px] bg-white/95 backdrop-blur border-b border-gray-100 z-[100] flex items-center justify-between px-6"
+    >
+      <a
+        href="index.html"
+        class="flex items-center gap-2 hover:opacity-80 transition-opacity"
+      >
+        <img
+          src="icons/event.png"
+          alt="Logo GoEvent"
+          class="w-10 h-10 rounded-xl object-cover shadow-sm"
+        />
+        <span
+          class="font-headline font-black text-2xl text-primary tracking-tight truncate"
+          >GoEvent</span
+        >
+      </a>
+      <button
+        onclick="toggleMobileMenu()"
+        class="p-2 -mr-2 text-gray-700 hover:text-primary transition-colors focus:outline-none"
+      >
+        <span class="material-symbols-outlined" style="font-size: 32px"
+          >menu</span
+        >
+      </button>
+    </div>
+
+    <div id="navbar" class="hidden md:block fixed w-full top-0 z-[999]"></div>
+
+    <div
+      id="mobile-menu"
+      class="fixed inset-0 bg-gray-900/60 z-[200] hidden opacity-0 transition-opacity duration-300"
+    >
+      <div class="absolute inset-0" onclick="toggleMobileMenu()"></div>
+      <div
+        id="mobile-drawer"
+        class="absolute right-0 top-0 bottom-0 w-[80%] max-w-xs bg-white shadow-2xl transform translate-x-full transition-transform duration-300 flex flex-col p-6"
+      >
+        <div
+          class="flex justify-between items-center mb-8 border-b border-gray-100 pb-4"
+        >
+          <span class="font-headline font-black text-xl text-primary"
+            >Menu</span
+          >
+          <button
+            onclick="toggleMobileMenu()"
+            class="p-2 text-gray-400 hover:text-red-500 transition-colors"
+          >
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <nav class="space-y-1 flex-1 overflow-y-auto">
+          <a
+            href="index.html"
+            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
+            ><span class="material-symbols-outlined">home</span> Accueil</a
+          >
+          <a
+            href="event.html"
+            class="flex items-center gap-3 p-4 bg-primary/10 rounded-2xl text-primary font-bold"
+            ><span class="material-symbols-outlined">stadium</span>
+            Événements</a
+          >
+          <a
+            href="follow.html"
+            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
+            ><span class="material-symbols-outlined">favorite</span> Follow</a
+          >
+          <a
+            href="partenaire.html"
+            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
+            ><span class="material-symbols-outlined">handshake</span>
+            Partenaires</a
+          >
+          <a
+            href="a_propos.html"
+            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
+            ><span class="material-symbols-outlined">info</span> À propos</a
+          >
+        </nav>
+        <div class="mt-4 pt-6 border-t border-gray-100 space-y-3">
+          <a
+            href="login.html"
+            class="block w-full text-center text-primary font-bold py-3.5 rounded-xl border-2 border-primary hover:bg-primary/5 transition-all"
+            >Se connecter</a
+          >
+          <a
+            href="signup.html"
+            class="block w-full text-center bg-primary text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 active:scale-95 transition-all"
+            >S'inscrire</a
+          >
+        </div>
+      </div>
+    </div>
+
+    <main
+      class="flex-1 pt-[96px] md:pt-28 pb-16 px-4 md:px-8 w-full max-w-6xl mx-auto"
+    >
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
+        <div class="lg:col-span-2 space-y-8">
+          <div
+            class="rounded-3xl md:rounded-[2.5rem] overflow-hidden shadow-2xl bg-gray-200 aspect-video relative"
+          >
+            <img
+              id="e-image"
+              src=""
+              alt="Affiche"
+              class="w-full h-full object-cover cursor-zoom-in hover:scale-105 transition-transform duration-500"
+            />
+            <div
+              class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent pointer-events-none"
+            ></div>
+            <div
+              class="absolute bottom-6 left-6 md:bottom-8 md:left-8 right-6 text-white"
+            >
+              <span
+                id="e-category"
+                class="bg-primary px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest mb-3 inline-block"
+                >Événement</span
+              >
+              <h1
+                id="e-title"
+                class="text-2xl sm:text-3xl md:text-5xl font-black font-headline leading-tight"
+              >
+                Chargement...
+              </h1>
+            </div>
+          </div>
+
+          <div
+            class="bg-white p-6 md:p-8 rounded-3xl md:rounded-[2rem] shadow-sm border border-gray-100"
+          >
+            <h2 class="font-headline font-extrabold text-xl mb-4 md:mb-6">
+              À propos de l'événement
+            </h2>
+            <p
+              id="e-desc"
+              class="text-gray-600 leading-relaxed text-sm md:text-base"
+            >
+              Rejoignez-nous pour cet événement exceptionnel. Les détails du
+              programme seront communiqués par l'organisateur.
+            </p>
+
+            <div class="mt-8 md:mt-10 space-y-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div
+                  class="bg-gray-50/80 border border-gray-100 rounded-2xl p-5 flex items-center gap-4"
+                >
+                  <span class="material-symbols-outlined text-primary text-3xl"
+                    >calendar_month</span
+                  >
+                  <div>
+                    <p
+                      class="text-xs uppercase tracking-widest text-gray-500 font-bold mb-1"
+                    >
+                      Date & Heure
+                    </p>
+                    <p
+                      id="event-date-large"
+                      class="text-lg font-extrabold text-gray-900 leading-tight"
+                    >
+                      ...
+                    </p>
+                  </div>
+                </div>
+
+                <div
+                  class="bg-gray-50/80 border border-gray-100 rounded-2xl p-5 flex items-center gap-4"
+                >
+                  <span class="material-symbols-outlined text-primary text-3xl"
+                    >location_on</span
+                  >
+                  <div>
+                    <p
+                      class="text-xs uppercase tracking-widest text-gray-500 font-bold mb-1"
+                    >
+                      Lieu
+                    </p>
+                    <p
+                      id="event-location-large"
+                      class="text-lg font-extrabold text-gray-900 leading-tight"
+                    >
+                      ...
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                class="bg-gray-50/80 border border-gray-100 rounded-2xl p-5 flex items-center gap-4 w-full"
+              >
+                <span class="material-symbols-outlined text-primary text-3xl"
+                  >verified_user</span
+                >
+                <div>
+                  <p
+                    class="text-xs uppercase tracking-widest text-gray-500 font-bold mb-1"
+                  >
+                    Organisé par
+                  </p>
+                  <p
+                    id="event-organizer"
+                    class="text-lg font-extrabold text-gray-900 leading-tight"
+                  >
+                    ...
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-1">
+          <div
+            class="bg-white p-6 md:p-8 rounded-3xl md:rounded-[2.5rem] shadow-xl border border-gray-100 lg:sticky lg:top-28"
+          >
+            <h3 class="font-headline font-black text-2xl mb-2">Billetterie</h3>
+            <p class="text-gray-500 text-sm mb-6 md:mb-8 font-medium">
+              Sélectionnez votre catégorie de place.
+            </p>
+
+            <div id="ticket-tiers-selection" class="space-y-4 mb-8">
+              <div class="animate-pulse space-y-3">
+                <div class="h-20 bg-gray-100 rounded-2xl"></div>
+                <div class="h-20 bg-gray-100 rounded-2xl"></div>
+              </div>
+            </div>
+
+            <button
+              id="btn-reserve"
+              onclick="proceedToCheckout()"
+              disabled
+              class="w-full py-4 md:py-5 rounded-2xl bg-gray-200 text-gray-500 font-black text-base md:text-lg transition-all shadow-lg cursor-not-allowed"
+            >
+              Choisir un billet
+            </button>
+
+            <p
+              class="text-center text-[10px] text-gray-400 font-bold uppercase mt-6 tracking-widest"
+            >
+              Paiement sécurisé via Orange Money
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <section class="mt-20 md:mt-24">
+        <h3
+          class="font-headline font-black text-2xl md:text-3xl mb-8 md:mb-10 text-center md:text-left"
+        >
+          Autres événements
+        </h3>
+        <div
+          id="suggestions-grid"
+          class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8"
+        ></div>
+      </section>
+    </main>
+
+    <div id="footer"></div>
+    <div id="footer"></div>
+
+    <script src="bt-api.js"></script>
+    <script src="pwa.js"></script>
+    <script>
+      let currentEvent = null;
+      let availableTiers = []; // NOUVEAU : Va stocker uniquement les billets disponibles
+      let selectedTierIndex = null;
+
+      // 1. Menu Mobile
+      function toggleMobileMenu() {
+        const menu = document.getElementById("mobile-menu");
+        const drawer = document.getElementById("mobile-drawer");
+        if (!menu || !drawer) return;
+
+        if (menu.classList.contains("hidden")) {
+          menu.classList.remove("hidden");
+          setTimeout(() => {
+            menu.classList.remove("opacity-0");
+            drawer.classList.remove("translate-x-full");
+          }, 10);
+        } else {
+          menu.classList.add("opacity-0");
+          drawer.classList.add("translate-x-full");
+          setTimeout(() => {
+            menu.classList.add("hidden");
+          }, 300);
+        }
+      }
+
+      // 2. Chargement de la page
+      document.addEventListener("DOMContentLoaded", async () => {
+        if (
+          document.getElementById("navbar") &&
+          typeof btNavbar === "function"
+        ) {
+          document.getElementById("navbar").innerHTML = btNavbar("evenements");
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        const eventId = params.get("id");
+
+        if (!eventId) {
+          window.location.href = "event.html";
+          return;
+        }
+
+        try {
+          currentEvent = await btApi.get(`/events/${eventId}`);
+
+          const titleEl = document.getElementById("e-title");
+          const descEl = document.getElementById("e-desc");
+          const coverEl = document.getElementById("e-image");
+          const catEl = document.getElementById("e-category");
+
+          // NOUVEAUX IDs correspondants à nos nouvelles cases
+          const locEl = document.getElementById("event-location-large");
+          const dateEl = document.getElementById("event-date-large");
+          const organizerEl = document.getElementById("event-organizer");
+
+          if (titleEl) titleEl.textContent = currentEvent.title;
+          if (descEl)
+            descEl.textContent =
+              currentEvent.description || "Aucune description disponible.";
+          if (catEl) catEl.textContent = currentEvent.category || "Événement";
+
+          // Injection dans les nouvelles cases (Lieu et Organisateur)
+          if (locEl)
+            locEl.textContent = currentEvent.location || "Lieu non précisé";
+          if (organizerEl)
+            organizerEl.textContent =
+              currentEvent.organizer || "Organisateur Certifié";
+
+          if (coverEl) {
+            coverEl.src =
+              currentEvent.cover_image_url ||
+              "https://via.placeholder.com/800x400?text=GoEvent";
+          }
+
+          // Injection dans la nouvelle case (Date)
+          if (dateEl && currentEvent.event_date) {
+            const dateObj = new Date(currentEvent.event_date);
+            dateEl.textContent = dateObj
+              .toLocaleDateString("fr-FR", {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+              .replace(":", "h");
+          }
+
+          // --- LA MAGIE EST ICI : Décodage robuste des billets ---
+          let rawTiers = [];
+
+          // 1. On vérifie ce que le serveur Python a réellement renvoyé
+          if (currentEvent.ticket_tiers) {
+            // Si la base de données a renvoyé du texte, on le force à redevenir une vraie liste
+            if (typeof currentEvent.ticket_tiers === "string") {
+              try {
+                rawTiers = JSON.parse(currentEvent.ticket_tiers);
+              } catch (e) {
+                console.error("Impossible de lire les billets:", e);
+              }
+            }
+            // Si c'est déjà une liste propre, on la garde
+            else if (Array.isArray(currentEvent.ticket_tiers)) {
+              rawTiers = currentEvent.ticket_tiers;
+            }
+          }
+
+          // 2. Si c'est toujours vide (ou si l'API n'a rien renvoyé), on remet le "Standard"
+          if (rawTiers.length === 0) {
+            rawTiers = [
+              {
+                name: "Standard",
+                price: currentEvent.price || 0,
+                seats_available: currentEvent.seats_available,
+              },
+            ];
+          }
+
+          // 3. Filtrage pour ne garder que les billets en stock
+          availableTiers = rawTiers.filter((tier) => {
+            const placesRestantes =
+              tier.seats_available !== undefined
+                ? tier.seats_available
+                : tier.seats;
+            return placesRestantes === undefined || placesRestantes > 0;
+          });
+
+          renderTiers();
+        } catch (error) {
+          console.error("Erreur API :", error);
+        }
+      });
+
+      // 3. Dessiner les billets disponibles
+      function renderTiers() {
+        const container = document.getElementById("ticket-tiers-selection");
+        if (!container) return;
+
+        // S'il n'y a plus AUCUN billet de disponible toutes catégories confondues
+        if (availableTiers.length === 0) {
+          container.innerHTML = `
+                <div class="bg-red-50 border-2 border-red-100 rounded-[1.5rem] p-6 text-center animate-in fade-in duration-500">
+                    <span class="material-symbols-outlined text-red-500 text-4xl mb-2">event_busy</span>
+                    <p class="font-headline font-extrabold text-red-700 text-lg">Guichet Fermé</p>
+                    <p class="text-sm text-red-500 mt-1 font-medium">Toutes les catégories sont épuisées pour cet événement.</p>
+                </div>
+            `;
+          updateReserveButton();
+          return;
+        }
+
+        container.innerHTML = availableTiers
+          .map((tier, index) => {
+            const isSelected = index === selectedTierIndex;
+
+            const classesBordure = isSelected
+              ? "border-primary bg-primary/5 shadow-sm"
+              : "border-gray-100 bg-white hover:border-primary/20";
+            const classesBadge = isSelected
+              ? "bg-white/50 border-white"
+              : "bg-primary/5 border-primary/10";
+            const classesTexteTitre = isSelected
+              ? "text-primary"
+              : "text-gray-800";
+            const classesTexteAcces = isSelected
+              ? "text-primary/70"
+              : "text-gray-400";
+            const classesTextePrix = "text-primary";
+
+            return `
+                <div onclick="selectTier(${index})" class="cursor-pointer border-2 rounded-[1.5rem] py-5 px-6 flex items-center gap-4 transition-all duration-200 ${classesBordure}">
+                    
+                    <div class="flex items-center justify-center w-12 h-12 rounded-full border ${classesBadge} shrink-0">
+                        <span class="material-symbols-outlined text-primary text-2xl" style="font-variation-settings: 'FILL' 1;">local_activity</span>
+                    </div>
+                    
+                    <div class="flex-1">
+                        <p class="font-headline font-extrabold text-base ${classesTexteTitre}">${tier.name}</p>
+                        <p class="text-[10px] ${classesTexteAcces} font-bold uppercase tracking-wider">ACCÈS GARANTI</p>
+                    </div>
+                    
+                    <p class="font-headline font-extrabold text-base ${classesTextePrix}">${tier.price.toLocaleString("fr-FR")} FCFA</p>
+                </div>
+            `;
+          })
+          .join("");
+
+        updateReserveButton();
+      }
+
+      function selectTier(index) {
+        selectedTierIndex = index;
+        renderTiers();
+      }
+
+      // 4. Mettre à jour le bouton de réservation
+      function updateReserveButton() {
+        const btn = document.getElementById("btn-reserve");
+        if (!btn) return;
+
+        // Cas complet
+        if (availableTiers.length === 0) {
+          btn.disabled = true;
+          btn.className =
+            "w-full py-4 md:py-5 rounded-2xl bg-gray-100 text-gray-400 font-bold text-sm transition-all cursor-not-allowed";
+          btn.innerHTML = "Événement Complet";
+          return;
+        }
+
+        // Rien de sélectionné
+        if (selectedTierIndex === null) {
+          btn.disabled = true;
+          btn.className =
+            "w-full py-4 md:py-5 rounded-2xl bg-surface-container-high text-on-surface-variant font-bold text-sm transition-all cursor-not-allowed";
+          btn.innerHTML = "Choisir un billet";
+        }
+        // Billet sélectionné
+        else {
+          const selectedTier = availableTiers[selectedTierIndex];
+          btn.disabled = false;
+          btn.className =
+            "w-full py-4 md:py-5 rounded-2xl bg-primary text-white font-bold text-sm transition-all hover:bg-primary-container shadow-lg shadow-primary/20 active:scale-95";
+          btn.innerHTML = `Réserver • ${selectedTier.price.toLocaleString("fr-FR")} FCFA`;
+        }
+      }
+
+      // 5. Passer à la caisse
+      function proceedToCheckout() {
+        if (
+          !currentEvent ||
+          selectedTierIndex === null ||
+          availableTiers.length === 0
+        )
+          return;
+
+        const selected = availableTiers[selectedTierIndex];
+
+        const urlParams = new URLSearchParams();
+        urlParams.append("id", currentEvent.id);
+        urlParams.append("title", currentEvent.title);
+        urlParams.append("tier", selected.name);
+        urlParams.append("price", selected.price);
+        urlParams.append("img", currentEvent.cover_image_url || "");
+
+        window.location.href = "checkout.html?" + urlParams.toString();
+      }
+      // ==========================================
+      // 6. Charger les "Autres événements"
+      // ==========================================
+      async function loadOtherEvents() {
+        const grid = document.getElementById("suggestions-grid");
+        if (!grid) return;
+
+        try {
+          // On demande la liste des événements à ton API Python
+          const response = await btApi.get("/events");
+
+          let events = [];
+          if (Array.isArray(response)) {
+            events = response;
+          } else if (response && response.events) {
+            events = response.events;
+          }
+
+          // On récupère l'ID de l'événement actuel pour ne pas l'afficher en double
+          const currentId = new URLSearchParams(window.location.search).get(
+            "id",
+          );
+
+          // On filtre l'événement actuel et on garde maximum 3 événements
+          const filtered = events.filter((e) => e.id != currentId).slice(0, 3);
+
+          if (filtered.length === 0) {
+            grid.innerHTML =
+              "<p class='text-gray-400 font-medium col-span-full'>Aucun autre événement de prévu pour le moment.</p>";
+            return;
+          }
+
+          // On dessine les cartes HTML pour chaque événement trouvé
+          grid.innerHTML = filtered
+            .map((e) => {
+              const d = new Date(e.event_date);
+              const dateStr = !isNaN(d)
+                ? d.toLocaleDateString("fr-FR", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })
+                : "Bientôt";
+              const priceStr =
+                e.price && e.price > 0
+                  ? e.price.toLocaleString("fr-FR") + " FCFA"
+                  : "Gratuit";
+              const imgUrl =
+                e.cover_image_url ||
+                "https://via.placeholder.com/400x300?text=GoEvent";
+
+              return `
+            <div onclick="window.location.href='event_detail.html?id=${e.id}'" class="bg-white rounded-[2rem] p-3 shadow-sm border border-gray-100 hover:shadow-xl hover:border-primary/30 transition-all duration-300 cursor-pointer group flex flex-col">
+                <div class="relative h-48 rounded-2xl overflow-hidden mb-4 shrink-0">
+                    <img src="${imgUrl}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                    <div class="absolute top-3 left-3 bg-white/95 backdrop-blur px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-primary shadow-sm">
+                        ${e.category || "Événement"}
+                    </div>
+                </div>
+                <div class="px-2 pb-2 flex flex-col flex-1">
+                    <h4 class="font-headline font-extrabold text-gray-900 text-lg line-clamp-2 mb-2 leading-tight">${e.title}</h4>
+                    
+                    <div class="mt-auto pt-4 border-t border-gray-50 flex justify-between items-center">
+                        <span class="text-xs font-bold text-gray-400 flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-[14px]">calendar_today</span>
+                            ${dateStr}
+                        </span>
+                        <span class="text-primary font-black text-base">${priceStr}</span>
+                    </div>
+                </div>
+            </div>
+            `;
+            })
+            .join("");
+        } catch (error) {
+          console.error("Erreur lors du chargement des suggestions :", error);
+        }
+      }
+
+      // On déclenche la fonction pour qu'elle s'exécute au chargement de la page
+      loadOtherEvents();
+
+      const mainImage = document.getElementById("e-image");
+      const lightbox = document.getElementById("image-lightbox");
+      const lightboxImg = document.getElementById("lightbox-img");
+      const closeBtn = document.getElementById("close-lightbox");
+
+      function openLightbox() {
+        if (!mainImage || !mainImage.src) return;
+        lightboxImg.src = mainImage.src; // On copie l'image
+
+        lightbox.classList.remove("hidden");
+        lightbox.classList.add("flex");
+
+        // Léger délai pour déclencher l'animation CSS
+        setTimeout(() => {
+          lightbox.classList.remove("opacity-0");
+          lightboxImg.classList.remove("scale-90");
+          lightboxImg.classList.add("scale-100"); // L'image zoome vers nous
+        }, 10);
+      }
+
+      function closeLightboxFunc() {
+        lightbox.classList.add("opacity-0");
+        lightboxImg.classList.remove("scale-100");
+        lightboxImg.classList.add("scale-90"); // L'image recule
+
+        // On attend la fin de l'animation pour la cacher vraiment
+        setTimeout(() => {
+          lightbox.classList.add("hidden");
+          lightbox.classList.remove("flex");
+          lightboxImg.src = "";
+        }, 300);
+      }
+
+      // Les déclencheurs (Clics)
+      if (mainImage) mainImage.addEventListener("click", openLightbox);
+      if (closeBtn) closeBtn.addEventListener("click", closeLightboxFunc);
+      if (lightbox) {
+        lightbox.addEventListener("click", function (event) {
+          // Si on clique sur le fond noir (et pas sur l'image elle-même), ça ferme
+          if (event.target === lightbox) closeLightboxFunc();
+        });
+      }
+      document.getElementById("footer").innerHTML = btFooter();
+    </script>
+  </body>
+</html>

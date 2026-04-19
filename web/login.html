@@ -104,6 +104,11 @@
         box-shadow: 0 10px 25px -5px rgba(0, 80, 44, 0.2);
       }
     </style>
+    <script src="auth-guard.js"></script>
+    <script>
+        requireAuth(); 
+        requireGuest();
+    </script>
   </head>
   <body
     class="bg-surface font-body text-on-surface antialiased overflow-x-hidden"

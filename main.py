@@ -202,9 +202,12 @@ def get_optional_user(
 
 def envoyer_billet_email(email_client, nom_client, ticket, event, amount):
     # Tes identifiants (À configurer avec un mot de passe d'application Gmail)
-    SENDER_EMAIL = "emmanuel.madoukou30@gmail.com"
-    SENDER_PASSWORD = "zfsbvemkoyryrvhw"
+    SENDER_EMAIL = os.getenv("SENDER_EMAIL", "")
+    SENDER_PASSWORD = os.getenv("SENDER_PASSWORD", "")
 
+    if not SENDER_EMAIL or not SENDER_PASSWORD:
+        print("⚠️ Email credentials missing, skipping email")
+        return
     msg = MIMEMultipart()
     msg['From'] = f"GoEvent <{SENDER_EMAIL}>"
     msg['To'] = email_client
@@ -255,8 +258,12 @@ def envoyer_billet_email(email_client, nom_client, ticket, event, amount):
 
 def envoyer_mail_code(email_client, code_secret):
     # Tes identifiants Gmail (les mêmes que pour les billets)
-    SENDER_EMAIL = "ton_email_go_event@gmail.com"
-    SENDER_PASSWORD = "ton_mot_de_passe_application_secret"
+    SENDER_EMAIL    = os.getenv("SENDER_EMAIL", "")
+    SENDER_PASSWORD = os.getenv("SENDER_PASSWORD", "")
+    
+    if not SENDER_EMAIL or not SENDER_PASSWORD:
+        print("⚠️ Email credentials missing")
+        return
 
     msg = MIMEMultipart()
     msg['From'] = f"GoEvent <{SENDER_EMAIL}>"

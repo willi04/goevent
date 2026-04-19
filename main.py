@@ -66,6 +66,8 @@ class User(Base):
     is_active    = Column(Boolean, default=True)
     agent_event_id = Column(Integer, ForeignKey("events.id"), nullable=True)
     created_at   = Column(DateTime, default=datetime.utcnow)
+    failed_login_attempts = Column(Integer, default=0)
+    locked_until          = Column(DateTime, nullable=True)
     events = relationship("Event", back_populates="organizer_user", foreign_keys="[Event.organizer_id]")
     tickets      = relationship("Ticket", back_populates="owner")
     favorites    = relationship("Favorite", back_populates="user")
@@ -378,6 +380,11 @@ class PartnerRequestCreate(BaseModel):
     phone: str
     partnership_type: str
     message: str
+class PaymentConfirm(BaseModel):
+    event_id: int
+    email: Optional[str] = None
+    full_name: Optional[str] = None
+    tier_name: Optional[str] = None  # nom du tier de billet choisi
 
 # 2. Le modèle de la base de données SQLAlchemy (à ajouter avec tes autres tables)
 class PartnerRequest(Base):
@@ -428,19 +435,29 @@ limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "https://goevent-qk9q.onrender.com",
-        "https://goevent-core.vercel.app",
-        "https://goevent.africa",
+# ── CORS SÉCURISÉ ─────────────────────────────────────────────
+ALLOWED_ORIGINS = [
+    "https://goevent-core.vercel.app",
+    "https://goevent.africa",
+    "https://www.goevent.africa",
+]
+
+# En développement local uniquement
+if os.getenv("ENV", "production") == "development":
+    ALLOWED_ORIGINS.extend([
         "http://localhost:5500",
         "http://localhost:8000",
-        "http://127.0.0.1",
-        "null",],
+        "http://127.0.0.1:5500",
+    ])
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept"],
+    expose_headers=["Content-Length"],
+    max_age=600,
 )
 
 # Servir les fichiers web statiques si le dossier existe
@@ -761,8 +778,44 @@ def register(request: Request, data: UserRegister, db: Session = Depends(get_db)
 @limiter.limit("5/minute")
 def login(request: Request, data: UserLogin, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.phone_number == data.phone_number).first()
-    if not user or not verify_pin(data.pin_code, user.pin_hash):
+    
+    if not user:
         raise HTTPException(401, "Numéro ou PIN incorrect")
+    
+    # 🔒 Vérifier si le compte est verrouillé
+    if user.locked_until and user.locked_until > datetime.utcnow():
+        minutes_restantes = int((user.locked_until - datetime.utcnow()).total_seconds() / 60) + 1
+        raise HTTPException(
+            403, 
+            f"Compte temporairement verrouillé. Réessayez dans {minutes_restantes} minute(s)."
+        )
+    
+    # 🔑 Vérifier le PIN
+    if not verify_pin(data.pin_code, user.pin_hash):
+        # Incrémenter le compteur d'échecs
+        user.failed_login_attempts = (user.failed_login_attempts or 0) + 1
+        
+        # Bloquer après 5 tentatives
+        if user.failed_login_attempts >= 5:
+            user.locked_until = datetime.utcnow() + timedelta(minutes=15)
+            db.commit()
+            raise HTTPException(
+                403, 
+                "Trop de tentatives échouées. Compte verrouillé pendant 15 minutes."
+            )
+        
+        db.commit()
+        tentatives_restantes = 5 - user.failed_login_attempts
+        raise HTTPException(
+            401, 
+            f"Numéro ou PIN incorrect. {tentatives_restantes} tentative(s) restante(s)."
+        )
+    
+    # ✅ Connexion réussie — reset du compteur
+    user.failed_login_attempts = 0
+    user.locked_until = None
+    db.commit()
+    
     return {
         "access_token": create_token(user.id, user.role),
         "token_type": "bearer",
@@ -1460,36 +1513,104 @@ def follow_organizer(org_id: int, db: Session = Depends(get_db), current_user: U
 # TEST SUR BILLET ACHETE
 
 @app.post("/payment/test-confirm")
-async def test_confirm_payment(data: dict, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    # 1. On récupère l'ID de l'événement et l'email du formulaire
-    event_id = data.get("event_id")
-    email_saisi = data.get("email")
-
-    # 2. SÉCURITÉ : On lie le billet au compte actuellement connecté !
-    user = current_user
-
-    # (Bonus) S'il n'avait pas d'email dans son profil, on sauvegarde celui qu'il vient de taper
-    if email_saisi and not user.email:
-        user.email = email_saisi
-        db.commit()
-
-    # 3. On génère le faux code QR de test
-    qr_code = f"BT-TEST-{random.randint(1000, 9999)}"
-
-    # 4. On crée le ticket et on le relie au compte
+def test_confirm_payment(
+    data: PaymentConfirm, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Simule un paiement validé pour les tests.
+    ⚠️ Le prix est TOUJOURS récupéré depuis la base, JAMAIS depuis le client.
+    """
+    
+    # 1. Chercher l'événement en base
+    event = db.query(Event).filter(
+        Event.id == data.event_id, 
+        Event.is_active == True
+    ).first()
+    
+    if not event:
+        raise HTTPException(404, "Événement introuvable")
+    
+    # 2. Vérifier disponibilité
+    if event.seats_sold >= event.total_seats:
+        raise HTTPException(400, "Événement complet")
+    
+    if event.event_date < datetime.utcnow():
+        raise HTTPException(400, "Événement déjà passé")
+    
+    # 3. 🔒 RÉCUPÉRER LE PRIX DEPUIS LA BASE (pas du client !)
+    prix_base = event.price
+    
+    # Si tiers de billets, trouver le bon tier
+    if data.tier_name and event.ticket_tiers:
+        tier = next((t for t in event.ticket_tiers if t.get("name") == data.tier_name), None)
+        if not tier:
+            raise HTTPException(400, "Catégorie de billet invalide")
+        prix_base = float(tier.get("price", event.price))
+    
+    # 4. Vérification supplémentaire : prix > 0
+    if prix_base <= 0:
+        raise HTTPException(400, "Prix invalide")
+    
+    # 5. Calcul des commissions (côté serveur uniquement)
+    frais_acheteur     = prix_base * 0.04
+    total_a_payer      = prix_base + frais_acheteur
+    frais_organisateur = prix_base * 0.07
+    solde_orga         = prix_base - frais_organisateur
+    tes_benefices      = frais_acheteur + frais_organisateur
+    
+    # 6. Sauvegarder l'email dans le profil si absent
+    if data.email and not current_user.email:
+        current_user.email = data.email
+    
+    # 7. Créer le billet (QR code sécurisé avec uuid)
     new_ticket = Ticket(
-        event_id=event_id,
-        user_id=user.id,
+        event_id=event.id,
+        user_id=current_user.id,
         payment_status="paye",
-        qr_hash=qr_code
+        payment_ref=f"TEST-{uuid.uuid4().hex[:8].upper()}"
+        # qr_hash sera automatiquement généré avec uuid4 (voir modèle Ticket)
     )
     db.add(new_ticket)
+    db.flush()
+    
+    # 8. Enregistrer le paiement avec trace comptable
+    payment = Payment(
+        user_id=current_user.id,
+        ticket_id=new_ticket.id,
+        amount=total_a_payer,
+        base_price=prix_base,
+        platform_fee=tes_benefices,
+        organizer_amount=solde_orga,
+        status="completed",
+        transaction_id=new_ticket.payment_ref
+    )
+    db.add(payment)
+    
+    # 9. 🔒 Incrémenter les places vendues (évite la surréservation)
+    event.seats_sold += 1
+    
     db.commit()
-
-    # 5. On déclenche l'envoi de l'email (si la fonction envoyer_billet_email est bien configurée)
-    event = db.query(Event).filter(Event.id == event_id).first()
-    email_envoi = email_saisi or user.email
-    if event and email_envoi:
-        envoyer_billet_email(email_envoi, user.full_name, new_ticket, event, event.price)
-
-    return {"status": "success", "ticket_id": new_ticket.id}
+    db.refresh(new_ticket)
+    
+    # 10. Envoyer l'email de confirmation
+    email_envoi = data.email or current_user.email
+    if email_envoi:
+        try:
+            envoyer_billet_email(
+                email_envoi, 
+                data.full_name or current_user.full_name, 
+                new_ticket, 
+                event, 
+                int(total_a_payer)
+            )
+        except Exception as e:
+            print(f"⚠️ Erreur envoi email : {e}")
+    
+    return {
+        "status": "success",
+        "ticket_id": new_ticket.id,
+        "qr_hash": new_ticket.qr_hash,
+        "amount": int(total_a_payer),
+    }

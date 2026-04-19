@@ -164,12 +164,54 @@ class CancellationRequest(Base):
 # ── SÉCURITÉ ───────────────────────────────────────────────────
 def hash_pin(pin): return pwd_context.hash(pin[:72])
 def verify_pin(plain, hashed): return pwd_context.verify(plain[:72], hashed)
+def log_security_event(
+    db: Session, 
+    event_type: str, 
+    request: Request = None,
+    user_id: int = None, 
+    details: str = None
+):
+    """Enregistre un événement de sécurité dans la base."""
+    try:
+        ip = None
+        user_agent = None
+        if request:
+            ip = request.client.host if request.client else None
+            user_agent = request.headers.get("user-agent", "")[:500]
+        
+        log = SecurityLog(
+            event_type=event_type,
+            user_id=user_id,
+            ip_address=ip,
+            user_agent=user_agent,
+            details=details
+        )
+        db.add(log)
+        db.commit()
+    except Exception as e:
+        print(f"⚠️ Erreur log sécurité : {e}")
+        db.rollback()
 
 def create_token(user_id, role):
+    # 🔒 Durée de session selon le niveau de sensibilité du rôle
+    if role == "admin":
+        duration = timedelta(hours=2)      # Très sensible
+    elif role == "organizer":
+        duration = timedelta(hours=8)      # Journée de travail
+    elif role == "agent":
+        duration = timedelta(hours=12)     # Shift d'événement complet
+    else:  # fan
+        duration = timedelta(days=7)       # Confort utilisateur
+    
     return jwt.encode(
-        {"sub": str(user_id), "role": role,
-         "exp": datetime.utcnow() + timedelta(days=30)},
-        SECRET_KEY, algorithm=ALGORITHM
+        {
+            "sub": str(user_id), 
+            "role": role,
+            "iat": datetime.utcnow(),
+            "exp": datetime.utcnow() + duration
+        },
+        SECRET_KEY, 
+        algorithm=ALGORITHM
     )
 
 def get_db():
@@ -183,6 +225,26 @@ def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
 ):
+    if not credentials:
+        raise HTTPException(status_code=401, detail="Token manquant")
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user = db.query(User).filter(User.id == int(payload["sub"])).first()
+        
+        if not user:
+            raise HTTPException(status_code=401, detail="Utilisateur introuvable")
+        
+        # 🔒 Compte désactivé = pas d'accès
+        if not user.is_active:
+            raise HTTPException(status_code=403, detail="Compte désactivé")
+        
+        # 🔒 Le rôle dans le token doit correspondre au rôle actuel
+        if payload.get("role") != user.role:
+            raise HTTPException(status_code=401, detail="Session invalide, reconnectez-vous")
+        
+        return user
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Session expirée, reconnectez-vous")
     if not credentials:
         raise HTTPException(status_code=401, detail="Token manquant")
     try:
@@ -405,6 +467,15 @@ class PasswordReset(Base):
     code = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+class SecurityLog(Base):
+    __tablename__ = "security_logs"
+    id          = Column(Integer, primary_key=True, index=True)
+    event_type  = Column(String, index=True)  # login_success, login_failed, admin_action, etc.
+    user_id     = Column(Integer, nullable=True)
+    ip_address  = Column(String, nullable=True)
+    user_agent  = Column(String, nullable=True)
+    details     = Column(Text, nullable=True)
+    created_at  = Column(DateTime, default=datetime.utcnow, index=True)
 # Assure-toi que Base.metadata.create_all(bind=engine) est bien en dessous pour créer la table !
 Base.metadata.create_all(bind=engine)
 
@@ -778,7 +849,8 @@ def approve_cancellation(request_id: int, db: Session = Depends(get_db),
     # 3. On marque la demande comme traitée
     cancel_req.status = "traite"
     db.commit()
-
+    log_security_event(db, "event_cancelled", request, current_user.id, 
+                   f"Event #{cancel_req.event_id}")
     return {"message": "Événement définitivement supprimé."}
 # ── AUTH ────────────────────────────────────────────────────────
 @app.post("/auth/register")
@@ -818,10 +890,14 @@ def login(request: Request, data: UserLogin, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.phone_number == data.phone_number).first()
     
     if not user:
+        log_security_event(db, "login_failed", request, 
+                           details=f"Numéro inconnu : {data.phone_number}")
         raise HTTPException(401, "Numéro ou PIN incorrect")
     
     # 🔒 Vérifier si le compte est verrouillé
     if user.locked_until and user.locked_until > datetime.utcnow():
+         log_security_event(db, "login_blocked", request, user.id, 
+                           "Tentative sur compte verrouillé")
         minutes_restantes = int((user.locked_until - datetime.utcnow()).total_seconds() / 60) + 1
         raise HTTPException(
             403, 
@@ -837,12 +913,16 @@ def login(request: Request, data: UserLogin, db: Session = Depends(get_db)):
         if user.failed_login_attempts >= 5:
             user.locked_until = datetime.utcnow() + timedelta(minutes=15)
             db.commit()
+            log_security_event(db, "account_locked", request, user.id, 
+                               "5 tentatives échouées")
             raise HTTPException(
                 403, 
                 "Trop de tentatives échouées. Compte verrouillé pendant 15 minutes."
             )
         
         db.commit()
+        log_security_event(db, "login_failed", request, user.id, 
+                           f"Tentative {user.failed_login_attempts}/5")
         tentatives_restantes = 5 - user.failed_login_attempts
         raise HTTPException(
             401, 
@@ -853,6 +933,7 @@ def login(request: Request, data: UserLogin, db: Session = Depends(get_db)):
     user.failed_login_attempts = 0
     user.locked_until = None
     db.commit()
+    log_security_event(db, "login_success", request, user.id, f"Rôle: {user.role}")
     
     return {
         "access_token": create_token(user.id, user.role),
@@ -1077,7 +1158,7 @@ def simulate_payment(ticket_id: int, db: Session = Depends(get_db),
     ticket.payment_ref = f"SIM_{uuid.uuid4().hex[:8].upper()}"
 
     # 🔴 CORRECTION : On génère le vrai QR Code au moment de la simulation !
-    ticket.qr_hash = f"BT-SIM-{''.join(random.choices(string.ascii_uppercase + string.digits, k=5))}"
+    ticket.qr_hash = f"GOEVT-{uuid.uuid4().hex[:12].upper()}"
 
     # 3. On ajoute la place vendue dans les stats de l'événement
     event = db.query(Event).filter(Event.id == ticket.event_id).first()
@@ -1314,8 +1395,37 @@ async def validate_payout(payout_id: int, db: Session = Depends(get_db),
     db.commit()
 
     print(f"💰 VERSEMENT VALIDÉ : {payout.amount} FCFA envoyés pour l'événement {payout.event_id}")
+    log_security_event(db, "payout_validated", request, current_user.id, 
+                   f"Payout #{payout_id} — {payout.amount} FCFA")
     return {"status": "success", "message": "Le retrait est marqué comme payé"}
 
+@app.get("/admin/security-logs")
+def get_security_logs(
+    limit: int = 100,
+    event_type: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Consulter les logs de sécurité (admin uniquement)."""
+    if current_user.role != "admin":
+        raise HTTPException(403, "Accès refusé")
+    
+    query = db.query(SecurityLog).order_by(SecurityLog.created_at.desc())
+    
+    if event_type:
+        query = query.filter(SecurityLog.event_type == event_type)
+    
+    logs = query.limit(min(limit, 500)).all()
+    
+    return [{
+        "id": l.id,
+        "event_type": l.event_type,
+        "user_id": l.user_id,
+        "ip_address": l.ip_address,
+        "user_agent": l.user_agent[:100] if l.user_agent else None,
+        "details": l.details,
+        "created_at": l.created_at,
+    } for l in logs]
 # ── FAVORIS ─────────────────────────────────────────────────────
 @app.get("/favorites")
 def get_favorites(db: Session = Depends(get_db),

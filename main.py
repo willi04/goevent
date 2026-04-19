@@ -888,53 +888,43 @@ def register(request: Request, data: UserRegister, db: Session = Depends(get_db)
 @limiter.limit("5/minute")
 def login(request: Request, data: UserLogin, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.phone_number == data.phone_number).first()
-    
+
     if not user:
-        log_security_event(db, "login_failed", request, 
+        log_security_event(db, "login_failed", request,
                            details=f"Numéro inconnu : {data.phone_number}")
         raise HTTPException(401, "Numéro ou PIN incorrect")
-    
-    # 🔒 Vérifier si le compte est verrouillé
+
+    # Vérifier verrouillage
     if user.locked_until and user.locked_until > datetime.utcnow():
-         log_security_event(db, "login_blocked", request, user.id, 
+        log_security_event(db, "login_blocked", request, user.id,
                            "Tentative sur compte verrouillé")
         minutes_restantes = int((user.locked_until - datetime.utcnow()).total_seconds() / 60) + 1
-        raise HTTPException(
-            403, 
-            f"Compte temporairement verrouillé. Réessayez dans {minutes_restantes} minute(s)."
-        )
-    
-    # 🔑 Vérifier le PIN
+        raise HTTPException(403, f"Compte temporairement verrouillé. Réessayez dans {minutes_restantes} minute(s).")
+
+    # Vérifier PIN
     if not verify_pin(data.pin_code, user.pin_hash):
-        # Incrémenter le compteur d'échecs
         user.failed_login_attempts = (user.failed_login_attempts or 0) + 1
-        
-        # Bloquer après 5 tentatives
+
         if user.failed_login_attempts >= 5:
             user.locked_until = datetime.utcnow() + timedelta(minutes=15)
             db.commit()
-            log_security_event(db, "account_locked", request, user.id, 
+            log_security_event(db, "account_locked", request, user.id,
                                "5 tentatives échouées")
-            raise HTTPException(
-                403, 
-                "Trop de tentatives échouées. Compte verrouillé pendant 15 minutes."
-            )
-        
+            raise HTTPException(403, "Trop de tentatives échouées. Compte verrouillé pendant 15 minutes.")
+
         db.commit()
-        log_security_event(db, "login_failed", request, user.id, 
+        log_security_event(db, "login_failed", request, user.id,
                            f"Tentative {user.failed_login_attempts}/5")
         tentatives_restantes = 5 - user.failed_login_attempts
-        raise HTTPException(
-            401, 
-            f"Numéro ou PIN incorrect. {tentatives_restantes} tentative(s) restante(s)."
-        )
-    
-    # ✅ Connexion réussie — reset du compteur
+        raise HTTPException(401, f"Numéro ou PIN incorrect. {tentatives_restantes} tentative(s) restante(s).")
+
+    # ✅ Succès
     user.failed_login_attempts = 0
     user.locked_until = None
     db.commit()
+
     log_security_event(db, "login_success", request, user.id, f"Rôle: {user.role}")
-    
+
     return {
         "access_token": create_token(user.id, user.role),
         "token_type": "bearer",

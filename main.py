@@ -452,32 +452,33 @@ def root():
     }
 
 
+# ── PAIEMENT ORANGE MONEY (SIMULATION) ─────────────────────────
+
 @app.post("/payment/init/{event_id}")
 def init_payment(event_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    """Initialise un paiement Orange Money — retourne les infos pour l'USSD"""
     event = db.query(Event).get(event_id)
     if not event:
-        raise HTTPException(status_code=404, detail="Event introuvable")
+        raise HTTPException(status_code=404, detail="Événement introuvable")
     if event.seats_sold >= event.total_seats:
         raise HTTPException(status_code=400, detail="Événement complet")
 
     transaction_id = str(uuid.uuid4())
 
-    # 🎟️ Créer ticket en attente
+    # Calcul des commissions
+    prix_base          = event.price
+    frais_acheteur     = prix_base * 0.04
+    total_a_payer      = prix_base + frais_acheteur
+    frais_organisateur = prix_base * 0.07
+    solde_orga         = prix_base - frais_organisateur
+    tes_benefices      = frais_acheteur + frais_organisateur
+
+    # Créer ticket en attente
     ticket = Ticket(user_id=user.id, event_id=event.id, payment_status="attente")
     db.add(ticket)
     db.flush()
 
-    # 🧮 MATHÉMATIQUES HYBRIDES (Le Modèle "GoEvent")
-    prix_base = event.price
-    frais_acheteur = prix_base * 0.04
-    total_a_payer = prix_base + frais_acheteur
-
-    frais_organisateur = prix_base * 0.07
-    solde_orga = prix_base - frais_organisateur
-
-    tes_benefices = frais_acheteur + frais_organisateur
-
-    # 💰 Créer paiement avec la trace comptable exacte
+    # Créer payment en attente
     payment = Payment(
         user_id=user.id,
         ticket_id=ticket.id,
@@ -491,32 +492,14 @@ def init_payment(event_id: int, db: Session = Depends(get_db), user: User = Depe
     db.add(payment)
     db.commit()
 
-    # 🚀 Envoi de la requête à CinetPay
-    payload = {
-        "apikey": CINETPAY_API_KEY,
-        "site_id": CINETPAY_SITE_ID,
+    return {
+        "status": "pending",
         "transaction_id": transaction_id,
-        "amount": int(total_a_payer),  # CinetPay encaisse le TOTAL (Prix + 4%)
-        "currency": "XAF",
-        "description": f"Billet pour {event.title}",
-        "customer_name": user.full_name,
-        "customer_phone_number": user.phone_number,
-        "notify_url": "https://ton-domaine.com/payment/webhook",
-        "return_url": "https://ton-domaine.com/user_dashboard.html",
-        "channels": "MOBILE_MONEY"
+        "ticket_id": ticket.id,
+        "amount": int(total_a_payer),
+        "ussd_code": "#150*50#",
+        "instruction": f"Composez #150*50# sur Orange Money pour payer {int(total_a_payer)} FCFA"
     }
-    url_cinetpay = "https://api-checkout.cinetpay.com/v2/payment"
-    response = requests.post(url_cinetpay, json=payload)
-
-    if response.status_code == 200:
-        result = response.json()
-        if result.get("code") == "201":
-            # CinetPay a accepté, on renvoie le lien de paiement à ton checkout.html
-            return {"payment_url": result["data"]["payment_url"]}
-        else:
-            raise HTTPException(status_code=400, detail=result.get("description", "Erreur CinetPay"))
-    else:
-        raise HTTPException(status_code=500, detail="Impossible de joindre CinetPay")
 
 
 @app.post("/organizer/create-agent")
@@ -975,64 +958,6 @@ def buy_ticket(data: BuyTicket, db: Session = Depends(get_db),
         "ussd_code": "#150*50#",
     }
 
-
-@app.post("/payment/webhook")
-async def cinetpay_webhook(request: Request, db: Session = Depends(get_db)):
-    # CinetPay envoie les infos en form-data
-    form_data = await request.form()
-    cpm_trans_id = form_data.get("cpm_trans_id")
-
-    if not cpm_trans_id:
-        raise HTTPException(status_code=400, detail="Transaction ID manquant")
-
-    # 1. Interrogation de CinetPay pour s'assurer que c'est un vrai paiement
-    payload = {
-        "apikey": CINETPAY_API_KEY,
-        "site_id": CINETPAY_SITE_ID,
-        "transaction_id": cpm_trans_id
-    }
-    response = requests.post(CINETPAY_CHECK_URL, json=payload)
-    data = response.json()
-
-    # 2. Si le code est "00", le paiement est validé
-    if data.get("code") == "00":
-        payment = db.query(Payment).filter(Payment.transaction_id == cpm_trans_id).first()
-        if payment and payment.status != "paye":
-            payment.status = "paye"
-
-            ticket = db.query(Ticket).filter(Ticket.id == payment.ticket_id).first()
-            if ticket:
-                ticket.payment_status = "paye"
-                ticket.payment_ref = cpm_trans_id
-
-                ticket.qr_hash = f"BT-{''.join(random.choices(string.ascii_uppercase + string.digits, k=5))}"
-
-            event = db.query(Event).filter(Event.id == ticket.event_id).first()
-            if event:
-                event.seats_sold += 1
-
-            db.commit()
-
-    if ticket:
-        ticket.payment_status = "paye"
-        ticket.payment_ref = cpm_trans_id
-        ticket.qr_hash = f"BT-{''.join(random.choices(string.ascii_uppercase + string.digits, k=5))}"
-
-        # 🔴 NOUVEAU : On récupère l'utilisateur pour avoir son email
-        user = db.query(User).filter(User.id == payment.user_id).first()
-
-        # On sauvegarde d'abord la base de données
-        db.commit()
-
-        # 🔴 NOUVEAU : On envoie l'email en arrière-plan si le client a un email !
-        if user and user.email:
-            envoyer_billet_email(user.email, user.full_name, ticket, event, payment.amount)
-
-        return {"status": "success"}
-
-    # Il faut toujours retourner un statut 200 à CinetPay pour qu'ils arrêtent d'appeler le webhook
-    return {"status": "ok"}
-
 # Simuler paiement en dev
 @app.post("/payment/simulate/{ticket_id}")
 def simulate_payment(ticket_id: int, db: Session = Depends(get_db),
@@ -1381,45 +1306,6 @@ def organizer_stats(db: Session = Depends(get_db), current_user: User = Depends(
         "org_type": current_user.org_type or current_user.role,
         "events": events_data
     }
-
-
-# --- ROUTE DE NOTIFICATION CINETPAY (WEBHOOK) ---
-# C'est cette URL que CinetPay appelle en secret pour valider le billet
-@app.post("/api/payment/notify")
-async def payment_notify(request: Request, db: Session = Depends(get_db)):
-    try:
-        # 1. On récupère les données du formulaire envoyé par CinetPay
-        data = await request.form()
-        transaction_id = data.get("cpm_trans_id")
-        site_id = data.get("cpm_site_id")
-
-        # 2. Vérification de sécurité élémentaire
-        if site_id != CINETPAY_SITE_ID:
-            return {"status": "error", "message": "Invalid Site ID"}
-
-        # 3. On cherche le billet correspondant
-        ticket = db.query(Ticket).filter(Ticket.transaction_id == transaction_id).first()
-
-        if ticket:
-            if ticket.payment_status != "paye":
-                # ✅ VALIDATION DU BILLET
-                ticket.payment_status = "paye"
-
-                # Mise à jour du compteur de l'événement
-                if ticket.event:
-                    ticket.event.seats_sold += 1
-
-                db.commit()
-                print(f"--- SUCCÈS : Billet {ticket.qr_hash} activé ! ---")
-                return {"status": "success"}
-            else:
-                return {"status": "already_paid"}
-
-    except Exception as e:
-        print(f"--- ERREUR NOTIFICATION : {str(e)} ---")
-        return {"status": "error", "message": str(e)}
-
-    return {"status": "not_found"}
 
 #DESTRUCTION
 # --- 1. ROUTE POUR RÉCUPÉRER LE NOM DE L'ÉVÉNEMENT ---

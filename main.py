@@ -32,7 +32,9 @@ load_dotenv()
 # ── CONFIG ─────────────────────────────────────────────────────
 # Remplace les infos par tes vrais identifiants PostgreSQL (ou utilise une variable d'environnement)
 DATABASE_URL = os.getenv("DATABASE_URL")
-SECRET_KEY   = "go_event_secret_key_2025_centrafrique"
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise ValueError("⚠️ ERREUR CRITIQUE : SECRET_KEY manquante !")
 ALGORITHM    = "HS256"
 
 if not DATABASE_URL:

@@ -46,6 +46,24 @@ async function btFetch(path, opts) {
   var data = await res.json().catch(function () {
     return {};
   });
+  const res = await fetch(BT_API + path, {...});
+    const data = await res.json().catch(() => ({}));
+    
+    // 🔒 Si 401 = session expirée → déconnexion automatique
+    if (res.status === 401) {
+        const currentPage = window.location.pathname;
+        const isAuthPage = currentPage.includes('login.html') 
+                        || currentPage.includes('signup.html')
+                        || currentPage.includes('admin-login.html');
+        
+        if (!isAuthPage) {
+            localStorage.removeItem("bt_token");
+            localStorage.removeItem("bt_user");
+            sessionStorage.setItem("auth_message", "Votre session a expiré. Reconnectez-vous.");
+            window.location.href = "login.html";
+            return;
+        }
+    }
   if (!res.ok) throw new Error(data.detail || "Erreur serveur");
   return data;
 }

@@ -460,6 +460,44 @@ app.add_middleware(
     max_age=600,
 )
 
+# ── HEADERS DE SÉCURITÉ ─────────────────────────────────────────
+from starlette.middleware.base import BaseHTTPMiddleware
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        
+        # 🛡️ Empêche l'affichage dans un iframe (anti-clickjacking)
+        response.headers["X-Frame-Options"] = "DENY"
+        
+        # 🛡️ Empêche le navigateur de "deviner" le type de fichier
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        
+        # 🛡️ Empêche la fuite de l'URL de provenance vers les sites externes
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        
+        # 🛡️ Force HTTPS pour les 6 prochains mois (HSTS)
+        response.headers["Strict-Transport-Security"] = "max-age=15552000; includeSubDomains"
+        
+        # 🛡️ Désactive les fonctionnalités navigateur dangereuses
+        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=(), payment=()"
+        
+        # 🛡️ Content Security Policy (la plus importante contre XSS)
+        csp = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "font-src 'self' https://fonts.gstatic.com; "
+            "img-src 'self' data: https: blob:; "
+            "connect-src 'self' https://goevent-qk9q.onrender.com; "
+            "frame-ancestors 'none';"
+        )
+        response.headers["Content-Security-Policy"] = csp
+        
+        return response
+
+app.add_middleware(SecurityHeadersMiddleware)
+
 # Servir les fichiers web statiques si le dossier existe
 web_dir = pathlib.Path("web")
 if web_dir.exists():

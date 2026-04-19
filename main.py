@@ -24,6 +24,9 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from dotenv import load_dotenv
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 
 #CHARGEMENT DE BASE DE DONNEES
@@ -420,6 +423,11 @@ class CancelRequestCreate(BaseModel):
 # ── APP ─────────────────────────────────────────────────────────
 app = FastAPI(title="GoEvent API", version="2.0.0")
 
+# ── RATE LIMITING ───────────────────────────────────────────────
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -561,7 +569,8 @@ def delete_agent(agent_id: int, db: Session = Depends(get_db), current_user: Use
     return {"message": "Agent supprimé avec succès"}
 
 @app.post("/partner-request")
-async def receive_partner_request(req: PartnerRequestCreate, db: Session = Depends(get_db)):
+@limiter.limit("2/hour")
+async def receive_partner_request(request: Request, req: PartnerRequestCreate, db: Session = Depends(get_db)):
     # On sauvegarde la demande dans la base de données
     nouvelle_demande = PartnerRequest(
         company_name=req.company_name,
@@ -582,7 +591,8 @@ async def receive_partner_request(req: PartnerRequestCreate, db: Session = Depen
 
 
 @app.post("/auth/forgot-password")
-async def forgot_password(data: dict, db: Session = Depends(get_db)):
+@limiter.limit("3/hour")
+async def forgot_password(request: Request, data: dict, db: Session = Depends(get_db)):
     email = data.get("email")
     user = db.query(User).filter(User.email == email).first()
 
@@ -717,7 +727,8 @@ def approve_cancellation(request_id: int, db: Session = Depends(get_db),
     return {"message": "Événement définitivement supprimé."}
 # ── AUTH ────────────────────────────────────────────────────────
 @app.post("/auth/register")
-def register(data: UserRegister, db: Session = Depends(get_db)):
+@limiter.limit("3/minute")
+def register(request: Request, data: UserRegister, db: Session = Depends(get_db)):
     if data.role not in ROLES_VALIDES:
         raise HTTPException(400, f"Rôle invalide. Valeurs: {ROLES_VALIDES}")
     if len(data.pin_code) != 4 or not data.pin_code.isdigit():
@@ -747,7 +758,8 @@ def register(data: UserRegister, db: Session = Depends(get_db)):
     }
 
 @app.post("/auth/login")
-def login(data: UserLogin, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def login(request: Request, data: UserLogin, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.phone_number == data.phone_number).first()
     if not user or not verify_pin(data.pin_code, user.pin_hash):
         raise HTTPException(401, "Numéro ou PIN incorrect")

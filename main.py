@@ -161,6 +161,187 @@ class CancellationRequest(Base):
     event = relationship("Event")
     organizer = relationship("User")
 
+# ═══════════════════════════════════════════════════════════════
+# CMS HOMEPAGE — Préparation pour futures fonctionnalités admin
+# (Tables créées maintenant, routes à implémenter en septembre 2026)
+# ═══════════════════════════════════════════════════════════════
+
+class HomepageContent(Base):
+    """
+    Contenu dynamique de la page d'accueil géré par l'admin.
+    Types possibles : hero_banner, promo_card, fundraising, announcement, featured_event
+    """
+    __tablename__ = "homepage_content"
+    
+    # Identité
+    id              = Column(Integer, primary_key=True, index=True)
+    type            = Column(String, index=True)  # voir docstring
+    
+    # Contenu affiché
+    title           = Column(String, nullable=False)
+    subtitle        = Column(String, nullable=True)
+    description     = Column(Text, nullable=True)
+    image_url       = Column(String, nullable=True)
+    
+    # Call-to-action (le bouton)
+    cta_text        = Column(String, nullable=True)
+    cta_link        = Column(String, nullable=True)
+    
+    # Style visuel
+    background_color = Column(String, nullable=True)
+    text_color       = Column(String, nullable=True)
+    
+    # Gestion de l'affichage
+    position        = Column(Integer, default=0)
+    is_active       = Column(Boolean, default=True)
+    starts_at       = Column(DateTime, nullable=True)
+    ends_at         = Column(DateTime, nullable=True)
+    
+    # Statistiques
+    impressions     = Column(Integer, default=0)
+    clicks          = Column(Integer, default=0)
+    
+    # Metadata
+    created_at      = Column(DateTime, default=datetime.utcnow)
+    updated_at      = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_by      = Column(Integer, ForeignKey("users.id"))
+    
+    # Relations (optionnel avec le contrat publicitaire)
+    ad_contract_id  = Column(Integer, ForeignKey("ad_contracts.id"), nullable=True)
+    
+    creator = relationship("User", foreign_keys=[created_by])
+
+
+class AdContract(Base):
+    """
+    Contrat publicitaire signé avec un annonceur.
+    Un contrat peut avoir plusieurs HomepageContent associés.
+    """
+    __tablename__ = "ad_contracts"
+    
+    # Identité
+    id              = Column(Integer, primary_key=True, index=True)
+    
+    # Infos annonceur
+    sponsor_name    = Column(String, nullable=False)      # "Orange Centrafrique"
+    sponsor_contact = Column(String, nullable=True)       # nom du contact
+    sponsor_email   = Column(String, nullable=True)
+    sponsor_phone   = Column(String, nullable=True)
+    
+    # Contrat
+    amount_fcfa     = Column(Float, default=0)            # montant total du contrat
+    start_date      = Column(DateTime, nullable=False)
+    end_date        = Column(DateTime, nullable=False)
+    
+    # Statut
+    status          = Column(String, default="pending")   # pending, paid, active, expired
+    payment_status  = Column(String, default="unpaid")    # unpaid, partial, paid
+    paid_amount     = Column(Float, default=0)            # montant déjà versé
+    
+    # Notes internes
+    notes           = Column(Text, nullable=True)
+    
+    # Metadata
+    created_at      = Column(DateTime, default=datetime.utcnow)
+    created_by      = Column(Integer, ForeignKey("users.id"))
+    
+    creator = relationship("User", foreign_keys=[created_by])
+
+
+class FundraisingCampaign(Base):
+    """
+    Campagne de collecte de fonds affichée sur la homepage.
+    Par exemple : orphelinats, ONG, événements solidaires.
+    """
+    __tablename__ = "fundraising_campaigns"
+    
+    # Identité
+    id              = Column(Integer, primary_key=True, index=True)
+    
+    # Infos campagne
+    title           = Column(String, nullable=False)
+    description     = Column(Text, nullable=False)
+    image_url       = Column(String, nullable=True)
+    
+    # Bénéficiaire
+    beneficiary_name  = Column(String, nullable=False)    # "Orphelinat Saint-Joseph"
+    beneficiary_phone = Column(String, nullable=True)
+    beneficiary_email = Column(String, nullable=True)
+    
+    # Financier
+    goal_fcfa       = Column(Float, nullable=False)       # objectif à atteindre
+    collected_fcfa  = Column(Float, default=0)            # montant collecté
+    
+    # Période
+    starts_at       = Column(DateTime, default=datetime.utcnow)
+    ends_at         = Column(DateTime, nullable=True)     # NULL = pas de fin
+    
+    # Statut
+    is_active       = Column(Boolean, default=True)
+    is_verified     = Column(Boolean, default=False)      # admin a validé l'authenticité
+    
+    # Metadata
+    created_at      = Column(DateTime, default=datetime.utcnow)
+    created_by      = Column(Integer, ForeignKey("users.id"))
+    
+    creator = relationship("User", foreign_keys=[created_by])
+
+
+# ── Schémas Pydantic pour le CMS (à utiliser quand on créera les routes) ──
+
+class HomepageContentCreate(BaseModel):
+    type: str
+    title: str
+    subtitle: Optional[str] = None
+    description: Optional[str] = None
+    image_url: Optional[str] = None
+    cta_text: Optional[str] = None
+    cta_link: Optional[str] = None
+    background_color: Optional[str] = None
+    text_color: Optional[str] = None
+    position: int = 0
+    is_active: bool = True
+    starts_at: Optional[datetime] = None
+    ends_at: Optional[datetime] = None
+    ad_contract_id: Optional[int] = None
+
+
+class HomepageContentUpdate(BaseModel):
+    type: Optional[str] = None
+    title: Optional[str] = None
+    subtitle: Optional[str] = None
+    description: Optional[str] = None
+    image_url: Optional[str] = None
+    cta_text: Optional[str] = None
+    cta_link: Optional[str] = None
+    background_color: Optional[str] = None
+    text_color: Optional[str] = None
+    position: Optional[int] = None
+    is_active: Optional[bool] = None
+    starts_at: Optional[datetime] = None
+    ends_at: Optional[datetime] = None
+
+
+class AdContractCreate(BaseModel):
+    sponsor_name: str
+    sponsor_contact: Optional[str] = None
+    sponsor_email: Optional[str] = None
+    sponsor_phone: Optional[str] = None
+    amount_fcfa: float = 0
+    start_date: datetime
+    end_date: datetime
+    notes: Optional[str] = None
+
+
+class FundraisingCampaignCreate(BaseModel):
+    title: str
+    description: str
+    image_url: Optional[str] = None
+    beneficiary_name: str
+    beneficiary_phone: Optional[str] = None
+    beneficiary_email: Optional[str] = None
+    goal_fcfa: float
+    ends_at: Optional[datetime] = None
 # ── SÉCURITÉ ───────────────────────────────────────────────────
 def hash_pin(pin): return pwd_context.hash(pin[:72])
 def verify_pin(plain, hashed): return pwd_context.verify(plain[:72], hashed)

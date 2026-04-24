@@ -1571,29 +1571,6 @@ def create_order_legacy(order: OrderCreateLegacy, db: Session = Depends(get_db))
 
     #@app.post("/api/tickets/purchase") # Ou le nom de ta route actuelle
 
-@app.get("/api/my-tickets")
-def get_my_tickets_legacy(phone: str, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.phone_number == phone).first()
-    if not user:
-        return []
-
-    # On récupère les billets payés de l'utilisateur
-    tickets = db.query(Ticket).filter(
-        Ticket.user_id == user.id,
-        Ticket.payment_status == "paye"
-    ).all()
-
-    # On formate les données pour que mes_billets.html les lise sans planter
-    return [{
-        "ticket_id": t.qr_hash,
-        "event_title": t.event.title if t.event else "",
-        "event_date": t.event.event_date.isoformat() if t.event.event_date else None,
-        "event_location": t.event.location if t.event else "",
-        "price_paid": t.event.price if t.event else 0,
-        "tier_name": "Standard"  # Claude a retiré cette info, on met Standard par défaut
-    } for t in tickets if t.event]
-
-
 # ── GESTION DES ABONNEMENTS (FOLLOWERS) ────────────────────────
 @app.get("/organizers")
 def get_organizers(db: Session = Depends(get_db), current_user: User = Depends(get_optional_user)):

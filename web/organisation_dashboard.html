@@ -220,6 +220,19 @@
           </a>
           <a
             href="#"
+            id="mo-link-cash-drawer"
+            onclick="
+              showSection('cash-reservations');
+              toggleMobileMenu();
+            "
+            class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all"
+          >
+            <span class="material-symbols-outlined opacity-70">payments</span>
+            Réservations Cash
+            <span id="mo-badge-cash-count" class="hidden ml-auto bg-orange-500 text-white text-xs font-bold rounded-full px-2 py-0.5">0</span>
+          </a>
+          <a
+            href="#"
             id="mo-link-team-drawer"
             onclick="
               showSection('team');
@@ -311,6 +324,15 @@
             onclick="showSection('followers')"
           >
             <span class="material-symbols-outlined">groups</span>Abonnés
+          </button>
+          <button
+            class="sb-link"
+            id="link-cash-reservations"
+            onclick="showSection('cash-reservations')"
+          >
+            <span class="material-symbols-outlined">payments</span>
+            Réservations Cash
+            <span id="badge-cash-count" class="hidden ml-auto bg-orange-500 text-white text-xs font-bold rounded-full px-2 py-0.5">0</span>
           </button>
           <button class="sb-link" id="link-team" onclick="showSection('team')">
             <span class="material-symbols-outlined">badge</span>Mon Équipe
@@ -689,7 +711,65 @@
               </p>
             </div>
           </div>
-
+          <!-- ═══════════════════════════════════════════════════════════════ -->
+          <!-- SECTION : RÉSERVATIONS CASH EN ATTENTE                          -->
+          <!-- ═══════════════════════════════════════════════════════════════ -->
+          <div id="sec-cash-reservations" class="hidden space-y-6 md:space-y-8">
+            
+            <!-- Header avec stats -->
+            <div class="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100">
+              <div class="flex items-start justify-between flex-wrap gap-4">
+                <div>
+                  <h2 class="text-2xl md:text-3xl font-black text-gray-900 mb-2">
+                    💵 Réservations Cash
+                  </h2>
+                  <p class="text-sm text-gray-500">
+                    Liste des places réservées en attente de paiement à l'entrée
+                  </p>
+                </div>
+                <button
+                  onclick="loadCashReservations()"
+                  class="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl font-bold text-sm transition-colors"
+                >
+                  <span class="material-symbols-outlined text-base">refresh</span>
+                  Actualiser
+                </button>
+              </div>
+              
+              <!-- Stats rapides -->
+              <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-6">
+                <div class="bg-orange-50 border border-orange-200 rounded-2xl p-4">
+                  <div class="text-xs font-bold text-orange-700 uppercase tracking-wide mb-1">En attente</div>
+                  <div id="stat-cash-count" class="text-3xl font-black text-orange-600">0</div>
+                  <div class="text-xs text-gray-500 mt-1">réservations</div>
+                </div>
+                <div class="bg-green-50 border border-green-200 rounded-2xl p-4">
+                  <div class="text-xs font-bold text-green-700 uppercase tracking-wide mb-1">À encaisser</div>
+                  <div id="stat-cash-amount" class="text-3xl font-black text-green-600">0 FCFA</div>
+                  <div class="text-xs text-gray-500 mt-1">total attendu</div>
+                </div>
+                <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4 col-span-2 md:col-span-1">
+                  <div class="text-xs font-bold text-blue-700 uppercase tracking-wide mb-1">Information</div>
+                  <div class="text-sm font-bold text-blue-900 mt-2">
+                    Vos agents encaissent à l'entrée via le scanner
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Liste des réservations -->
+            <div class="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100">
+              <h3 class="text-lg font-extrabold text-gray-900 mb-4">Liste des réservations</h3>
+              
+              <div id="cash-reservations-list" class="space-y-3">
+                <div class="text-center py-12 text-gray-400">
+                  <span class="material-symbols-outlined text-5xl mb-2">hourglass_empty</span>
+                  <p class="font-bold">Chargement...</p>
+                </div>
+              </div>
+            </div>
+            
+          </div>
           <div id="sec-team" class="hidden space-y-6 md:space-y-8">
             <div
               class="flex flex-col sm:flex-row justify-between items-end gap-4 mb-2"
@@ -1216,7 +1296,7 @@
         else localStorage.clear();
         window.location.href = "login.html";
       }
-
+      
       function showSection(id) {
         const sections = [
           "dash",
@@ -1225,6 +1305,7 @@
           "followers",
           "team",
           "settings",
+          "cash-reservations",
         ];
         sections.forEach((s) => {
           const el = document.getElementById("sec-" + s);
@@ -1252,6 +1333,152 @@
         if (targetLinkMoDrawer) targetLinkMoDrawer.classList.add("active");
       }
 
+      // ═══════════════════════════════════════════════════════════════
+      // RÉSERVATIONS CASH
+      // ═══════════════════════════════════════════════════════════════
+      
+      async function loadCashReservations() {
+        const listEl = document.getElementById("cash-reservations-list");
+        const statCount = document.getElementById("stat-cash-count");
+        const statAmount = document.getElementById("stat-cash-amount");
+        const badge = document.getElementById("badge-cash-count");
+        const moBadge = document.getElementById("mo-badge-cash-count");
+        
+        try {
+          const data = await btApi.get("/organizer/cash-reservations");
+          
+          // Mettre à jour les stats
+          statCount.textContent = data.total_count;
+          statAmount.textContent = `${parseInt(data.total_amount).toLocaleString('fr-FR')} FCFA`;
+          
+          // Mettre à jour les badges du menu
+          if (data.total_count > 0) {
+            badge.textContent = data.total_count;
+            badge.classList.remove("hidden");
+            moBadge.textContent = data.total_count;
+            moBadge.classList.remove("hidden");
+          } else {
+            badge.classList.add("hidden");
+            moBadge.classList.add("hidden");
+          }
+          
+          // Liste vide
+          if (data.reservations.length === 0) {
+            listEl.innerHTML = `
+              <div class="text-center py-12 text-gray-400">
+                <span class="material-symbols-outlined text-5xl mb-2">check_circle</span>
+                <p class="font-bold text-gray-600">Aucune réservation cash en attente</p>
+                <p class="text-sm mt-1">Toutes vos places sont soit vendues, soit disponibles à la vente.</p>
+              </div>
+            `;
+            return;
+          }
+          
+          // Afficher la liste
+          listEl.innerHTML = data.reservations.map(r => {
+            const eventDate = r.event_date ? new Date(r.event_date).toLocaleDateString('fr-FR', {
+              day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
+            }) : "Date inconnue";
+            
+            const reservedDate = new Date(r.reserved_at).toLocaleDateString('fr-FR', {
+              day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+            });
+            
+            const expiresDate = r.expires_at ? new Date(r.expires_at).toLocaleDateString('fr-FR', {
+              day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+            }) : "Aucune limite";
+            
+            return `
+              <div class="border-2 border-orange-200 bg-orange-50/30 rounded-2xl p-4 md:p-5 hover:shadow-md transition-shadow">
+                <div class="flex items-start justify-between flex-wrap gap-4">
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-3 mb-2">
+                      <span class="material-symbols-outlined text-orange-500">payments</span>
+                      <h4 class="font-extrabold text-lg text-gray-900 truncate">${r.fan_name}</h4>
+                      <span class="bg-orange-100 text-orange-700 text-xs font-bold px-2 py-0.5 rounded-full">EN ATTENTE</span>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600">
+                      <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-base text-gray-400">phone</span>
+                        <span>+236 ${r.fan_phone || "—"}</span>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-base text-gray-400">stadium</span>
+                        <span class="truncate">${r.event_title}</span>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-base text-gray-400">event</span>
+                        <span>${eventDate}</span>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-base text-gray-400">schedule</span>
+                        <span>Réservé le ${reservedDate}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="flex flex-col items-end gap-2">
+                    <div class="bg-green-100 border border-green-300 rounded-xl px-4 py-2">
+                      <div class="text-xs font-bold text-green-700">À ENCAISSER</div>
+                      <div class="text-2xl font-black text-green-700">${parseInt(r.amount).toLocaleString('fr-FR')} FCFA</div>
+                    </div>
+                    <button
+                      onclick="cancelCashReservation(${r.id}, '${r.fan_name.replace(/'/g, "\\'")}')"
+                      class="text-xs text-red-600 font-bold hover:text-red-700 hover:underline"
+                    >
+                      Annuler la réservation
+                    </button>
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('');
+          
+        } catch (error) {
+          console.error("Erreur:", error);
+          listEl.innerHTML = `
+            <div class="text-center py-12 text-red-400">
+              <span class="material-symbols-outlined text-5xl mb-2">error</span>
+              <p class="font-bold">Erreur lors du chargement</p>
+              <p class="text-sm mt-1">${error.message || ''}</p>
+            </div>
+          `;
+        }
+      }
+      
+      async function cancelCashReservation(ticketId, fanName) {
+        if (!confirm(`Êtes-vous sûr d'annuler la réservation de ${fanName} ?\n\nLa place sera libérée et le client devra refaire une réservation s'il veut venir.`)) {
+          return;
+        }
+        
+        try {
+          await btApi.delete(`/tickets/${ticketId}/cancel-reservation`);
+          btToast("Réservation annulée. La place est libérée.", "success");
+          loadCashReservations(); // Recharger la liste
+        } catch (error) {
+          console.error("Erreur:", error);
+          btToast(error.message || "Erreur lors de l'annulation", "error");
+        }
+      }
+      
+      // Charger automatiquement quand on entre dans la section
+      const originalShowSection = window.showSection;
+      window.showSection = function(section) {
+        originalShowSection(section);
+        if (section === "cash-reservations") {
+          loadCashReservations();
+        }
+      };
+      
+      // Charger le badge au démarrage du dashboard
+      document.addEventListener("DOMContentLoaded", () => {
+        // Petit délai pour que tout soit initialisé
+        setTimeout(() => {
+          loadCashReservations();
+        }, 1000);
+      });
+      
       function addTierRow(isFirst = false) {
         const container = document.getElementById("tiers-container");
         const row = document.createElement("div");

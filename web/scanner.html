@@ -375,26 +375,24 @@
 
       // 5. Permettre à l'Agent de finir sa journée
       async function logoutAgent() {
-        // Optionnel : On peut changer le texte du bouton pour montrer que ça charge
         const btn = document.querySelector('button[onclick="logoutAgent()"]');
         if (btn)
           btn.innerHTML =
             '<span class="material-symbols-outlined">hourglass_empty</span> Fermeture...';
-
+      
+        // On essaie la déconnexion serveur, mais on déconnecte LOCALEMENT quoi qu'il arrive
         try {
-          // 1. On lance la commande d'autodestruction au backend
           await btApi.delete("/agent/delete-account");
-
-          // 2. On efface le token du téléphone
-          btAuth.logout();
-
-          // 3. On renvoie à l'accueil
-          window.location.href = "login.html";
         } catch (error) {
-          console.error("Erreur lors de la suppression du compte :", error);
-          btToast("Erreur lors de la déconnexion", "error");
-          if (btn) btn.innerHTML = "Quitter"; // On remet le bouton normal en cas d'erreur
+          // 🔧 Si le backend renvoie une erreur (ex: compte déjà désactivé),
+          // on continue quand même la déconnexion locale
+          console.warn("Backend logout warning:", error);
         }
+        
+        // 🔒 TOUJOURS effacer le token et rediriger
+        btAuth.logout();
+        sessionStorage.clear();
+        window.location.href = "login.html";
       }
     </script>
   </body>

@@ -1548,7 +1548,7 @@ def confirm_cash_payment(
         if current_user.agent_event_id and current_user.agent_event_id != event.id:
             raise HTTPException(403, "Vous n'êtes pas assigné à cet événement")
         # L'agent doit appartenir au même organisateur
-        org_name_required = event.organizer.org_name or event.organizer.full_name
+        org_name_required = event.organizer_user.org_name or event.organizer_user.full_name
         if current_user.org_name != org_name_required:
             raise HTTPException(403, "Vous n'êtes pas un agent de cet organisateur")
     

@@ -1996,9 +1996,14 @@
         };
 
         try {
-          await btApi.post("/organizer/create-agent", payload);
-          if (typeof btToast === "function")
-            btToast("Agent assigné avec succès !", "success");
+          const response = await btApi.post("/organizer/create-agent", payload);
+          if (typeof btToast === "function") {
+            if (response.reactivated) {
+              btToast("✓ " + response.message, "success");
+            } else {
+              btToast("Agent assigné avec succès !", "success");
+            }
+          }
           document.getElementById("form-agent").reset();
           loadAgents(); // On rafraîchit la liste direct !
         } catch (error) {

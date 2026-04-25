@@ -642,82 +642,82 @@
       // =========================================================================
       // FONCTION D'ORIGINE INTACTE POUR GARANTIR LE LIEN AVEC TON API
       // =========================================================================
-      async function validerPaiement(event) {
-        event.preventDefault();
-        
-        const btn = document.getElementById("btn-pay");
-        const btnText = document.getElementById("btn-text");
-        const originalBtnContent = btn.innerHTML;
-        
-        // 🔧 Récupérer l'event_id depuis l'URL (au début, accessible aux 2 branches)
-        const urlParams = new URLSearchParams(window.location.search);
-        const eventId = urlParams.get("id");
-        
-        if (!eventId) {
-          btToast("Erreur : événement introuvable dans l'URL", "error");
-          return;
-        }
-        
-        // Désactiver le bouton pendant la requête
-        btn.disabled = true;
-        btn.innerHTML = '<span class="material-symbols-outlined animate-spin">sync</span> Traitement...';
-        
-        try {
-          if (selectedPaymentMethod === "orange_money") {
-            // ─── PAIEMENT ORANGE MONEY (simulation actuelle) ───
-            const buyerPhone = document.getElementById("buyer-phone").value;
-            if (!buyerPhone || buyerPhone.length < 8) {
-              btToast("Numéro de téléphone invalide", "error");
-              btn.disabled = false;
-              btn.innerHTML = originalBtnContent;
-              return;
-            }
-            
-            const payload = {
-              event_id: parseInt(eventId),
-              tier_name: selectedTierName || null,
-              email: document.getElementById("buyer-email")?.value || null
-            };
-            
-            const response = await btApi.post("/payment/test-confirm", payload);
-            
-            btToast("Paiement confirmé ! Votre billet est prêt.", "success");
-            setTimeout(() => {
-              window.location.href = "user_dashboard.html";
-            }, 1500);
-            
-          } else {
-            // ─── RÉSERVATION CASH ───
-            const payload = {
-              event_id: parseInt(eventId),
-              tier_name: selectedTierName || null,
-              email: document.getElementById("buyer-email")?.value || null
-            };
-            
-            const response = await btApi.post("/tickets/reserve-cash", payload);
-            
-            btToast("Réservation confirmée ! À payer cash à l'entrée.", "success");
-            
-            // Sauvegarder les infos pour les afficher sur le dashboard
-            sessionStorage.setItem("last_reservation", JSON.stringify({
-              ticket_id: response.ticket_id,
-              amount: response.amount_to_pay,
-              event_title: response.event_title,
-              instructions: response.instructions
-            }));
-            
-            setTimeout(() => {
-              window.location.href = "user_dashboard.html";
-            }, 1500);
-          }
-          
-        } catch (error) {
-          console.error("Erreur:", error);
-          btToast(error.message || "Erreur lors de la transaction", "error");
-          btn.disabled = false;
-          btn.innerHTML = originalBtnContent;
-        }
+     async function validerPaiement(event) {
+  event.preventDefault();
+  
+  const btn = document.getElementById("btn-pay");
+  const btnText = document.getElementById("btn-text");
+  const originalBtnContent = btn.innerHTML;
+  
+  // 🔧 Récupérer event_id ET tier_name depuis l'URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const eventId = urlParams.get("id");
+  const tierName = urlParams.get("tier") || null;  // ← null si pas de tier
+  
+  if (!eventId) {
+    btToast("Erreur : événement introuvable dans l'URL", "error");
+    return;
+  }
+  
+  // Désactiver le bouton pendant la requête
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-symbols-outlined animate-spin">sync</span> Traitement...';
+  
+  try {
+    if (selectedPaymentMethod === "orange_money") {
+      // ─── PAIEMENT ORANGE MONEY (simulation) ───
+      const buyerPhone = document.getElementById("buyer-phone").value;
+      if (!buyerPhone || buyerPhone.length < 8) {
+        btToast("Numéro de téléphone invalide", "error");
+        btn.disabled = false;
+        btn.innerHTML = originalBtnContent;
+        return;
       }
+      
+      const payload = {
+        event_id: parseInt(eventId),
+        tier_name: tierName,
+        email: document.getElementById("buyer-email")?.value || null
+      };
+      
+      const response = await btApi.post("/payment/test-confirm", payload);
+      
+      btToast("Paiement confirmé ! Votre billet est prêt.", "success");
+      setTimeout(() => {
+        window.location.href = "user_dashboard.html";
+      }, 1500);
+      
+    } else {
+      // ─── RÉSERVATION CASH ───
+      const payload = {
+        event_id: parseInt(eventId),
+        tier_name: tierName,
+        email: document.getElementById("buyer-email")?.value || null
+      };
+      
+      const response = await btApi.post("/tickets/reserve-cash", payload);
+      
+      btToast("Réservation confirmée ! À payer cash à l'entrée.", "success");
+      
+      sessionStorage.setItem("last_reservation", JSON.stringify({
+        ticket_id: response.ticket_id,
+        amount: response.amount_to_pay,
+        event_title: response.event_title,
+        instructions: response.instructions
+      }));
+      
+      setTimeout(() => {
+        window.location.href = "user_dashboard.html";
+      }, 1500);
+    }
+    
+  } catch (error) {
+    console.error("Erreur:", error);
+    btToast(error.message || "Erreur lors de la transaction", "error");
+    btn.disabled = false;
+    btn.innerHTML = originalBtnContent;
+  }
+}
       // Validation dynamique du formulaire de paiement
       document.addEventListener("DOMContentLoaded", () => {
         const nameInput = document.getElementById("buyer-name");

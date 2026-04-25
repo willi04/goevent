@@ -81,45 +81,77 @@
         Placez le QR Code du fan dans le cadre
       </p>
 
+    <div
+      id="scan-result"
+      class="hidden absolute inset-0 z-50 bg-white/90 backdrop-blur-sm rounded-3xl flex-col items-center justify-center p-6 text-center transform transition-transform scale-95"
+    >
       <div
-        id="scan-result"
-        class="hidden absolute inset-0 z-50 bg-white/90 backdrop-blur-sm rounded-3xl flex-col items-center justify-center p-6 text-center transform transition-transform scale-95"
+        id="result-icon"
+        class="w-24 h-24 rounded-full flex items-center justify-center mb-4 text-white shadow-lg"
       >
-        <div
-          id="result-icon"
-          class="w-24 h-24 rounded-full flex items-center justify-center mb-4 text-white shadow-lg"
+        <span
+          class="material-symbols-outlined text-5xl"
+          style="font-variation-settings: &quot;FILL&quot; 1"
+          >check_circle</span
         >
-          <span
-            class="material-symbols-outlined text-5xl"
-            style="font-variation-settings: &quot;FILL&quot; 1"
-            >check_circle</span
-          >
+      </div>
+      <h2
+        id="result-status"
+        class="text-3xl font-black mb-2 uppercase tracking-wide"
+      >
+        VALIDE
+      </h2>
+      
+      <!-- 🆕 Montant à encaisser (visible uniquement pour cash) -->
+      <div id="cash-amount-display" class="hidden mb-4">
+        <div class="bg-orange-100 border-4 border-orange-500 rounded-2xl px-8 py-4">
+          <div class="text-xs font-bold text-orange-700 uppercase tracking-widest mb-1">À encaisser</div>
+          <div id="cash-amount" class="text-4xl font-black text-orange-600">0 FCFA</div>
         </div>
-        <h2
-          id="result-status"
-          class="text-3xl font-black mb-2 uppercase tracking-wide"
+      </div>
+      
+      <p id="result-fan" class="text-xl font-bold text-gray-800 mb-1">
+        Nom du Fan
+      </p>
+      
+      <!-- 🆕 Téléphone (pour vérifier l'identité avec le cash) -->
+      <p id="result-phone" class="hidden text-sm text-gray-500 font-medium mb-2">
+        📞 Téléphone
+      </p>
+      
+      <p id="result-event" class="text-sm text-gray-500 font-medium mb-6">
+        Titre de l'événement
+      </p>
+      <p id="result-reason" class="text-red-500 font-bold mb-6 hidden">
+        Raison de l'erreur
+      </p>
+    
+      <!-- 🆕 Boutons cash (visibles uniquement pour réservation cash) -->
+      <div id="cash-buttons" class="hidden w-full space-y-3">
+        <button
+          onclick="confirmerEncaissement()"
+          class="w-full py-5 rounded-full bg-green-600 text-white font-black text-lg hover:bg-green-700 active:scale-95 transition-all shadow-lg flex items-center justify-center gap-3"
         >
-          VALIDE
-        </h2>
-        <p id="result-fan" class="text-xl font-bold text-gray-800 mb-1">
-          Nom du Fan
-        </p>
-        <p id="result-event" class="text-sm text-gray-500 font-medium mb-6">
-          Titre de l'événement
-        </p>
-        <p id="result-reason" class="text-red-500 font-bold mb-6 hidden">
-          Raison de l'erreur
-        </p>
-
+          <span class="material-symbols-outlined text-3xl">check_circle</span>
+          J'AI REÇU L'ARGENT
+        </button>
         <button
           onclick="relancerScanner()"
-          class="w-full py-4 rounded-full bg-gray-200 text-gray-800 font-bold text-lg hover:bg-gray-300 transition-colors"
+          class="w-full py-3 rounded-full bg-gray-200 text-gray-700 font-bold text-base hover:bg-gray-300 transition-colors"
         >
-          Scanner le suivant
+          Annuler
         </button>
       </div>
+      
+      <!-- Bouton standard (visible pour billet validé ou refusé) -->
+      <button
+        id="btn-next-scan"
+        onclick="relancerScanner()"
+        class="w-full py-4 rounded-full bg-gray-200 text-gray-800 font-bold text-lg hover:bg-gray-300 transition-colors"
+      >
+        Scanner le suivant
+      </button>
     </div>
-
     <script>
       // 1. Le Vigile : Redirection immédiate si non connecté
       if (!btAuth.isLogged()) {
@@ -171,56 +203,164 @@
       }
 
       // 4. Le cœur du système : Que se passe-t-il quand un QR est détecté ?
+     // Variable globale pour stocker l'ID du ticket en cas de réservation cash
+      let currentCashTicketId = null;
+
       async function onScanSuccess(decodedText, decodedResult) {
         // On met la caméra en pause
         html5QrCode.pause(true);
-
+      
         const resultModal = document.getElementById("scan-result");
         const iconDiv = document.getElementById("result-icon");
         const statusEl = document.getElementById("result-status");
         const fanEl = document.getElementById("result-fan");
+        const phoneEl = document.getElementById("result-phone");
+        const eventEl = document.getElementById("result-event");
         const reasonEl = document.getElementById("result-reason");
-
+        const cashAmountDisplay = document.getElementById("cash-amount-display");
+        const cashAmountEl = document.getElementById("cash-amount");
+        const cashButtons = document.getElementById("cash-buttons");
+        const btnNextScan = document.getElementById("btn-next-scan");
+      
+        // Reset l'affichage
+        cashAmountDisplay.classList.add("hidden");
+        cashButtons.classList.add("hidden");
+        phoneEl.classList.add("hidden");
+        reasonEl.classList.add("hidden");
+        btnNextScan.classList.remove("hidden");
+        currentCashTicketId = null;
+      
         try {
-          // On interroge ton fichier main.py
           const response = await btApi.post("/scan", { qr_data: decodedText });
-
-          // SUCCÈS : Billet Valide
-          iconDiv.className =
-            "w-24 h-24 rounded-full flex items-center justify-center mb-4 text-white shadow-lg bg-green-500";
-          iconDiv.innerHTML =
-            '<span class="material-symbols-outlined text-5xl" style="font-variation-settings: \'FILL\' 1">check_circle</span>';
-          statusEl.textContent = "ACCÈS AUTORISÉ";
-          statusEl.className =
-            "text-3xl font-black mb-2 uppercase tracking-wide text-green-600";
-
-          // On cherche le nom du client de manière super sécurisée
-         // On récupère le nom du client depuis le message du serveur ("Validé ! Nom peut entrer.")
-          fanEl.textContent = response.message ? response.message.replace("Validé ! ", "").replace(" peut entrer.", "") : "Client vérifié";
-
-          // On affiche le vrai titre de l'événement !
-          document.getElementById("result-event").textContent = response.event || "Événement";
-          reasonEl.classList.add("hidden");
+      
+          // 🆕 CAS SPÉCIAL : Réservation cash en attente
+          if (response.requires_cash_payment === true) {
+            // Afficher en orange pour signaler l'action requise
+            iconDiv.className =
+              "w-24 h-24 rounded-full flex items-center justify-center mb-4 text-white shadow-lg bg-orange-500";
+            iconDiv.innerHTML =
+              '<span class="material-symbols-outlined text-5xl" style="font-variation-settings: \'FILL\' 1">payments</span>';
+            
+            statusEl.textContent = "PAIEMENT CASH REQUIS";
+            statusEl.className =
+              "text-3xl font-black mb-2 uppercase tracking-wide text-orange-600";
+            
+            // Afficher le montant
+            cashAmountEl.textContent = `${parseInt(response.amount_to_collect).toLocaleString('fr-FR')} FCFA`;
+            cashAmountDisplay.classList.remove("hidden");
+            
+            // Infos du fan
+            fanEl.textContent = response.fan_name || "Client";
+            phoneEl.textContent = `📞 ${response.fan_phone || ""}`;
+            phoneEl.classList.remove("hidden");
+            eventEl.textContent = response.event || "Événement";
+            
+            // Stocker l'ID pour la confirmation
+            currentCashTicketId = response.ticket_id;
+            
+            // Afficher les boutons cash, masquer le bouton standard
+            cashButtons.classList.remove("hidden");
+            btnNextScan.classList.add("hidden");
+            
+          } else if (response.valid === true) {
+            // ✅ SUCCÈS : Billet payé et validé
+            iconDiv.className =
+              "w-24 h-24 rounded-full flex items-center justify-center mb-4 text-white shadow-lg bg-green-500";
+            iconDiv.innerHTML =
+              '<span class="material-symbols-outlined text-5xl" style="font-variation-settings: \'FILL\' 1">check_circle</span>';
+            
+            statusEl.textContent = "ACCÈS AUTORISÉ";
+            statusEl.className =
+              "text-3xl font-black mb-2 uppercase tracking-wide text-green-600";
+      
+            fanEl.textContent = response.message 
+              ? response.message.replace("Validé ! ", "").replace(" peut entrer.", "") 
+              : "Client vérifié";
+            eventEl.textContent = response.event || "Événement";
+          }
+          
         } catch (error) {
-          // ÉCHEC : Faux billet ou déjà utilisé
+          // ❌ ÉCHEC : Faux billet ou déjà utilisé
           iconDiv.className =
             "w-24 h-24 rounded-full flex items-center justify-center mb-4 text-white shadow-lg bg-red-500";
           iconDiv.innerHTML =
             '<span class="material-symbols-outlined text-5xl" style="font-variation-settings: \'FILL\' 1">cancel</span>';
+          
           statusEl.textContent = "REFUSÉ";
           statusEl.className =
             "text-3xl font-black mb-2 uppercase tracking-wide text-red-600";
-
+      
           fanEl.textContent = "Billet Invalide";
-          // On affiche le message d'erreur précis renvoyé par main.py
           reasonEl.textContent =
             error.message || error.detail || "Ce QR Code n'est pas reconnu.";
           reasonEl.classList.remove("hidden");
         }
-
+      
         // On affiche la modale
         resultModal.classList.remove("hidden");
         resultModal.classList.add("flex");
+      }
+      
+      async function confirmerEncaissement() {
+        if (!currentCashTicketId) {
+          btToast("Erreur : aucun ticket à confirmer", "error");
+          return;
+        }
+        
+        const cashButtons = document.getElementById("cash-buttons");
+        const originalContent = cashButtons.innerHTML;
+        
+        // Désactiver les boutons pendant la requête
+        cashButtons.innerHTML = `
+          <div class="w-full py-5 rounded-full bg-gray-300 text-gray-600 font-black text-lg flex items-center justify-center gap-3">
+            <span class="material-symbols-outlined animate-spin">sync</span>
+            Confirmation en cours...
+          </div>
+        `;
+        
+        try {
+          // 1. Confirmer l'encaissement cash
+          await btApi.post(`/tickets/${currentCashTicketId}/confirm-cash-payment`, {});
+          
+          // 2. Re-scanner pour valider l'entrée (le statut est maintenant "paye_cash")
+          // On récupère le qr_hash depuis le ticket
+          const ticketInfo = await btApi.get(`/tickets/${currentCashTicketId}/info`);
+          
+          if (ticketInfo && ticketInfo.qr_hash) {
+            // Marquer comme utilisé
+            await btApi.post("/scan", { qr_data: ticketInfo.qr_hash });
+          }
+          
+          // 3. Afficher le succès
+          const iconDiv = document.getElementById("result-icon");
+          const statusEl = document.getElementById("result-status");
+          const cashAmountDisplay = document.getElementById("cash-amount-display");
+          const btnNextScan = document.getElementById("btn-next-scan");
+          
+          iconDiv.className =
+            "w-24 h-24 rounded-full flex items-center justify-center mb-4 text-white shadow-lg bg-green-500";
+          iconDiv.innerHTML =
+            '<span class="material-symbols-outlined text-5xl" style="font-variation-settings: \'FILL\' 1">check_circle</span>';
+          
+          statusEl.textContent = "ENCAISSÉ ✓ ENTRÉE VALIDÉE";
+          statusEl.className =
+            "text-3xl font-black mb-2 uppercase tracking-wide text-green-600";
+          
+          cashAmountDisplay.classList.add("hidden");
+          
+          // Afficher le bouton "Scanner le suivant"
+          cashButtons.classList.add("hidden");
+          btnNextScan.classList.remove("hidden");
+          
+          btToast("Cash encaissé. Le client peut entrer.", "success");
+          
+        } catch (error) {
+          console.error("Erreur encaissement:", error);
+          btToast(error.message || "Erreur lors de la confirmation", "error");
+          cashButtons.innerHTML = originalContent;
+        }
+        
+        currentCashTicketId = null;
       }
 
       function relancerScanner() {

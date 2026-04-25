@@ -1616,7 +1616,52 @@ def cancel_cash_reservation(
     db.commit()
     
     return {"success": True, "message": "Réservation annulée. La place a été libérée."}
+
+@app.get("/organizer/cash-reservations")
+def get_my_cash_reservations(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Liste toutes les réservations cash en attente pour les événements 
+    de l'organisateur connecté.
+    """
+    if current_user.role not in ("organizer", "organisation"):
+        raise HTTPException(403, "Réservé aux organisateurs")
     
+    # Récupérer tous les événements de cet organisateur
+    my_events = db.query(Event).filter(Event.organizer_id == current_user.id).all()
+    my_event_ids = [e.id for e in my_events]
+    
+    if not my_event_ids:
+        return {"reservations": [], "total_count": 0, "total_amount": 0}
+    
+    # Récupérer les réservations cash en attente
+    reservations = db.query(Ticket).filter(
+        Ticket.event_id.in_(my_event_ids),
+        Ticket.payment_status == "reservation_cash"
+    ).order_by(Ticket.purchased_at.desc()).all()
+    
+    total_amount = sum(t.cash_amount or 0 for t in reservations)
+    
+    return {
+        "reservations": [{
+            "id": r.id,
+            "qr_hash": r.qr_hash,
+            "fan_name": r.owner.full_name,
+            "fan_phone": r.owner.phone_number,
+            "fan_email": r.owner.email,
+            "event_id": r.event_id,
+            "event_title": r.event.title if r.event else "?",
+            "event_date": r.event.event_date.isoformat() if r.event else None,
+            "amount": r.cash_amount,
+            "reserved_at": r.purchased_at.isoformat(),
+            "expires_at": r.reservation_expires_at.isoformat() if r.reservation_expires_at else None,
+        } for r in reservations],
+        "total_count": len(reservations),
+        "total_amount": total_amount
+    }
+
 @app.post("/scan")
 def valider_billet(
     data: ScanTicket,

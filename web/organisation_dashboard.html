@@ -2035,88 +2035,145 @@
       // --- FONCTION POUR AFFICHER LA MODALE DE GESTION ---
       function ouvrirGestionEvenement(eventId, eventTitle, cagnotte) {
         const cagnotteFormatee = cagnotte.toLocaleString("fr-FR") + " FCFA";
-
-        // Si la cagnotte est à zéro, on grise le bouton
+      
+        // 🆕 Récupérer la date de l'événement depuis le DOM ou les stats
+        // On va le récupérer dynamiquement
+        const eventCard = document.querySelector(`button[onclick*="ouvrirGestionEvenement(${eventId}"]`)?.closest('.bg-white');
+        
+        // 🆕 Détection : événement passé ou futur ?
+        // On va chercher dans les données stockées
+        const eventData = window.lastOrganizerStats?.events?.find(e => e.id === eventId);
+        const eventDate = eventData?.event_date ? new Date(eventData.event_date) : null;
+        const now = new Date();
+        const eventTermine = eventDate && eventDate < now;
+        
+        // Conditions du bouton paiement
         const isZero = cagnotte <= 0;
-        const btnClass = isZero
-          ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-          : "bg-gray-900 text-white hover:bg-gray-800 active:scale-95 shadow-md";
-
-        // On crée le contenu HTML de la modale
+        const peutDemanderPaiement = !isZero && eventTermine;
+        
+        let btnPaiementClass, btnPaiementDisabled, btnPaiementMessage;
+        
+        if (isZero) {
+          btnPaiementClass = "bg-gray-300 text-gray-500 cursor-not-allowed";
+          btnPaiementDisabled = "disabled";
+          btnPaiementMessage = "Aucune cagnotte disponible";
+        } else if (!eventTermine) {
+          btnPaiementClass = "bg-amber-100 text-amber-700 cursor-not-allowed border border-amber-200";
+          btnPaiementDisabled = "disabled";
+          btnPaiementMessage = "Disponible après l'événement";
+        } else {
+          btnPaiementClass = "bg-gray-900 text-white hover:bg-gray-800 active:scale-95 shadow-md";
+          btnPaiementDisabled = "";
+          btnPaiementMessage = "Demander mon paiement";
+        }
+        
+        // Bouton annulation : seulement si événement pas encore eu lieu
+        const peutAnnuler = !eventTermine;
+        
+        const dateInfo = eventDate 
+          ? `<p class="text-xs text-gray-500 mt-2">📅 ${eventTermine ? 'Terminé le' : 'Prévu le'} ${eventDate.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}</p>`
+          : '';
+      
         const modalContent = `
-              <div class="text-center p-2">
-                  <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 text-primary">
-                      <span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1">account_balance_wallet</span>
-                  </div>
-                  <h3 class="text-xl font-black font-headline text-gray-900 mb-1">${eventTitle}</h3>
-                  <p class="text-sm text-gray-500 font-medium mb-6">Gestion financière</p>
-
-                  <div class="bg-green-50 p-6 rounded-3xl border border-green-100 mb-6">
-                      <p class="text-[10px] font-bold text-green-600 uppercase tracking-widest mb-1">Cagnotte disponible</p>
-                      <p class="text-3xl font-black text-green-700">${cagnotteFormatee}</p>
-                  </div>
-
-                  <button onclick="demanderPaiement(${eventId}, ${cagnotte})" ${isZero ? "disabled" : ""} 
-                      class="w-full py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 mb-4 ${btnClass}">
-                      <span class="material-symbols-outlined text-[20px]">payments</span>
-                      Demander mon paiement
-                  </button>
-                  <button onclick="ouvrirModalAnnulation(${eventId}, '${eventTitle.replace(/'/g, "\\'")}')" 
-                      class="w-full py-3.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 bg-red-50 text-red-600 hover:bg-red-100 active:scale-95 border border-red-100">
-                      <span class="material-symbols-outlined text-[20px]">cancel</span>
-                      Annuler l'événement
-                  </button>
-                  <p class="text-[11px] text-gray-400 mt-4 leading-relaxed">
-                      L'argent sera transféré vers le numéro Orange Money configuré dans vos paramètres après validation par GoEvent.
-                  </p>
+          <div class="text-center p-2">
+            <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 text-primary">
+              <span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1">account_balance_wallet</span>
+            </div>
+            <h3 class="text-xl font-black font-headline text-gray-900 mb-1">${eventTitle}</h3>
+            <p class="text-sm text-gray-500 font-medium">Gestion financière</p>
+            ${dateInfo}
+      
+            <div class="bg-green-50 p-6 rounded-3xl border border-green-100 my-6">
+              <p class="text-[10px] font-bold text-green-600 uppercase tracking-widest mb-1">Cagnotte disponible</p>
+              <p class="text-3xl font-black text-green-700">${cagnotteFormatee}</p>
+              ${!eventTermine && !isZero ? '<p class="text-xs text-amber-600 mt-2 font-medium">⏳ Retrait possible après l\'événement</p>' : ''}
+            </div>
+      
+            <button onclick="${peutDemanderPaiement ? `demanderPaiement(${eventId}, ${cagnotte})` : 'return false'}" ${btnPaiementDisabled}
+              class="w-full py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 mb-4 ${btnPaiementClass}">
+              <span class="material-symbols-outlined text-[20px]">${eventTermine ? 'payments' : 'schedule'}</span>
+              ${btnPaiementMessage}
+            </button>
+            
+            ${peutAnnuler ? `
+              <button onclick="ouvrirModalAnnulation(${eventId}, '${eventTitle.replace(/'/g, "\\'")}')" 
+                class="w-full py-3.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 bg-red-50 text-red-600 hover:bg-red-100 active:scale-95 border border-red-100">
+                <span class="material-symbols-outlined text-[20px]">cancel</span>
+                Annuler l'événement
+              </button>
+            ` : `
+              <div class="w-full py-3 px-4 rounded-xl bg-gray-50 text-gray-500 text-center text-sm border border-gray-100">
+                <span class="material-symbols-outlined text-[16px] align-middle">info</span>
+                Cet événement est terminé
               </div>
-          `;
-
-        // On utilise la fonction btModal qui existe déjà dans ton bt-api.js !
-        window.currentPayoutModal = btModal(modalContent);
+            `}
+          </div>
+        `;
+      
+        // Création de la modale (réutilise ton système actuel)
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4';
+        modal.innerHTML = `
+          <div class="bg-white rounded-3xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto relative">
+            <button onclick="this.closest('.fixed').remove()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+            ${modalContent}
+          </div>
+        `;
+        document.body.appendChild(modal);
+        window.currentPayoutModal = modal;
+        
+        // Fermer en cliquant en dehors
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) modal.remove();
+        });
       }
 
       // --- FONCTION POUR ENVOYER LA DEMANDE AU SERVEUR ---
       async function demanderPaiement(eventId, cagnotte) {
         if (cagnotte <= 0) return;
-
-        if (
-          !confirm(
-            "Voulez-vous vraiment demander le retrait de " +
-              cagnotte.toLocaleString("fr-FR") +
-              " FCFA ?",
-          )
-        ) {
+      
+        if (!confirm(
+          "Voulez-vous vraiment demander le retrait de " +
+          cagnotte.toLocaleString("fr-FR") +
+          " FCFA ?\n\nL'admin validera votre demande sous 48h."
+        )) {
           return;
         }
-
+      
         try {
-          // 1. Affiche un chargement sur la modale (optionnel mais recommandé)
           if (typeof btToast === "function")
             btToast("Envoi de la demande...", "info");
-
-          // 2. Appel à API Python (à créer dans main.py plus tard)
-          // await btApi.post("/organizer/payout-request", { event_id: eventId, amount: cagnotte });
-
-          // 3. Succès !
+      
+          // 🔥 APPEL API RÉEL
+          const response = await btApi.post("/organizer/payout-request", {
+            event_id: eventId,
+            amount: cagnotte
+          });
+      
           if (typeof btToast === "function")
-            btToast(
-              "Demande envoyée ! Le Super-Admin (Emmanuel) a été notifié.",
-              "success",
-            );
-
-          // 4. On ferme la modale
+            btToast(response.message || "Demande envoyée avec succès !", "success");
+      
+          // Fermer la modale
           if (window.currentPayoutModal) {
             window.currentPayoutModal.remove();
           }
-
-          // 5. Rafraîchir les stats si nécessaire
+      
+          // Rafraîchir les stats
           loadOrganizerStats();
+          
         } catch (error) {
-          if (typeof btToast === "function")
+          console.error("Erreur:", error);
+          
+          // 🔧 Afficher le vrai message d'erreur (utile pour "événement pas terminé")
+          if (typeof btToast === "function") {
             btToast(error.message || "Erreur lors de la demande", "error");
+          }
         }
       }
+
+      
       function ouvrirModalAnnulation(eventId, eventTitle) {
         // Fermer la modale de gestion financière
         if (window.currentPayoutModal) window.currentPayoutModal.remove();

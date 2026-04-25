@@ -97,16 +97,25 @@ class Ticket(Base):
     __tablename__ = "tickets"
     id             = Column(Integer, primary_key=True, index=True)
     qr_hash        = Column(String, unique=True, index=True, default=lambda: str(uuid.uuid4()))
-    payment_status = Column(String, default="attente")
+    payment_status = Column(String, default="attente")  
+    # Statuts : "attente", "paye", "reservation_cash", "paye_cash", "expire"
     payment_ref    = Column(String, default="")
     is_used        = Column(Boolean, default=False)
     used_at        = Column(DateTime, nullable=True)
     purchased_at   = Column(DateTime, default=datetime.utcnow)
     user_id        = Column(Integer, ForeignKey("users.id"))
     event_id       = Column(Integer, ForeignKey("events.id"))
-    owner          = relationship("User", back_populates="tickets")
+    
+    # 🆕 Champs pour le paiement cash
+    payment_method         = Column(String, nullable=True)  # "orange_money", "cash"
+    reservation_expires_at = Column(DateTime, nullable=True)
+    cash_collected_by      = Column(Integer, ForeignKey("users.id"), nullable=True)
+    cash_collected_at      = Column(DateTime, nullable=True)
+    cash_amount            = Column(Float, nullable=True)
+    
+    owner          = relationship("User", back_populates="tickets", foreign_keys=[user_id])
     event          = relationship("Event", back_populates="tickets")
-
+    cash_collector = relationship("User", foreign_keys=[cash_collected_by])
 
 class Payment(Base):
     __tablename__ = "payments"
@@ -629,6 +638,10 @@ class PaymentConfirm(BaseModel):
     full_name: Optional[str] = None
     tier_name: Optional[str] = None  # nom du tier de billet choisi
 
+class CashReservation(BaseModel):
+    event_id: int
+    tier_name: Optional[str] = None
+    email: Optional[str] = None
 # 2. Le modèle de la base de données SQLAlchemy (à ajouter avec tes autres tables)
 class PartnerRequest(Base):
     __tablename__ = "partner_requests"
@@ -1380,34 +1393,251 @@ def my_paid_tickets(db: Session = Depends(get_db),
         "purchased_at": t.purchased_at,
     } for t in tickets]
 
+# ═══════════════════════════════════════════════════════════════
+# PAIEMENT CASH — Réservation et encaissement à l'entrée
+# ═══════════════════════════════════════════════════════════════
+
+@app.post("/tickets/reserve-cash")
+def reserve_ticket_cash(
+    data: CashReservation,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Réserve un billet à payer en cash à l'entrée de l'événement.
+    Limite : 3 réservations max par fan par événement.
+    Validité : jusqu'à 24h avant le début de l'événement.
+    """
+    
+    # 1. Vérifier l'événement
+    event = db.query(Event).filter(
+        Event.id == data.event_id,
+        Event.is_active == True
+    ).first()
+    
+    if not event:
+        raise HTTPException(404, "Événement introuvable")
+    
+    # 2. Vérifier que l'événement n'est pas trop proche (limite 24h avant)
+    deadline = event.event_date - timedelta(hours=24)
+    if datetime.utcnow() > deadline:
+        raise HTTPException(400, 
+            "Les réservations cash ne sont plus acceptées (moins de 24h avant l'événement). "
+            "Vous pouvez encore acheter via Orange Money à l'entrée.")
+    
+    if event.event_date < datetime.utcnow():
+        raise HTTPException(400, "Événement déjà passé")
+    
+    # 3. Vérifier disponibilité
+    if event.seats_sold >= event.total_seats:
+        raise HTTPException(400, "Événement complet")
+    
+    # 4. 🔒 LIMITE : 3 réservations max par fan par événement
+    nb_reservations = db.query(Ticket).filter(
+        Ticket.user_id == current_user.id,
+        Ticket.event_id == event.id,
+        Ticket.payment_status.in_(["reservation_cash", "paye_cash", "paye"])
+    ).count()
+    
+    if nb_reservations >= 3:
+        raise HTTPException(400, 
+            "Vous avez atteint la limite de 3 réservations pour cet événement.")
+    
+    # 5. Récupérer le prix depuis la base
+    prix_base = event.price
+    if data.tier_name and event.ticket_tiers:
+        tier = next((t for t in event.ticket_tiers if t.get("name") == data.tier_name), None)
+        if not tier:
+            raise HTTPException(400, "Catégorie de billet invalide")
+        prix_base = float(tier.get("price", event.price))
+    
+    if prix_base <= 0:
+        raise HTTPException(400, "Prix invalide")
+    
+    # 6. Sauvegarder l'email si fourni
+    if data.email and not current_user.email:
+        current_user.email = data.email
+    
+    # 7. Créer la réservation
+    new_ticket = Ticket(
+        event_id=event.id,
+        user_id=current_user.id,
+        payment_status="reservation_cash",
+        payment_method="cash",
+        payment_ref=f"CASH-{uuid.uuid4().hex[:8].upper()}",
+        cash_amount=prix_base,
+        reservation_expires_at=deadline
+    )
+    db.add(new_ticket)
+    
+    # 8. Réserver la place (incrémenter seats_sold)
+    event.seats_sold += 1
+    
+    db.commit()
+    db.refresh(new_ticket)
+    
+    log_security_event(db, "cash_reservation", None, current_user.id, 
+                       f"Réservation cash événement {event.id}, montant {prix_base}")
+    
+    return {
+        "success": True,
+        "message": "Réservation confirmée. À payer en cash à l'entrée.",
+        "ticket_id": new_ticket.id,
+        "qr_hash": new_ticket.qr_hash,
+        "amount_to_pay": prix_base,
+        "event_title": event.title,
+        "event_date": event.event_date.isoformat(),
+        "expires_at": deadline.isoformat(),
+        "instructions": (
+            f"Présentez ce QR code à l'entrée de l'événement et payez "
+            f"{int(prix_base)} FCFA en cash à l'agent. "
+            f"Réservation valable jusqu'au {deadline.strftime('%d/%m/%Y à %H:%M')}."
+        )
+    }
+
+
+@app.post("/tickets/{ticket_id}/confirm-cash-payment")
+def confirm_cash_payment(
+    ticket_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Confirme l'encaissement cash d'une réservation.
+    Réservé aux organisateurs et à leurs agents.
+    """
+    
+    # 1. Vérifier le rôle
+    if current_user.role not in ("organizer", "organisation", "agent"):
+        raise HTTPException(403, "Accès réservé aux organisateurs et agents")
+    
+    # 2. Récupérer le billet
+    ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
+    if not ticket:
+        raise HTTPException(404, "Billet introuvable")
+    
+    # 3. Vérifier que c'est bien une réservation cash
+    if ticket.payment_status != "reservation_cash":
+        raise HTTPException(400, 
+            f"Ce billet n'est pas en attente de paiement cash (statut: {ticket.payment_status})")
+    
+    # 4. Vérifier que l'agent/organisateur a le droit pour cet événement
+    event = ticket.event
+    if current_user.role == "organizer" or current_user.role == "organisation":
+        if event.organizer_id != current_user.id:
+            raise HTTPException(403, "Cet événement n'est pas le vôtre")
+    elif current_user.role == "agent":
+        # L'agent doit être assigné à cet événement
+        if current_user.agent_event_id and current_user.agent_event_id != event.id:
+            raise HTTPException(403, "Vous n'êtes pas assigné à cet événement")
+        # L'agent doit appartenir au même organisateur
+        org_name_required = event.organizer.org_name or event.organizer.full_name
+        if current_user.org_name != org_name_required:
+            raise HTTPException(403, "Vous n'êtes pas un agent de cet organisateur")
+    
+    # 5. Encaisser
+    ticket.payment_status = "paye_cash"
+    ticket.cash_collected_by = current_user.id
+    ticket.cash_collected_at = datetime.utcnow()
+    
+    db.commit()
+    
+    log_security_event(db, "cash_collected", None, current_user.id,
+                       f"Cash encaissé pour ticket {ticket.id}, montant {ticket.cash_amount}")
+    
+    return {
+        "success": True,
+        "message": f"Paiement de {int(ticket.cash_amount)} FCFA encaissé.",
+        "ticket": {
+            "id": ticket.id,
+            "fan_name": ticket.owner.full_name,
+            "amount": ticket.cash_amount,
+            "event_title": event.title
+        }
+    }
+
+
+@app.delete("/tickets/{ticket_id}/cancel-reservation")
+def cancel_cash_reservation(
+    ticket_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Annule une réservation cash (par le fan ou par l'organisateur).
+    Libère la place dans l'événement.
+    """
+    
+    ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
+    if not ticket:
+        raise HTTPException(404, "Réservation introuvable")
+    
+    # Vérifier les droits : soit le fan lui-même, soit l'organisateur de l'event
+    is_owner = (ticket.user_id == current_user.id)
+    is_event_organizer = (ticket.event.organizer_id == current_user.id 
+                          and current_user.role in ("organizer", "organisation"))
+    
+    if not (is_owner or is_event_organizer):
+        raise HTTPException(403, "Vous n'avez pas le droit d'annuler cette réservation")
+    
+    # Vérifier que c'est bien une réservation (pas un billet déjà payé)
+    if ticket.payment_status != "reservation_cash":
+        raise HTTPException(400, 
+            "Seules les réservations en attente de paiement peuvent être annulées.")
+    
+    # Libérer la place
+    if ticket.event:
+        ticket.event.seats_sold = max(0, ticket.event.seats_sold - 1)
+    
+    # Marquer comme annulé puis supprimer
+    db.delete(ticket)
+    db.commit()
+    
+    return {"success": True, "message": "Réservation annulée. La place a été libérée."}
+    
 @app.post("/scan")
 def valider_billet(
     data: ScanTicket,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # Sécurité : Seuls les agents (et les boss) ont le droit de scanner
+    # Sécurité : Seuls les agents (et les organisateurs) ont le droit de scanner
     if current_user.role not in ("agent", "organizer", "organisation"):
         raise HTTPException(status_code=403, detail="Accès refusé. Réservé aux contrôleurs.")
 
-    # VERROU 1 : Est-ce que ce billet existe dans la base ?
+    # VERROU 1 : Billet existe ?
     ticket = db.query(Ticket).filter(Ticket.qr_hash == data.qr_data).first()
     if not ticket:
         raise HTTPException(status_code=404, detail="Billet introuvable (Faux billet ou QR mal lu).")
 
-    # VERROU 2 : Est-ce que le billet a été payé ?
-    if ticket.payment_status != "paye":
-        raise HTTPException(status_code=400, detail="Billet non valide (Paiement en attente).")
+    # VERROU 2 : L'agent/organisateur a-t-il le droit pour cet événement ?
+    if current_user.role == "agent":
+        if current_user.agent_event_id and current_user.agent_event_id != ticket.event_id:
+            raise HTTPException(status_code=403, detail="Vous n'êtes pas assigné à cet événement !")
 
     # VERROU 3 : Le billet a-t-il déjà été utilisé ?
     if ticket.is_used:
         date_used = ticket.used_at.strftime('%H:%M:%S') if ticket.used_at else "?"
         raise HTTPException(status_code=400, detail=f"Alerte : Billet DÉJÀ UTILISÉ à {date_used} !")
 
-    # 🚨 VERROU 4 : L'agent a-t-il le droit de scanner CET événement précis ?
-    if current_user.role == "agent":
-        if current_user.agent_event_id and current_user.agent_event_id != ticket.event_id:
-            raise HTTPException(status_code=403, detail="Alerte : Vous n'êtes pas assigné à cet événement !")
+    # 🆕 CAS 1 : Réservation cash en attente de paiement
+    if ticket.payment_status == "reservation_cash":
+        return {
+            "valid": False,
+            "requires_cash_payment": True,
+            "ticket_id": ticket.id,
+            "fan_name": ticket.owner.full_name,
+            "fan_phone": ticket.owner.phone_number,
+            "amount_to_collect": ticket.cash_amount,
+            "event": ticket.event.title,
+            "message": f"À ENCAISSER : {int(ticket.cash_amount)} FCFA",
+            "instructions": "Encaissez le cash, puis cliquez sur 'Confirmer l'encaissement' pour valider l'entrée."
+        }
+
+    # CAS 2 : Billet payé (Orange Money OU cash déjà encaissé)
+    if ticket.payment_status not in ("paye", "paye_cash"):
+        raise HTTPException(status_code=400, 
+            detail=f"Billet non valide (statut: {ticket.payment_status}).")
 
     # 🟢 TOUT EST BON : On valide l'entrée !
     try:
@@ -1416,12 +1646,16 @@ def valider_billet(
         db.commit()
         return {
             "valid": True,
+            "requires_cash_payment": False,
             "message": f"Validé ! {ticket.owner.full_name} peut entrer.",
-            "event": ticket.event.title
+            "event": ticket.event.title,
+            "payment_method": ticket.payment_method or "online"
         }
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail="Erreur interne lors de la sauvegarde.")
+
+
 @app.get("/tickets/scan/stats/{event_id}")
 def scan_stats(event_id: int, db: Session = Depends(get_db),
                current_user: User = Depends(get_current_user)):

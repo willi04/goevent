@@ -1347,14 +1347,58 @@ def my_events(db: Session = Depends(get_db),
 
 @app.post("/organizer/payout-request")
 async def create_payout_request(data: dict, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
-    # 1. On vérifie que c'est bien un organisateur
-    if user.role != "organizer":
-        raise HTTPException(status_code=403, detail="Accès refusé")
+    # 1. Vérifier que c'est bien un organisateur
+    if user.role not in ("organizer", "organisation"):
+        raise HTTPException(status_code=403, detail="Accès réservé aux organisateurs")
 
     event_id = data.get("event_id")
     amount = data.get("amount")
+    
+    if not event_id or not amount or amount <= 0:
+        raise HTTPException(400, "Données invalides")
+    
+    # 2. Vérifier que l'événement existe ET appartient à cet organisateur
+    event = db.query(Event).filter(
+        Event.id == event_id,
+        Event.organizer_id == user.id
+    ).first()
+    
+    if not event:
+        raise HTTPException(404, "Événement introuvable ou non autorisé")
+    
+    # 🔒 3. VÉRIFICATION CRITIQUE : L'événement doit être TERMINÉ
+    if event.event_date > datetime.utcnow():
+        date_fr = event.event_date.strftime("%d/%m/%Y à %H:%M")
+        raise HTTPException(400, 
+            f"Vous ne pouvez demander votre paiement qu'APRÈS l'événement (prévu le {date_fr}).")
+    
+    # 4. Calculer le vrai montant disponible (depuis Payment)
+    cagnotte_reelle = db.query(func.sum(Payment.organizer_amount)).join(
+        Ticket, Payment.ticket_id == Ticket.id
+    ).filter(
+        Ticket.event_id == event.id,
+        Payment.status == "completed"
+    ).scalar() or 0.0
+    
+    # 5. Vérifier les demandes déjà en cours pour cet événement
+    existing_requests = db.query(PayoutRequest).filter(
+        PayoutRequest.event_id == event_id,
+        PayoutRequest.status.in_(["en_attente", "paye"])
+    ).all()
+    
+    deja_demande = sum(r.amount for r in existing_requests)
+    montant_disponible = cagnotte_reelle - deja_demande
+    
+    if montant_disponible <= 0:
+        raise HTTPException(400, 
+            "Vous avez déjà demandé/reçu la totalité de votre cagnotte pour cet événement.")
+    
+    # 6. Vérifier que le montant demandé ne dépasse pas le disponible
+    if amount > montant_disponible:
+        raise HTTPException(400, 
+            f"Montant demandé ({amount} FCFA) supérieur au disponible ({montant_disponible} FCFA).")
 
-    # 2. On crée la demande dans la table des retraits
+    # 7. ✅ Créer la demande
     new_request = PayoutRequest(
         event_id=event_id,
         organizer_id=user.id,
@@ -1363,8 +1407,14 @@ async def create_payout_request(data: dict, db: Session = Depends(get_db), user:
     )
     db.add(new_request)
     db.commit()
+    
+    log_security_event(db, "payout_requested", None, user.id,
+                       f"Demande paiement {amount} FCFA pour event {event_id}")
 
-    return {"status": "success", "message": "Demande transmise ! "}
+    return {
+        "status": "success", 
+        "message": f"Demande de {int(amount)} FCFA transmise. L'admin va la valider sous 48h."
+    }
 
 # ── CATÉGORIES ─────────────────────────────────────────────────
 @app.get("/categories")

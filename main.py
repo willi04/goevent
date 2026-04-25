@@ -1556,6 +1556,28 @@ def confirm_cash_payment(
         }
     }
 
+@app.get("/tickets/{ticket_id}/info")
+def get_ticket_info(
+    ticket_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Retourne les infos minimales d'un ticket.
+    Réservé aux organisateurs/agents pour le scan post-encaissement.
+    """
+    if current_user.role not in ("organizer", "organisation", "agent"):
+        raise HTTPException(403, "Accès refusé")
+    
+    ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
+    if not ticket:
+        raise HTTPException(404, "Ticket introuvable")
+    
+    return {
+        "id": ticket.id,
+        "qr_hash": ticket.qr_hash,
+        "payment_status": ticket.payment_status
+    }
 
 @app.delete("/tickets/{ticket_id}/cancel-reservation")
 def cancel_cash_reservation(

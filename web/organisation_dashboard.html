@@ -1659,7 +1659,8 @@
       async function loadOrganizerStats() {
         try {
           const stats = await btApi.get("/organizer/stats");
-
+          window.lastOrganizerStats = stats;
+          
           if (document.getElementById("s-sold"))
             document.getElementById("s-sold").textContent =
               stats.total_sold || 0;

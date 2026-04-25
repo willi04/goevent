@@ -649,6 +649,15 @@
         const btnText = document.getElementById("btn-text");
         const originalBtnContent = btn.innerHTML;
         
+        // 🔧 Récupérer l'event_id depuis l'URL (au début, accessible aux 2 branches)
+        const urlParams = new URLSearchParams(window.location.search);
+        const eventId = urlParams.get("id");
+        
+        if (!eventId) {
+          btToast("Erreur : événement introuvable dans l'URL", "error");
+          return;
+        }
+        
         // Désactiver le bouton pendant la requête
         btn.disabled = true;
         btn.innerHTML = '<span class="material-symbols-outlined animate-spin">sync</span> Traitement...';

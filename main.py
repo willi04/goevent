@@ -1379,16 +1379,20 @@ def my_tickets(db: Session = Depends(get_db),
         Ticket.user_id == current_user.id
     ).order_by(Ticket.purchased_at.desc()).all()
     return [{
-        "ticket_id": t.id, "qr_hash": t.qr_hash,
+        "ticket_id": t.id, 
+        "qr_hash": t.qr_hash,
         "payment_status": t.payment_status,
+        "payment_method": t.payment_method,
         "event_title": t.event.title if t.event else "",
         "event_date": t.event.event_date if t.event else None,
         "event_location": t.event.location if t.event else "",
-        "price": t.event.price if t.event else 0,
+        # 🔧 Si cash_amount existe (réservation/paiement cash), on l'utilise. Sinon, prix de l'événement.
+        "price": t.cash_amount if t.cash_amount else (t.event.price if t.event else 0),
         "is_used": t.is_used,
         "purchased_at": t.purchased_at,
     } for t in tickets]
 
+    
 @app.get("/tickets/paid")
 def my_paid_tickets(db: Session = Depends(get_db),
                     current_user: User = Depends(get_current_user)):

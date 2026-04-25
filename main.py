@@ -44,7 +44,20 @@ if not DATABASE_URL:
     raise ValueError("⚠️ ERREUR CRITIQUE : Aucune URL de base de données (DATABASE_URL) n'a été trouvée !")
 
 # Configuration PostgreSQL (sans check_same_thread)
-engine       = create_engine(DATABASE_URL)
+engine = create_engine(
+    DATABASE_URL,
+    pool_pre_ping=True,        # 🔥 Vérifie que la connexion est vivante avant chaque requête
+    pool_recycle=300,          # 🔥 Recycle les connexions toutes les 5 minutes
+    pool_size=5,
+    max_overflow=10,
+    connect_args={
+        "connect_timeout": 10,
+        "keepalives": 1,
+        "keepalives_idle": 30,
+        "keepalives_interval": 10,
+        "keepalives_count": 5
+    }
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base         = declarative_base()
 pwd_context  = CryptContext(schemes=["bcrypt"], deprecated="auto")

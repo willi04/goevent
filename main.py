@@ -1155,7 +1155,11 @@ def login(request: Request, data: UserLogin, db: Session = Depends(get_db)):
         log_security_event(db, "login_failed", request,
                            details=f"Numéro inconnu : {data.phone_number}")
         raise HTTPException(401, "Numéro ou PIN incorrect")
-
+    # 🔒 Vérifier si le compte est désactivé
+    if not user.is_active:
+        log_security_event(db, "login_blocked_inactive", request, user.id,
+                       f"Tentative sur compte désactivé (rôle: {user.role})")
+        raise HTTPException(403,  "Ce compte a été désactivé. Contactez votre administrateur si vous pensez qu'il s'agit d'une erreur.")
     # Vérifier verrouillage
     if user.locked_until and user.locked_until > datetime.utcnow():
         log_security_event(db, "login_blocked", request, user.id,

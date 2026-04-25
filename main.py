@@ -1936,11 +1936,21 @@ def add_favorite(event_id: int, db: Session = Depends(get_db),
 def dashboard_stats(db: Session = Depends(get_db),
                     current_user: User = Depends(get_current_user)):
     tickets = db.query(Ticket).filter(Ticket.user_id == current_user.id).all()
-    paid    = [t for t in tickets if t.payment_status == "paye"]
-    total_spend = sum(t.event.price for t in paid if t.event)
-    upcoming = [t for t in paid if t.event and not t.is_used and t.event.event_date >= datetime.utcnow()]
+    
+    # 🔧 Tous les billets "valables" : payés en ligne, payés cash, OU réservés cash
+    valid_statuses = ["paye", "paye_cash", "reservation_cash"]
+    valid_tickets = [t for t in tickets if t.payment_status in valid_statuses]
+    
+    # Pour le total dépensé : seulement ce qui est VRAIMENT payé
+    paid_tickets = [t for t in tickets if t.payment_status in ["paye", "paye_cash"]]
+    total_spend = sum((t.cash_amount or t.event.price) for t in paid_tickets if t.event)
+    
+    # Événements à venir : tickets non utilisés et événement futur
+    upcoming = [t for t in valid_tickets 
+                if t.event and not t.is_used and t.event.event_date >= datetime.utcnow()]
+    
     return {
-        "total_tickets": len(paid),
+        "total_tickets": len(valid_tickets),  # 🔧 Compte les réservations aussi
         "upcoming_events": len(upcoming),
         "total_spend": total_spend,
         "tickets": [{
@@ -1948,10 +1958,12 @@ def dashboard_stats(db: Session = Depends(get_db),
             "event_title": t.event.title if t.event else "",
             "event_date": t.event.event_date if t.event else None,
             "event_location": t.event.location if t.event else "",
-            "price": t.event.price if t.event else 0,
+            "price": (t.cash_amount or (t.event.price if t.event else 0)),
             "is_used": t.is_used,
             "qr_hash": t.qr_hash,
-        } for t in paid[:5]],
+            "payment_status": t.payment_status,  # 🔧 Important pour différencier
+            "payment_method": t.payment_method,
+        } for t in valid_tickets[:10]],  # 🔧 10 tickets au lieu de 5
     }
 
 

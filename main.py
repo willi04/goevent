@@ -69,7 +69,7 @@ class User(Base):
     failed_login_attempts = Column(Integer, default=0)
     locked_until          = Column(DateTime, nullable=True)
     events = relationship("Event", back_populates="organizer_user", foreign_keys="[Event.organizer_id]")
-    tickets      = relationship("Ticket", back_populates="owner")
+    tickets = relationship("Ticket", back_populates="owner", foreign_keys="Ticket.user_id")
     favorites    = relationship("Favorite", back_populates="user")
     orange_money = Column(String(20), nullable=True)
 

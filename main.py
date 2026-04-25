@@ -1615,7 +1615,21 @@ def confirm_cash_payment(
     ticket.payment_status = "paye_cash"
     ticket.cash_collected_by = current_user.id
     ticket.cash_collected_at = datetime.utcnow()
-    
+
+    # 🔥 6. Créer une trace comptable Payment pour que la cagnotte se mette à jour
+    # Pour le cash : 0% commission (l'organisateur reçoit 100% en main propre)
+    cash_payment = Payment(
+        user_id=ticket.user_id,
+        ticket_id=ticket.id,
+        amount=ticket.cash_amount or 0,
+        base_price=ticket.cash_amount or 0,
+        platform_fee=0,                          # Pas de commission sur le cash
+        organizer_amount=ticket.cash_amount or 0,  # 100% pour l'organisateur
+        status="completed",
+        transaction_id=ticket.payment_ref or f"CASH-{ticket.id}"
+    )
+    db.add(cash_payment)
+
     db.commit()
     
     log_security_event(db, "cash_collected", None, current_user.id,

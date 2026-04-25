@@ -845,27 +845,81 @@ def init_payment(event_id: int, db: Session = Depends(get_db), user: User = Depe
 
 @app.post("/organizer/create-agent")
 def create_agent(agent: AgentCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    # Validation du PIN
     if len(agent.pin_code) != 4 or not agent.pin_code.isdigit():
         raise HTTPException(400, "Le PIN doit être 4 chiffres")
-    if db.query(User).filter(User.phone_number == agent.phone_number).first():
-        raise HTTPException(400, "Ce numéro est déjà utilisé.")
-
+    
     # Vérifier que l'événement lui appartient bien
     event = db.query(Event).filter(Event.id == agent.event_id, Event.organizer_id == current_user.id).first()
     if not event:
         raise HTTPException(404, "Événement introuvable")
-
+    
+    org_name_actuel = current_user.org_name or current_user.full_name
+    
+    # 🔍 Chercher si un user existe avec ce numéro
+    existing_user = db.query(User).filter(User.phone_number == agent.phone_number).first()
+    
+    if existing_user:
+        # ─── CAS A : User actif avec un rôle différent (fan, organizer, admin) ───
+        if existing_user.is_active and existing_user.role != "agent":
+            raise HTTPException(400, 
+                "Ce numéro est déjà utilisé par un autre type de compte (fan, organisateur, etc.).")
+        
+        # ─── CAS B : Agent actif ───
+        if existing_user.is_active and existing_user.role == "agent":
+            # Agent de la même organisation
+            if existing_user.org_name == org_name_actuel:
+                raise HTTPException(400, 
+                    f"{existing_user.full_name} est déjà un agent dans votre équipe.")
+            # Agent d'une autre organisation
+            else:
+                raise HTTPException(400, 
+                    "Ce numéro appartient à un agent d'une autre organisation.")
+        
+        # ─── CAS C : Agent désactivé (à réactiver !) ───
+        if not existing_user.is_active and existing_user.role == "agent":
+            # On le réactive et on l'assigne au nouvel événement
+            existing_user.is_active = True
+            existing_user.full_name = agent.full_name  # Permettre à l'organisateur de mettre à jour le nom
+            existing_user.pin_hash = hash_pin(agent.pin_code)  # Nouveau PIN
+            existing_user.org_name = org_name_actuel  # Au cas où il vient d'une autre orga
+            existing_user.agent_event_id = agent.event_id
+            existing_user.failed_login_attempts = 0  # Reset les éventuels blocages
+            existing_user.locked_until = None
+            db.commit()
+            
+            log_security_event(db, "agent_reactivated", None, current_user.id,
+                               f"Agent {existing_user.full_name} ({existing_user.phone_number}) réactivé pour event {event.id}")
+            
+            return {
+                "message": f"Agent {existing_user.full_name} réactivé avec succès pour cet événement.",
+                "reactivated": True
+            }
+        
+        # ─── CAS D : User désactivé avec un autre rôle (rare) ───
+        if not existing_user.is_active:
+            raise HTTPException(400, 
+                "Ce numéro appartient à un compte désactivé d'un autre type. Contactez le support.")
+    
+    # ─── CAS E : Numéro complètement nouveau ───
     new_agent = User(
         phone_number=agent.phone_number,
         full_name=agent.full_name,
         pin_hash=hash_pin(agent.pin_code),
         role="agent",
-        org_name=current_user.org_name or current_user.full_name,
-        agent_event_id=agent.event_id  # L'agent est maintenant lié à l'événement !
+        org_name=org_name_actuel,
+        agent_event_id=agent.event_id
     )
     db.add(new_agent)
     db.commit()
-    return {"message": "Agent créé avec succès"}
+    
+    log_security_event(db, "agent_created", None, current_user.id,
+                       f"Nouvel agent {new_agent.full_name} créé pour event {event.id}")
+    
+    return {
+        "message": "Agent créé avec succès",
+        "reactivated": False
+    }
 
 
 @app.get("/organizer/agents")
@@ -873,7 +927,8 @@ def get_agents(db: Session = Depends(get_db), current_user: User = Depends(get_c
     # Cherche les agents de cette organisation
     agents = db.query(User).filter(
         User.role == "agent",
-        User.org_name == (current_user.org_name or current_user.full_name)
+        User.org_name == (current_user.org_name or current_user.full_name),
+        User.is_active == True
     ).order_by(User.created_at.desc()).all()
 
     res = []
@@ -2045,13 +2100,35 @@ def get_agent_event(db: Session = Depends(get_db), current_user: User = Depends(
 # --- 2. ROUTE POUR AUTODÉTRUIRE L'AGENT ---
 @app.delete("/agent/delete-account")
 def delete_agent_account(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """
+    Désactive le compte agent (déconnexion permanente).
+    On ne supprime PAS le compte pour préserver l'historique des encaissements cash.
+    """
     # Sécurité : On s'assure que seul un compte "agent" peut s'autodétruire
     if current_user.role != "agent":
         raise HTTPException(status_code=403, detail="Seuls les agents peuvent être supprimés ainsi.")
-
-    db.delete(current_user)
-    db.commit()
-    return {"message": "Compte agent supprimé définitivement."}
+    
+    # Vérifier si l'agent a déjà encaissé des paiements cash
+    has_cash_history = db.query(Ticket).filter(
+        Ticket.cash_collected_by == current_user.id
+    ).first() is not None
+    
+    if has_cash_history:
+        # 🔒 L'agent a un historique : on le DÉSACTIVE seulement (préservation des données)
+        current_user.is_active = False
+        # Optionnel : marquer comme "agent retiré" pour ne plus apparaître dans les listes
+        current_user.agent_event_id = None
+        db.commit()
+        
+        log_security_event(db, "agent_deactivated", None, current_user.id,
+                           f"Agent {current_user.full_name} désactivé (historique préservé)")
+        
+        return {"message": "Compte agent désactivé. Historique conservé pour la traçabilité."}
+    else:
+        # Aucune transaction : on peut supprimer proprement
+        db.delete(current_user)
+        db.commit()
+        return {"message": "Compte agent supprimé définitivement."}
 
 # =================================================================
 # 🌉 PONT DE COMPATIBILITÉ POUR LE FRONT-END (HTML/JS)

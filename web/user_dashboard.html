@@ -1200,61 +1200,94 @@
       async function chargerMesBillets() {
         const container = document.getElementById("tickets-container");
         if (!container) return;
-
+      
         container.innerHTML = `<div class="py-10 text-center"><span class="material-symbols-outlined animate-spin text-primary text-3xl">refresh</span></div>`;
-
+      
         try {
           const billets = await btApi.get("/tickets/my");
-
+      
           if (!billets.length) {
             container.innerHTML = `<div class="bg-white p-8 rounded-2xl text-center border border-gray-100 shadow-sm"><p class="font-bold text-gray-500">Aucun billet trouvé.</p></div>`;
             return;
           }
-
+      
           container.innerHTML = billets
             .map((b) => {
-              // 1. Vérification du statut de paiement réel du billet
-              const isPaid = b.payment_status === "paye";
-
-              // 2. Génération de l'URL du QR Code (uniquement si payé)
-              // On utilise l'ID ou le hash unique du billet stocké dans ta base
-              const qrUrl = isPaid
+              // 🔧 Reconnaître tous les statuts qui doivent afficher un QR
+              const isPaidOnline = b.payment_status === "paye";
+              const isPaidCash = b.payment_status === "paye_cash";
+              const isReservedCash = b.payment_status === "reservation_cash";
+              const showQrCode = isPaidOnline || isPaidCash || isReservedCash;
+      
+              const qrUrl = showQrCode
                 ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${b.qr_hash}`
                 : "";
-
-              return `
-                  <div class="bg-white p-6 rounded-[2.5rem] mb-6 border border-gray-100 shadow-sm relative overflow-hidden">
-                      <div class="flex justify-between items-start mb-4">
-                          <div>
-                              <h3 class="font-black text-xl text-gray-900">${b.event_title}</h3>
-                              <p class="text-sm font-bold text-gray-500 mt-1">📍 ${b.event_location || "Lieu à confirmer"}</p>
-                          </div>
-                          <span class="${isPaid ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"} px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
-                              ${isPaid ? "Billet Valide" : "Paiement en attente"}
-                          </span>
+      
+              // 🔧 Badge selon le statut
+              let badgeClass = "bg-gray-100 text-gray-700";
+              let badgeText = "Inconnu";
+              let qrCaption = "Présentez ce code à l'entrée";
+              let qrHeader = "";
+      
+              if (isPaidOnline) {
+                badgeClass = "bg-green-100 text-green-700";
+                badgeText = "Billet Valide";
+                qrCaption = "Présentez ce code à l'entrée";
+              } else if (isPaidCash) {
+                badgeClass = "bg-green-100 text-green-700";
+                badgeText = "Payé Cash";
+                qrCaption = "Cash encaissé. Présentez ce code à l'entrée";
+              } else if (isReservedCash) {
+                badgeClass = "bg-orange-100 text-orange-700";
+                badgeText = "Réservation Cash";
+                qrCaption = `À payer cash : ${b.price.toLocaleString("fr-FR")} FCFA à l'entrée`;
+                qrHeader = `
+                  <div class="bg-orange-50 border-2 border-orange-300 rounded-2xl p-4 mb-4">
+                    <div class="flex items-start gap-3">
+                      <span class="material-symbols-outlined text-orange-600 text-2xl">payments</span>
+                      <div>
+                        <p class="font-bold text-orange-900 text-sm">À payer en cash à l'entrée</p>
+                        <p class="text-xs text-orange-700 mt-1">Présentez ce QR code à l'agent. Il vous demandera ${b.price.toLocaleString("fr-FR")} FCFA en cash.</p>
                       </div>
-
-                      <div class="flex items-center gap-3 text-gray-900 font-black text-lg mb-6">
-                          <span class="material-symbols-outlined text-gray-400">payments</span>
-                          ${b.price.toLocaleString("fr-FR")} FCFA
-                      </div>
-
-                      ${
-                        isPaid
-                          ? `
-                        <div class="bg-gray-50 rounded-3xl p-6 flex flex-col items-center border border-dashed border-gray-200">
-                            <img src="${qrUrl}" class="w-40 h-40 mb-4 rounded-xl shadow-inner bg-white p-2" alt="QR Code" />
-                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">ID: ${b.qr_hash.substring(0, 8)}</p>
-                            <p class="text-xs font-bold text-primary mt-2">Présentez ce code à l'entrée</p>
-                        </div>
-                      `
-                          : `
-                        <div class="bg-orange-50/50 rounded-3xl p-8 text-center border border-dashed border-orange-200">
-                            <p class="text-sm font-bold text-gray-800">Finalisez votre achat pour obtenir votre QR Code</p>
-                        </div>
-                      `
-                      }
+                    </div>
                   </div>
+                `;
+              }
+      
+              return `
+                <div class="bg-white p-6 rounded-[2.5rem] mb-6 border border-gray-100 shadow-sm relative overflow-hidden">
+                  <div class="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 class="font-black text-xl text-gray-900">${b.event_title}</h3>
+                      <p class="text-sm font-bold text-gray-500 mt-1">📍 ${b.event_location || "Lieu à confirmer"}</p>
+                    </div>
+                    <span class="${badgeClass} px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
+                      ${badgeText}
+                    </span>
+                  </div>
+      
+                  <div class="flex items-center gap-3 text-gray-900 font-black text-lg mb-6">
+                    <span class="material-symbols-outlined text-gray-400">payments</span>
+                    ${b.price.toLocaleString("fr-FR")} FCFA
+                  </div>
+      
+                  ${qrHeader}
+      
+                  ${showQrCode
+                    ? `
+                      <div class="bg-gray-50 rounded-3xl p-6 flex flex-col items-center border border-dashed border-gray-200">
+                        <img src="${qrUrl}" class="w-40 h-40 mb-4 rounded-xl shadow-inner bg-white p-2" alt="QR Code" />
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">ID: ${b.qr_hash.substring(0, 8)}</p>
+                        <p class="text-xs font-bold text-primary mt-2">${qrCaption}</p>
+                      </div>
+                    `
+                    : `
+                      <div class="bg-orange-50/50 rounded-3xl p-8 text-center border border-dashed border-orange-200">
+                        <p class="text-sm font-bold text-gray-800">Finalisez votre achat pour obtenir votre QR Code</p>
+                      </div>
+                    `
+                  }
+                </div>
               `;
             })
             .join("");

@@ -286,7 +286,6 @@
                 </div>
               </div>
             </div>
-
             <div
               class="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-gray-100 relative overflow-hidden"
             >
@@ -297,26 +296,49 @@
                   class="bg-primary/10 text-primary w-8 h-8 rounded-full flex items-center justify-center text-sm"
                   >2</span
                 >
-                Paiement Mobile
+                Choisissez votre mode de paiement
               </h2>
-
+            
+              <!-- 🟠 Option 1 : Orange Money -->
               <div
-                class="mb-6 p-4 border-2 border-orange-500 bg-orange-50 rounded-2xl flex items-center gap-4 cursor-pointer relative z-10"
+                id="opt-orange-money"
+                onclick="selectPaymentMethod('orange_money')"
+                class="mb-4 p-4 border-2 border-orange-500 bg-orange-50 rounded-2xl flex items-center gap-4 cursor-pointer relative z-10 transition-all hover:shadow-md"
               >
                 <div
-                  class="w-4 h-4 rounded-full bg-orange-500 ring-4 ring-orange-200"
+                  id="radio-orange"
+                  class="w-4 h-4 rounded-full bg-orange-500 ring-4 ring-orange-200 shrink-0"
                 ></div>
                 <img
                   src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/Orange_logo.svg/1200px-Orange_logo.svg.png"
                   class="h-6 object-contain"
                   alt="Orange Money"
                 />
-                <span class="font-bold text-gray-900 ml-auto text-sm"
-                  >Orange Money RCA</span
-                >
+                <div class="flex-1">
+                  <div class="font-bold text-gray-900 text-sm">Orange Money RCA</div>
+                  <div class="text-xs text-gray-500">Paiement instantané et sécurisé</div>
+                </div>
               </div>
-
-              <div class="relative z-10">
+            
+              <!-- 💵 Option 2 : Cash à l'entrée -->
+              <div
+                id="opt-cash"
+                onclick="selectPaymentMethod('cash')"
+                class="mb-6 p-4 border-2 border-gray-200 bg-gray-50 rounded-2xl flex items-center gap-4 cursor-pointer relative z-10 transition-all hover:shadow-md"
+              >
+                <div
+                  id="radio-cash"
+                  class="w-4 h-4 rounded-full bg-gray-300 shrink-0"
+                ></div>
+                <span class="material-symbols-outlined text-3xl text-green-700">payments</span>
+                <div class="flex-1">
+                  <div class="font-bold text-gray-900 text-sm">Réserver et payer cash à l'entrée</div>
+                  <div class="text-xs text-gray-500">Vous payez directement à l'organisateur le jour J</div>
+                </div>
+              </div>
+            
+              <!-- 📱 Champ téléphone (visible uniquement si Orange Money sélectionné) -->
+              <div id="orange-money-fields" class="relative z-10">
                 <label
                   class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2"
                   >Numéro de téléphone payeur</label
@@ -330,7 +352,6 @@
                   <input
                     type="tel"
                     id="buyer-phone"
-                    required
                     maxlength="8"
                     placeholder="7X XX XX XX"
                     oninput="this.value = this.value.replace(/[^0-9]/g, '')"
@@ -338,11 +359,26 @@
                   />
                 </div>
                 <p class="text-[11px] text-gray-400 font-medium mt-2">
-                  Vous recevrez un code USSD sur ce numéro pour valider la
-                  transaction.
+                  Vous recevrez un code USSD sur ce numéro pour valider la transaction.
                 </p>
               </div>
-
+            
+              <!-- ⚠️ Message d'avertissement (visible uniquement si Cash sélectionné) -->
+              <div id="cash-info" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-4 relative z-10">
+                <div class="flex gap-3">
+                  <span class="material-symbols-outlined text-amber-600">info</span>
+                  <div class="text-sm text-amber-900">
+                    <div class="font-bold mb-1">Comment ça marche ?</div>
+                    <ul class="space-y-1 text-xs">
+                      <li>• Votre place est <strong>réservée</strong> immédiatement</li>
+                      <li>• Vous recevez un QR code de réservation</li>
+                      <li>• Présentez-le à l'entrée et payez en cash</li>
+                      <li>• Limite : 3 réservations par événement</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            
               <div
                 class="absolute -bottom-10 -right-10 w-40 h-40 bg-orange-500/5 rounded-full blur-2xl z-0"
               ></div>
@@ -355,10 +391,8 @@
               disabled
               class="w-full bg-gray-400 text-white py-4 md:py-5 rounded-2xl font-black text-lg opacity-50 cursor-not-allowed transition-all shadow-sm flex items-center justify-center gap-3"
             >
-              <span id="btn-text"
-                >Payer <span id="btn-price-display">...</span> FCFA</span
-              >
-              <span class="material-symbols-outlined">lock</span>
+              <span id="btn-text">Payer <span id="btn-price-display">...</span> FCFA</span>
+              <span id="btn-icon" class="material-symbols-outlined">lock</span>
             </button>
             <div
               class="flex items-center justify-center gap-2 text-gray-400 mt-4"
@@ -492,6 +526,66 @@
     <script src="pwa.js"></script>
 
     <script>
+            // État global du mode de paiement choisi
+      let selectedPaymentMethod = "orange_money"; // valeur par défaut
+      
+      function selectPaymentMethod(method) {
+        selectedPaymentMethod = method;
+        
+        const optOrange = document.getElementById("opt-orange-money");
+        const optCash = document.getElementById("opt-cash");
+        const radioOrange = document.getElementById("radio-orange");
+        const radioCash = document.getElementById("radio-cash");
+        const orangeFields = document.getElementById("orange-money-fields");
+        const cashInfo = document.getElementById("cash-info");
+        const btnText = document.getElementById("btn-text");
+        
+        if (method === "orange_money") {
+          // Orange Money sélectionné
+          optOrange.classList.remove("border-gray-200", "bg-gray-50");
+          optOrange.classList.add("border-orange-500", "bg-orange-50");
+          radioOrange.classList.add("bg-orange-500", "ring-orange-200");
+          radioOrange.classList.remove("bg-gray-300");
+          
+          optCash.classList.remove("border-green-500", "bg-green-50");
+          optCash.classList.add("border-gray-200", "bg-gray-50");
+          radioCash.classList.remove("bg-green-500", "ring-green-200");
+          radioCash.classList.add("bg-gray-300");
+          
+          orangeFields.classList.remove("hidden");
+          cashInfo.classList.add("hidden");
+          
+          btnText.innerHTML = `Payer <span id="btn-price-display">${document.getElementById("summary-total").textContent}</span>`;
+        } else {
+          // Cash sélectionné
+          optCash.classList.remove("border-gray-200", "bg-gray-50");
+          optCash.classList.add("border-green-500", "bg-green-50");
+          radioCash.classList.add("bg-green-500", "ring-green-200");
+          radioCash.classList.remove("bg-gray-300");
+          
+          optOrange.classList.remove("border-orange-500", "bg-orange-50");
+          optOrange.classList.add("border-gray-200", "bg-gray-50");
+          radioOrange.classList.remove("bg-orange-500", "ring-orange-200");
+          radioOrange.classList.add("bg-gray-300");
+          
+          orangeFields.classList.add("hidden");
+          cashInfo.classList.remove("hidden");
+          
+          btnText.innerHTML = `Réserver ma place`;
+        }
+        
+        // Activer le bouton
+        const btn = document.getElementById("btn-pay");
+        btn.disabled = false;
+        btn.classList.remove("bg-gray-400", "opacity-50", "cursor-not-allowed");
+        btn.classList.add("bg-primary", "hover:bg-primary/90", "cursor-pointer");
+      }
+      
+      // Au chargement, on sélectionne Orange Money par défaut
+      document.addEventListener("DOMContentLoaded", () => {
+        // Donner un peu de temps à l'init
+        setTimeout(() => selectPaymentMethod("orange_money"), 100);
+      });
       // Menu Hamburger Mobile
       function toggleMobileMenu() {
         const menu = document.getElementById("mobile-menu");
@@ -548,46 +642,71 @@
       // =========================================================================
       // FONCTION D'ORIGINE INTACTE POUR GARANTIR LE LIEN AVEC TON API
       // =========================================================================
-      async function validerPaiement(e) {
-        // Si la fonction est appelée par un bouton de formulaire, on empêche le rechargement de la page
-        if (e) e.preventDefault();
-
-        // 1. ON RÉCUPÈRE L'ID DANS L'ADRESSE WEB (URL)
-        const urlParams = new URLSearchParams(window.location.search);
-        const eventId = urlParams.get("id");
-
-        // 2. Vérification de sécurité
-        if (!eventId) {
-          if (typeof btToast === "function")
-            btToast("Erreur : Impossible de trouver l'événement.", "error");
-          return;
-        }
-
-        // 3. Préparation des données pour ton Python
-        const payload = {
-          event_id: parseInt(eventId), // On s'assure que c'est bien un nombre pour ta base de données
-          email: document.getElementById("buyer-email").value,
-          full_name: document.getElementById("buyer-name").value,
-        };
-
-        // 4. On appelle ta route de test
+      async function validerPaiement(event) {
+        event.preventDefault();
+        
+        const btn = document.getElementById("btn-pay");
+        const btnText = document.getElementById("btn-text");
+        const originalBtnContent = btn.innerHTML;
+        
+        // Désactiver le bouton pendant la requête
+        btn.disabled = true;
+        btn.innerHTML = '<span class="material-symbols-outlined animate-spin">sync</span> Traitement...';
+        
         try {
-          const response = await btApi.post("/payment/test-confirm", payload);
-
-          if (response && response.status === "success") {
-            if (typeof btToast === "function")
-              btToast("Paiement simulé ! Vérifiez vos emails.", "success");
-
-            // Redirection vers une page de succès après 2 secondes (optionnel)
+          if (selectedPaymentMethod === "orange_money") {
+            // ─── PAIEMENT ORANGE MONEY (simulation actuelle) ───
+            const buyerPhone = document.getElementById("buyer-phone").value;
+            if (!buyerPhone || buyerPhone.length < 8) {
+              btToast("Numéro de téléphone invalide", "error");
+              btn.disabled = false;
+              btn.innerHTML = originalBtnContent;
+              return;
+            }
+            
+            const payload = {
+              event_id: parseInt(eventId),
+              tier_name: selectedTierName || null,
+              email: document.getElementById("buyer-email")?.value || null
+            };
+            
+            const response = await btApi.post("/payment/test-confirm", payload);
+            
+            btToast("Paiement confirmé ! Votre billet est prêt.", "success");
             setTimeout(() => {
-              // Si tu n'as pas de success.html, tu peux rediriger vers user_dashboard.html
               window.location.href = "user_dashboard.html";
-            }, 2000);
+            }, 1500);
+            
+          } else {
+            // ─── RÉSERVATION CASH ───
+            const payload = {
+              event_id: parseInt(eventId),
+              tier_name: selectedTierName || null,
+              email: document.getElementById("buyer-email")?.value || null
+            };
+            
+            const response = await btApi.post("/tickets/reserve-cash", payload);
+            
+            btToast("Réservation confirmée ! À payer cash à l'entrée.", "success");
+            
+            // Sauvegarder les infos pour les afficher sur le dashboard
+            sessionStorage.setItem("last_reservation", JSON.stringify({
+              ticket_id: response.ticket_id,
+              amount: response.amount_to_pay,
+              event_title: response.event_title,
+              instructions: response.instructions
+            }));
+            
+            setTimeout(() => {
+              window.location.href = "user_dashboard.html";
+            }, 1500);
           }
+          
         } catch (error) {
-          console.error("Erreur de paiement fantôme :", error);
-          if (typeof btToast === "function")
-            btToast("Erreur lors de la création du billet.", "error");
+          console.error("Erreur:", error);
+          btToast(error.message || "Erreur lors de la transaction", "error");
+          btn.disabled = false;
+          btn.innerHTML = originalBtnContent;
         }
       }
       // Validation dynamique du formulaire de paiement

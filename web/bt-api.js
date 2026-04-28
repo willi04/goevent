@@ -3,7 +3,7 @@
 //  Design fidèle Stitch · Material Symbols · Pas d'émojis
 // ============================================================
 
-const BT_API ="https://goevent-qk9q.onrender.com";
+const BT_API ="https://api.goevent.africa";
 
 // ── Auth ──────────────────────────────────────────────────────
 const btAuth = {

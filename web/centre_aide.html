@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Centre d'aide — GoEvent</title>
+    <link rel="icon" type="image/png" href="icons/favicon.png" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#00502c" />
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: "#00502c",
+              "primary-container": "#006b3c",
+              surface: "#f9f9f9",
+              "on-surface": "#1a1c1c",
+            },
+            fontFamily: { headline: ["Plus Jakarta Sans"], body: ["Manrope"] },
+          },
+        },
+      };
+    </script>
+    <style>
+      .material-symbols-outlined {
+        font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+      }
+      .faq-item.open .faq-answer {
+        max-height: 1000px;
+        opacity: 1;
+        padding-top: 1rem;
+      }
+      .faq-item.open .faq-icon {
+        transform: rotate(180deg);
+      }
+      .faq-answer {
+        max-height: 0;
+        opacity: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
+      }
+      .faq-icon {
+        transition: transform 0.3s ease;
+      }
+      .category-pill.active {
+        background: #00502c;
+        color: white;
+      }
+      .category-pill.active .category-count {
+        background: rgba(255,255,255,0.25);
+        color: white;
+      }
+    </style>
+  </head>
+  <body class="bg-surface font-body text-on-surface antialiased flex flex-col min-h-screen">
+    <div id="navbar"></div>
+
+    <main class="max-w-4xl mx-auto px-6 pt-[96px] md:pt-[120px] pb-16 flex-1 w-full">
+      <!-- HERO -->
+      <div class="text-center mb-10">
+        <div class="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
+          <span class="material-symbols-outlined text-3xl">help</span>
+        </div>
+        <h1 class="text-3xl md:text-5xl font-black font-headline text-gray-900 tracking-tight mb-3">
+          Centre d'aide
+        </h1>
+        <p class="text-gray-500 font-medium max-w-xl mx-auto">
+          Trouvez rapidement les réponses à vos questions sur GoEvent.
+        </p>
+      </div>
+
+      <!-- BARRE DE RECHERCHE -->
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-2 mb-8">
+        <div class="relative">
+          <span class="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">search</span>
+          <input
+            id="faq-search"
+            type="text"
+            placeholder="Recherchez une question..."
+            class="w-full pl-14 pr-12 py-4 bg-transparent rounded-xl focus:ring-2 focus:ring-primary/20 transition-colors font-medium text-gray-900 outline-none text-base"
+            oninput="filterFaq()"
+          />
+          <button
+            id="faq-clear"
+            onclick="clearSearch()"
+            class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden"
+          >
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- FILTRES PAR CATÉGORIE -->
+      <div class="flex flex-wrap gap-2 mb-8" id="category-filters">
+        <button
+          onclick="filterCategory('all')"
+          class="category-pill active px-4 py-2 rounded-full bg-white border border-gray-200 text-sm font-bold transition-all flex items-center gap-2"
+          data-cat="all"
+        >
+          Toutes
+          <span class="category-count text-xs bg-gray-100 px-2 py-0.5 rounded-full">20</span>
+        </button>
+        <button
+          onclick="filterCategory('compte')"
+          class="category-pill px-4 py-2 rounded-full bg-white border border-gray-200 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-all flex items-center gap-2"
+          data-cat="compte"
+        >
+          🔐 Mon compte
+        </button>
+        <button
+          onclick="filterCategory('achat')"
+          class="category-pill px-4 py-2 rounded-full bg-white border border-gray-200 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-all flex items-center gap-2"
+          data-cat="achat"
+        >
+          💳 Achat & paiement
+        </button>
+        <button
+          onclick="filterCategory('billet')"
+          class="category-pill px-4 py-2 rounded-full bg-white border border-gray-200 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-all flex items-center gap-2"
+          data-cat="billet"
+        >
+          🎫 Mes billets
+        </button>
+        <button
+          onclick="filterCategory('orga')"
+          class="category-pill px-4 py-2 rounded-full bg-white border border-gray-200 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-all flex items-center gap-2"
+          data-cat="orga"
+        >
+          🎤 Organisateurs
+        </button>
+        <button
+          onclick="filterCategory('autre')"
+          class="category-pill px-4 py-2 rounded-full bg-white border border-gray-200 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-all flex items-center gap-2"
+          data-cat="autre"
+        >
+          ❓ Autres
+        </button>
+      </div>
+
+      <!-- FAQ ITEMS -->
+      <div id="faq-container" class="space-y-3 mb-12">
+        <!-- ──────── COMPTE ──────── -->
+        <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="compte">
+          <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
+            <span class="font-bold text-gray-900 text-sm md:text-base">Comment créer un compte sur GoEvent ?</span>
+            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+          </button>
+          <div class="faq-answer px-5 pb-5">
+            <p class="text-sm text-gray-600 leading-relaxed">
+              C'est très simple ! Cliquez sur <strong>"S'inscrire"</strong> en haut de la page, renseignez votre numéro de téléphone, votre nom, un email et créez un mot de passe. Votre compte est prêt en moins d'une minute.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="compte">
+          <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
+            <span class="font-bold text-gray-900 text-sm md:text-base">J'ai oublié mon mot de passe, que faire ?</span>
+            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+          </button>
+          <div class="faq-answer px-5 pb-5">
+            <p class="text-sm text-gray-600 leading-relaxed">
+              Sur la page de connexion, cliquez sur <strong>"Mot de passe oublié"</strong>. Vous recevrez un code par email pour réinitialiser votre mot de passe. Si vous ne recevez rien, vérifiez vos spams ou contactez notre support WhatsApp.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="compte">
+          <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
+            <span class="font-bold text-gray-900 text-sm md:text-base">Comment modifier mes informations personnelles ?</span>
+            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+          </button>
+          <div class="faq-answer px-5 pb-5">
+            <p class="text-sm text-gray-600 leading-relaxed">
+              Connectez-vous, allez dans votre <strong>tableau de bord personnel</strong>, puis cliquez sur <strong>"Paramètres"</strong>. Vous pouvez modifier votre nom, email, photo de profil et mot de passe à tout moment.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="compte">
+          <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
+            <span class="font-bold text-gray-900 text-sm md:text-base">Comment supprimer mon compte ?</span>
+            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+          </button>
+          <div class="faq-answer px-5 pb-5">
+            <p class="text-sm text-gray-600 leading-relaxed">
+              Pour supprimer définitivement votre compte, contactez notre support à <a href="mailto:emmanuel.madoukou30@gmail.com" class="text-primary underline">emmanuel.madoukou30@gmail.com</a>. Conformément à notre <a href="confidentialite.html" class="text-primary underline">politique de confidentialité</a>, certaines données peuvent être conservées pour respecter nos obligations légales (comptabilité notamment).
+            </p>
+          </div>
+        </div>
+
+        <!-- ──────── ACHAT & PAIEMENT ──────── -->
+        <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="achat">
+          <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
+            <span class="font-bold text-gray-900 text-sm md:text-base">Comment acheter un billet sur GoEvent ?</span>
+            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+          </button>
+          <div class="faq-answer px-5 pb-5">
+            <p class="text-sm text-gray-600 leading-relaxed">
+              C'est simple et rapide :<br/>
+              <strong>1.</strong> Choisissez l'événement qui vous intéresse<br/>
+              <strong>2.</strong> Sélectionnez le type de billet et la quantité<br/>
+              <strong>3.</strong> Choisissez votre mode de paiement : Orange Money OU paiement cash à l'entrée<br/>
+              <strong>4.</strong> Validez la transaction<br/>
+              Votre billet (QR code) apparaît immédiatement dans votre tableau de bord.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="achat">
+          <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
+            <span class="font-bold text-gray-900 text-sm md:text-base">Quels modes de paiement sont acceptés ?</span>
+            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+          </button>
+          <div class="faq-answer px-5 pb-5">
+            <p class="text-sm text-gray-600 leading-relaxed">
+              Actuellement, GoEvent accepte deux modes de paiement :<br/>
+              🟠 <strong>Orange Money</strong> : paiement instantané en ligne<br/>
+              💵 <strong>Cash à l'entrée</strong> : vous réservez en ligne et payez en cash le jour de l'événement à un agent désigné<br/>
+              D'autres moyens (Moov Money, cartes bancaires) seront ajoutés progressivement.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="achat">
+          <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
+            <span class="font-bold text-gray-900 text-sm md:text-base">Mon paiement Orange Money n'a pas abouti, que faire ?</span>
+            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+          </button>
+          <div class="faq-answer px-5 pb-5">
+            <p class="text-sm text-gray-600 leading-relaxed">
+              Vérifiez d'abord votre solde Orange Money et votre connexion réseau. Si l'argent a été débité de votre compte mais que le billet n'apparaît pas dans votre tableau de bord après 5 minutes, contactez immédiatement notre support WhatsApp avec votre numéro de transaction Orange Money. Nous traitons ces cas en priorité.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="achat">
+          <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
+            <span class="font-bold text-gray-900 text-sm md:text-base">Comment fonctionne le paiement cash à l'entrée ?</span>
+            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+          </button>
+          <div class="faq-answer px-5 pb-5">
+            <p class="text-sm text-gray-600 leading-relaxed">
+              Vous réservez votre place gratuitement en ligne, et vous payez en cash directement à l'entrée de l'événement à l'agent contrôleur. C'est pratique si vous n'avez pas Orange Money ou si vous préférez payer le jour J. Attention : votre place n'est pas garantie si vous n'arrivez pas avant l'heure de fermeture des portes.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="achat">
+          <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
+            <span class="font-bold text-gray-900 text-sm md:text-base">Puis-je être remboursé d'un billet ?</span>
+            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+          </button>
+          <div class="faq-answer px-5 pb-5">
+            <p class="text-sm text-gray-600 leading-relaxed">
+              En principe, les billets ne sont pas remboursables. Cependant, un remboursement intégral est garanti dans certains cas (annulation par l'organisateur, report refusé, erreur technique). Consultez notre <a href="remboursements.html" class="text-primary underline font-semibold">Politique de Remboursements</a> pour tous les détails.
+            </p>
+          </div>
+        </div>
+
+        <!-- ──────── BILLETS ──────── -->
+        <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="billet">
+          <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
+            <span class="font-bold text-gray-900 text-sm md:text-base">Où trouver mes billets après un achat ?</span>
+            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+          </button>
+          <div class="faq-answer px-5 pb-5">
+            <p class="text-sm text-gray-600 leading-relaxed">
+              Tous vos billets sont dans votre <strong>tableau de bord personnel</strong>, section <strong>"Mes billets"</strong>. Chaque billet a son propre QR code à présenter à l'entrée de l'événement.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="billet">
+          <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
+            <span class="font-bold text-gray-900 text-sm md:text-base">Comment présenter mon billet à l'entrée ?</span>
+            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+          </button>
+          <div class="faq-answer px-5 pb-5">
+            <p class="text-sm text-gray-600 leading-relaxed">
+              Affichez simplement votre QR code à l'écran de votre téléphone (depuis la section "Mes billets"). L'agent à l'entrée le scannera. C'est tout ! Pas besoin d'imprimer.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="billet">
+          <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
+            <span class="font-bold text-gray-900 text-sm md:text-base">Puis-je revendre ou transférer mon billet ?</span>
+            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+          </button>
+          <div class="faq-answer px-5 pb-5">
+            <p class="text-sm text-gray-600 leading-relaxed">
+              Pour des raisons de sécurité, les billets GoEvent <strong>ne sont pas transférables</strong> aux tiers. Chaque QR code est unique et lié à votre compte. Une fonctionnalité de revente sécurisée entre utilisateurs sera ajoutée à l'avenir.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="billet">
+          <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
+            <span class="font-bold text-gray-900 text-sm md:text-base">Que faire si mon téléphone est déchargé à l'entrée ?</span>
+            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+          </button>
+          <div class="faq-answer px-5 pb-5">
+            <p class="text-sm text-gray-600 leading-relaxed">
+              Pensez à <strong>charger votre téléphone</strong> avant l'événement, ou prenez une <strong>capture d'écran</strong> de votre QR code à l'avance. Si vous arrivez sans accès à votre billet, l'organisateur peut éventuellement vous identifier via votre nom et numéro, mais cela n'est pas garanti.
+            </p>
+          </div>
+        </div>
+
+        <!-- ──────── ORGANISATEURS ──────── -->
+        <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="orga">
+          <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
+            <span class="font-bold text-gray-900 text-sm md:text-base">Comment devenir organisateur sur GoEvent ?</span>
+            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+          </button>
+          <div class="faq-answer px-5 pb-5">
+            <p class="text-sm text-gray-600 leading-relaxed">
+              Visitez notre page <a href="partenaire.html" class="text-primary underline font-semibold">Devenir partenaire</a> et soumettez votre candidature. Notre équipe vous contactera sous 48h pour valider votre compte organisateur. Pendant la phase bêta (mai 2026), <strong>seuls 5 partenaires fondateurs</strong> sont sélectionnés avec des conditions exceptionnelles.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="orga">
+          <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
+            <span class="font-bold text-gray-900 text-sm md:text-base">Quelles sont les commissions GoEvent ?</span>
+            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+          </button>
+          <div class="faq-answer px-5 pb-5">
+            <p class="text-sm text-gray-600 leading-relaxed">
+              GoEvent prélève <strong>7%</strong> sur chaque billet vendu, sans frais fixes ni abonnement. Pour nos <strong>partenaires fondateurs</strong> (5 premiers organisateurs), nous offrons <strong>0% de commission sur les 3 premiers événements</strong>.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="orga">
+          <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
+            <span class="font-bold text-gray-900 text-sm md:text-base">Quand reçois-je le paiement de mon événement ?</span>
+            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+          </button>
+          <div class="faq-answer px-5 pb-5">
+            <p class="text-sm text-gray-600 leading-relaxed">
+              Une fois votre événement terminé, vous pouvez demander le versement de votre cagnotte depuis votre tableau de bord organisateur. Le versement est effectué sur votre numéro Orange Money sous <strong>48 heures ouvrables</strong> après validation par l'admin.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="orga">
+          <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
+            <span class="font-bold text-gray-900 text-sm md:text-base">Comment ajouter un agent contrôleur ?</span>
+            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+          </button>
+          <div class="faq-answer px-5 pb-5">
+            <p class="text-sm text-gray-600 leading-relaxed">
+              Depuis votre tableau de bord organisateur, allez dans la section <strong>"Mon Équipe"</strong>. Cliquez sur <strong>"Ajouter un agent"</strong>, renseignez son nom, numéro de téléphone et un PIN à 4 chiffres. L'agent pourra ensuite se connecter avec ces identifiants pour scanner les billets de votre événement.
+            </p>
+          </div>
+        </div>
+
+        <!-- ──────── AUTRES ──────── -->
+        <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="autre">
+          <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
+            <span class="font-bold text-gray-900 text-sm md:text-base">L'application fonctionne-t-elle hors-ligne ?</span>
+            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+          </button>
+          <div class="faq-answer px-5 pb-5">
+            <p class="text-sm text-gray-600 leading-relaxed">
+              GoEvent est une <strong>Progressive Web App (PWA)</strong> : une fois la page chargée, certaines fonctions restent accessibles même sans connexion. Cependant, l'achat de billets et le scan à l'entrée nécessitent actuellement une connexion. Un mode hors-ligne complet est en développement.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="autre">
+          <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
+            <span class="font-bold text-gray-900 text-sm md:text-base">Mes données personnelles sont-elles sécurisées ?</span>
+            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+          </button>
+          <div class="faq-answer px-5 pb-5">
+            <p class="text-sm text-gray-600 leading-relaxed">
+              Oui, totalement. Vos mots de passe sont chiffrés avec bcrypt (algorithme bancaire), toutes les communications sont en HTTPS, et nous ne vendons <strong>jamais</strong> vos données. Consultez notre <a href="confidentialite.html" class="text-primary underline font-semibold">Politique de Confidentialité</a> pour tous les détails.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="autre">
+          <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
+            <span class="font-bold text-gray-900 text-sm md:text-base">GoEvent est-il disponible dans d'autres pays ?</span>
+            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+          </button>
+          <div class="faq-answer px-5 pb-5">
+            <p class="text-sm text-gray-600 leading-relaxed">
+              Pour l'instant, GoEvent est <strong>exclusivement disponible en République Centrafricaine</strong>. Nous prévoyons une expansion progressive vers les pays de la zone CEMAC (Cameroun, Gabon, Congo-Brazzaville, Tchad) à partir de 2027.
+            </p>
+          </div>
+        </div>
+
+        <!-- AUCUN RÉSULTAT -->
+        <div id="no-results" class="hidden text-center py-12">
+          <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span class="material-symbols-outlined text-3xl text-gray-400">search_off</span>
+          </div>
+          <p class="text-lg font-bold text-gray-900 mb-2">Aucun résultat trouvé</p>
+          <p class="text-sm text-gray-500">Essayez d'autres mots-clés ou contactez-nous directement.</p>
+        </div>
+      </div>
+
+      <!-- ━━━━━━━━━ BLOC CONTACT WHATSAPP ━━━━━━━━━ -->
+      <div class="bg-gradient-to-br from-primary to-primary-container rounded-3xl p-8 md:p-10 text-white text-center shadow-xl shadow-primary/20">
+        <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+          <span class="material-symbols-outlined text-3xl">support_agent</span>
+        </div>
+        <h2 class="text-2xl md:text-3xl font-black font-headline mb-3">
+          Vous n'avez pas trouvé votre réponse ?
+        </h2>
+        <p class="text-white/90 mb-6 max-w-md mx-auto">
+          Notre équipe est là pour vous aider. Contactez-nous directement, on vous répond rapidement.
+        </p>
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <button
+            onclick="contactWhatsApp()"
+            class="px-6 py-3.5 bg-green-500 hover:bg-green-600 text-white font-bold rounded-full shadow-lg shadow-green-500/30 active:scale-95 transition-all flex items-center gap-2"
+          >
+            <span class="material-symbols-outlined">chat</span>
+            Support WhatsApp
+          </button>
+          <a
+            href="mailto:emmanuel.madoukou30@gmail.com"
+            class="px-6 py-3.5 bg-white text-primary font-bold rounded-full shadow-lg active:scale-95 transition-all flex items-center gap-2 hover:bg-gray-50"
+          >
+            <span class="material-symbols-outlined">mail</span>
+            Nous écrire
+          </a>
+          <a
+            href="feedback.html"
+            class="px-6 py-3.5 border-2 border-white/30 text-white font-bold rounded-full active:scale-95 transition-all flex items-center gap-2 hover:bg-white/10"
+          >
+            <span class="material-symbols-outlined">forum</span>
+            Donner mon avis
+          </a>
+        </div>
+      </div>
+    </main>
+
+    <!-- MODALE INFO WHATSAPP -->
+    <div id="whatsapp-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 items-center justify-center p-4 hidden">
+      <div class="bg-white rounded-3xl max-w-md w-full p-8 relative shadow-2xl">
+        <button onclick="closeWhatsAppModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+
+        <div class="text-center">
+          <div class="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span class="material-symbols-outlined text-4xl text-green-500">schedule</span>
+          </div>
+          <h3 class="text-2xl font-black text-gray-900 font-headline mb-3">
+            Support WhatsApp bientôt disponible
+          </h3>
+          <p class="text-gray-600 mb-6 leading-relaxed">
+            Notre numéro WhatsApp Business RCA sera disponible <strong>dès le 5 mai 2026</strong>, juste après notre arrivée à Bangui.
+          </p>
+          <div class="bg-emerald-50 rounded-2xl p-4 mb-6 text-left">
+            <p class="text-xs font-bold uppercase tracking-widest text-primary mb-2">En attendant, contactez-nous :</p>
+            <a href="mailto:emmanuel.madoukou30@gmail.com" class="flex items-center gap-3 text-sm font-semibold text-gray-700 hover:text-primary transition-colors">
+              <span class="material-symbols-outlined">mail</span>
+              emmanuel.madoukou30@gmail.com
+            </a>
+          </div>
+          <button onclick="closeWhatsAppModal()" class="w-full py-3 bg-primary text-white font-bold rounded-xl hover:bg-primary-container active:scale-95 transition-all">
+            J'ai compris
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="footer"></div>
+
+    <script src="bt-api.js"></script>
+    <script src="pwa.js"></script>
+    <script>
+      // Injection navbar/footer
+      document.getElementById("navbar").innerHTML = btNavbar();
+      document.getElementById("footer").innerHTML = btFooter();
+
+      // ── Toggle FAQ ─────────────────────────────
+      function toggleFaq(button) {
+        const item = button.parentElement;
+        item.classList.toggle("open");
+      }
+
+      // ── Filtre catégorie ─────────────────────────────
+      function filterCategory(cat) {
+        // Mettre à jour le bouton actif
+        document.querySelectorAll(".category-pill").forEach(p => {
+          p.classList.toggle("active", p.dataset.cat === cat);
+        });
+
+        // Filtrer les FAQ
+        const items = document.querySelectorAll(".faq-item");
+        items.forEach(item => {
+          if (cat === "all" || item.dataset.cat === cat) {
+            item.style.display = "";
+          } else {
+            item.style.display = "none";
+          }
+        });
+
+        // Reset recherche
+        document.getElementById("faq-search").value = "";
+        document.getElementById("faq-clear").classList.add("hidden");
+        document.getElementById("no-results").classList.add("hidden");
+      }
+
+      // ── Recherche ─────────────────────────────
+      function filterFaq() {
+        const query = document.getElementById("faq-search").value.toLowerCase().trim();
+        const clearBtn = document.getElementById("faq-clear");
+        const noResults = document.getElementById("no-results");
+        const items = document.querySelectorAll(".faq-item");
+
+        clearBtn.classList.toggle("hidden", query === "");
+
+        // Reset filtre catégorie quand on recherche
+        if (query) {
+          document.querySelectorAll(".category-pill").forEach(p => {
+            p.classList.toggle("active", p.dataset.cat === "all");
+          });
+        }
+
+        let foundCount = 0;
+        items.forEach(item => {
+          const text = item.textContent.toLowerCase();
+          if (query === "" || text.includes(query)) {
+            item.style.display = "";
+            foundCount++;
+            // Auto-ouvrir le premier résultat si recherche
+            if (query && foundCount === 1) {
+              item.classList.add("open");
+            }
+          } else {
+            item.style.display = "none";
+            item.classList.remove("open");
+          }
+        });
+
+        // Afficher message "pas de résultat"
+        noResults.classList.toggle("hidden", foundCount > 0 || query === "");
+      }
+
+      function clearSearch() {
+        document.getElementById("faq-search").value = "";
+        document.getElementById("faq-clear").classList.add("hidden");
+        document.getElementById("no-results").classList.add("hidden");
+
+        // Réafficher tout
+        document.querySelectorAll(".faq-item").forEach(item => {
+          item.style.display = "";
+          item.classList.remove("open");
+        });
+
+        // Reset filtre catégorie
+        document.querySelectorAll(".category-pill").forEach(p => {
+          p.classList.toggle("active", p.dataset.cat === "all");
+        });
+      }
+
+      // ── WhatsApp Modal ─────────────────────────────
+      function contactWhatsApp() {
+        const modal = document.getElementById("whatsapp-modal");
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+      }
+
+      function closeWhatsAppModal() {
+        const modal = document.getElementById("whatsapp-modal");
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+      }
+
+      // Fermer la modale en cliquant en dehors
+      document.getElementById("whatsapp-modal").addEventListener("click", (e) => {
+        if (e.target.id === "whatsapp-modal") closeWhatsAppModal();
+      });
+
+      // Fermer avec Escape
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeWhatsAppModal();
+      });
+    </script>
+  </body>
+</html>

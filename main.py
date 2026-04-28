@@ -2642,3 +2642,30 @@ def delete_feedback(
     db.commit()
     
     return {"status": "success", "message": "Feedback supprimé"}
+
+# ════════════════════════════════════════════════════════════════
+# STATS PUBLIQUES (page À propos)
+# ════════════════════════════════════════════════════════════════
+@app.get("/stats/public")
+def get_public_stats(db: Session = Depends(get_db)):
+    """
+    Stats publiques pour la page À propos.
+    Utilisées avec un système de seuils pour basculer automatiquement
+    entre affichage "valeurs" (Stratégie B) et "chiffres" (Stratégie A).
+    """
+    total_events = db.query(Event).filter(Event.is_active == True).count()
+    
+    total_tickets = db.query(Ticket).filter(
+        Ticket.payment_status.in_(["paye", "paye_cash"])
+    ).count()
+    
+    total_organizers = db.query(User).filter(
+        User.role.in_(["organizer", "organisation"]),
+        User.is_active == True
+    ).count()
+    
+    return {
+        "events": total_events,
+        "tickets_sold": total_tickets,
+        "organizers": total_organizers
+    }

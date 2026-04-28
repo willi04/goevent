@@ -433,40 +433,88 @@
         <div class="max-w-5xl mx-auto">
           <div
             class="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 text-center"
+            id="stats-grid"
           >
-            <div>
-              <div
-                class="text-3xl md:text-4xl font-extrabold text-white mb-1 md:mb-2"
-              >
-                500+
+            <!-- Stat 1 : Événements -->
+            <div id="stat-card-events" class="stat-card">
+              <div class="flex justify-center mb-2 md:mb-3">
+                <span
+                  class="material-symbols-outlined text-4xl md:text-5xl text-white/90"
+                  style="font-variation-settings: 'FILL' 0, 'wght' 300"
+                  >celebration</span
+                >
               </div>
-              <div class="text-primary-fixed text-xs md:text-sm font-medium">
-                Événements organisés
+              <div
+                id="stat-events-value"
+                class="text-2xl md:text-3xl font-extrabold text-white mb-1"
+              >
+                <span class="inline-block w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+              </div>
+              <div
+                id="stat-events-label"
+                class="text-primary-fixed text-xs md:text-sm font-medium"
+              >
+                Chargement...
               </div>
             </div>
-            <div>
-              <div
-                class="text-3xl md:text-4xl font-extrabold text-white mb-1 md:mb-2"
-              >
-                50K+
+
+            <!-- Stat 2 : Billets -->
+            <div id="stat-card-tickets" class="stat-card">
+              <div class="flex justify-center mb-2 md:mb-3">
+                <span
+                  class="material-symbols-outlined text-4xl md:text-5xl text-white/90"
+                  style="font-variation-settings: 'FILL' 0, 'wght' 300"
+                  >confirmation_number</span
+                >
               </div>
-              <div class="text-primary-fixed text-xs md:text-sm font-medium">
-                Billets vendus
+              <div
+                id="stat-tickets-value"
+                class="text-2xl md:text-3xl font-extrabold text-white mb-1"
+              >
+                <span class="inline-block w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+              </div>
+              <div
+                id="stat-tickets-label"
+                class="text-primary-fixed text-xs md:text-sm font-medium"
+              >
+                Chargement...
               </div>
             </div>
-            <div>
-              <div
-                class="text-3xl md:text-4xl font-extrabold text-white mb-1 md:mb-2"
-              >
-                200+
+
+            <!-- Stat 3 : Organisateurs -->
+            <div id="stat-card-organizers" class="stat-card">
+              <div class="flex justify-center mb-2 md:mb-3">
+                <span
+                  class="material-symbols-outlined text-4xl md:text-5xl text-white/90"
+                  style="font-variation-settings: 'FILL' 0, 'wght' 300"
+                  >groups</span
+                >
               </div>
-              <div class="text-primary-fixed text-xs md:text-sm font-medium">
-                Artistes & Orgas
+              <div
+                id="stat-organizers-value"
+                class="text-2xl md:text-3xl font-extrabold text-white mb-1"
+              >
+                <span class="inline-block w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+              </div>
+              <div
+                id="stat-organizers-label"
+                class="text-primary-fixed text-xs md:text-sm font-medium"
+              >
+                Chargement...
               </div>
             </div>
-            <div>
+
+            <!-- Stat 4 : Toujours fixe -->
+            <div class="stat-card">
+              <div class="flex justify-center mb-2 md:mb-3">
+                <span
+                  class="material-symbols-outlined text-4xl md:text-5xl text-white/90"
+                  style="font-variation-settings: 'FILL' 0, 'wght' 300"
+                  >payments</span
+                >
+              </div>
               <div
-                class="text-3xl md:text-4xl font-extrabold text-white mb-1 md:mb-2"
+                class="text-2xl md:text-3xl font-extrabold text-white mb-1"
               >
                 100%
               </div>
@@ -565,6 +613,109 @@
       // NOUVEAU : On s'assure d'exécuter cette vérification dès que la page s'ouvre !
       document.addEventListener("DOMContentLoaded", renderMobileAuth);
       document.getElementById("footer").innerHTML = btFooter();
+
+      // ════════════════════════════════════════════════════════
+      // STATS DYNAMIQUES — STRATÉGIE HYBRIDE A/B
+      // ════════════════════════════════════════════════════════
+      // Si seuils atteints → affichage chiffres réels (Stratégie A)
+      // Sinon → affichage valeurs/forces (Stratégie B)
+      // ════════════════════════════════════════════════════════
+
+      // Seuils à partir desquels on bascule en Stratégie A
+      const STAT_THRESHOLDS = {
+        events: 20,
+        tickets: 200,
+        organizers: 15
+      };
+
+      // Valeurs de fallback (Stratégie B) — affichées tant que les seuils ne sont pas atteints
+      const STAT_FALLBACKS = {
+        events: { value: "🇨🇫", label: "Made in Centrafrique", icon: "celebration" },
+        tickets: { value: "Mai 2026", label: "Lancement bêta", icon: "confirmation_number" },
+        organizers: { value: "0%", label: "Fraude QR code", icon: "groups" }
+      };
+
+      function formatNumber(n) {
+        if (n === 0) return "0";
+        if (n < 1000) return n.toString();
+        if (n < 10000) return (n / 1000).toFixed(1).replace(".0", "") + "K";
+        return Math.floor(n / 1000) + "K";
+      }
+
+      function animateCount(elementId, finalValue) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+
+        if (finalValue === 0) {
+          el.textContent = "0";
+          return;
+        }
+
+        const duration = 1500;
+        const steps = 30;
+        const stepDuration = duration / steps;
+        let current = 0;
+
+        const interval = setInterval(() => {
+          current += finalValue / steps;
+          if (current >= finalValue) {
+            el.textContent = formatNumber(finalValue) + "+";
+            clearInterval(interval);
+          } else {
+            el.textContent = formatNumber(Math.floor(current));
+          }
+        }, stepDuration);
+      }
+
+      function setStatA(statKey, value, label) {
+        // Stratégie A : afficher le chiffre réel animé
+        document.getElementById("stat-" + statKey + "-label").textContent = label;
+        animateCount("stat-" + statKey + "-value", value);
+      }
+
+      function setStatB(statKey) {
+        // Stratégie B : afficher la valeur de fallback
+        const fb = STAT_FALLBACKS[statKey];
+        const valEl = document.getElementById("stat-" + statKey + "-value");
+        const labelEl = document.getElementById("stat-" + statKey + "-label");
+        if (valEl) valEl.textContent = fb.value;
+        if (labelEl) labelEl.textContent = fb.label;
+      }
+
+      async function loadPublicStats() {
+        try {
+          const stats = await btApi.get("/stats/public");
+
+          // Pour chaque stat : si seuil atteint → Stratégie A, sinon → Stratégie B
+          if (stats.events >= STAT_THRESHOLDS.events) {
+            setStatA("events", stats.events, "Événements publiés");
+          } else {
+            setStatB("events");
+          }
+
+          if (stats.tickets_sold >= STAT_THRESHOLDS.tickets) {
+            setStatA("tickets", stats.tickets_sold, "Billets vendus");
+          } else {
+            setStatB("tickets");
+          }
+
+          if (stats.organizers >= STAT_THRESHOLDS.organizers) {
+            setStatA("organizers", stats.organizers, "Organisateurs actifs");
+          } else {
+            setStatB("organizers");
+          }
+
+        } catch (error) {
+          console.error("Erreur chargement stats:", error);
+          // En cas d'erreur API : afficher les valeurs de fallback
+          setStatB("events");
+          setStatB("tickets");
+          setStatB("organizers");
+        }
+      }
+
+      // Charger les stats au démarrage
+      loadPublicStats();
     </script>
   </body>
 </html>

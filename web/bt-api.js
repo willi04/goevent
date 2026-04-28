@@ -364,9 +364,9 @@ function btFooter() {
     "<div>" +
     '<h4 class="font-headline text-xs font-bold tracking-widest uppercase text-emerald-900 mb-6">Légal</h4>' +
     '<ul class="space-y-3 text-sm text-neutral-500 mb-6">' +
-    '<li><a href="#" class="hover:text-primary transition-colors">Conditions Générales</a></li>' +
-    '<li><a href="#" class="hover:text-primary transition-colors">Confidentialité</a></li>' +
-    '<li><a href="#" class="hover:text-primary transition-colors">Remboursements</a></li>' +
+    '<li><a href="cgu.html" class="hover:text-primary transition-colors">Conditions Générales</a></li>' +
+    '<li><a href="confidentialite.html" class="hover:text-primary transition-colors">Confidentialité</a></li>' +
+    '<li><a href="remboursements.html" class="hover:text-primary transition-colors">Remboursements</a></li>' +
     "</ul>" +
     '<div class="bg-neutral-200 p-4 rounded-xl">' +
     '<div class="flex items-center gap-2 text-emerald-900 mb-1">' +

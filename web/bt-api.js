@@ -356,8 +356,8 @@ function btFooter() {
     '<ul class="space-y-3 text-sm text-neutral-500">' +
     '<li><a href="feedback.html" class="hover:text-primary transition-colors">Feedback</a></li>' +
     '<li><a href="feedback.html#noter" class="hover:text-primary transition-colors">Noter l\'application</a></li>' +
-    '<li><a href="#" class="hover:text-primary transition-colors">Centre d\'aide</a></li>' +
-    '<li><a href="#" class="hover:text-primary transition-colors">Support WhatsApp</a></li>' +
+    '<li><a href="centre_aide.html" class="hover:text-primary transition-colors">Centre d\'aide</a></li>' +
+    '<li><a href="centre_aide.html" class="hover:text-primary transition-colors">Support WhatsApp</a></li>' +
     "</ul>" +
     "</div>" +
     // Légal + paiement

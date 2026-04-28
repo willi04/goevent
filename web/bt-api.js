@@ -77,6 +77,9 @@ var btApi = {
   put: function (p, b) {
     return btFetch(p, { method: "PUT", body: b });
   },
+  patch: function (p, b) {
+    return btFetch(p, { method: "PATCH", body: b });
+  },
   delete: function (p) {
     return btFetch(p, { method: "DELETE" });
   },

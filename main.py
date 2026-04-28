@@ -750,6 +750,8 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # ── CORS SÉCURISÉ ─────────────────────────────────────────────
 ALLOWED_ORIGINS = [
+    "https://goevent.africa",
+    "https://www.goevent.africa",
     "https://goevent-core.vercel.app",
     "https://goevent.africa",
     "https://www.goevent.africa",

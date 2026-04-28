@@ -183,6 +183,29 @@ class CancellationRequest(Base):
     event = relationship("Event")
     organizer = relationship("User")
 
+# ──────────────────────────────────────────────────────────
+# FEEDBACK
+# ──────────────────────────────────────────────────────────
+class Feedback(Base):
+    __tablename__ = "feedbacks"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    
+    rating = Column(Integer, nullable=True)
+    category = Column(String, nullable=True)
+    message = Column(Text, nullable=False)
+    email_contact = Column(String, nullable=True)
+    
+    user_agent = Column(String, nullable=True)
+    page_origin = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    status = Column(String, default="nouveau")  # nouveau, lu, traite, ignore
+    admin_note = Column(Text, nullable=True)
+    read_at = Column(DateTime, nullable=True)
+    
+    user = relationship("User", foreign_keys=[user_id])
+
 # ═══════════════════════════════════════════════════════════════
 # CMS HOMEPAGE — Préparation pour futures fonctionnalités admin
 # (Tables créées maintenant, routes à implémenter en septembre 2026)
@@ -598,6 +621,18 @@ class AgentCreate(BaseModel):
 class PinChange(BaseModel):
     old_pin: str
     new_pin: str
+
+class FeedbackCreate(BaseModel):
+    rating: Optional[int] = None
+    category: Optional[str] = None
+    message: str
+    email_contact: Optional[str] = None
+    page_origin: Optional[str] = None
+
+
+class FeedbackUpdate(BaseModel):
+    status: Optional[str] = None
+    admin_note: Optional[str] = None
 
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None
@@ -2385,3 +2420,225 @@ def test_confirm_payment(
         "qr_hash": new_ticket.qr_hash,
         "amount": int(total_a_payer),
     }
+
+# ════════════════════════════════════════════════════════════════
+# FEEDBACK ROUTES
+# ════════════════════════════════════════════════════════════════
+
+# ── PUBLIC : Soumettre un feedback ──
+@app.post("/feedback")
+@limiter.limit("5/hour")
+def submit_feedback(
+    request: Request,
+    data: FeedbackCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_optional_user)
+):
+    if not data.message or len(data.message.strip()) < 5:
+        raise HTTPException(400, "Le message doit contenir au moins 5 caractères")
+    if len(data.message) > 5000:
+        raise HTTPException(400, "Le message est trop long (max 5000 caractères)")
+    if data.rating is not None and (data.rating < 1 or data.rating > 5):
+        raise HTTPException(400, "La note doit être entre 1 et 5")
+    
+    user_agent = request.headers.get("User-Agent", "")[:500]
+    
+    new_feedback = Feedback(
+        user_id=current_user.id if current_user else None,
+        rating=data.rating,
+        category=data.category,
+        message=data.message.strip(),
+        email_contact=data.email_contact.strip() if data.email_contact else None,
+        user_agent=user_agent,
+        page_origin=data.page_origin,
+        status="nouveau"
+    )
+    db.add(new_feedback)
+    db.commit()
+    db.refresh(new_feedback)
+    
+    log_security_event(
+        db, "feedback_submitted", request,
+        current_user.id if current_user else None,
+        f"Feedback #{new_feedback.id} - rating: {data.rating}"
+    )
+    
+    return {
+        "status": "success",
+        "message": "Merci pour votre feedback !",
+        "feedback_id": new_feedback.id
+    }
+
+
+# ── PUBLIC : Récupérer les avis positifs (pour la page feedback) ──
+@app.get("/feedback/community")
+def get_community_feedbacks(limit: int = 5, db: Session = Depends(get_db)):
+    """
+    Renvoie les feedbacks publics avec rating >= 4 pour affichage sur la page feedback.
+    Inclut le nom et le rôle de l'utilisateur (si connecté lors du feedback).
+    """
+    feedbacks = db.query(Feedback).filter(
+        Feedback.rating >= 4,
+        Feedback.status != "ignore"
+    ).order_by(Feedback.created_at.desc()).limit(limit).all()
+    
+    items = []
+    for f in feedbacks:
+        author_name = "Utilisateur"
+        author_initials = "??"
+        author_role = None
+        
+        if f.user_id:
+            u = db.query(User).filter(User.id == f.user_id).first()
+            if u and u.full_name:
+                # Initiales + prénom + initiale du nom
+                parts = u.full_name.strip().split()
+                if len(parts) >= 2:
+                    author_name = f"{parts[0]} {parts[1][0]}."
+                    author_initials = f"{parts[0][0]}{parts[1][0]}".upper()
+                else:
+                    author_name = parts[0]
+                    author_initials = parts[0][:2].upper()
+                author_role = u.role
+        
+        items.append({
+            "id": f.id,
+            "rating": f.rating,
+            "message": f.message,
+            "author_name": author_name,
+            "author_initials": author_initials,
+            "author_role": author_role,
+            "created_at": f.created_at.isoformat() if f.created_at else None,
+        })
+    
+    return items
+
+
+# ── ADMIN : Lister les feedbacks ──
+@app.get("/admin/feedbacks")
+def list_feedbacks(
+    status: Optional[str] = None,
+    category: Optional[str] = None,
+    rating: Optional[int] = None,
+    limit: int = 50,
+    offset: int = 0,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != "admin":
+        raise HTTPException(403, "Accès réservé aux administrateurs")
+    
+    query = db.query(Feedback)
+    if status:
+        query = query.filter(Feedback.status == status)
+    if category:
+        query = query.filter(Feedback.category == category)
+    if rating is not None:
+        query = query.filter(Feedback.rating == rating)
+    
+    query = query.order_by(
+        Feedback.status == "nouveau",
+        Feedback.created_at.desc()
+    )
+    
+    total = query.count()
+    feedbacks = query.offset(offset).limit(limit).all()
+    
+    stats = {
+        "total": db.query(Feedback).count(),
+        "nouveau": db.query(Feedback).filter(Feedback.status == "nouveau").count(),
+        "lu": db.query(Feedback).filter(Feedback.status == "lu").count(),
+        "traite": db.query(Feedback).filter(Feedback.status == "traite").count(),
+        "ignore": db.query(Feedback).filter(Feedback.status == "ignore").count(),
+    }
+    
+    rated = db.query(Feedback).filter(Feedback.rating.isnot(None)).all()
+    if rated:
+        stats["avg_rating"] = round(sum(f.rating for f in rated) / len(rated), 2)
+        stats["total_rated"] = len(rated)
+    else:
+        stats["avg_rating"] = None
+        stats["total_rated"] = 0
+    
+    items = []
+    for f in feedbacks:
+        user_info = None
+        if f.user_id:
+            u = db.query(User).filter(User.id == f.user_id).first()
+            if u:
+                user_info = {
+                    "id": u.id,
+                    "name": u.full_name,
+                    "phone": u.phone_number,
+                    "email": u.email,
+                    "role": u.role
+                }
+        
+        items.append({
+            "id": f.id,
+            "rating": f.rating,
+            "category": f.category,
+            "message": f.message,
+            "email_contact": f.email_contact,
+            "user_agent": f.user_agent,
+            "page_origin": f.page_origin,
+            "status": f.status,
+            "admin_note": f.admin_note,
+            "created_at": f.created_at.isoformat() if f.created_at else None,
+            "read_at": f.read_at.isoformat() if f.read_at else None,
+            "user": user_info
+        })
+    
+    return {"items": items, "total": total, "stats": stats}
+
+
+# ── ADMIN : Mettre à jour un feedback ──
+@app.patch("/admin/feedbacks/{feedback_id}")
+def update_feedback(
+    feedback_id: int,
+    data: FeedbackUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != "admin":
+        raise HTTPException(403, "Accès réservé aux administrateurs")
+    
+    fb = db.query(Feedback).filter(Feedback.id == feedback_id).first()
+    if not fb:
+        raise HTTPException(404, "Feedback introuvable")
+    
+    if data.status:
+        valid = ["nouveau", "lu", "traite", "ignore"]
+        if data.status not in valid:
+            raise HTTPException(400, f"Statut invalide. Valeurs: {valid}")
+        if fb.status == "nouveau" and data.status != "nouveau" and not fb.read_at:
+            fb.read_at = datetime.utcnow()
+        fb.status = data.status
+    
+    if data.admin_note is not None:
+        fb.admin_note = data.admin_note
+    
+    db.commit()
+    db.refresh(fb)
+    
+    return {"status": "success", "feedback_id": fb.id, "new_status": fb.status}
+
+
+# ── ADMIN : Supprimer un feedback ──
+@app.delete("/admin/feedbacks/{feedback_id}")
+def delete_feedback(
+    feedback_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != "admin":
+        raise HTTPException(403, "Accès réservé aux administrateurs")
+    
+    fb = db.query(Feedback).filter(Feedback.id == feedback_id).first()
+    if not fb:
+        raise HTTPException(404, "Feedback introuvable")
+    
+    db.delete(fb)
+    db.commit()
+    
+    return {"status": "success", "message": "Feedback supprimé"}

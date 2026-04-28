@@ -318,6 +318,15 @@
         >
           <span class="material-symbols-outlined text-lg">badge</span> Équipe
         </button>
+        <button
+          onclick="showTab('feedbacks')"
+          data-tab="feedbacks"
+          class="tab-btn w-full text-left flex items-center gap-3"
+        >
+          <span class="material-symbols-outlined text-lg">forum</span>
+          <span>Feedbacks</span>
+          <span id="badge-feedbacks-new" class="ml-auto bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full hidden">0</span>
+        </button>
       </aside>
 
       <!-- Main content -->
@@ -372,6 +381,14 @@
             class="tab-btn flex-shrink-0"
           >
             Équipe
+          </button>
+          <button
+            onclick="showTab('feedbacks')"
+            data-tab="feedbacks"
+            class="tab-btn flex-shrink-0"
+          >
+            <span class="material-symbols-outlined text-lg">forum</span>
+            Feedbacks
           </button>
         </div>
 
@@ -679,6 +696,62 @@
             </div>
           </div>
         </section>
+        <!-- ━━━━━━━━━━━━━ SECTION FEEDBACKS ━━━━━━━━━━━━━ -->
+        <section id="section-feedbacks" class="section-hidden">
+          <div class="flex justify-between items-center mb-5 flex-wrap gap-3">
+            <h2 class="text-xl font-black text-gray-900">Feedbacks utilisateurs</h2>
+            <div class="flex items-center gap-2">
+              <select id="fb-filter-status" onchange="loadFeedbacks()" class="text-sm bg-white border border-gray-200 rounded-lg px-3 py-2">
+                <option value="">Tous les statuts</option>
+                <option value="nouveau">Nouveau</option>
+                <option value="lu">Lu</option>
+                <option value="traite">Traité</option>
+                <option value="ignore">Ignoré</option>
+              </select>
+              <select id="fb-filter-cat" onchange="loadFeedbacks()" class="text-sm bg-white border border-gray-200 rounded-lg px-3 py-2">
+                <option value="">Toutes catégories</option>
+                <option value="Suggestion d'amélioration">Suggestions</option>
+                <option value="Bug / Erreur technique">Bugs</option>
+                <option value="Félicitations">Félicitations</option>
+                <option value="Problème de paiement Orange Money">Problèmes paiement</option>
+                <option value="Autre">Autre</option>
+              </select>
+              <button onclick="loadFeedbacks()" class="action-btn btn-secondary flex items-center gap-2">
+                <span class="material-symbols-outlined text-base">refresh</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5">
+            <div class="card p-4">
+              <p class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Total</p>
+              <p class="text-2xl font-black" id="fb-stat-total">—</p>
+            </div>
+            <div class="card p-4 border-l-4 border-red-500">
+              <p class="text-xs font-bold uppercase tracking-widest text-red-600 mb-1">Nouveaux</p>
+              <p class="text-2xl font-black text-red-600" id="fb-stat-new">—</p>
+            </div>
+            <div class="card p-4 border-l-4 border-yellow-500">
+              <p class="text-xs font-bold uppercase tracking-widest text-yellow-700 mb-1">Lus</p>
+              <p class="text-2xl font-black text-yellow-700" id="fb-stat-read">—</p>
+            </div>
+            <div class="card p-4 border-l-4 border-green-500">
+              <p class="text-xs font-bold uppercase tracking-widest text-green-700 mb-1">Traités</p>
+              <p class="text-2xl font-black text-green-700" id="fb-stat-handled">—</p>
+            </div>
+            <div class="card p-4 border-l-4 border-primary">
+              <p class="text-xs font-bold uppercase tracking-widest text-primary mb-1">Note moyenne</p>
+              <p class="text-2xl font-black text-primary" id="fb-stat-avg">—</p>
+            </div>
+          </div>
+
+          <div id="feedbacks-list" class="space-y-3">
+            <div class="card p-6 empty-state">
+              <span class="material-symbols-outlined text-gray-300">hourglass_empty</span>
+              <p class="font-bold text-gray-400 mt-2">Chargement...</p>
+            </div>
+          </div>
+        </section>
       </main>
     </div>
 
@@ -809,6 +882,7 @@
         if (tab === "finance") loadFinance();
         if (tab === "partners") loadPartners();
         if (tab === "cancellations") loadCancellations();
+        if (tab === "feedbacks") loadFeedbacks();
       }
 
       // ── DASHBOARD ───────────────────────────────────────────────
@@ -1220,6 +1294,163 @@
           loadEvents(); // Rafraîchit aussi les stats de base
         } catch (error) {
           btToast(error.message || "Erreur lors de la suppression", "error");
+        }
+      }
+      // ════════════════════════════════════════════════════════
+      // GESTION DES FEEDBACKS
+      // ════════════════════════════════════════════════════════
+      async function loadFeedbacks() {
+        const statusFilter = document.getElementById("fb-filter-status").value;
+        const catFilter = document.getElementById("fb-filter-cat").value;
+        const listEl = document.getElementById("feedbacks-list");
+
+        listEl.innerHTML = '<div class="card p-6 empty-state"><span class="material-symbols-outlined text-gray-300">hourglass_empty</span><p class="font-bold text-gray-400 mt-2">Chargement...</p></div>';
+
+        try {
+          let url = "/admin/feedbacks?limit=100";
+          if (statusFilter) url += "&status=" + encodeURIComponent(statusFilter);
+          if (catFilter) url += "&category=" + encodeURIComponent(catFilter);
+
+          const data = await btApi.get(url);
+
+          document.getElementById("fb-stat-total").textContent = data.stats.total;
+          document.getElementById("fb-stat-new").textContent = data.stats.nouveau;
+          document.getElementById("fb-stat-read").textContent = data.stats.lu;
+          document.getElementById("fb-stat-handled").textContent = data.stats.traite;
+          document.getElementById("fb-stat-avg").textContent =
+            data.stats.avg_rating !== null ? data.stats.avg_rating + " ⭐" : "—";
+
+          const badge = document.getElementById("badge-feedbacks-new");
+          if (badge) {
+            if (data.stats.nouveau > 0) {
+              badge.textContent = data.stats.nouveau;
+              badge.classList.remove("hidden");
+            } else {
+              badge.classList.add("hidden");
+            }
+          }
+
+          if (data.items.length === 0) {
+            listEl.innerHTML = '<div class="card p-6 empty-state"><span class="material-symbols-outlined text-gray-300">inbox</span><p class="font-bold text-gray-400 mt-2">Aucun feedback ne correspond à vos filtres</p></div>';
+            return;
+          }
+
+          listEl.innerHTML = data.items.map(renderFeedbackCard).join("");
+        } catch (err) {
+          console.error("Erreur chargement feedbacks:", err);
+          listEl.innerHTML = '<div class="card p-6 empty-state"><span class="material-symbols-outlined text-red-300">error</span><p class="font-bold text-red-500 mt-2">Erreur de chargement</p><p class="text-sm text-gray-500">' + (err.message || "Erreur inconnue") + '</p></div>';
+        }
+      }
+
+      function renderFeedbackCard(fb) {
+        const date = new Date(fb.created_at).toLocaleString("fr-FR", {
+          day: "2-digit", month: "short", year: "numeric",
+          hour: "2-digit", minute: "2-digit",
+        });
+
+        const statusColors = {
+          nouveau: "bg-red-100 text-red-700 border-red-200",
+          lu: "bg-yellow-100 text-yellow-700 border-yellow-200",
+          traite: "bg-green-100 text-green-700 border-green-200",
+          ignore: "bg-gray-100 text-gray-500 border-gray-200",
+        };
+        const statusBadge = statusColors[fb.status] || statusColors.nouveau;
+
+        let stars = "";
+        if (fb.rating) {
+          for (let i = 1; i <= 5; i++) {
+            stars += '<span class="material-symbols-outlined text-base ' +
+                     (i <= fb.rating ? 'text-yellow-400' : 'text-gray-300') +
+                     '" style="font-variation-settings:\'FILL\' 1">star</span>';
+          }
+        } else {
+          stars = '<span class="text-xs text-gray-400 italic">Pas de note</span>';
+        }
+
+        let userInfo = "";
+        if (fb.user) {
+          userInfo = '<div class="flex items-center gap-2 text-xs text-gray-600 flex-wrap">' +
+            '<span class="material-symbols-outlined text-sm">account_circle</span>' +
+            '<strong>' + escapeHtmlAdmin(fb.user.name) + '</strong>' +
+            '<span class="text-gray-400">·</span>' +
+            '<span>' + escapeHtmlAdmin(fb.user.phone) + '</span>' +
+            (fb.user.email ? '<span class="text-gray-400">·</span><span>' + escapeHtmlAdmin(fb.user.email) + '</span>' : '') +
+            '<span class="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[10px] font-bold uppercase">' + fb.user.role + '</span>' +
+            '</div>';
+        } else {
+          userInfo = '<div class="flex items-center gap-2 text-xs text-gray-400 italic"><span class="material-symbols-outlined text-sm">person_off</span>Utilisateur non connecté</div>';
+        }
+
+        let emailContact = "";
+        if (fb.email_contact) {
+          emailContact = '<div class="flex items-center gap-2 text-xs text-blue-600 mt-1"><span class="material-symbols-outlined text-sm">mail</span><a href="mailto:' + fb.email_contact + '" class="underline hover:text-blue-800">' + escapeHtmlAdmin(fb.email_contact) + '</a></div>';
+        }
+
+        return '<div class="card p-5 ' + (fb.status === "nouveau" ? "border-l-4 border-red-500" : "") + '">' +
+          '<div class="flex justify-between items-start gap-4 mb-3 flex-wrap">' +
+            '<div class="flex-1 min-w-0">' +
+              '<div class="flex items-center gap-2 mb-1 flex-wrap">' +
+                '<span class="px-2 py-1 ' + statusBadge + ' border rounded-md text-[10px] font-bold uppercase tracking-wider">' + fb.status + '</span>' +
+                (fb.category ? '<span class="text-xs text-gray-500 font-medium">' + escapeHtmlAdmin(fb.category) + '</span>' : '') +
+                '<span class="text-xs text-gray-400">' + date + '</span>' +
+              '</div>' +
+              '<div class="flex items-center gap-1 mb-2">' + stars + '</div>' +
+              userInfo + emailContact +
+            '</div>' +
+          '</div>' +
+          '<div class="bg-gray-50 rounded-lg p-3 my-3">' +
+            '<p class="text-sm text-gray-800 whitespace-pre-wrap">' + escapeHtmlAdmin(fb.message) + '</p>' +
+          '</div>' +
+          (fb.admin_note ? '<div class="bg-yellow-50 border-l-4 border-yellow-400 rounded-r p-3 my-3"><p class="text-[11px] font-bold uppercase text-yellow-700 mb-1">Note admin</p><p class="text-sm text-yellow-900 whitespace-pre-wrap">' + escapeHtmlAdmin(fb.admin_note) + '</p></div>' : '') +
+          '<div class="flex flex-wrap gap-2 pt-3 border-t border-gray-100">' +
+            (fb.status === "nouveau" ? '<button onclick="updateFeedbackStatus(' + fb.id + ', \'lu\')" class="action-btn btn-secondary text-xs flex items-center gap-1"><span class="material-symbols-outlined text-sm">visibility</span> Marquer comme lu</button>' : '') +
+            (fb.status !== "traite" ? '<button onclick="updateFeedbackStatus(' + fb.id + ', \'traite\')" class="action-btn btn-primary text-xs flex items-center gap-1"><span class="material-symbols-outlined text-sm">check_circle</span> Traité</button>' : '') +
+            (fb.status !== "ignore" ? '<button onclick="updateFeedbackStatus(' + fb.id + ', \'ignore\')" class="action-btn btn-secondary text-xs flex items-center gap-1"><span class="material-symbols-outlined text-sm">block</span> Ignorer</button>' : '') +
+            '<button onclick="addAdminNote(' + fb.id + ')" class="action-btn btn-secondary text-xs flex items-center gap-1"><span class="material-symbols-outlined text-sm">edit_note</span> ' + (fb.admin_note ? 'Modifier' : 'Ajouter') + ' note</button>' +
+            '<button onclick="deleteFeedback(' + fb.id + ')" class="action-btn text-xs flex items-center gap-1 text-red-600 hover:bg-red-50 ml-auto"><span class="material-symbols-outlined text-sm">delete</span></button>' +
+          '</div>' +
+        '</div>';
+      }
+
+      function escapeHtmlAdmin(text) {
+        if (!text) return "";
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      async function updateFeedbackStatus(id, newStatus) {
+        try {
+          await btApi.patch("/admin/feedbacks/" + id, { status: newStatus });
+          if (typeof btToast === "function") btToast("Statut mis à jour", "success");
+          loadFeedbacks();
+        } catch (err) {
+          if (typeof btToast === "function") btToast(err.message || "Erreur", "error");
+        }
+      }
+
+      async function addAdminNote(id) {
+        const note = prompt("Note admin (interne, non visible par l'utilisateur) :");
+        if (note === null) return;
+
+        try {
+          await btApi.patch("/admin/feedbacks/" + id, { admin_note: note });
+          if (typeof btToast === "function") btToast("Note ajoutée", "success");
+          loadFeedbacks();
+        } catch (err) {
+          if (typeof btToast === "function") btToast(err.message || "Erreur", "error");
+        }
+      }
+
+      async function deleteFeedback(id) {
+        if (!confirm("Supprimer définitivement ce feedback ? Cette action est irréversible.")) return;
+
+        try {
+          await btApi.delete("/admin/feedbacks/" + id);
+          if (typeof btToast === "function") btToast("Feedback supprimé", "success");
+          loadFeedbacks();
+        } catch (err) {
+          if (typeof btToast === "function") btToast(err.message || "Erreur", "error");
         }
       }
     </script>

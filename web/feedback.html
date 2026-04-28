@@ -190,136 +190,18 @@
         <h2 class="text-2xl font-black font-headline mb-6 text-gray-900">
           Avis de la communauté
         </h2>
-        <div class="space-y-4">
+        <div id="community-feedbacks" class="space-y-4">
+          <!-- Skeleton de chargement -->
           <div
-            class="bg-white rounded-2xl p-5 border border-gray-100 flex gap-4 shadow-sm hover:shadow-md transition-shadow"
+            class="bg-white rounded-2xl p-5 border border-gray-100 animate-pulse"
           >
-            <div
-              class="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
-            >
-              JD
-            </div>
-            <div>
-              <p class="font-bold text-gray-900 text-sm">Jean-Dieudonné N.</p>
-              <div class="flex text-yellow-400 my-1">
-                <span
-                  class="material-symbols-outlined text-[16px]"
-                  style="font-variation-settings: &quot;FILL&quot; 1"
-                  >star</span
-                >
-                <span
-                  class="material-symbols-outlined text-[16px]"
-                  style="font-variation-settings: &quot;FILL&quot; 1"
-                  >star</span
-                >
-                <span
-                  class="material-symbols-outlined text--[16px]"
-                  style="font-variation-settings: &quot;FILL&quot; 1"
-                  >star</span
-                >
-                <span
-                  class="material-symbols-outlined text-[16px]"
-                  style="font-variation-settings: &quot;FILL&quot; 1"
-                  >star</span
-                >
-                <span
-                  class="material-symbols-outlined text-[16px]"
-                  style="font-variation-settings: &quot;FILL&quot; 1"
-                  >star</span
-                >
+            <div class="flex gap-4">
+              <div class="w-10 h-10 bg-gray-200 rounded-full shrink-0"></div>
+              <div class="flex-1 space-y-2">
+                <div class="h-4 bg-gray-200 rounded w-32"></div>
+                <div class="h-3 bg-gray-100 rounded w-full"></div>
+                <div class="h-3 bg-gray-100 rounded w-3/4"></div>
               </div>
-              <p class="text-sm text-gray-500 leading-relaxed">
-                Excellente application ! J'ai pu acheter mon billet pour le
-                Festival Sango Breeze en moins de 2 minutes.
-              </p>
-            </div>
-          </div>
-
-          <div
-            class="bg-white rounded-2xl p-5 border border-gray-100 flex gap-4 shadow-sm hover:shadow-md transition-shadow"
-          >
-            <div
-              class="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
-            >
-              MK
-            </div>
-            <div>
-              <p class="font-bold text-gray-900 text-sm">Marie-Claire K.</p>
-              <div class="flex text-yellow-400 my-1">
-                <span
-                  class="material-symbols-outlined text-[16px]"
-                  style="font-variation-settings: &quot;FILL&quot; 1"
-                  >star</span
-                >
-                <span
-                  class="material-symbols-outlined text-[16px]"
-                  style="font-variation-settings: &quot;FILL&quot; 1"
-                  >star</span
-                >
-                <span
-                  class="material-symbols-outlined text-[16px]"
-                  style="font-variation-settings: &quot;FILL&quot; 1"
-                  >star</span
-                >
-                <span
-                  class="material-symbols-outlined text-[16px]"
-                  style="font-variation-settings: &quot;FILL&quot; 1"
-                  >star</span
-                >
-                <span
-                  class="material-symbols-outlined text-[16px] text-gray-200"
-                  style="font-variation-settings: &quot;FILL&quot; 1"
-                  >star</span
-                >
-              </div>
-              <p class="text-sm text-gray-500 leading-relaxed">
-                Très pratique avec Orange Money. J'aimerais voir plus
-                d'événements de théâtre.
-              </p>
-            </div>
-          </div>
-
-          <div
-            class="bg-white rounded-2xl p-5 border border-gray-100 flex gap-4 shadow-sm hover:shadow-md transition-shadow"
-          >
-            <div
-              class="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
-            >
-              AB
-            </div>
-            <div>
-              <p class="font-bold text-gray-900 text-sm">Augustin B.</p>
-              <div class="flex text-yellow-400 my-1">
-                <span
-                  class="material-symbols-outlined text-[16px]"
-                  style="font-variation-settings: &quot;FILL&quot; 1"
-                  >star</span
-                >
-                <span
-                  class="material-symbols-outlined text-[16px]"
-                  style="font-variation-settings: &quot;FILL&quot; 1"
-                  >star</span
-                >
-                <span
-                  class="material-symbols-outlined text-[16px]"
-                  style="font-variation-settings: &quot;FILL&quot; 1"
-                  >star</span
-                >
-                <span
-                  class="material-symbols-outlined text-[16px]"
-                  style="font-variation-settings: &quot;FILL&quot; 1"
-                  >star</span
-                >
-                <span
-                  class="material-symbols-outlined text-[16px]"
-                  style="font-variation-settings: &quot;FILL&quot; 1"
-                  >star</span
-                >
-              </div>
-              <p class="text-sm text-gray-500 leading-relaxed">
-                En tant qu'organisateur, la plateforme est simple et efficace.
-                Je recommande !
-              </p>
             </div>
           </div>
         </div>
@@ -376,20 +258,139 @@
       document.addEventListener("DOMContentLoaded", function () {
         setStar(0);
       });
-      function submitFeedback() {
+      // 🔥 Soumission réelle à l'API
+      async function submitFeedback() {
         var msg = document.getElementById("fb-msg").value.trim();
+        var cat = document.getElementById("fb-cat").value;
+        var email = document.getElementById("fb-email").value.trim();
+
         if (!msg) {
           btToast("Écrivez votre message", "error");
           return;
         }
-        btToast(
-          "Merci pour votre feedback" +
-            " ⭐".repeat(selectedStar || 1) +
-            " Nous vous lisons !",
-        );
-        document.getElementById("fb-msg").value = "";
-        document.getElementById("fb-email").value = "";
+        if (msg.length < 5) {
+          btToast("Votre message est trop court (min 5 caractères)", "error");
+          return;
+        }
+        if (email && !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+          btToast("L'email semble invalide", "error");
+          return;
+        }
+
+        try {
+          await btApi.post("/feedback", {
+            rating: selectedStar > 0 ? selectedStar : null,
+            category: cat,
+            message: msg,
+            email_contact: email || null,
+            page_origin: "feedback.html",
+          });
+
+          btToast(
+            "Merci pour votre feedback" +
+              (selectedStar > 0 ? " " + "⭐".repeat(selectedStar) : "") +
+              " Nous vous lisons !",
+            "success",
+          );
+
+          // Reset du formulaire
+          document.getElementById("fb-msg").value = "";
+          document.getElementById("fb-email").value = "";
+          document.getElementById("fb-cat").value = "Suggestion d'amélioration";
+          setStar(0);
+
+          // Recharger les avis communauté (au cas où le nouveau feedback ait 4+ étoiles)
+          loadCommunityFeedbacks();
+        } catch (error) {
+          console.error("Erreur feedback :", error);
+          btToast(error.message || "Erreur lors de l'envoi", "error");
+        }
       }
+
+      // ── Charger les avis communauté ──────────────────────
+      async function loadCommunityFeedbacks() {
+        var container = document.getElementById("community-feedbacks");
+        try {
+          var feedbacks = await btApi.get("/feedback/community?limit=5");
+
+          if (!feedbacks || feedbacks.length === 0) {
+            container.innerHTML = `
+              <div class="bg-white rounded-2xl p-6 border border-gray-100 text-center">
+                <span class="material-symbols-outlined text-4xl text-gray-300 mb-2">forum</span>
+                <p class="text-gray-500 font-medium">Soyez le premier à donner votre avis !</p>
+                <p class="text-sm text-gray-400 mt-1">Les avis positifs apparaîtront ici.</p>
+              </div>
+            `;
+            return;
+          }
+
+          // Couleurs avatars (déterministe selon les initiales)
+          var colors = [
+            "bg-primary",
+            "bg-purple-600",
+            "bg-orange-500",
+            "bg-blue-500",
+            "bg-pink-500",
+            "bg-teal-500",
+          ];
+
+          container.innerHTML = feedbacks
+            .map(function (f, idx) {
+              var stars = "";
+              for (var i = 1; i <= 5; i++) {
+                stars +=
+                  '<span class="material-symbols-outlined text-[16px] ' +
+                  (i <= f.rating ? "text-yellow-400" : "text-gray-200") +
+                  '" style="font-variation-settings:\'FILL\' 1">star</span>';
+              }
+              var color = colors[idx % colors.length];
+              var roleBadge = "";
+              if (
+                f.author_role === "organizer" ||
+                f.author_role === "organisation"
+              ) {
+                roleBadge =
+                  '<span class="ml-2 text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold uppercase">Organisateur</span>';
+              } else if (f.author_role === "admin") {
+                roleBadge =
+                  '<span class="ml-2 text-[10px] bg-yellow-500/10 text-yellow-700 px-2 py-0.5 rounded-full font-bold uppercase">Équipe</span>';
+              }
+              return `
+              <div class="bg-white rounded-2xl p-5 border border-gray-100 flex gap-4 shadow-sm hover:shadow-md transition-shadow">
+                <div class="w-10 h-10 ${color} rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0">
+                  ${f.author_initials}
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center flex-wrap">
+                    <p class="font-bold text-gray-900 text-sm">${f.author_name}</p>
+                    ${roleBadge}
+                  </div>
+                  <div class="flex text-yellow-400 my-1">${stars}</div>
+                  <p class="text-sm text-gray-500 leading-relaxed">${escapeHtml(f.message)}</p>
+                </div>
+              </div>
+            `;
+            })
+            .join("");
+        } catch (error) {
+          console.error("Erreur chargement avis:", error);
+          container.innerHTML = `
+            <div class="bg-white rounded-2xl p-5 border border-gray-100 text-center text-gray-400 text-sm">
+              Impossible de charger les avis pour le moment.
+            </div>
+          `;
+        }
+      }
+
+      function escapeHtml(text) {
+        if (!text) return "";
+        var div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      // Charger au démarrage
+      loadCommunityFeedbacks();
     </script>
   </body>
 </html>

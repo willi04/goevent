@@ -403,10 +403,10 @@
 
         const params = new URLSearchParams(window.location.search);
         const eventId = params.get("id");
-        const slug = params.get("slug");
+        const slug = params.get("slug") || (pathMatch ? pathMatch[1] : null);
 
         if (!eventId && !slug) {
-          window.location.href = "event.html";
+          window.location.href = "/index.html";
           return;
         }
 

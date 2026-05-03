@@ -8,6 +8,10 @@
   ],
   "routes": [
     {
+      "src": "/e/([a-zA-Z0-9]+)",
+      "dest": "/web/event_detail.html?slug=$1"
+    },
+    {
       "src": "/(.*)",
       "dest": "/web/$1"
     }

@@ -749,9 +749,11 @@
       // PARTAGE D'ÉVÉNEMENT
       // ════════════════════════════════════════════════════════
       
-      function buildShareLink() {
+     function buildShareLink() {
+        const eventSlug = currentEvent?.slug;
+        if (eventSlug) return `https://goevent.africa/e/${eventSlug}`;
         const eventId = currentEvent?.id || new URLSearchParams(window.location.search).get("id");
-        return `https://api.goevent.africa/e/${eventId}`;
+        return `https://goevent.africa/event_detail.html?id=${eventId}`;
       }
       
       function buildShareMessage() {

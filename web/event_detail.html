@@ -168,18 +168,9 @@
             ><span class="material-symbols-outlined">info</span> À propos</a
           >
         </nav>
-        <div class="mt-4 pt-6 border-t border-gray-100 space-y-3">
-          <a
-            href="login.html"
-            class="block w-full text-center text-primary font-bold py-3.5 rounded-xl border-2 border-primary hover:bg-primary/5 transition-all"
-            >Se connecter</a
-          >
-          <a
-            href="signup.html"
-            class="block w-full text-center bg-primary text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 active:scale-95 transition-all"
-            >S'inscrire</a
-          >
-        </div>
+       <div id="mobile-auth-buttons" class="mt-4 pt-6 border-t border-gray-100 space-y-3">
+        <!-- Rempli dynamiquement par JS selon l'état de connexion -->
+      </div>
       </div>
     </div>
 
@@ -399,6 +390,22 @@
           typeof btNavbar === "function"
         ) {
           document.getElementById("navbar").innerHTML = btNavbar("evenements");
+        }
+        
+        // Mettre à jour les boutons d'auth de la sidebar mobile selon l'état de connexion
+        const mobileAuthContainer = document.getElementById("mobile-auth-buttons");
+        if (mobileAuthContainer) {
+          if (btAuth.isLogged()) {
+            const user = btAuth.getUser() || {};
+            const dashUrl = btDashRoute(user.role);
+            mobileAuthContainer.innerHTML = 
+              '<a href="' + dashUrl + '" class="block w-full text-center text-primary font-bold py-3.5 rounded-xl border-2 border-primary hover:bg-primary/5 transition-all">Mon espace</a>' +
+              '<button onclick="btAuth.logout(); window.location.href=\'/index.html\';" class="block w-full text-center bg-red-500 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition-all">Déconnexion</button>';
+          } else {
+            mobileAuthContainer.innerHTML = 
+              '<a href="login.html" class="block w-full text-center text-primary font-bold py-3.5 rounded-xl border-2 border-primary hover:bg-primary/5 transition-all">Se connecter</a>' +
+              '<a href="signup.html" class="block w-full text-center bg-primary text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 active:scale-95 transition-all">S\'inscrire</a>';
+          }
         }
 
        const params = new URLSearchParams(window.location.search);

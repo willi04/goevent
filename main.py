@@ -28,6 +28,7 @@ from dotenv import load_dotenv
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+from hashids import Hashids
 
 
 #CHARGEMENT DE BASE DE DONNEES
@@ -65,6 +66,29 @@ pwd_context  = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security     = HTTPBearer(auto_error=False)
 
 ROLES_VALIDES = ("fan", "organizer", "agent")
+
+# ════════════════════════════════════════════════════════════════
+# SLUG ENCODING — Convertir ID événement <=> hash 8 caractères
+# Salt secret pour rendre les hash imprévisibles
+# ════════════════════════════════════════════════════════════════
+HASHIDS_SALT = os.getenv("HASHIDS_SALT", "GoEvent-RCA-2026-Bangui-Madoukou-Secret")
+HASHIDS_ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+HASHIDS_MIN_LENGTH = 8
+
+hashids = Hashids(
+    salt=HASHIDS_SALT,
+    min_length=HASHIDS_MIN_LENGTH,
+    alphabet=HASHIDS_ALPHABET
+)
+
+def event_id_to_slug(event_id: int) -> str:
+    """Convertit un ID d'événement en slug court de 8 caractères. Ex: 5 -> 'aB3xK9mP'"""
+    return hashids.encode(event_id)
+
+def slug_to_event_id(slug: str) -> Optional[int]:
+    """Décode un slug et renvoie l'ID d'événement, ou None si invalide."""
+    decoded = hashids.decode(slug)
+    return decoded[0] if decoded else None
 # ── MODÈLES ────────────────────────────────────────────────────
 class User(Base):
     __tablename__ = "users"
@@ -726,6 +750,7 @@ def _event_dict(e, include_organizer=True):
     org = e.organizer_user
     return {
         "id": e.id, "title": e.title, "description": e.description,
+        "slug": event_id_to_slug(e.id),
         "location": e.location, "category": e.category,
         "event_date": e.event_date, "price": e.price,
         "total_seats": e.total_seats,
@@ -2673,13 +2698,25 @@ def get_public_stats(db: Session = Depends(get_db)):
         "organizers": total_organizers
     }
 
-@app.get("/e/{event_id}")
-def short_event_link(event_id: int):
+
+# ════════════════════════════════════════════════════════════════
+# RÉCUPÉRER UN ÉVÉNEMENT PAR SON SLUG (lien partagé)
+# ════════════════════════════════════════════════════════════════
+@app.get("/events/by-slug/{slug}")
+def get_event_by_slug(slug: str, db: Session = Depends(get_db)):
     """
-    Lien court partageable : api.goevent.africa/e/5
-    Redirige vers la page de détail de l'événement.
+    Récupère un événement par son slug court.
+    Utilisé pour les liens partagés type goevent.africa/e/aB3xK9mP
     """
-    return RedirectResponse(
-        url=f"https://goevent.africa/event_detail.html?id={event_id}",
-        status_code=301
-    )
+    event_id = slug_to_event_id(slug)
+    if event_id is None:
+        raise HTTPException(404, "Lien invalide")
+    
+    event = db.query(Event).filter(
+        Event.id == event_id, 
+        Event.is_active == True
+    ).first()
+    if not event:
+        raise HTTPException(404, "Événement introuvable")
+    
+    return _event_dict(event)

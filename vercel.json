@@ -1,19 +1,10 @@
 {
-  "version": 2,
-  "builds": [
+  "buildCommand": null,
+  "outputDirectory": "web",
+  "rewrites": [
     {
-      "src": "web/**/*",
-      "use": "@vercel/static"
-    }
-  ],
-  "routes": [
-    {
-      "src": "^/e/([a-zA-Z0-9]+)/?$",
-      "dest": "/web/event_detail.html?slug=$1"
-    },
-    {
-      "src": "^/(.*)",
-      "dest": "/web/$1"
+      "source": "/e/:slug",
+      "destination": "/event_detail.html?slug=:slug"
     }
   ]
 }

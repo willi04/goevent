@@ -403,14 +403,21 @@
 
         const params = new URLSearchParams(window.location.search);
         const eventId = params.get("id");
+        const slug = params.get("slug");
 
-        if (!eventId) {
+        if (!eventId && !slug) {
           window.location.href = "event.html";
           return;
         }
 
         try {
-          currentEvent = await btApi.get(`/events/${eventId}`);
+          // Si on a un slug, on utilise la route /events/by-slug/
+          // Sinon, on utilise /events/{id}
+          if (slug) {
+            currentEvent = await btApi.get(`/events/by-slug/${slug}`);
+          } else {
+            currentEvent = await btApi.get(`/events/${eventId}`);
+          }
 
           const titleEl = document.getElementById("e-title");
           const descEl = document.getElementById("e-desc");

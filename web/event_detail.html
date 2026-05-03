@@ -403,13 +403,14 @@
 
         const params = new URLSearchParams(window.location.search);
         const eventId = params.get("id");
-        const slug = params.get("slug") || (pathMatch ? pathMatch[1] : null);
-
+        const slugFromQuery = params.get("slug");
+        const pathMatch = window.location.pathname.match(/^\/e\/([^\/]+)$/);
+        const slug = slugFromQuery || (pathMatch ? pathMatch[1] : null);
+        
         if (!eventId && !slug) {
           window.location.href = "/index.html";
           return;
         }
-
         try {
           // Si on a un slug, on utilise la route /events/by-slug/
           // Sinon, on utilise /events/{id}

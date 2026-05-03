@@ -411,6 +411,7 @@
           window.location.href = "/index.html";
           return;
         }
+        
         try {
           // Si on a un slug, on utilise la route /events/by-slug/
           // Sinon, on utilise /events/{id}
@@ -773,13 +774,13 @@
       
         return `🎉 ${currentEvent.title}
       
-      📅 ${date}
-      📍 ${currentEvent.location || "Lieu à confirmer"}
-      💰 À partir de ${price}
-      🎤 Organisé par ${orga}
-      
-      Réserve ta place sur GoEvent :
-      ${buildShareLink()}`;
+        📅 ${date}
+        📍 ${currentEvent.location || "Lieu à confirmer"}
+        💰 À partir de ${price}
+        🎤 Organisé par ${orga}
+        
+        Réserve ta place sur GoEvent :
+        ${buildShareLink()}`;
       }
       
       function openShareModal() {

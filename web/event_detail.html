@@ -401,11 +401,10 @@
           document.getElementById("navbar").innerHTML = btNavbar("evenements");
         }
 
-        const params = new URLSearchParams(window.location.search);
-        const eventId = params.get("id");
-        const slugFromQuery = params.get("slug");
+       const params = new URLSearchParams(window.location.search);
         const pathMatch = window.location.pathname.match(/^\/e\/([^\/]+)$/);
-        const slug = slugFromQuery || (pathMatch ? pathMatch[1] : null);
+        const slug = params.get("slug") || (pathMatch ? pathMatch[1] : null);
+        const eventId = params.get("id");
         
         if (!eventId && !slug) {
           window.location.href = "/index.html";
@@ -413,14 +412,18 @@
         }
         
         try {
-          // Si on a un slug, on utilise la route /events/by-slug/
-          // Sinon, on utilise /events/{id}
-          if (slug) {
-            currentEvent = await btApi.get(`/events/by-slug/${slug}`);
-          } else {
-            currentEvent = await btApi.get(`/events/${eventId}`);
+            // Si on a un slug, on utilise la route /events/by-slug/
+            // Sinon, on utilise /events/{id}
+            if (slug) {
+              currentEvent = await btApi.get(`/events/by-slug/${slug}`);
+            } else {
+              currentEvent = await btApi.get(`/events/${eventId}`);
+            }
+            // Si on a chargé via ?id=, on remplace l'URL par /e/SLUG
+            if (eventId && currentEvent?.slug && !slug) {
+              window.history.replaceState({}, "", `/e/${currentEvent.slug}`);
           }
-
+          
           const titleEl = document.getElementById("e-title");
           const descEl = document.getElementById("e-desc");
           const coverEl = document.getElementById("e-image");
@@ -753,8 +756,7 @@
      function buildShareLink() {
         const eventSlug = currentEvent?.slug;
         if (eventSlug) return `https://goevent.africa/e/${eventSlug}`;
-        const eventId = currentEvent?.id || new URLSearchParams(window.location.search).get("id");
-        return `https://goevent.africa/event_detail.html?id=${eventId}`;
+        return `https://goevent.africa/event_detail.html?id=${currentEvent?.id}`;
       }
       
       function buildShareMessage() {

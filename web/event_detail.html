@@ -325,6 +325,13 @@
               Choisir un billet
             </button>
 
+            <button
+              onclick="openShareModal()"
+              class="w-full mt-3 py-3 rounded-2xl bg-white border-2 border-primary text-primary font-bold text-sm hover:bg-primary hover:text-white transition-all active:scale-95 flex items-center justify-center gap-2"
+            >
+              <span class="material-symbols-outlined text-base">share</span>
+              Partager cet événement
+            </button>
             <p
               class="text-center text-[10px] text-gray-400 font-bold uppercase mt-6 tracking-widest"
             >
@@ -730,6 +737,220 @@
         });
       }
       document.getElementById("footer").innerHTML = btFooter();
+      // ════════════════════════════════════════════════════════
+      // PARTAGE D'ÉVÉNEMENT
+      // ════════════════════════════════════════════════════════
+      
+      function buildShareLink() {
+        const eventId = currentEvent?.id || new URLSearchParams(window.location.search).get("id");
+        return `https://api.goevent.africa/e/${eventId}`;
+      }
+      
+      function buildShareMessage() {
+        if (!currentEvent) return "";
+      
+        const date = currentEvent.event_date 
+          ? new Date(currentEvent.event_date).toLocaleString("fr-FR", {
+              weekday: "long", day: "numeric", month: "long", year: "numeric",
+              hour: "2-digit", minute: "2-digit"
+            })
+          : "Date à confirmer";
+      
+        const orga = currentEvent.organizer || currentEvent.organizer_name || "Organisateur";
+        const price = currentEvent.price 
+          ? `${currentEvent.price.toLocaleString("fr-FR")} FCFA` 
+          : "Prix à confirmer";
+      
+        return `🎉 ${currentEvent.title}
+      
+      📅 ${date}
+      📍 ${currentEvent.location || "Lieu à confirmer"}
+      💰 À partir de ${price}
+      🎤 Organisé par ${orga}
+      
+      Réserve ta place sur GoEvent :
+      ${buildShareLink()}`;
+      }
+      
+      function openShareModal() {
+        if (!currentEvent) {
+          if (typeof btToast === "function") btToast("Événement non chargé", "error");
+          return;
+        }
+      
+        // Mettre à jour les aperçus
+        document.getElementById("share-link-preview").textContent = buildShareLink();
+        document.getElementById("share-message-preview").textContent = buildShareMessage();
+      
+        // Afficher la modale
+        const modal = document.getElementById("share-modal");
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+      }
+      
+      function closeShareModal() {
+        const modal = document.getElementById("share-modal");
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+      }
+      
+      // Fermer en cliquant en dehors
+      document.addEventListener("DOMContentLoaded", function() {
+        const modal = document.getElementById("share-modal");
+        if (modal) {
+          modal.addEventListener("click", function(e) {
+            if (e.target.id === "share-modal") closeShareModal();
+          });
+        }
+      });
+      
+      // Fermer avec Escape
+      document.addEventListener("keydown", function(e) {
+        if (e.key === "Escape") {
+          const modal = document.getElementById("share-modal");
+          if (modal && !modal.classList.contains("hidden")) closeShareModal();
+        }
+      });
+      
+      // ─── WhatsApp ─────────────────────────────────────
+      function shareWhatsApp() {
+        const message = encodeURIComponent(buildShareMessage());
+        window.open(`https://wa.me/?text=${message}`, "_blank");
+      }
+      
+      // ─── Facebook ─────────────────────────────────────
+      function shareFacebook() {
+        const url = encodeURIComponent(buildShareLink());
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, "_blank", "width=600,height=400");
+      }
+      
+      // ─── Copier lien ─────────────────────────────────────
+      async function copyShareLink() {
+        try {
+          await navigator.clipboard.writeText(buildShareLink());
+      
+          // Feedback visuel
+          const icon = document.getElementById("copy-icon");
+          const label = document.getElementById("copy-label");
+          if (icon) icon.textContent = "check_circle";
+          if (label) label.textContent = "Copié !";
+      
+          setTimeout(() => {
+            if (icon) icon.textContent = "content_copy";
+            if (label) label.textContent = "Copier le lien";
+          }, 2000);
+      
+          if (typeof btToast === "function") btToast("Lien copié !", "success");
+        } catch (err) {
+          console.error("Erreur copie:", err);
+          if (typeof btToast === "function") btToast("Impossible de copier", "error");
+        }
+      }
+      
+      // ─── QR Code ─────────────────────────────────────
+      function downloadQrCode() {
+        if (!currentEvent) return;
+      
+        // Générer QR via API gratuite (qrserver.com)
+        const link = encodeURIComponent(buildShareLink());
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=512x512&data=${link}&format=png&margin=10`;
+      
+        // Télécharger l'image
+        fetch(qrUrl)
+          .then(response => response.blob())
+          .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+      
+            const safeTitle = (currentEvent.title || "evenement")
+              .replace(/[^a-zA-Z0-9\s-_]/g, "_")
+              .substring(0, 40);
+            a.download = `GoEvent_QR_${safeTitle}.png`;
+      
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+      
+            if (typeof btToast === "function") btToast("QR Code téléchargé !", "success");
+          })
+          .catch(err => {
+            console.error("Erreur QR:", err);
+            if (typeof btToast === "function") btToast("Erreur génération QR", "error");
+          });
+      }
     </script>
+    <!-- ━━━━━━━━━━━━━ MODALE PARTAGE ÉVÉNEMENT ━━━━━━━━━━━━━ -->
+    <div id="share-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 items-center justify-center p-4 hidden">
+      <div class="bg-white rounded-3xl max-w-md w-full p-6 md:p-8 relative shadow-2xl max-h-[90vh] overflow-y-auto">
+        <button onclick="closeShareModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+
+        <div class="text-center mb-6">
+          <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
+            <span class="material-symbols-outlined text-3xl text-primary">share</span>
+          </div>
+          <h3 class="text-xl font-black text-gray-900 font-headline mb-1">
+            Partager cet événement
+          </h3>
+          <p class="text-xs text-gray-500">
+            Faites connaître l'événement à votre réseau
+          </p>
+        </div>
+
+        <!-- Aperçu du lien -->
+        <div class="bg-gray-50 rounded-xl p-3 mb-4 flex items-center gap-2">
+          <span class="material-symbols-outlined text-gray-400 text-base">link</span>
+          <span id="share-link-preview" class="text-xs text-gray-600 font-mono truncate flex-1">
+            https://api.goevent.africa/e/...
+          </span>
+        </div>
+
+        <!-- Boutons de partage -->
+        <div class="grid grid-cols-2 gap-3 mb-4">
+          <button onclick="shareWhatsApp()" class="flex flex-col items-center gap-2 p-4 bg-green-50 hover:bg-green-100 rounded-2xl transition-all active:scale-95">
+            <div class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
+              <span class="material-symbols-outlined text-white">chat</span>
+            </div>
+            <span class="text-xs font-bold text-gray-700">WhatsApp</span>
+          </button>
+
+          <button onclick="shareFacebook()" class="flex flex-col items-center gap-2 p-4 bg-blue-50 hover:bg-blue-100 rounded-2xl transition-all active:scale-95">
+            <div class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
+              <span class="material-symbols-outlined text-white">thumb_up</span>
+            </div>
+            <span class="text-xs font-bold text-gray-700">Facebook</span>
+          </button>
+
+          <button onclick="copyShareLink()" class="flex flex-col items-center gap-2 p-4 bg-gray-50 hover:bg-gray-100 rounded-2xl transition-all active:scale-95">
+            <div class="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center">
+              <span class="material-symbols-outlined text-white" id="copy-icon">content_copy</span>
+            </div>
+            <span class="text-xs font-bold text-gray-700" id="copy-label">Copier le lien</span>
+          </button>
+
+          <button onclick="downloadQrCode()" class="flex flex-col items-center gap-2 p-4 bg-purple-50 hover:bg-purple-100 rounded-2xl transition-all active:scale-95">
+            <div class="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center">
+              <span class="material-symbols-outlined text-white">qr_code_2</span>
+            </div>
+            <span class="text-xs font-bold text-gray-700">QR Code</span>
+          </button>
+        </div>
+
+        <!-- Aperçu du message à partager -->
+        <details class="bg-gray-50 rounded-xl p-3">
+          <summary class="text-xs font-bold text-gray-600 cursor-pointer flex items-center gap-1">
+            <span class="material-symbols-outlined text-base">visibility</span>
+            Voir le message qui sera partagé
+          </summary>
+          <pre id="share-message-preview" class="text-[11px] text-gray-600 mt-3 whitespace-pre-wrap font-body bg-white p-3 rounded-lg border border-gray-200"></pre>
+        </details>
+      </div>
+    </div>
+
+    <!-- Canvas caché pour génération QR code -->
+    <canvas id="qr-canvas" style="display: none;"></canvas>
   </body>
 </html>

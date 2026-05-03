@@ -8,6 +8,7 @@ from fastapi import FastAPI, HTTPException, Depends, Query, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from sqlalchemy import create_engine, Column, Integer, String, Boolean, Float, DateTime, ForeignKey, Text, or_,func
 from sqlalchemy.orm import declarative_base, sessionmaker, Session, relationship
@@ -2671,3 +2672,14 @@ def get_public_stats(db: Session = Depends(get_db)):
         "tickets_sold": total_tickets,
         "organizers": total_organizers
     }
+
+@app.get("/e/{event_id}")
+def short_event_link(event_id: int):
+    """
+    Lien court partageable : api.goevent.africa/e/5
+    Redirige vers la page de détail de l'événement.
+    """
+    return RedirectResponse(
+        url=f"https://goevent.africa/event_detail.html?id={event_id}",
+        status_code=301
+    )

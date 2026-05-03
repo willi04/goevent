@@ -1,8 +1,0 @@
-{
-  "rewrites": [
-    {
-      "source": "/e/:slug",
-      "destination": "/event_detail.html?slug=:slug"
-    }
-  ]
-}

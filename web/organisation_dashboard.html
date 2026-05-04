@@ -2095,6 +2095,11 @@
               <span class="material-symbols-outlined text-[20px]">${eventTermine ? 'payments' : 'schedule'}</span>
               ${btnPaiementMessage}
             </button>
+            <button onclick="ouvrirPartageEvenement(${eventId})" 
+              class="w-full py-3.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 bg-blue-50 text-blue-700 hover:bg-blue-100 active:scale-95 border border-blue-100 mb-3">
+              <span class="material-symbols-outlined text-[20px]">share</span>
+              Partager l'événement
+            </button>
             
             ${peutAnnuler ? `
               <button onclick="ouvrirModalAnnulation(${eventId}, '${eventTitle.replace(/'/g, "\\'")}')" 
@@ -2293,6 +2298,195 @@
           btn.disabled = false;
         }
       }
+      // ════════════════════════════════════════════════════════
+      // PARTAGE D'ÉVÉNEMENT
+      // ════════════════════════════════════════════════════════
+      
+      let _shareEventData = null;
+      
+      function buildShareLink() {
+        const slug = _shareEventData?.slug;
+        if (slug) return `https://goevent.africa/e/${slug}`;
+        return `https://goevent.africa/event_detail.html?id=${_shareEventData?.id}`;
+      }
+      
+      function buildShareMessage() {
+        if (!_shareEventData) return "";
+        const e = _shareEventData;
+        const date = e.event_date 
+          ? new Date(e.event_date).toLocaleString("fr-FR", {
+              weekday: "long", day: "numeric", month: "long", year: "numeric",
+              hour: "2-digit", minute: "2-digit"
+            })
+          : "Date à confirmer";
+        const orga = e.organizer || e.organizer_name || "Organisateur";
+        const price = e.price 
+          ? `${e.price.toLocaleString("fr-FR")} FCFA` 
+          : "Prix à confirmer";
+        return `🎉 ${e.title}\n\n📅 ${date}\n📍 ${e.location || "Lieu à confirmer"}\n💰 À partir de ${price}\n🎤 Organisé par ${orga}\n\nRéserve ta place sur GoEvent :\n${buildShareLink()}`;
+      }
+      
+      function ouvrirPartageEvenement(eventId) {
+        const eventData = window.lastOrganizerStats?.events?.find(e => e.id === eventId);
+        if (!eventData) {
+          if (typeof btToast === "function") btToast("Événement introuvable", "error");
+          return;
+        }
+        _shareEventData = eventData;
+        
+        // Fermer le modal de gestion s'il est ouvert
+        if (window.currentPayoutModal) {
+          window.currentPayoutModal.remove();
+          window.currentPayoutModal = null;
+        }
+        
+        document.getElementById("share-link-preview").textContent = buildShareLink();
+        document.getElementById("share-message-preview").textContent = buildShareMessage();
+        
+        const modal = document.getElementById("share-modal");
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+      }
+      
+      function closeShareModal() {
+        const modal = document.getElementById("share-modal");
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+      }
+      
+      function shareWhatsApp() {
+        const message = encodeURIComponent(buildShareMessage());
+        window.open(`https://wa.me/?text=${message}`, "_blank");
+      }
+      
+      function shareFacebook() {
+        const url = encodeURIComponent(buildShareLink());
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, "_blank", "width=600,height=400");
+      }
+      
+      async function copyShareLink() {
+        try {
+          await navigator.clipboard.writeText(buildShareLink());
+          const icon = document.getElementById("copy-icon");
+          const label = document.getElementById("copy-label");
+          if (icon) icon.textContent = "check_circle";
+          if (label) label.textContent = "Copié !";
+          setTimeout(() => {
+            if (icon) icon.textContent = "content_copy";
+            if (label) label.textContent = "Copier le lien";
+          }, 2000);
+          if (typeof btToast === "function") btToast("Lien copié !", "success");
+        } catch (err) {
+          console.error("Erreur copie:", err);
+          if (typeof btToast === "function") btToast("Impossible de copier", "error");
+        }
+      }
+      
+      function downloadQrCode() {
+        if (!_shareEventData) return;
+        const link = encodeURIComponent(buildShareLink());
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=512x512&data=${link}&format=png&margin=10`;
+        fetch(qrUrl)
+          .then(r => r.blob())
+          .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            const safeTitle = (_shareEventData.title || "evenement")
+              .replace(/[^a-zA-Z0-9\s-_]/g, "_").substring(0, 40);
+            a.download = `GoEvent_QR_${safeTitle}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            if (typeof btToast === "function") btToast("QR Code téléchargé !", "success");
+          })
+          .catch(err => {
+            console.error("Erreur QR:", err);
+            if (typeof btToast === "function") btToast("Erreur lors de la génération du QR", "error");
+          });
+      }
+      
+      // Fermer modale share au clic extérieur + Escape
+      document.addEventListener("DOMContentLoaded", function() {
+        const modal = document.getElementById("share-modal");
+        if (modal) {
+          modal.addEventListener("click", function(e) {
+            if (e.target.id === "share-modal") closeShareModal();
+          });
+        }
+      });
+      document.addEventListener("keydown", function(e) {
+        if (e.key === "Escape") {
+          const modal = document.getElementById("share-modal");
+          if (modal && !modal.classList.contains("hidden")) closeShareModal();
+        }
+      });
     </script>
+    <!-- ═══ MODALE DE PARTAGE ═══ -->
+    <div id="share-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 items-center justify-center p-4 hidden">
+      <div class="bg-white rounded-3xl max-w-md w-full p-6 md:p-8 relative shadow-2xl max-h-[90vh] overflow-y-auto">
+        <button onclick="closeShareModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+
+        <div class="text-center mb-6">
+          <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
+            <span class="material-symbols-outlined text-3xl text-primary">share</span>
+          </div>
+          <h3 class="text-xl font-black text-gray-900 font-headline mb-1">
+            Partager cet événement
+          </h3>
+          <p class="text-xs text-gray-500">
+            Faites connaître l'événement à votre réseau
+          </p>
+        </div>
+
+        <div class="bg-gray-50 rounded-xl p-3 mb-4 flex items-center gap-2">
+          <span class="material-symbols-outlined text-gray-400 text-base">link</span>
+          <span id="share-link-preview" class="text-xs text-gray-600 font-mono truncate flex-1">
+            https://goevent.africa/e/...
+          </span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 mb-4">
+          <button onclick="shareWhatsApp()" class="flex flex-col items-center gap-2 p-4 bg-green-50 hover:bg-green-100 rounded-2xl transition-all active:scale-95">
+            <div class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
+              <span class="material-symbols-outlined text-white">chat</span>
+            </div>
+            <span class="text-xs font-bold text-gray-700">WhatsApp</span>
+          </button>
+
+          <button onclick="shareFacebook()" class="flex flex-col items-center gap-2 p-4 bg-blue-50 hover:bg-blue-100 rounded-2xl transition-all active:scale-95">
+            <div class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
+              <span class="material-symbols-outlined text-white">thumb_up</span>
+            </div>
+            <span class="text-xs font-bold text-gray-700">Facebook</span>
+          </button>
+
+          <button onclick="copyShareLink()" class="flex flex-col items-center gap-2 p-4 bg-gray-50 hover:bg-gray-100 rounded-2xl transition-all active:scale-95">
+            <div class="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center">
+              <span class="material-symbols-outlined text-white" id="copy-icon">content_copy</span>
+            </div>
+            <span class="text-xs font-bold text-gray-700" id="copy-label">Copier le lien</span>
+          </button>
+
+          <button onclick="downloadQrCode()" class="flex flex-col items-center gap-2 p-4 bg-purple-50 hover:bg-purple-100 rounded-2xl transition-all active:scale-95">
+            <div class="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center">
+              <span class="material-symbols-outlined text-white">qr_code_2</span>
+            </div>
+            <span class="text-xs font-bold text-gray-700">QR Code</span>
+          </button>
+        </div>
+
+        <details class="bg-gray-50 rounded-xl p-3">
+          <summary class="text-xs font-bold text-gray-600 cursor-pointer flex items-center gap-1">
+            <span class="material-symbols-outlined text-base">visibility</span>
+            Voir le message qui sera partagé
+          </summary>
+          <pre id="share-message-preview" class="text-[11px] text-gray-600 mt-3 whitespace-pre-wrap font-body bg-white p-3 rounded-lg border border-gray-200"></pre>
+        </details>
+      </div>
+    </div>
   </body>
 </html>

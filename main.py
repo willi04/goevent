@@ -35,7 +35,6 @@ from hashids import Hashids
 load_dotenv()
 
 # ── CONFIG ─────────────────────────────────────────────────────
-# Remplace les infos par tes vrais identifiants PostgreSQL (ou utilise une variable d'environnement)
 DATABASE_URL = os.getenv("DATABASE_URL")
 SECRET_KEY = os.getenv("SECRET_KEY")
 if not SECRET_KEY:
@@ -48,8 +47,8 @@ if not DATABASE_URL:
 # Configuration PostgreSQL (sans check_same_thread)
 engine = create_engine(
     DATABASE_URL,
-    pool_pre_ping=True,        # 🔥 Vérifie que la connexion est vivante avant chaque requête
-    pool_recycle=300,          # 🔥 Recycle les connexions toutes les 5 minutes
+    pool_pre_ping=True,        # Vérifier que la connexion est vivante avant chaque requête
+    pool_recycle=300,          # Recycler les connexions toutes les 5 minutes
     pool_size=5,
     max_overflow=10,
     connect_args={
@@ -165,8 +164,7 @@ class Payment(Base):
     amount = Column(Float)  # Total payé via CinetPay (Prix + 4%)
     base_price = Column(Float, default=0)  # Le prix initial affiché du billet
     platform_fee = Column(Float, default=0)  # TES BÉNÉFICES (4% acheteur + 7% orga)
-    organizer_amount = Column(Float, default=0)  # Ce que tu dois virer à l'organisateur
-
+    organizer_amount = Column(Float, default=0)  # Ce qui doit être virer à l'organisateur
     status = Column(String, default="pending")
     transaction_id = Column(String)
 
@@ -521,7 +519,7 @@ def get_optional_user(
 
 
 def envoyer_billet_email(email_client, nom_client, ticket, event, amount):
-    # Tes identifiants (À configurer avec un mot de passe d'application Gmail)
+    
     SENDER_EMAIL = os.getenv("SENDER_EMAIL", "")
     SENDER_PASSWORD = os.getenv("SENDER_PASSWORD", "")
 
@@ -633,9 +631,9 @@ class UserRegister(BaseModel):
     full_name: str
     pin_code: str
     role: str = "fan"
-    email: Optional[str] = None   # ✅ AJOUT
-    org_name: Optional[str] = None   # ✅ AJOUT
-    org_type: Optional[str] = None   # ✅ AJOUT
+    email: Optional[str] = None   
+    org_name: Optional[str] = None   
+    org_type: Optional[str] = None   
 
 class AgentCreate(BaseModel):
     full_name: str
@@ -664,7 +662,7 @@ class UserUpdate(BaseModel):
     email: Optional[str] = None
     org_name: Optional[str] = None
     org_type: Optional[str] = None
-    profile_picture: Optional[str] = None  # <-- AJOUT
+    profile_picture: Optional[str] = None  
     orange_money: Optional[str] = None
 
 class TicketTier(BaseModel):
@@ -715,7 +713,7 @@ class CashReservation(BaseModel):
     event_id: int
     tier_name: Optional[str] = None
     email: Optional[str] = None
-# 2. Le modèle de la base de données SQLAlchemy (à ajouter avec tes autres tables)
+
 class PartnerRequest(Base):
     __tablename__ = "partner_requests"
     id = Column(Integer, primary_key=True, index=True)
@@ -743,7 +741,7 @@ class SecurityLog(Base):
     user_agent  = Column(String, nullable=True)
     details     = Column(Text, nullable=True)
     created_at  = Column(DateTime, default=datetime.utcnow, index=True)
-# Assure-toi que Base.metadata.create_all(bind=engine) est bien en dessous pour créer la table !
+# S'Assurer que Base.metadata.create_all(bind=engine) est bien en dessous pour créer la table !
 Base.metadata.create_all(bind=engine)
 
 def _event_dict(e, include_organizer=True):
@@ -808,22 +806,22 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         response = await call_next(request)
         
-        # 🛡️ Empêche l'affichage dans un iframe (anti-clickjacking)
+        # Empêcher l'affichage dans un iframe (anti-clickjacking)
         response.headers["X-Frame-Options"] = "DENY"
         
-        # 🛡️ Empêche le navigateur de "deviner" le type de fichier
+        # Empêcher le navigateur de "deviner" le type de fichier
         response.headers["X-Content-Type-Options"] = "nosniff"
         
-        # 🛡️ Empêche la fuite de l'URL de provenance vers les sites externes
+        # Empêcher la fuite de l'URL de provenance vers les sites externes
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         
-        # 🛡️ Force HTTPS pour les 6 prochains mois (HSTS)
+        # Forcer HTTPS pour les 6 prochains mois (HSTS)
         response.headers["Strict-Transport-Security"] = "max-age=15552000; includeSubDomains"
         
-        # 🛡️ Désactive les fonctionnalités navigateur dangereuses
+        # Désactiver les fonctionnalités navigateur dangereuses
         response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=(), payment=()"
         
-        # 🛡️ Content Security Policy (la plus importante contre XSS)
+        # Content Security Policy (la plus importante contre XSS)
         csp = (
             "default-src 'self'; "
             "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com; "

@@ -777,9 +777,8 @@
 
         container.innerHTML = events
           .map((e) => {
-            // 1. DÉTECTION DE LA DATE
             const dateObj = new Date(e.event_date);
-            const isPast = dateObj < new Date(); // Vrai si l'événement est passé
+            const isPast = dateObj < new Date(); 
 
             const prixFormate =
               typeof btPrice === "function"
@@ -798,18 +797,19 @@
               })
               .replace(",", " •");
 
-            // 2. LOGIQUE DE DESIGN (Grisé si passé)
+            // Design de la carte : on garde l'opacité réduite pour les événements passés
             const cardClass = isPast 
-                ? "group bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm opacity-60 grayscale-[50%] transition-all duration-300 flex flex-col cursor-not-allowed" 
+                ? "group bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm opacity-75 grayscale-[20%] transition-all duration-300 flex flex-col cursor-not-allowed" 
                 : "group bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col";
             
             const clickAction = isPast 
                 ? "" 
                 : `onclick="window.location.href='event_detail.html?id=${e.id}'"`;
 
+            // MODIFICATION ICI : Le badge "TERMINÉ" est maintenant en vert GoEvent
             const btnHtml = isPast 
-                ? `<div class="px-4 py-2 bg-gray-200 text-gray-500 rounded-full font-black text-[10px] uppercase tracking-widest flex items-center gap-1">
-                     <span class="material-symbols-outlined text-sm">history</span> TERMINE
+                ? `<div class="px-4 py-2 bg-primary text-white rounded-full font-black text-[10px] uppercase tracking-widest flex items-center gap-1 shadow-sm">
+                     <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1">history</span> TERMINE
                    </div>`
                 : `<button onclick="event.stopPropagation(); window.location.href='event_detail.html?id=${e.id}'" class="p-3 bg-primary/5 text-primary rounded-full hover:bg-primary hover:text-white transition-all shadow-sm active:scale-95">
                     <span class="material-symbols-outlined">shopping_cart</span>

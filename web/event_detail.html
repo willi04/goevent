@@ -527,6 +527,27 @@
             return placesRestantes === undefined || placesRestantes > 0;
           });
 
+          // --- LOGIQUE FOMO (Urgence) ---
+          // On calcule le pourcentage restant (sécurité pour éviter division par zéro)
+          const pctLeft = currentEvent.total_seats > 0 ? (currentEvent.seats_available / currentEvent.total_seats) : 1;
+          
+          // On déclenche si > 0 places, et (moins de 20% restant OU moins de 10 places)
+          const isAlmostFull = currentEvent.seats_available > 0 && (pctLeft <= 0.20 || currentEvent.seats_available <= 15);
+          
+          if (!isPast && isAlmostFull) {
+              const ticketSection = document.getElementById("ticket-tiers-selection");
+              if (ticketSection) {
+                  const fomoDiv = document.createElement('div');
+                  fomoDiv.className = "bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-2xl flex items-center gap-3 mb-4 shadow-sm animate-pulse";
+                  fomoDiv.innerHTML = `<span class="material-symbols-outlined text-amber-600 text-2xl" style="font-variation-settings: 'FILL' 1">local_fire_department</span>
+                                       <div>
+                                          <p class="text-sm font-black uppercase tracking-widest text-amber-600">Vite !</p>
+                                          <p class="text-sm font-bold">Il ne reste plus que ${currentEvent.seats_available} places disponibles.</p>
+                                       </div>`;
+                  ticketSection.parentNode.insertBefore(fomoDiv, ticketSection);
+              }
+          }
+          
           renderTiers();
         } catch (error) {
           console.error("Erreur API :", error);

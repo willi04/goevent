@@ -386,54 +386,35 @@ function btFooter() {
 }
 
 // ── Carte événement (style Stitch exact) ──────────────────────
+// ── Carte événement (style Stitch exact) ──────────────────────
 function btEventCard(e) {
-  var pct =
-    e.total_seats > 0
-      ? Math.round((1 - e.seats_available / e.total_seats) * 100)
-      : 0;
+  var pct = e.total_seats > 0 ? Math.round((1 - e.seats_available / e.total_seats) * 100) : 0;
   var sold = e.is_sold_out;
+  
+  // 1. On récupère la date de l'événement et celle d'aujourd'hui
   var d = e.event_date ? new Date(e.event_date) : null;
-  var months = [
-    "Janvier",
-    "Février",
-    "Mars",
-    "Avril",
-    "Mai",
-    "Juin",
-    "Juillet",
-    "Août",
-    "Septembre",
-    "Octobre",
-    "Novembre",
-    "Décembre",
-  ];
-  var dateStr = d
-    ? d.getDate() + " " + months[d.getMonth()] + ", " + d.getFullYear()
-    : "";
-  var barColor = sold ? "bg-error" : pct > 70 ? "bg-amber-500" : "bg-primary";
-  var barLabel = sold
-    ? "Guichet fermé"
-    : pct > 70
-      ? "Derniers billets ! Vendus: " + pct + "%"
-      : "Vendus: " + pct + "%";
-  var seatsLabel = sold
-    ? "Complet"
-    : "Il reste " + e.seats_available + " places";
-  var btnLabel = sold ? "Complet" : "Acheter";
-  var btnIcon = sold ? "block" : "shopping_cart";
+  var isPast = d ? (d < new Date()) : false; // VRAI si l'événement est déjà passé
+
+  var months = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+  var dateStr = d ? d.getDate() + " " + months[d.getMonth()] + ", " + d.getFullYear() : "";
+  
+  // 2. On adapte les couleurs et les textes en fonction de la date
+  var barColor = isPast ? "bg-gray-400" : (sold ? "bg-error" : pct > 70 ? "bg-amber-500" : "bg-primary");
+  var barLabel = isPast ? "Événement terminé" : (sold ? "Guichet fermé" : pct > 70 ? "Derniers billets ! Vendus: " + pct + "%" : "Vendus: " + pct + "%");
+  var seatsLabel = isPast ? "Passé" : (sold ? "Complet" : "Il reste " + e.seats_available + " places");
+  var btnLabel = isPast ? "Terminé" : (sold ? "Complet" : "Acheter");
+  var btnIcon = isPast ? "history" : (sold ? "block" : "shopping_cart");
+  
+  // Si c'est passé OU complet, on bloque le bouton
+  var disabledBtn = isPast || sold; 
 
   return (
-    '<div class="bg-surface-container-lowest rounded-xl overflow-hidden group hover:shadow-xl transition-shadow flex flex-col cursor-pointer" onclick="window.location=\'event_detail.html?id=' +
-    e.id +
-    "'\">" +
+    '<div class="bg-surface-container-lowest rounded-xl overflow-hidden group transition-shadow flex flex-col ' + 
+    (isPast ? 'opacity-75 grayscale-[30%]' : 'hover:shadow-xl cursor-pointer') + '" ' +
+    (disabledBtn ? '' : 'onclick="window.location=\'event_detail.html?id=' + e.id + '\'"') +
+    '>' +
     '<div class="relative h-64">' +
-    (e.cover_image_url
-      ? '<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="' +
-        e.cover_image_url +
-        '" alt="' +
-        e.title +
-        '" onerror="this.style.display=\'none\'">'
-      : "") +
+    (e.cover_image_url ? '<img class="w-full h-full object-cover ' + (disabledBtn ? '' : 'group-hover:scale-105') + ' transition-transform duration-500" src="' + e.cover_image_url + '" alt="' + e.title + '" onerror="this.style.display=\'none\'">' : "") +
     '<div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>' +
     '<div class="absolute top-4 right-4 bg-secondary-container text-on-secondary-container px-4 py-2 rounded-lg font-black font-headline shadow-lg text-sm">' +
     btPrice(e.price) +
@@ -442,45 +423,26 @@ function btEventCard(e) {
     '<div class="p-6 flex-1 flex flex-col">' +
     '<div class="flex items-center gap-2 text-outline text-sm mb-3">' +
     '<span class="material-symbols-outlined text-sm">calendar_today</span>' +
-    "<span>" +
-    dateStr +
-    "</span>" +
+    "<span>" + dateStr + "</span>" +
     "</div>" +
-    '<h3 class="text-xl font-bold font-headline mb-2 text-on-surface">' +
-    e.title +
-    "</h3>" +
+    '<h3 class="text-xl font-bold font-headline mb-2 text-on-surface">' + e.title + "</h3>" +
     '<p class="text-on-surface-variant text-sm mb-6 flex items-center gap-1">' +
-    '<span class="material-symbols-outlined text-sm">person</span>' +
-    (e.organizer || "Organisateur") +
+    '<span class="material-symbols-outlined text-sm">person</span>' + (e.organizer || "Organisateur") +
     "</p>" +
     '<div class="mt-auto">' +
     '<div class="mb-4">' +
     '<div class="flex justify-between text-xs font-bold text-outline mb-1">' +
-    "<span>" +
-    barLabel +
-    "</span>" +
-    "<span>" +
-    seatsLabel +
-    "</span>" +
+    "<span>" + barLabel + "</span>" +
+    "<span>" + seatsLabel + "</span>" +
     "</div>" +
     '<div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">' +
-    '<div class="' +
-    barColor +
-    ' h-full rounded-full transition-all duration-700" style="width:' +
-    pct +
-    '%"></div>' +
+    '<div class="' + barColor + ' h-full rounded-full transition-all duration-700" style="width:' + (isPast ? '100' : pct) + '%"></div>' +
     "</div>" +
     "</div>" +
-    (sold
-      ? '<button disabled class="w-full bg-surface-container text-outline py-4 rounded-xl font-bold flex items-center justify-center gap-2 cursor-not-allowed">Guichet fermé</button>'
-      : "<button onclick=\"event.stopPropagation();window.location='event_detail.html?id=" +
-        e.id +
-        '\'" class="w-full bg-gradient-to-r from-primary to-primary-container text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-md shadow-primary/10">' +
-        '<span class="material-symbols-outlined">' +
-        btnIcon +
-        "</span> " +
-        btnLabel +
-        "</button>") +
+    (disabledBtn
+      ? '<button disabled class="w-full bg-surface-container text-outline py-4 rounded-xl font-bold flex items-center justify-center gap-2 cursor-not-allowed"><span class="material-symbols-outlined">' + btnIcon + '</span> ' + btnLabel + '</button>'
+      : "<button onclick=\"event.stopPropagation();window.location='event_detail.html?id=" + e.id + '\'" class="w-full bg-gradient-to-r from-primary to-primary-container text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-md shadow-primary/10">' +
+        '<span class="material-symbols-outlined">' + btnIcon + "</span> " + btnLabel + "</button>") +
     "</div>" +
     "</div>" +
     "</div>"

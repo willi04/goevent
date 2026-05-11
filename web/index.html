@@ -715,7 +715,7 @@
 
         try {
           // 1. On récupère les événements (jusqu'à 50 pour être large)
-          const response = await btApi.get("/events?limit=50");
+          const response = await btApi.get("/events?upcoming_only=true&limit=50");
           let allEvents =
             response.events || (Array.isArray(response) ? response : []);
 

@@ -534,58 +534,79 @@
       });
 
       // 3. Dessiner les billets disponibles
-      function renderTiers() {
-        const container = document.getElementById("ticket-tiers-selection");
-        if (!container) return;
+      // Remplacement de la fonction originale vers ligne 354
+          function renderTiers() {
+            const tiersContainer = document.getElementById("tiers-list-container");
+            // Cible le titre H3 du modal "Choisir un billet"
+            const modalTitle = document.querySelector("#ticket-modal h3.font-headline");
 
-        // S'il n'y a plus AUCUN billet de disponible toutes catégories confondues
-        if (availableTiers.length === 0) {
-          container.innerHTML = `
-                <div class="bg-red-50 border-2 border-red-100 rounded-[1.5rem] p-6 text-center animate-in fade-in duration-500">
-                    <span class="material-symbols-outlined text-red-500 text-4xl mb-2">event_busy</span>
-                    <p class="font-headline font-extrabold text-red-700 text-lg">Guichet Fermé</p>
-                    <p class="text-sm text-red-500 mt-1 font-medium">Toutes les catégories sont épuisées pour cet événement.</p>
-                </div>
-            `;
-          updateReserveButton();
-          return;
-        }
+            if (!tiersContainer) return;
 
-        container.innerHTML = availableTiers
-          .map((tier, index) => {
-            const isSelected = index === selectedTierIndex;
+            // --- NOUVEAU : Affichage si passé (Titre + Griser + Bloquer clic) ---
+            if (isPast) {
+                // 1. Modifier le titre du modal
+                if(modalTitle) {
+                    modalTitle.innerHTML = `<span class=\"material-symbols-outlined text-error mr-2\" style=\"font-variation-settings: 'FILL' 1\">history</span> Événement Terminé`;
+                    modalTitle.classList.add("text-error"); // Optionnel : met le titre en rouge
+                }
 
-            const classesBordure = isSelected
-              ? "border-primary bg-primary/5 shadow-sm"
-              : "border-gray-100 bg-white hover:border-primary/20";
-            const classesBadge = isSelected
-              ? "bg-white/50 border-white"
-              : "bg-primary/5 border-primary/10";
-            const classesTexteTitre = isSelected
-              ? "text-primary"
-              : "text-gray-800";
-            const classesTexteAcces = isSelected
-              ? "text-primary/70"
-              : "text-gray-400";
-            const classesTextePrix = "text-primary";
+                if (!availableTiers || availableTiers.length === 0) {
+                  // Message standard si pas de catégories définies
+                  tiersContainer.innerHTML = '<div class="text-center py-6 text-outline font-medium text-sm">Les détails des billets ne sont plus disponibles.</div>';
+                  return;
+                }
 
-            return `
-                <div onclick="selectTier(${index})" class="cursor-pointer border-2 rounded-[1.5rem] py-5 px-6 flex items-center gap-4 transition-all duration-200 ${classesBordure}">
-                    
-                    <div class="flex items-center justify-center w-12 h-12 rounded-full border ${classesBadge} shrink-0">
-                        <span class="material-symbols-outlined text-primary text-2xl" style="font-variation-settings: 'FILL' 1;">local_activity</span>
+                // 2. Afficher les paliers grisés et non-cliquables
+                tiersContainer.innerHTML = availableTiers
+                  .map(
+                    (tier) => `
+                    <div class="flex items-center justify-between p-5 border border-gray-100 rounded-2xl transition-all cursor-not-allowed opacity-60 grayscale hover:bg-white">
+                      <div>
+                        <h4 class="font-bold text-gray-950 text-lg">${tier.name}</h4>
+                        <p class="text-sm text-primary font-black">${btPrice(tier.price)}</p>
+                        <p class="text-[10px] text-outline mt-1 font-medium">${tier.seats_available !== undefined ? `Ventes fermées` : `Terminé`}</p>
+                      </div>
+                      <span class="material-symbols-outlined text-outline">history</span>
                     </div>
-                    
-                    <div class="flex-1">
-                        <p class="font-headline font-extrabold text-base ${classesTexteTitre}">${tier.name}</p>
-                        <p class="text-[10px] ${classesTexteAcces} font-bold uppercase tracking-wider">ACCÈS GARANTI</p>
+                  `
+                  )
+                  .join("");
+
+                return; // Stop ici car c'est passé
+            }
+            // --- FIN NOUVEAU ---
+
+
+            // --- LOGIQUE NORMALE (si pas passé) ---
+            if (!availableTiers || availableTiers.length === 0) {
+              // Message rouge si complet (Guichet Fermé)
+              tiersContainer.innerHTML = `
+                <div class="p-6 bg-error/10 border border-error/20 rounded-2xl flex items-center gap-4">
+                    <span class="material-symbols-outlined text-error text-3xl">block</span>
+                    <div>
+                        <h4 class="font-bold text-error text-lg mb-1">Guichet Fermé</h4>
+                        <p class="text-sm text-error/80 font-medium leading-tight">Désolé, les ventes en ligne pour cet événement sont épuisées ou fermées.</p>
                     </div>
-                    
-                    <p class="font-headline font-extrabold text-base ${classesTextePrix}">${tier.price.toLocaleString("fr-FR")} FCFA</p>
                 </div>
-            `;
-          })
-          .join("");
+              `;
+              return;
+            }
+
+            // Affichage normal cliquable (avec selectTier)
+            tiersContainer.innerHTML = availableTiers
+              .map(
+                (tier, index) => `
+                <div onclick="selectTier(${index})" class="flex items-center justify-between p-5 border border-gray-100 rounded-2xl hover:border-primary/30 hover:bg-primary/5 transition-all cursor-pointer group">
+                  <div>
+                    <h4 class="font-bold text-gray-950 text-lg">${tier.name}</h4>
+                    <p class="text-sm text-primary font-black">${btPrice(tier.price)}</p>
+                    <p class="text-[10px] text-outline mt-1 font-medium">${tier.seats_available !== undefined ? `Reste ${tier.seats_available} places` : `Illimité`}</p>
+                  </div>
+                  <span class="material-symbols-outlined text-outline group-hover:text-primary group-hover:translate-x-1 transition-transform">arrow_forward_ios</span>
+                </div>
+              `
+              )
+              .join("");
 
         updateReserveButton();
       }

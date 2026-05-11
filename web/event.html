@@ -765,7 +765,7 @@
       document.addEventListener("DOMContentLoaded", renderMobileAuth);
 
       // 3. Dessiner les cartes d'événements
-      function renderDynamicEvents(events) {
+     function renderDynamicEvents(events) {
         const container = document.getElementById("events-grid-container");
         if (!container) return;
 
@@ -777,13 +777,17 @@
 
         container.innerHTML = events
           .map((e) => {
+            // 1. DÉTECTION DE LA DATE
+            const dateObj = new Date(e.event_date);
+            const isPast = dateObj < new Date(); // Vrai si l'événement est passé
+
             const prixFormate =
               typeof btPrice === "function"
                 ? btPrice(e.price)
                 : e.price > 0
                   ? e.price.toLocaleString("fr-FR") + " FCFA"
                   : "Gratuit";
-            const dateObj = new Date(e.event_date);
+            
             const dateString = dateObj
               .toLocaleDateString("fr-FR", {
                 weekday: "short",
@@ -794,10 +798,27 @@
               })
               .replace(",", " •");
 
+            // 2. LOGIQUE DE DESIGN (Grisé si passé)
+            const cardClass = isPast 
+                ? "group bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm opacity-60 grayscale-[50%] transition-all duration-300 flex flex-col cursor-not-allowed" 
+                : "group bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col";
+            
+            const clickAction = isPast 
+                ? "" 
+                : `onclick="window.location.href='event_detail.html?id=${e.id}'"`;
+
+            const btnHtml = isPast 
+                ? `<div class="px-4 py-2 bg-gray-200 text-gray-500 rounded-full font-black text-[10px] uppercase tracking-widest flex items-center gap-1">
+                     <span class="material-symbols-outlined text-sm">history</span> TERMINE
+                   </div>`
+                : `<button onclick="event.stopPropagation(); window.location.href='event_detail.html?id=${e.id}'" class="p-3 bg-primary/5 text-primary rounded-full hover:bg-primary hover:text-white transition-all shadow-sm active:scale-95">
+                    <span class="material-symbols-outlined">shopping_cart</span>
+                  </button>`;
+
             return `
-            <div class="group bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col" onclick="window.location.href='event_detail.html?id=${e.id}'">
+            <div class="${cardClass}" ${clickAction}>
               <div class="relative h-48 overflow-hidden shrink-0">
-                <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" src="${e.cover_image_url || "https://via.placeholder.com/600x400?text=GoEvent"}" onerror="this.src='https://via.placeholder.com/600x400?text=GoEvent'" alt="${e.title}" />
+                <img class="w-full h-full object-cover ${isPast ? '' : 'transition-transform duration-500 group-hover:scale-110'}" src="${e.cover_image_url || "https://via.placeholder.com/600x400?text=GoEvent"}" onerror="this.src='https://via.placeholder.com/600x400?text=GoEvent'" alt="${e.title}" />
                 <div class="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-primary shadow-sm">
                   ${e.category || "Événement"}
                 </div>
@@ -807,7 +828,7 @@
                   <span class="material-symbols-outlined text-sm">calendar_today</span>
                   <span class="capitalize">${dateString}</span>
                 </div>
-                <h3 class="text-lg font-headline font-bold text-on-surface mb-3 group-hover:text-primary leading-tight line-clamp-2">
+                <h3 class="text-lg font-headline font-bold text-on-surface mb-3 leading-tight line-clamp-2">
                   ${e.title}
                 </h3>
                 <div class="flex items-center gap-2 text-sm text-outline mb-6">
@@ -815,10 +836,8 @@
                   <span class="truncate">${e.location}</span>
                 </div>
                 <div class="flex items-center justify-between mt-auto">
-                  <span class="text-lg font-extrabold text-secondary">${prixFormate}</span>
-                  <button onclick="event.stopPropagation(); window.location.href='event_detail.html?id=${e.id}'" class="p-3 bg-primary/5 text-primary rounded-full hover:bg-primary hover:text-white transition-all shadow-sm active:scale-95">
-                    <span class="material-symbols-outlined">shopping_cart</span>
-                  </button>
+                  <span class="text-lg font-extrabold text-secondary">${isPast ? '---' : prixFormate}</span>
+                  ${btnHtml}
                 </div>
               </div>
             </div>
@@ -826,7 +845,6 @@
           })
           .join("");
       }
-
       // 4. LE CODE QUE TU M'AS ENVOYÉ (avec la pagination corrigée)
       document.addEventListener("DOMContentLoaded", async () => {
         const container = document.getElementById("events-grid-container");

@@ -669,7 +669,7 @@
           );
 
           // On filtre l'événement actuel et on garde maximum 3 événements
-          const filtered = events.filter((e) => e.id != currentId).slice(0, 4);
+          const filtered = events.filter((e) => e.id != currentId).slice(0, 3);
 
           if (filtered.length === 0) {
             grid.innerHTML =
@@ -681,6 +681,9 @@
           grid.innerHTML = filtered
             .map((e) => {
               const d = new Date(e.event_date);
+              const now = new Date();
+              const isPast = d < now; // Détection si l'événement suggéré est passé
+
               const dateStr = !isNaN(d)
                 ? d.toLocaleDateString("fr-FR", {
                     day: "numeric",
@@ -688,6 +691,7 @@
                     year: "numeric",
                   })
                 : "Bientôt";
+                
               const priceStr =
                 e.price && e.price > 0
                   ? e.price.toLocaleString("fr-FR") + " FCFA"
@@ -696,8 +700,16 @@
                 e.cover_image_url ||
                 "https://via.placeholder.com/400x300?text=GoEvent";
 
+              // Style si passé : opacité réduite et badge "TERMINE"
+              const cardOpacity = isPast ? "opacity-75 grayscale-[20%]" : "";
+              const badgeHtml = isPast 
+                ? `<span class="bg-primary text-white px-3 py-1 rounded-lg text-[10px] font-black tracking-widest flex items-center gap-1">
+                     <span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1">history</span> TERMINE
+                   </span>`
+                : `<span class="text-primary font-black text-base">${priceStr}</span>`;
+
               return `
-            <div onclick="window.location.href='event_detail.html?id=${e.id}'" class="bg-white rounded-[2rem] p-3 shadow-sm border border-gray-100 hover:shadow-xl hover:border-primary/30 transition-all duration-300 cursor-pointer group flex flex-col">
+            <div onclick="window.location.href='event_detail.html?id=${e.id}'" class="bg-white rounded-[2rem] p-3 shadow-sm border border-gray-100 hover:shadow-xl hover:border-primary/30 transition-all duration-300 cursor-pointer group flex flex-col ${cardOpacity}">
                 <div class="relative h-48 rounded-2xl overflow-hidden mb-4 shrink-0">
                     <img src="${imgUrl}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                     <div class="absolute top-3 left-3 bg-white/95 backdrop-blur px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-primary shadow-sm">
@@ -708,11 +720,11 @@
                     <h4 class="font-headline font-extrabold text-gray-900 text-lg line-clamp-2 mb-2 leading-tight">${e.title}</h4>
                     
                     <div class="mt-auto pt-4 border-t border-gray-50 flex justify-between items-center">
-                        <span class="text-xs font-bold text-gray-400 flex items-center gap-1.5">
+                        <span class="text-xs font-bold text-outline flex items-center gap-1.5">
                             <span class="material-symbols-outlined text-[14px]">calendar_today</span>
                             ${dateStr}
                         </span>
-                        <span class="text-primary font-black text-base">${priceStr}</span>
+                        ${badgeHtml}
                     </div>
                 </div>
             </div>

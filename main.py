@@ -534,6 +534,8 @@ def envoyer_billet_email(email_client, nom_client, ticket, event, amount):
     # L'URL du QR Code générée automatiquement
     qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={ticket.qr_hash}"
 
+    # Label dynamique pour le prix
+    label_prix = "🎟️ ENTRÉE GRATUITE" if amount <= 0 else f"💰 Montant : {amount} FCFA"
     html_body = f"""
     <html>
     <body style="font-family: 'Arial', sans-serif; background-color: #f4f4f4; padding: 20px; text-align: center;">
@@ -543,7 +545,7 @@ def envoyer_billet_email(email_client, nom_client, ticket, event, amount):
 
             <h3 style="color: #1a1c1c; font-size: 20px; margin-top: 20px;">{event.title}</h3>
             <p style="color: #666; margin: 5px 0;">📍 {event.location}</p>
-            <p style="color: #666; margin: 5px 0;">💰 Payé : {amount} FCFA</p>
+            <p style="color: #00502c; font-weight: bold; font-size: 18px; margin: 15px 0;">{label_prix}</p>
 
             <hr style="border: none; border-top: 2px dashed #e2e2e2; margin: 25px 0;">
 
@@ -1630,30 +1632,40 @@ def reserve_ticket_cash(
         raise HTTPException(400, 
             "Vous avez atteint la limite de 3 réservations pour cet événement.")
     
-    # 5. Récupérer le prix depuis la base
+    # 5. Calcul du prix (Gestion rigoureuse des tiers/catégories)
     prix_base = event.price
     if data.tier_name and event.ticket_tiers:
+        # On cherche le tier correspondant dans la liste JSON
         tier = next((t for t in event.ticket_tiers if t.get("name") == data.tier_name), None)
         if not tier:
             raise HTTPException(400, "Catégorie de billet invalide")
-        prix_base = float(tier.get("price", event.price))
+        # On récupère le prix du tier, sinon celui de l'événement par défaut
+        try:
+            prix_base = float(tier.get("price", event.price))
+        except (ValueError, TypeError):
+            prix_base = float(event.price)
     
-    if prix_base <= 0:
-        raise HTTPException(400, "Prix invalide")
+    # --- LOGIQUE DE GRATUITÉ ---
+    # Si le prix est 0, on valide immédiatement le billet
+    est_gratuit = (prix_base <= 0)
+    status_final = "paye" if est_gratuit else "reservation_cash"
+    methode_final = "gratuit" if est_gratuit else "cash"
+    ref_prefix = "FREE" if est_gratuit else "CASH"
     
-    # 6. Sauvegarder l'email si fourni
+    # 6. Mise à jour de l'email utilisateur si nécessaire
     if data.email and not current_user.email:
         current_user.email = data.email
     
-    # 7. Créer la réservation
+    # 7. Création du billet avec le statut adapté
     new_ticket = Ticket(
         event_id=event.id,
         user_id=current_user.id,
-        payment_status="reservation_cash",
-        payment_method="cash",
-        payment_ref=f"CASH-{uuid.uuid4().hex[:8].upper()}",
+        payment_status=status_final,
+        payment_method=methode_final,
+        payment_ref=f"{ref_prefix}-{uuid.uuid4().hex[:8].upper()}",
         cash_amount=prix_base,
-        reservation_expires_at=deadline
+        # Pas d'expiration pour un billet gratuit déjà "payé"
+        reservation_expires_at=deadline if not est_gratuit else None
     )
     db.add(new_ticket)
     

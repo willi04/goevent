@@ -286,7 +286,8 @@
                 </div>
               </div>
             </div>
-            <div
+            <div 
+              id="payment-block"
               class="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-gray-100 relative overflow-hidden"
             >
               <h2
@@ -706,10 +707,35 @@
           
           currentEventPrice = price; 
           const sumSubtotal = document.getElementById("summary-subtotal");
-          if(sumSubtotal) sumSubtotal.textContent = price.toLocaleString("fr-FR") + " FCFA";
+          if(sumSubtotal) sumSubtotal.textContent = price > 0 ? price.toLocaleString("fr-FR") + " FCFA" : "Gratuit";
           
-          // D. On sélectionne le cash directement au chargement !
-          selectPaymentMethod("cash");
+          // --- LOGIQUE POUR ÉVÉNEMENT GRATUIT ---
+          if (price === 0) {
+              // 1. Cacher le bloc des moyens de paiement
+              const paymentBlock = document.getElementById("payment-block");
+              if (paymentBlock) paymentBlock.style.display = "none";
+              
+              // 2. Forcer la méthode "cash" en arrière-plan (ton backend s'occupe du reste)
+              selectedPaymentMethod = "cash";
+              
+              // 3. Modifier les textes (Total et Bouton)
+              const sumFee = document.getElementById("summary-fee");
+              const sumTot = document.getElementById("summary-total");
+              const btnText = document.getElementById("btn-text");
+              const btnIcon = document.getElementById("btn-icon");
+              
+              if(sumFee) sumFee.textContent = "0 FCFA";
+              if(sumTot) sumTot.textContent = "Gratuit"; 
+              if(btnText) btnText.innerHTML = "Obtenir mon billet gratuit";
+              if(btnIcon) btnIcon.textContent = "confirmation_number";
+              
+              // On vérifie le formulaire (Nom/Email) pour activer le bouton
+              if (typeof window.checkForm === 'function') window.checkForm();
+              
+          } else {
+              // D. Événement payant : On sélectionne le cash normalement au chargement
+              selectPaymentMethod("cash");
+          }
       
         } catch (error) {
           console.error("Erreur API:", error);
@@ -760,7 +786,10 @@
               email: document.getElementById("buyer-email") ? document.getElementById("buyer-email").value : null
             };
             const response = await btApi.post("/tickets/reserve-cash", payload);
-            btToast("Réservation confirmée ! À payer cash à l'entrée.", "success");
+            const msgSuccess = currentEventPrice === 0 
+                ? "Billet gratuit généré avec succès !" 
+                : "Réservation confirmée ! À payer cash à l'entrée.";
+            btToast(msgSuccess, "success");
             
             sessionStorage.setItem("last_reservation", JSON.stringify({
               ticket_id: response.ticket_id,

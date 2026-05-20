@@ -44,6 +44,13 @@ ALGORITHM    = "HS256"
 if not DATABASE_URL:
     raise ValueError("⚠️ ERREUR CRITIQUE : Aucune URL de base de données (DATABASE_URL) n'a été trouvée !")
 
+
+# ── CONFIG NGSER ────────────────────────────────────────────────
+NGSER_BASE_URL = os.getenv("NGSER_BASE_URL", "https://securetest.crossroad-africa.net")
+NGSER_AUTH_TOKEN = os.getenv("NGSER_AUTH_TOKEN")
+NGSER_PAYMENT_TOKEN = os.getenv("NGSER_PAYMENT_TOKEN")
+NGSER_SERVICE_NAME = "GOEVENT TEST"
+
 # Configuration PostgreSQL (sans check_same_thread)
 engine = create_engine(
     DATABASE_URL,
@@ -2356,70 +2363,55 @@ def follow_organizer(org_id: int, db: Session = Depends(get_db), current_user: U
 
 # TEST SUR BILLET ACHETE
 
-@app.post("/payment/test-confirm")
-def test_confirm_payment(
-    data: PaymentConfirm, 
+@app.post("/payment/initiate-ngser")
+async def initiate_ngser_payment(
+    data: PaymentConfirm, # Utilise le même nom de modèle Pydantic que tu avais avant
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """
-    Simule un paiement validé pour les tests.
-    ⚠️ Le prix est TOUJOURS récupéré depuis la base, JAMAIS depuis le client.
+    1. Crée le billet "En attente"
+    2. Demande le lien de paiement à NGSER
+    3. Renvoie le lien au frontend
     """
-    
-    # 1. Chercher l'événement en base
-    event = db.query(Event).filter(
-        Event.id == data.event_id, 
-        Event.is_active == True
-    ).first()
-    
-    if not event:
-        raise HTTPException(404, "Événement introuvable")
-    
-    # 2. Vérifier disponibilité
-    if event.seats_sold >= event.total_seats:
-        raise HTTPException(400, "Événement complet")
-    
-    if event.event_date < datetime.utcnow():
-        raise HTTPException(400, "Événement déjà passé")
-    
-    # 3. 🔒 RÉCUPÉRER LE PRIX DEPUIS LA BASE (pas du client !)
-    prix_base = event.price
-    
-    # Si tiers de billets, trouver le bon tier
+    # 1. Vérification de l'événement
+    event = db.query(Event).filter(Event.id == data.event_id, Event.is_active == True).first()
+    if not event: raise HTTPException(404, "Événement introuvable")
+    if event.seats_sold >= event.total_seats: raise HTTPException(400, "Événement complet")
+
+    # 2. Calcul du prix via la BD
+    prix_base = float(event.price)
     if data.tier_name and event.ticket_tiers:
         tier = next((t for t in event.ticket_tiers if t.get("name") == data.tier_name), None)
-        if not tier:
-            raise HTTPException(400, "Catégorie de billet invalide")
-        prix_base = float(tier.get("price", event.price))
-    
-    # 4. Vérification supplémentaire : prix > 0
-    if prix_base <= 0:
-        raise HTTPException(400, "Prix invalide")
-    
-    # 5. Calcul des commissions (côté serveur uniquement)
-    frais_acheteur     = prix_base * 0.04
-    total_a_payer      = prix_base + frais_acheteur
+        if tier: prix_base = float(tier.get("price", event.price))
+
+    if prix_base <= 0: raise HTTPException(400, "Prix invalide pour un paiement Orange Money")
+
+    # 3. Calcul de tes frais et commissions
+    frais_acheteur = prix_base * 0.04
+    total_a_payer = prix_base + frais_acheteur
     frais_organisateur = prix_base * 0.07
-    solde_orga         = prix_base - frais_organisateur
-    tes_benefices      = frais_acheteur + frais_organisateur
-    
-    # 6. Sauvegarder l'email dans le profil si absent
+    solde_orga = prix_base - frais_organisateur
+    tes_benefices = frais_acheteur + frais_organisateur
+
     if data.email and not current_user.email:
         current_user.email = data.email
-    
-    # 7. Créer le billet (QR code sécurisé avec uuid)
+
+    # 4. Création d'un ID de commande unique (Max 25 caractères pour NGSER)
+    order_id = f"EVT{event.id}-{uuid.uuid4().hex[:10].upper()}"
+
+    # 5. Enregistrement en base de données (Statut: en_attente)
     new_ticket = Ticket(
         event_id=event.id,
         user_id=current_user.id,
-        payment_status="paye",
-        payment_ref=f"TEST-{uuid.uuid4().hex[:8].upper()}"
-        # qr_hash sera automatiquement généré avec uuid4 (voir modèle Ticket)
+        payment_status="en_attente_om",
+        payment_method="orange_money",
+        payment_ref=order_id,
+        cash_amount=prix_base
     )
     db.add(new_ticket)
-    db.flush()
-    
-    # 8. Enregistrer le paiement avec trace comptable
+    db.flush() # flush permet de récupérer new_ticket.id sans commit complet
+
     payment = Payment(
         user_id=current_user.id,
         ticket_id=new_ticket.id,
@@ -2427,38 +2419,96 @@ def test_confirm_payment(
         base_price=prix_base,
         platform_fee=tes_benefices,
         organizer_amount=solde_orga,
-        status="completed",
-        transaction_id=new_ticket.payment_ref
+        status="pending",
+        transaction_id=order_id
     )
     db.add(payment)
-    
-    # 9. 🔒 Incrémenter les places vendues (évite la surréservation)
-    event.seats_sold += 1
-    
     db.commit()
     db.refresh(new_ticket)
-    
-    # 10. Envoyer l'email de confirmation
-    email_envoi = data.email or current_user.email
-    if email_envoi:
-        try:
-            envoyer_billet_email(
-                email_envoi, 
-                data.full_name or current_user.full_name, 
-                new_ticket, 
-                event, 
-                int(total_a_payer)
-            )
-        except Exception as e:
-            print(f"⚠️ Erreur envoi email : {e}")
-    
-    return {
-        "status": "success",
-        "ticket_id": new_ticket.id,
-        "qr_hash": new_ticket.qr_hash,
-        "amount": int(total_a_payer),
+
+    # 6. Appel à NGSER pour obtenir le lien de paiement
+    payload = {
+        "name": NGSER_SERVICE_NAME,
+        "authentication_token": NGSER_AUTH_TOKEN,
+        "currency": "XOF",
+        "operation_token": NGSER_PAYMENT_TOKEN,
+        "order": order_id,
+        "transaction_amount": int(total_a_payer)
     }
 
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{NGSER_BASE_URL}/v3/sessions",
+                json=payload,
+                timeout=15.0
+            )
+            response_data = response.json()
+            
+            # Si NGSER valide, il nous donne le lien 'payment_url'
+            if response.status_code == 200 and "payment_url" in response_data:
+                return {
+                    "status": "success",
+                    "payment_url": response_data["payment_url"],
+                    "ticket_id": new_ticket.id
+                }
+            else:
+                print(f"❌ Erreur API NGSER : {response.text}")
+                raise HTTPException(400, "Impossible d'initialiser le paiement avec Orange Money.")
+    except Exception as e:
+        print(f"❌ Erreur Serveur NGSER : {str(e)}")
+        raise HTTPException(503, "Le service de paiement est temporairement indisponible.")
+
+
+@app.post("/payment/ngser-webhook")
+async def ngser_webhook(request: Request, db: Session = Depends(get_db)):
+    """
+    Route secrète appelée par NGSER quand le client a fini de payer sur son téléphone.
+    """
+    try:
+        payload = await request.json()
+        print("🔔 [WEBHOOK NGSER] :", payload)
+        
+        order_id = payload.get("order_id")
+        status_id = payload.get("status_id") # 1 = Succès
+        transaction_amount = payload.get("transaction_amount")
+        
+        if not order_id: return {"status": "error"}
+
+        ticket = db.query(Ticket).filter(Ticket.payment_ref == order_id).first()
+        payment_record = db.query(Payment).filter(Payment.transaction_id == order_id).first()
+
+        # Si on trouve le billet et qu'il est en attente
+        if ticket and ticket.payment_status == "en_attente_om":
+            if status_id == 1:
+                # Validation finale !
+                ticket.payment_status = "paye"
+                if payment_record: payment_record.status = "completed"
+                
+                # Mise à jour des places vendues
+                event = db.query(Event).filter(Event.id == ticket.event_id).first()
+                if event: event.seats_sold += 1
+                    
+                db.commit()
+                
+                # ICI : Envoi du mail avec le QR code (décommente ou adapte selon ta fonction email)
+                # if ticket.owner and ticket.owner.email:
+                #    envoyer_billet_email(ticket.owner.email, ticket.owner.full_name, ticket, event, ticket.cash_amount)
+                
+                print(f"✅ Billet {ticket.id} validé avec succès via NGSER !")
+            else:
+                ticket.payment_status = "echec_paiement"
+                if payment_record: payment_record.status = "failed"
+                db.commit()
+                print(f"❌ Paiement échoué pour la commande {order_id}.")
+                
+        return {"status": "success"} # On répond toujours 200 à NGSER
+
+    except Exception as e:
+        print(f"❌ Erreur Webhook : {str(e)}")
+        return {"status": "error"}
+
+        
 # ════════════════════════════════════════════════════════════════
 # FEEDBACK ROUTES
 # ════════════════════════════════════════════════════════════════

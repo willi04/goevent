@@ -1519,39 +1519,6 @@ def buy_ticket(data: BuyTicket, db: Session = Depends(get_db),
         "ussd_code": "#150*50#",
     }
 
-# Simuler paiement en dev
-@app.post("/payment/simulate/{ticket_id}")
-def simulate_payment(ticket_id: int, db: Session = Depends(get_db),
-                     current_user: User = Depends(get_current_user)):
-    # 1. On cherche le billet en attente
-    ticket = db.query(Ticket).filter(
-        Ticket.id == ticket_id, Ticket.user_id == current_user.id).first()
-
-    if not ticket:
-        raise HTTPException(404, "Billet introuvable")
-
-    # 2. On valide le paiement
-    ticket.payment_status = "paye"
-    ticket.payment_ref = f"SIM_{uuid.uuid4().hex[:8].upper()}"
-
-    # 🔴 CORRECTION : On génère le vrai QR Code au moment de la simulation !
-    ticket.qr_hash = f"GOEVT-{uuid.uuid4().hex[:12].upper()}"
-
-    # 3. On ajoute la place vendue dans les stats de l'événement
-    event = db.query(Event).filter(Event.id == ticket.event_id).first()
-    if event:
-        event.seats_sold += 1
-
-    db.commit()
-
-    # 🔴 CORRECTION : On déclenche l'envoi de l'email SI l'utilisateur a renseigné un email
-    if current_user.email:
-        # Assure-toi d'avoir corrigé l'espace dans SENDER_EMAIL plus haut dans ton code !
-        envoyer_billet_email(current_user.email, current_user.full_name, ticket, event, event.price)
-    else:
-        print("⚠️ Email non envoyé : L'utilisateur n'a pas d'adresse email dans son profil.")
-
-    return {"message": "Paiement simulé avec succès", "ref": ticket.payment_ref}
 @app.get("/tickets/my")
 def my_tickets(db: Session = Depends(get_db),
                current_user: User = Depends(get_current_user)):
@@ -2431,7 +2398,7 @@ async def initiate_ngser_payment(
     payload = {
         "name": NGSER_SERVICE_NAME,
         "authentication_token": NGSER_AUTH_TOKEN,
-        "currency": "XOF",
+        "currency": "FCFA",
         "operation_token": NGSER_PAYMENT_TOKEN,
         "order": order_id,
         "transaction_amount": int(total_a_payer)
@@ -2509,6 +2476,66 @@ async def ngser_webhook(request: Request, db: Session = Depends(get_db)):
         print(f"❌ Erreur Webhook : {str(e)}")
         return {"status": "error"}
 
+@app.post("/finance/withdraw-ngser")
+async def process_ngser_withdrawal(
+    amount: int, 
+    phone_number: str, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user) 
+):
+    """
+    Envoie de l'argent depuis le compte NGSER vers un numéro Orange Money.
+    """
+    # 1. Sécurité : On vérifie que c'est bien l'admin ou un organisateur autorisé
+    if current_user.role not in ["admin", "organizer", "organisation"]:
+        raise HTTPException(403, "Accès non autorisé pour les retraits.")
+        
+    if amount <= 0:
+        raise HTTPException(400, "Le montant du retrait doit être positif.")
+
+    # 2. Génération d'un ID de transaction unique
+    withdrawal_id = f"WD{current_user.id}-{uuid.uuid4().hex[:10].upper()}"
+
+    # 3. Préparation de la requête pour NGSER
+    payload = {
+        "name": NGSER_SERVICE_NAME,
+        "authentication_token": NGSER_AUTH_TOKEN,
+        "operation_token": NGSER_WITHDRAWAL_TOKEN, # ⚠️ On utilise bien la clé de RETRAIT !
+        "currency": "FCFA",
+        "order": withdrawal_id,
+        "transaction_amount": amount,
+        "customer": phone_number # Le numéro Orange Money qui reçoit l'argent
+    }
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{NGSER_BASE_URL}/v3/withdrawals", # L'endpoint standard de retrait
+                json=payload,
+                timeout=15.0
+            )
+            response_data = response.json()
+            
+            # 4. Analyse de la réponse
+            if response.status_code == 200 and response_data.get("status_id") == 1:
+                print(f"✅ Retrait de {amount} FCFA vers {phone_number} réussi !")
+                
+                # Optionnel : Tu pourras ajouter ici l'enregistrement du retrait dans ta base de données
+                # new_payout = Payout(user_id=current_user.id, amount=amount, status="completed")
+                # db.add(new_payout); db.commit()
+                
+                return {
+                    "status": "success", 
+                    "message": f"Le transfert de {amount} FCFA vers le {phone_number} a réussi.",
+                    "reference": withdrawal_id
+                }
+            else:
+                print(f"❌ Erreur NGSER retrait : {response.text}")
+                raise HTTPException(400, "L'opérateur a rejeté le transfert (Fonds insuffisants ou numéro invalide).")
+
+    except Exception as e:
+        print(f"❌ Erreur connexion NGSER pour retrait : {str(e)}")
+        raise HTTPException(503, "Le service de transfert est temporairement indisponible.")
         
 # ════════════════════════════════════════════════════════════════
 # FEEDBACK ROUTES

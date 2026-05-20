@@ -2406,7 +2406,7 @@ async def initiate_ngser_payment(
     }
 
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(verify=False) as client:
             response = await client.post(
                 f"{NGSER_BASE_URL}/v3/sessions",
                 json=payload,
@@ -2509,7 +2509,7 @@ async def process_ngser_withdrawal(
     }
 
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(verify=False) as client:
             response = await client.post(
                 f"{NGSER_BASE_URL}/v3/withdrawals", # L'endpoint standard de retrait
                 json=payload,

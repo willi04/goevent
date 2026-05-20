@@ -20,6 +20,7 @@ from typing import Optional, List
 import random
 import uuid
 import os
+import httpx
 import pathlib
 import smtplib
 from email.mime.multipart import MIMEMultipart

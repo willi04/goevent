@@ -768,17 +768,27 @@
         
         try {
           if (selectedPaymentMethod === "orange_money") {
-            const phoneInput = document.getElementById("buyer-phone");
-            const payload = {
-              event_id: parseInt(eventId),
-              tier_name: tierName,
-              email: document.getElementById("buyer-email") ? document.getElementById("buyer-email").value : null
-            };
-            const response = await btApi.post("/payment/test-confirm", payload);
-            btToast("Paiement confirmé ! Votre billet est prêt.", "success");
-            setTimeout(() => { window.location.href = "user_dashboard.html"; }, 1500);
-            
-          } else {
+              const payload = {
+                event_id: parseInt(eventId),
+                tier_name: tierName,
+                email: document.getElementById("buyer-email") ? document.getElementById("buyer-email").value : null
+              };
+              
+              // Appel de la NOUVELLE route NGSER
+              const response = await btApi.post("/payment/initiate-ngser", payload);
+              
+              if (response.payment_url) {
+                  // Succès : On redirige le client vers la page de paiement sécurisée
+                  btToast("Redirection vers l'espace sécurisé Orange Money...", "info");
+                  setTimeout(() => {
+                      window.location.href = response.payment_url;
+                  }, 1500);
+              }else {
+                  btToast("Erreur lors de l'initialisation du paiement.", "error");
+                  btn.disabled = false;
+                  btn.innerHTML = originalBtnContent;
+              }
+          }else{
             // RÉSERVATION CASH
             const payload = {
               event_id: parseInt(eventId),

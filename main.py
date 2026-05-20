@@ -49,6 +49,7 @@ if not DATABASE_URL:
 NGSER_BASE_URL = os.getenv("NGSER_BASE_URL", "https://securetest.crossroad-africa.net")
 NGSER_AUTH_TOKEN = os.getenv("NGSER_AUTH_TOKEN")
 NGSER_PAYMENT_TOKEN = os.getenv("NGSER_PAYMENT_TOKEN")
+NGSER_WITHDRAWAL_TOKEN = os.getenv("NGSER_WITHDRAWAL_TOKEN")
 NGSER_SERVICE_NAME = "GOEVENT TEST"
 
 # Configuration PostgreSQL (sans check_same_thread)

@@ -2330,7 +2330,7 @@ def follow_organizer(org_id: int, db: Session = Depends(get_db), current_user: U
         db.commit()
         return {"message": f"Vous suivez maintenant {org.org_name or org.full_name}", "is_followed": True}
 
-# TEST SUR BILLET ACHETE
+#  BILLET ACHETE
 
 @app.post("/payment/initiate-ngser")
 async def initiate_ngser_payment(
@@ -2399,7 +2399,7 @@ async def initiate_ngser_payment(
     payload = {
         "name": NGSER_SERVICE_NAME,
         "authentication_token": NGSER_AUTH_TOKEN,
-        "currency": "FCFA",
+        "currency": "XAF",
         "operation_token": NGSER_PAYMENT_TOKEN,
         "order": order_id,
         "transaction_amount": int(total_a_payer)
@@ -2502,7 +2502,7 @@ async def process_ngser_withdrawal(
         "name": NGSER_SERVICE_NAME,
         "authentication_token": NGSER_AUTH_TOKEN,
         "operation_token": NGSER_WITHDRAWAL_TOKEN, # ⚠️ On utilise bien la clé de RETRAIT !
-        "currency": "FCFA",
+        "currency": "XAF",
         "order": withdrawal_id,
         "transaction_amount": amount,
         "customer": phone_number # Le numéro Orange Money qui reçoit l'argent

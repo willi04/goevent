@@ -2463,22 +2463,48 @@ async def initiate_ngser_payment(
 @app.post("/payment/ngser-webhook")
 async def ngser_webhook(request: Request, db: Session = Depends(get_db)):
     """
-    Route secrète appelée par NGSER quand le client a fini de payer sur son téléphone.
+    Route de notification appelée par NGSER.
+    Version "blindée" pour lire n'importe quel format (JSON, Formulaire ou URL).
     """
     try:
-        payload = await request.json()
-        print("🔔 [WEBHOOK NGSER] :", payload)
+        payload = {}
+        
+        # 1. On lit le corps brut de la requête de façon sécurisée
+        body_bytes = await request.body()
+        
+        if body_bytes:
+            import json
+            try:
+                # On tente d'abord de lire comme du JSON (comme l'indique leur documentation)
+                payload = json.loads(body_bytes)
+            except json.JSONDecodeError:
+                # Si le JSON est invalide ou vide (l'erreur char 0), on bascule en mode Formulaire
+                form_data = await request.form()
+                payload = dict(form_data)
+                
+        # 2. Si le corps était totalement vide, la donnée est peut-être dans l'URL
+        if not payload:
+            payload = dict(request.query_params)
+
+        # On imprime exactement ce qu'on a réussi à capturer
+        print("🔔 [WEBHOOK NGSER PAYLOAD] :", payload)
         
         order_id = payload.get("order_id")
-        status_id = payload.get("status_id") # 1 = Succès
-        transaction_amount = payload.get("transaction_amount")
+        status_id = payload.get("status_id")
         
-        if not order_id: return {"status": "error"}
+        if not order_id: 
+            return {"status": "error", "message": "Aucun order_id reçu"}
 
+        # 3. Sécurité : on s'assure que le statut est bien un nombre entier
+        try:
+            status_id = int(status_id)
+        except (TypeError, ValueError):
+            pass
+
+        # 4. Mise à jour de la base de données
         ticket = db.query(Ticket).filter(Ticket.payment_ref == order_id).first()
-        payment_record = db.query(Payment).filter(Payment.transaction_id == order_id).first()
+        payment_record = db.query(Payment).filter(Payment.transaction_id == order_id).first() if 'Payment' in globals() else None
 
-        # Si on trouve le billet et qu'il est en attente
         if ticket and ticket.payment_status == "en_attente_om":
             if status_id == 1:
                 # Validation finale !
@@ -2490,11 +2516,6 @@ async def ngser_webhook(request: Request, db: Session = Depends(get_db)):
                 if event: event.seats_sold += 1
                     
                 db.commit()
-                
-                # ICI : Envoi du mail avec le QR code (décommente ou adapte selon ta fonction email)
-                # if ticket.owner and ticket.owner.email:
-                #    envoyer_billet_email(ticket.owner.email, ticket.owner.full_name, ticket, event, ticket.cash_amount)
-                
                 print(f"✅ Billet {ticket.id} validé avec succès via NGSER !")
             else:
                 ticket.payment_status = "echec_paiement"
@@ -2502,12 +2523,12 @@ async def ngser_webhook(request: Request, db: Session = Depends(get_db)):
                 db.commit()
                 print(f"❌ Paiement échoué pour la commande {order_id}.")
                 
-        return {"status": "success"} # On répond toujours 200 à NGSER
+        # On répond toujours HTTP 200 (Success) pour que NGSER sache qu'on a bien reçu le message
+        return {"status": "success"}
 
     except Exception as e:
-        print(f"❌ Erreur Webhook : {str(e)}")
+        print(f"❌ Erreur critique Webhook : {str(e)}")
         return {"status": "error"}
-
         
 # ════════════════════════════════════════════════════════════════
 # FEEDBACK ROUTES

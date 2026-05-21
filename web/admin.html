@@ -634,6 +634,38 @@
             >
           </h3>
           <div id="payouts-list" class="space-y-3"></div>
+          <div class="mt-12">
+            <h3 class="text-base font-black text-gray-900 mb-4 flex items-center gap-2">
+              <span class="material-symbols-outlined">history</span>
+              Historique des versements
+            </h3>
+            <div class="card overflow-hidden">
+              <div class="overflow-x-auto">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Organisateur</th>
+                      <th>Événement</th>
+                      <th>Montant</th>
+                      <th>Numéro (OM)</th>
+                      <th>Statut</th>
+                    </tr>
+                  </thead>
+                  <tbody id="finance-history-list">
+                    <tr>
+                      <td colspan="6">
+                        <div class="empty-state">
+                          <span class="material-symbols-outlined">hourglass_empty</span>
+                          Chargement...
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         </section>
 
         <!-- ── SECTION PARTENAIRES ── -->
@@ -1056,38 +1088,66 @@
             s.pending_payouts || 0;
         } catch (e) {}
 
-        const list = document.getElementById("payouts-list");
+        const listPending = document.getElementById("payouts-list");
+        const listHistory = document.getElementById("finance-history-list");
+        
         try {
-          const payouts = await btApi.get("/admin/payouts/pending");
-          document.getElementById("payouts-badge").textContent = payouts.length;
-          if (!payouts.length) {
-            list.innerHTML =
+          // 🔴 MODIFICATION : On appelle la nouvelle route qui ramène TOUT
+          const allPayouts = await btApi.get("/admin/payouts");
+          
+          // On sépare en deux groupes
+          const payoutsPending = allPayouts.filter(p => p.status === "en_attente");
+          const payoutsHistory = allPayouts.filter(p => p.status === "paye");
+
+          // 1. Mise à jour des "En attente"
+          document.getElementById("payouts-badge").textContent = payoutsPending.length;
+          if (!payoutsPending.length) {
+            listPending.innerHTML =
               '<div class="card p-6 text-center text-gray-400 text-sm">Aucun retrait en attente</div>';
-            return;
-          }
-          list.innerHTML = payouts
-            .map(
-              (p) => `
-          <div class="card p-5 flex justify-between items-center gap-4">
-            <div>
-              <p class="font-black text-gray-900">${p.org_name || "Organisateur"}</p>
-              <div class="flex items-center gap-2 mt-1">
-                <span class="text-sm font-bold text-green-700">${(p.amount || 0).toLocaleString()} FCFA</span>
-                <span class="text-[10px] text-gray-400 uppercase font-bold">Événement #${p.event_id}</span>
+          } else {
+            listPending.innerHTML = payoutsPending
+              .map(
+                (p) => `
+            <div class="card p-5 flex justify-between items-center gap-4">
+              <div>
+                <p class="font-black text-gray-900">${p.org_name || "Organisateur"}</p>
+                <div class="flex items-center gap-2 mt-1">
+                  <span class="text-sm font-bold text-green-700">${(p.amount || 0).toLocaleString()} FCFA</span>
+                  <span class="text-[10px] text-gray-400 uppercase font-bold">Événement #${p.event_id}</span>
+                </div>
+                <p class="text-xs text-gray-400 mt-1">Orange Money : ${p.phone_number || "Non renseigné"}</p>
               </div>
-              <p class="text-xs text-gray-400 mt-1">Orange Money : ${p.phone_number || "Non renseigné"}</p>
+              <button onclick="validerRetrait(${p.id}, ${p.amount}, '${p.phone_number || ""}')"
+                      class="action-btn btn-primary text-xs flex-shrink-0">
+                Valider le paiement
+              </button>
             </div>
-            <button onclick="validerRetrait(${p.id}, ${p.amount}, '${p.phone_number || ""}')"
-                    class="action-btn btn-primary text-xs flex-shrink-0">
-              Valider le paiement
-            </button>
-          </div>
-        `,
-            )
-            .join("");
+          `
+              ).join("");
+          }
+
+          // 2. Mise à jour de "l'Historique"
+          if (!payoutsHistory.length) {
+            listHistory.innerHTML =
+              '<tr><td colspan="6"><div class="empty-state"><span class="material-symbols-outlined">receipt_long</span>Aucun historique</div></td></tr>';
+          } else {
+            listHistory.innerHTML = payoutsHistory
+              .map(
+                (p) => `
+            <tr>
+              <td><span class="text-xs text-gray-400">${new Date(p.created_at).toLocaleDateString("fr-FR")}</span></td>
+              <td><span class="font-bold text-gray-900 text-sm">${p.org_name || "Organisateur"}</span></td>
+              <td><span class="text-xs font-bold text-gray-500">Événement #${p.event_id}</span></td>
+              <td><span class="text-sm font-bold text-gray-500">${(p.amount || 0).toLocaleString()} FCFA</span></td>
+              <td><span class="text-xs font-mono text-gray-500">${p.phone_number || "—"}</span></td>
+              <td><span class="badge badge-green flex items-center gap-1 w-max"><span class="material-symbols-outlined text-[12px]">check_circle</span> Payé</span></td>
+            </tr>
+          `
+              ).join("");
+          }
         } catch (e) {
-          list.innerHTML =
-            '<div class="text-center text-red-500 text-sm py-8">Erreur de chargement</div>';
+          listPending.innerHTML = '<div class="text-center text-red-500 text-sm py-8">Erreur de chargement</div>';
+          if(listHistory) listHistory.innerHTML = '<tr><td colspan="6" class="text-center text-red-500 text-sm py-8">Erreur de chargement</td></tr>';
         }
       }
 

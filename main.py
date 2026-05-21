@@ -2015,12 +2015,14 @@ def admin_update_partner(partner_id: int, data: dict, db: Session = Depends(get_
     db.commit()
     return {"message": "Demande mise à jour"}
 
-@app.get("/admin/payouts/pending")
-async def get_pending_payouts(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+# 🔴 MODIFICATION : On change l'URL et on enlève le filtre pour récupérer TOUT l'historique
+@app.get("/admin/payouts")
+async def get_all_payouts(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if current_user.role != "admin":
         raise HTTPException(status_code=403)
 
-    payouts = db.query(PayoutRequest).filter(PayoutRequest.status == "en_attente").all()
+    # On récupère toutes les demandes, triées par date (les plus récentes en premier)
+    payouts = db.query(PayoutRequest).order_by(PayoutRequest.created_at.desc()).all()
     result = []
     for p in payouts:
         # On va chercher les infos de l'organisateur pour l'affichage Admin

@@ -2486,29 +2486,23 @@ async def initiate_ngser_payment(
 async def ngser_webhook(request: Request, db: Session = Depends(get_db)):
     """
     Route de notification appelée par NGSER.
-    Version "blindée" pour lire n'importe quel format (JSON, Formulaire ou URL).
+    Gère à la fois l'achat de BILLETS (EVT...) et les RETRAITS ORGA (WD...).
     """
     try:
         payload = {}
-        
-        # 1. On lit le corps brut de la requête de façon sécurisée
         body_bytes = await request.body()
         
         if body_bytes:
             import json
             try:
-                # On tente d'abord de lire comme du JSON (comme l'indique leur documentation)
                 payload = json.loads(body_bytes)
             except json.JSONDecodeError:
-                # Si le JSON est invalide ou vide (l'erreur char 0), on bascule en mode Formulaire
                 form_data = await request.form()
                 payload = dict(form_data)
                 
-        # 2. Si le corps était totalement vide, la donnée est peut-être dans l'URL
         if not payload:
             payload = dict(request.query_params)
 
-        # On imprime exactement ce qu'on a réussi à capturer
         print("🔔 [WEBHOOK NGSER PAYLOAD] :", payload)
         
         order_id = payload.get("order_id")
@@ -2517,40 +2511,61 @@ async def ngser_webhook(request: Request, db: Session = Depends(get_db)):
         if not order_id: 
             return {"status": "error", "message": "Aucun order_id reçu"}
 
-        # 3. Sécurité : on s'assure que le statut est bien un nombre entier
         try:
             status_id = int(status_id)
         except (TypeError, ValueError):
             pass
 
-        # 4. Mise à jour de la base de données
+        # ---------------------------------------------------------
+        # SCÉNARIO 1 : C'EST UN RETRAIT ORGANISATEUR (Commence par WD)
+        # ---------------------------------------------------------
+        if str(order_id).startswith("WD"):
+            try:
+                # On extrait l'ID du retrait (ex: "WD2-ABCD" -> "2")
+                payout_id_str = str(order_id).split("-")[0].replace("WD", "")
+                payout_id = int(payout_id_str)
+                
+                payout = db.query(PayoutRequest).filter(PayoutRequest.id == payout_id).first()
+                if payout and payout.status != "paye":
+                    if status_id == 1:
+                        payout.status = "paye"
+                        db.commit()
+                        print(f"✅💸 Webhook : Retrait B2C {payout_id} validé avec succès !")
+                    else:
+                        print(f"❌ Webhook : Échec ou annulation du retrait {payout_id}.")
+            except Exception as e:
+                print(f"❌ Erreur lecture webhook retrait : {e}")
+                
+            return {"status": "success"}
+
+        # ---------------------------------------------------------
+        # SCÉNARIO 2 : C'EST UN ACHAT DE BILLET (Commence par EVT)
+        # ---------------------------------------------------------
         ticket = db.query(Ticket).filter(Ticket.payment_ref == order_id).first()
         payment_record = db.query(Payment).filter(Payment.transaction_id == order_id).first() if 'Payment' in globals() else None
 
         if ticket and ticket.payment_status == "en_attente_om":
             if status_id == 1:
-                # Validation finale !
                 ticket.payment_status = "paye"
                 if payment_record: payment_record.status = "completed"
                 
-                # Mise à jour des places vendues
                 event = db.query(Event).filter(Event.id == ticket.event_id).first()
                 if event: event.seats_sold += 1
                     
                 db.commit()
-                print(f"✅ Billet {ticket.id} validé avec succès via NGSER !")
+                print(f"✅🎫 Webhook : Billet {ticket.id} validé avec succès !")
             else:
                 ticket.payment_status = "echec_paiement"
                 if payment_record: payment_record.status = "failed"
                 db.commit()
-                print(f"❌ Paiement échoué pour la commande {order_id}.")
+                print(f"❌ Webhook : Paiement billet échoué pour la commande {order_id}.")
                 
-        # On répond toujours HTTP 200 (Success) pour que NGSER sache qu'on a bien reçu le message
         return {"status": "success"}
 
     except Exception as e:
         print(f"❌ Erreur critique Webhook : {str(e)}")
         return {"status": "error"}
+
         
 # ════════════════════════════════════════════════════════════════
 # FEEDBACK ROUTES

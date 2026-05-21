@@ -1436,8 +1436,8 @@ async def create_payout_request(data: dict, db: Session = Depends(get_db), user:
     event = db.query(Event).filter(Event.id == event_id, Event.organizer_id == user.id).first()
     if not event: raise HTTPException(404, "Événement introuvable")
     
-    if event.event_date > datetime.utcnow():
-        raise HTTPException(400, f"Retrait possible uniquement APRÈS l'événement.")
+   # if event.event_date > datetime.utcnow():
+   #    raise HTTPException(400, f"Retrait possible uniquement APRÈS l'événement.")
     
     cagnotte_reelle = db.query(func.sum(Payment.organizer_amount)).join(
         Ticket, Payment.ticket_id == Ticket.id

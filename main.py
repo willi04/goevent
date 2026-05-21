@@ -2071,7 +2071,7 @@ async def validate_payout(payout_id: int, db: Session = Depends(get_db), current
     try:
         async with httpx.AsyncClient(verify=False) as client:
             response = await client.post(
-                f"{NGSER_BASE_URL}/v3/withdrawals",
+                f"{NGSER_BASE_URL}/v3/sessions",
                 json=payload,
                 timeout=15.0
             )

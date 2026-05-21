@@ -2028,37 +2028,76 @@ async def get_pending_payouts(db: Session = Depends(get_db), current_user: User 
     if current_user.role != "admin":
         raise HTTPException(status_code=403)
 
-    # On récupère les demandes 'en_attente' avec les détails de l'événement et de l'orga
-    return db.query(PayoutRequest).filter(PayoutRequest.status == "en_attente").all()
-
+    payouts = db.query(PayoutRequest).filter(PayoutRequest.status == "en_attente").all()
+    result = []
+    for p in payouts:
+        # On va chercher les infos de l'organisateur pour l'affichage Admin
+        orga = db.query(User).filter(User.id == p.organizer_id).first()
+        result.append({
+            "id": p.id,
+            "event_id": p.event_id,
+            "amount": p.amount,
+            "status": p.status,
+            "org_name": orga.org_name or orga.full_name if orga else "Inconnu",
+            "phone_number": orga.orange_money or orga.phone_number if orga else "Non renseigné",
+            "created_at": p.created_at
+        })
+    return result
 
 @app.post("/admin/payouts/{payout_id}/validate")
-async def validate_payout(payout_id: int, db: Session = Depends(get_db),
-                          current_user: User = Depends(get_current_user)):
-    # 1. Vérification de sécurité : Seul l'admin (Emmanuel) peut cliquer
+async def validate_payout(payout_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    # 1. Vérification de sécurité : Seul l'admin (Toi) peut cliquer
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Accès non autorisé")
 
-    # 2. On cherche la demande de retrait dans la base
+    # 2. On cherche la demande de retrait
     payout = db.query(PayoutRequest).filter(PayoutRequest.id == payout_id).first()
-
     if not payout:
         raise HTTPException(status_code=404, detail="Demande de retrait introuvable")
-
     if payout.status == "paye":
         return {"message": "Ce versement a déjà été effectué"}
 
-    # 3. On met à jour le statut
-    payout.status = "paye"
-    payout.paid_at = datetime.utcnow()  # Optionnel : garder l'heure du virement
+    # 3. On récupère le numéro de réception de l'organisateur
+    orga = db.query(User).filter(User.id == payout.organizer_id).first()
+    phone_number = orga.orange_money if (orga and orga.orange_money) else (orga.phone_number if orga else None)
+    
+    if not phone_number:
+        raise HTTPException(status_code=400, detail="Numéro de réception introuvable pour cet organisateur.")
 
-    # 4. On enregistre le changement
-    db.commit()
+    # 4. APPEL À NGSER
+    withdrawal_id = f"WD{payout.id}-{uuid.uuid4().hex[:10].upper()}"
+    payload = {
+        "name": NGSER_SERVICE_NAME,
+        "authentication_token": NGSER_AUTH_TOKEN,
+        "operation_token": NGSER_WITHDRAWAL_TOKEN,
+        "currency": "XAF",
+        "order": withdrawal_id,
+        "transaction_amount": int(payout.amount),
+        "customer": phone_number
+    }
 
-    print(f"💰 VERSEMENT VALIDÉ : {payout.amount} FCFA envoyés pour l'événement {payout.event_id}")
-    log_security_event(db, "payout_validated", request, current_user.id, 
-                   f"Payout #{payout_id} — {payout.amount} FCFA")
-    return {"status": "success", "message": "Le retrait est marqué comme payé"}
+    try:
+        async with httpx.AsyncClient(verify=False) as client:
+            response = await client.post(
+                f"{NGSER_BASE_URL}/v3/withdrawals",
+                json=payload,
+                timeout=15.0
+            )
+            response_data = response.json()
+            
+            if response.status_code == 200 and response_data.get("status_id") == 1:
+                # 5. L'argent est parti ! On met à jour la base
+                payout.status = "paye"
+                db.commit()
+                print(f"💰 VERSEMENT VALIDÉ : {payout.amount} FCFA envoyés vers {phone_number}")
+                return {"status": "success", "message": f"Le retrait de {payout.amount} FCFA est marqué comme payé"}
+            else:
+                error_msg = response_data.get("description", "Erreur opérateur")
+                raise HTTPException(status_code=400, detail=f"Échec du transfert : {error_msg}")
+
+    except Exception as e:
+        print(f"❌ Erreur Retrait NGSER : {str(e)}")
+        raise HTTPException(status_code=503, detail="Le service de transfert est temporairement indisponible.")
 
 @app.get("/admin/security-logs")
 def get_security_logs(
@@ -2477,66 +2516,6 @@ async def ngser_webhook(request: Request, db: Session = Depends(get_db)):
         print(f"❌ Erreur Webhook : {str(e)}")
         return {"status": "error"}
 
-@app.post("/finance/withdraw-ngser")
-async def process_ngser_withdrawal(
-    amount: int, 
-    phone_number: str, 
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user) 
-):
-    """
-    Envoie de l'argent depuis le compte NGSER vers un numéro Orange Money.
-    """
-    # 1. Sécurité : On vérifie que c'est bien l'admin ou un organisateur autorisé
-    if current_user.role not in ["admin", "organizer", "organisation"]:
-        raise HTTPException(403, "Accès non autorisé pour les retraits.")
-        
-    if amount <= 0:
-        raise HTTPException(400, "Le montant du retrait doit être positif.")
-
-    # 2. Génération d'un ID de transaction unique
-    withdrawal_id = f"WD{current_user.id}-{uuid.uuid4().hex[:10].upper()}"
-
-    # 3. Préparation de la requête pour NGSER
-    payload = {
-        "name": NGSER_SERVICE_NAME,
-        "authentication_token": NGSER_AUTH_TOKEN,
-        "operation_token": NGSER_WITHDRAWAL_TOKEN, # ⚠️ On utilise bien la clé de RETRAIT !
-        "currency": "XAF",
-        "order": withdrawal_id,
-        "transaction_amount": amount,
-        "customer": phone_number # Le numéro Orange Money qui reçoit l'argent
-    }
-
-    try:
-        async with httpx.AsyncClient(verify=False) as client:
-            response = await client.post(
-                f"{NGSER_BASE_URL}/v3/withdrawals", # L'endpoint standard de retrait
-                json=payload,
-                timeout=15.0
-            )
-            response_data = response.json()
-            
-            # 4. Analyse de la réponse
-            if response.status_code == 200 and response_data.get("status_id") == 1:
-                print(f"✅ Retrait de {amount} FCFA vers {phone_number} réussi !")
-                
-                # Optionnel : Tu pourras ajouter ici l'enregistrement du retrait dans ta base de données
-                # new_payout = Payout(user_id=current_user.id, amount=amount, status="completed")
-                # db.add(new_payout); db.commit()
-                
-                return {
-                    "status": "success", 
-                    "message": f"Le transfert de {amount} FCFA vers le {phone_number} a réussi.",
-                    "reference": withdrawal_id
-                }
-            else:
-                print(f"❌ Erreur NGSER retrait : {response.text}")
-                raise HTTPException(400, "L'opérateur a rejeté le transfert (Fonds insuffisants ou numéro invalide).")
-
-    except Exception as e:
-        print(f"❌ Erreur connexion NGSER pour retrait : {str(e)}")
-        raise HTTPException(503, "Le service de transfert est temporairement indisponible.")
         
 # ════════════════════════════════════════════════════════════════
 # FEEDBACK ROUTES

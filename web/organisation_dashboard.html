@@ -206,6 +206,10 @@
             <span class="material-symbols-outlined opacity-70">add_circle</span>
             Créer un événement
           </a>
+          <a href="#" id="mo-link-finance-drawer" onclick="showSection('finance'); toggleMobileMenu();" class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all">
+            <span class="material-symbols-outlined opacity-70">account_balance_wallet</span>
+            Finances & Retraits
+          </a>
           <a
             href="#"
             id="mo-link-followers-drawer"
@@ -318,6 +322,9 @@
             <span class="material-symbols-outlined">add_circle</span>Créer un
             événement
           </button>
+          <button class="sb-link" id="link-finance" onclick="showSection('finance')">
+          <span class="material-symbols-outlined">account_balance_wallet</span>Finances & Retraits
+        </button>
           <button
             class="sb-link"
             id="link-followers"
@@ -325,6 +332,7 @@
           >
             <span class="material-symbols-outlined">groups</span>Abonnés
           </button>
+          
           <button
             class="sb-link"
             id="link-cash-reservations"
@@ -475,17 +483,33 @@
               </h2>
               <div id="events-list" class="space-y-4"></div>
             </div>
-            <div class="bg-white p-5 md:p-8 rounded-3xl shadow-sm border border-gray-100 mt-6">
-                <h2 class="text-lg md:text-xl font-extrabold font-headline tracking-tight text-gray-900 mb-6 border-b border-gray-100 pb-4 flex items-center gap-2">
-                    <span class="material-symbols-outlined text-green-500">receipt_long</span> Historique des Paiements
+          </div>
+          <div id="sec-finance" class="hidden pt-16 space-y-6 md:space-y-8">
+            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
+              <div>
+                <h2 class="text-2xl md:text-3xl font-extrabold font-headline tracking-tight text-gray-900">
+                  Finances & Retraits
                 </h2>
+                <p class="text-sm md:text-base text-gray-500 font-medium mt-1">
+                  Suivez vos revenus et l'état de vos virements Orange Money.
+                </p>
+              </div>
+              <button onclick="loadPayoutHistory()" class="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl font-bold text-sm transition-colors text-gray-700">
+                <span class="material-symbols-outlined text-base">refresh</span> Actualiser
+              </button>
+            </div>
+          
+            <div class="bg-white p-5 md:p-8 rounded-3xl shadow-sm border border-gray-100 mt-6">
+                <h3 class="text-lg md:text-xl font-extrabold font-headline tracking-tight text-gray-900 mb-6 border-b border-gray-100 pb-4 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-green-500">receipt_long</span> Historique des Paiements
+                </h3>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse min-w-[600px]">
                         <thead>
                             <tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
-                                <th class="p-4 rounded-tl-xl font-bold">Date</th>
-                                <th class="p-4 font-bold">Événement</th>
-                                <th class="p-4 font-bold">Montant NET</th>
+                                <th class="p-4 rounded-tl-xl font-bold">Date de demande</th>
+                                <th class="p-4 font-bold">Événement concerné</th>
+                                <th class="p-4 font-bold">Montant NET transféré</th>
                                 <th class="p-4 rounded-tr-xl font-bold">Statut</th>
                             </tr>
                         </thead>
@@ -496,7 +520,6 @@
                 </div>
             </div>
           </div>
-
           <div id="sec-events" class="hidden pt-16 space-y-6 md:space-y-8">
             <div
               class="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4"
@@ -1328,6 +1351,7 @@
           "team",
           "settings",
           "cash-reservations",
+          "finance",
         ];
         sections.forEach((s) => {
           const el = document.getElementById("sec-" + s);
@@ -1490,6 +1514,9 @@
         originalShowSection(section);
         if (section === "cash-reservations") {
           loadCashReservations();
+        }
+        if (section === "finance") { 
+          loadPayoutHistory();
         }
       };
       

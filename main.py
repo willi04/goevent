@@ -2087,15 +2087,24 @@ async def validate_payout(payout_id: int, db: Session = Depends(get_db), current
                 response_data = {}
             # --- FIN DU CODE BLINDÉ ---
             
-            if response.status_code == 200 and response_data.get("status_id") == 1:
-                # 5. L'argent est parti ! On met à jour la base
+            # --- FIN DU CODE BLINDÉ ---
+            
+            if response.status_code == 200 and "payment_url" in response_data:
+                # La session NGSER est créée avec succès ! On renvoie le lien à l'Admin
+                print(f"🔗 Session de retrait créée : {response_data['payment_url']}")
+                return {
+                    "status": "success", 
+                    "message": "Session de retrait générée.",
+                    "payment_url": response_data["payment_url"]
+                }
+            elif response.status_code == 200 and response_data.get("status_id") == 1:
+                # Au cas où NGSER valide directement sans lien
                 payout.status = "paye"
                 db.commit()
-                print(f"💰 VERSEMENT VALIDÉ : {payout.amount} FCFA envoyés vers {phone_number}")
-                return {"status": "success", "message": f"Le retrait de {payout.amount} FCFA est marqué comme payé"}
+                return {"status": "success", "message": f"Retrait de {payout.amount} FCFA effectué"}
             else:
                 error_msg = response_data.get("description", f"Erreur NGSER (Code HTTP {response.status_code})")
-                raise HTTPException(status_code=400, detail=f"Échec du transfert : {error_msg}")
+                raise HTTPException(status_code=400, detail=f"Échec : {error_msg}")
 
     except HTTPException:
         raise # On relance l'erreur HTTP 400 générée juste au-dessus

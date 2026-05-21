@@ -387,92 +387,52 @@
               </button>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-5">
-              <div
-                class="bg-white p-5 md:p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center justify-between sm:block relative overflow-hidden group"
-              >
-                <div
-                  class="absolute -right-4 -top-4 w-16 h-16 bg-blue-50 group-hover:bg-blue-100/50 rounded-full group-hover:scale-[2.5] transition-all duration-500"
-                ></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
+              <div class="bg-white p-5 md:p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center justify-between sm:block relative overflow-hidden group">
+                <div class="absolute -right-4 -top-4 w-16 h-16 bg-blue-50 group-hover:bg-blue-100/50 rounded-full group-hover:scale-[2.5] transition-all duration-500"></div>
                 <div class="relative z-10 sm:mb-2">
-                  <p
-                    class="text-[10px] sm:text-[12px] font-bold text-gray-400 uppercase tracking-wider"
-                  >
-                    Billets vendus
-                  </p>
-                  <p
-                    id="s-sold"
-                    class="text-3xl md:text-4xl font-black font-headline tracking-tight text-gray-900 mt-1"
-                  >
-                    0
-                  </p>
+                  <p class="text-[10px] sm:text-[12px] font-bold text-gray-400 uppercase tracking-wider">Billets vendus</p>
+                  <p id="s-sold" class="text-3xl md:text-4xl font-black font-headline tracking-tight text-gray-900 mt-1">0</p>
                 </div>
-                <div
-                  class="p-2 sm:p-1.5 bg-blue-50 text-blue-700 rounded-xl sm:absolute sm:top-6 sm:right-6 z-10"
-                >
-                  <span class="material-symbols-outlined text-2xl sm:text-base"
-                    >local_activity</span
-                  >
+                <div class="p-2 sm:p-1.5 bg-blue-50 text-blue-700 rounded-xl sm:absolute sm:top-6 sm:right-6 z-10">
+                  <span class="material-symbols-outlined text-2xl sm:text-base">local_activity</span>
                 </div>
               </div>
-
-              <div
-                class="bg-white p-5 md:p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center justify-between sm:block relative overflow-hidden group"
-              >
-                <div
-                  class="absolute -right-4 -top-4 w-16 h-16 bg-orange-50 group-hover:bg-orange-100/50 rounded-full group-hover:scale-[2.5] transition-all duration-500"
-                ></div>
+            
+              <div class="bg-white p-5 md:p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center justify-between sm:block relative overflow-hidden group">
+                <div class="absolute -right-4 -top-4 w-16 h-16 bg-orange-50 group-hover:bg-orange-100/50 rounded-full group-hover:scale-[2.5] transition-all duration-500"></div>
                 <div class="relative z-10 sm:mb-2">
-                  <p
-                    class="text-[10px] sm:text-[12px] font-bold text-gray-400 uppercase tracking-wider"
-                  >
-                    Événements
-                  </p>
-                  <p
-                    id="s-events"
-                    class="text-3xl md:text-4xl font-black font-headline tracking-tight text-gray-900 mt-1"
-                  >
-                    0
-                  </p>
+                  <p class="text-[10px] sm:text-[12px] font-bold text-gray-400 uppercase tracking-wider">Événements</p>
+                  <p id="s-events" class="text-3xl md:text-4xl font-black font-headline tracking-tight text-gray-900 mt-1">0</p>
                 </div>
-                <div
-                  class="p-2 sm:p-1.5 bg-orange-50 text-orange-700 rounded-xl sm:absolute sm:top-6 sm:right-6 z-10"
-                >
-                  <span class="material-symbols-outlined text-2xl sm:text-base"
-                    >stadium</span
-                  >
+                <div class="p-2 sm:p-1.5 bg-orange-50 text-orange-700 rounded-xl sm:absolute sm:top-6 sm:right-6 z-10">
+                  <span class="material-symbols-outlined text-2xl sm:text-base">stadium</span>
                 </div>
               </div>
-
-              <div
-                class="bg-white p-5 md:p-6 rounded-3xl border border-transparent lush-gradient text-white flex items-center justify-between sm:block relative overflow-hidden shadow-lg shadow-primary/20"
-              >
-                <div
-                  class="absolute -right-4 -top-4 w-16 h-16 bg-white/10 rounded-full scale-[1.5] group-hover:scale-[2.5] transition-all duration-500"
-                ></div>
+            
+              <div class="bg-white p-5 md:p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center justify-between sm:block relative overflow-hidden group">
+                <div class="absolute -right-4 -top-4 w-16 h-16 bg-amber-50 group-hover:bg-amber-100/50 rounded-full group-hover:scale-[2.5] transition-all duration-500"></div>
                 <div class="relative z-10 sm:mb-2">
-                  <p
-                    class="text-[10px] sm:text-[12px] font-bold text-white/80 uppercase tracking-wider"
-                  >
-                    Revenus générés
-                  </p>
-                  <p
-                    id="s-rev"
-                    class="text-2xl md:text-3xl font-black font-headline tracking-tight mt-1"
-                  >
-                    0 FCFA
-                  </p>
+                  <p class="text-[10px] sm:text-[12px] font-bold text-gray-400 uppercase tracking-wider">Solde disponible</p>
+                  <p id="s-available" class="text-2xl md:text-3xl font-black font-headline tracking-tight text-amber-600 mt-1">0 FCFA</p>
                 </div>
-                <div
-                  class="p-2 sm:p-1.5 bg-white/20 text-white rounded-xl sm:absolute sm:top-6 sm:right-6 z-10"
-                >
-                  <span class="material-symbols-outlined text-2xl sm:text-base"
-                    >payments</span
-                  >
+                <div class="p-2 sm:p-1.5 bg-amber-50 text-amber-600 rounded-xl sm:absolute sm:top-6 sm:right-6 z-10">
+                  <span class="material-symbols-outlined text-2xl sm:text-base">account_balance_wallet</span>
+                </div>
+              </div>
+            
+              <div class="bg-white p-5 md:p-6 rounded-3xl border border-transparent lush-gradient text-white flex items-center justify-between sm:block relative overflow-hidden shadow-lg shadow-primary/20">
+                <div class="absolute -right-4 -top-4 w-16 h-16 bg-white/10 rounded-full scale-[1.5] group-hover:scale-[2.5] transition-all duration-500"></div>
+                <div class="relative z-10 sm:mb-2">
+                  <p class="text-[10px] sm:text-[12px] font-bold text-white/80 uppercase tracking-wider">Revenus générés (Cumul)</p>
+                  <p id="s-rev" class="text-2xl md:text-3xl font-black font-headline tracking-tight mt-1">0 FCFA</p>
+                </div>
+                <div class="p-2 sm:p-1.5 bg-white/20 text-white rounded-xl sm:absolute sm:top-6 sm:right-6 z-10">
+                  <span class="material-symbols-outlined text-2xl sm:text-base">payments</span>
                 </div>
               </div>
             </div>
-
+            
             <div
               class="bg-white p-5 md:p-8 rounded-3xl shadow-sm border border-gray-100"
             >
@@ -1707,29 +1667,46 @@
 
       async function loadOrganizerStats() {
         try {
+          // 1. On s'assure d'avoir l'historique des retraits pour déduire le solde disponible
+          if (!window.myPayouts || window.myPayouts.length === 0) {
+              window.myPayouts = await btApi.get("/organizer/payouts");
+          }
+      
           const stats = await btApi.get("/organizer/stats");
           window.lastOrganizerStats = stats;
           
+          // 2. Injection des données de base
           if (document.getElementById("s-sold"))
-            document.getElementById("s-sold").textContent =
-              stats.total_sold || 0;
+            document.getElementById("s-sold").textContent = stats.total_sold || 0;
           if (document.getElementById("s-events"))
-            document.getElementById("s-events").textContent =
-              stats.total_events || 0;
+            document.getElementById("s-events").textContent = stats.total_events || 0;
           if (document.getElementById("s-rev"))
-            document.getElementById("s-rev").textContent =
-              (stats.total_revenue || 0).toLocaleString("fr-FR") + " FCFA";
-
+            document.getElementById("s-rev").textContent = (stats.total_revenue || 0).toLocaleString("fr-FR") + " FCFA";
+      
+          // 3. CALCUL DU SOLDE DISPONIBLE RÉELEMENT RETIRABLE
+          const totalDeductions = (window.myPayouts || []).reduce((sum, p) => {
+              // Seuls les retraits "paye" ou "en_attente" bloquent/consomment la cagnotte
+              if (p.status === "en_attente" || p.status === "paye") {
+                  return sum + p.amount;
+              }
+              return sum;
+          }, 0);
+          
+          const soldeDisponible = (stats.total_revenue || 0) - totalDeductions;
+          
+          if (document.getElementById("s-available")) {
+              document.getElementById("s-available").textContent = Math.max(0, soldeDisponible).toLocaleString("fr-FR") + " FCFA";
+          }
+      
+          // 4. Affichage de l'activité récente (Reste inchangé)
           const eventsList = document.getElementById("events-list");
           if (eventsList && stats.events) {
             if (stats.events.length === 0) {
-              eventsList.innerHTML =
-                '<p class="text-gray-500 text-[13px] md:text-[14px] py-4 text-center border border-gray-100 rounded-xl bg-gray-50/50">Aucune activité récente.</p>';
+              eventsList.innerHTML = '<p class="text-gray-500 text-[13px] md:text-[14px] py-4 text-center border border-gray-100 rounded-xl bg-gray-50/50">Aucune activité récente.</p>';
             } else {
               eventsList.innerHTML = stats.events
                 .slice(0, 5)
-                .map(
-                  (e) => `
+                .map(e => `
                       <div class="bg-gray-50/50 rounded-2xl p-3 sm:p-4 flex items-center justify-between border border-gray-100 hover:border-gray-200 transition-colors">
                           <div class="min-w-0 pr-2 sm:pr-4">
                               <p class="font-bold text-[13px] sm:text-[15px] text-gray-900 truncate">${e.title}</p>
@@ -1740,31 +1717,24 @@
                               <p class="font-black text-[12px] sm:text-[15px] text-gray-900 leading-none">${e.seats_sold || 0} <span class="text-gray-400 font-bold text-[10px] sm:text-[13px]">/ ${e.total_seats}</span></p>
                               <div class="w-full h-px bg-gray-100 my-1.5"></div>
                               <p class="text-[9px] sm:text-[10px] font-bold text-green-500 uppercase tracking-widest mb-0.5">Cagnotte</p>
-                              <p class="font-black text-[12px] sm:text-[14px] text-green-600 leading-none">${(e.cagnotte || 0).toLocaleString("fr-FR")} F</p>
+                              <p class="font-black text-[12px] sm:text Caps][14px] text-green-600 leading-none">${(e.cagnotte || 0).toLocaleString("fr-FR")} F</p>
                           </div>
                       </div>
-                    `,
-                )
-                .join("");
+                    `).join("");
             }
           }
-
+      
+          // 5. Affichage de la liste complète des événements (Reste inchangé)
           const allEventsList = document.getElementById("all-events-list");
           if (allEventsList && stats.events) {
             if (stats.events.length === 0) {
-              allEventsList.innerHTML =
-                '<p class="col-span-full text-gray-500 text-center py-10">Vous n\'avez publié aucun événement.</p>';
+              allEventsList.innerHTML = '<p class="col-span-full text-gray-500 text-center py-10">Vous n\'avez publié aucun événement.</p>';
             } else {
               allEventsList.innerHTML = stats.events
-                .map(
-                  (e) => `
+                .map(e => `
                   <div class="bg-white rounded-[24px] md:rounded-[32px] overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col group cursor-pointer">
                       <div class="h-40 md:h-48 bg-gray-100 relative overflow-hidden shrink-0">
-                          ${
-                            e.cover_image_url
-                              ? `<img src="${e.cover_image_url}" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">`
-                              : '<div class="w-full h-full bg-primary/5 flex items-center justify-center text-primary/40"><span class="material-symbols-outlined text-4xl">image</span></div>'
-                          }
+                          ${e.cover_image_url ? `<img src="${e.cover_image_url}" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700">` : '<div class="w-full h-full bg-primary/5 flex items-center justify-center text-primary/40"><span class="material-symbols-outlined text-4xl">image</span></div>'}
                           <div class="absolute top-3 right-3 bg-white/95 backdrop-blur-md text-[12px] md:text-[13px] font-black px-3 py-1.5 rounded-xl text-primary shadow-sm z-10 group-hover:bg-primary group-hover:text-white transition-colors duration-300">
                               ${e.price.toLocaleString("fr-FR")} F
                           </div>
@@ -1776,7 +1746,6 @@
                                   <span class="material-symbols-outlined text-primary text-[16px]">location_on</span> ${e.location}
                               </p>
                           </div>
-                          
                           <div class="pt-4 border-t border-gray-100 flex justify-between items-center mb-4">
                               <div>
                                   <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Vendus</p>
@@ -1787,15 +1756,12 @@
                                   <p class="font-black text-lg md:text-xl text-green-700">${(e.cagnotte || 0).toLocaleString("fr-FR")} F</p>
                               </div>
                           </div>
-                          
                           <button onclick="ouvrirGestionEvenement(${e.id || 0}, '${e.title.replace(/'/g, "\\'")}', ${e.cagnotte || 0})" class="w-full bg-gray-50 text-gray-700 group-hover:bg-primary group-hover:text-white px-4 py-3 rounded-xl font-bold text-[13px] transition-all duration-300 active:scale-95">
                               Gérer l'événement
                           </button>
                       </div>
                   </div>
-              `,
-                )
-                .join("");
+              `).join("");
             }
           }
         } catch (error) {

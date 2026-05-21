@@ -1101,13 +1101,20 @@
           
         try {
           // 1. Notification de patience
-          if (typeof btToast === "function") btToast("Transfert NGSER en cours...", "info");
+          if (typeof btToast === "function") btToast("Création de la session NGSER...", "info");
           
           // 2. Appel au serveur qui déclenche le retrait
           const response = await btApi.post(`/admin/payouts/${id}/validate`, {});
           
-          // 3. Succès !
-          btToast(response.message || "Versement validé et clôturé", "success");
+          // 3. Succès ! On vérifie si NGSER nous a donné un lien à ouvrir
+          if (response.payment_url) {
+              if (typeof btToast === "function") btToast("Redirection vers NGSER pour finaliser...", "success");
+              // Ouvre la page de validation NGSER dans un nouvel onglet
+              window.open(response.payment_url, "_blank"); 
+          } else {
+              if (typeof btToast === "function") btToast(response.message || "Versement validé", "success");
+          }
+          
           loadFinance(); // Rafraîchit la liste
           
         } catch (e) {

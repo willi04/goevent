@@ -2075,7 +2075,17 @@ async def validate_payout(payout_id: int, db: Session = Depends(get_db), current
                 json=payload,
                 timeout=15.0
             )
-            response_data = response.json()
+            
+            # --- LE CODE BLINDÉ COMMENCE ICI ---
+            raw_text = response.text
+            print(f"📡 [NGSER RETRAIT RÉPONSE BRUTE] Code HTTP: {response.status_code} | Contenu: {raw_text}")
+            
+            try:
+                response_data = response.json()
+            except Exception:
+                print("⚠️ Impossible de décoder le JSON. NGSER a renvoyé un format invalide.")
+                response_data = {}
+            # --- FIN DU CODE BLINDÉ ---
             
             if response.status_code == 200 and response_data.get("status_id") == 1:
                 # 5. L'argent est parti ! On met à jour la base
@@ -2084,13 +2094,16 @@ async def validate_payout(payout_id: int, db: Session = Depends(get_db), current
                 print(f"💰 VERSEMENT VALIDÉ : {payout.amount} FCFA envoyés vers {phone_number}")
                 return {"status": "success", "message": f"Le retrait de {payout.amount} FCFA est marqué comme payé"}
             else:
-                error_msg = response_data.get("description", "Erreur opérateur")
+                error_msg = response_data.get("description", f"Erreur NGSER (Code HTTP {response.status_code})")
                 raise HTTPException(status_code=400, detail=f"Échec du transfert : {error_msg}")
 
+    except HTTPException:
+        raise # On relance l'erreur HTTP 400 générée juste au-dessus
     except Exception as e:
-        print(f"❌ Erreur Retrait NGSER : {str(e)}")
+        print(f"❌ Erreur Interne Retrait : {str(e)}")
         raise HTTPException(status_code=503, detail="Le service de transfert est temporairement indisponible.")
 
+        
 @app.get("/admin/security-logs")
 def get_security_logs(
     limit: int = 100,

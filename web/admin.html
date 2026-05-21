@@ -1094,16 +1094,25 @@
       async function validerRetrait(id, amount, phone) {
         if (
           !confirm(
-            `Confirmer l'envoi de ${amount.toLocaleString()} FCFA au ${phone || "numéro de l'organisateur"} via Orange Money ?`,
+            `Confirmer l'envoi RÉEL de ${amount.toLocaleString()} FCFA au ${phone || "numéro de l'organisateur"} via Orange Money ?`
           )
         )
           return;
+          
         try {
-          await btApi.post(`/admin/payouts/${id}/validate`, {});
-          btToast("Versement validé et clôturé", "success");
-          loadFinance();
+          // 1. Notification de patience
+          if (typeof btToast === "function") btToast("Transfert NGSER en cours...", "info");
+          
+          // 2. Appel au serveur qui déclenche le retrait
+          const response = await btApi.post(`/admin/payouts/${id}/validate`, {});
+          
+          // 3. Succès !
+          btToast(response.message || "Versement validé et clôturé", "success");
+          loadFinance(); // Rafraîchit la liste
+          
         } catch (e) {
-          btToast(e.message, "error");
+          // 4. En cas d'erreur (fonds insuffisants, faux numéro)
+          btToast(e.message || "Erreur lors du transfert", "error");
         }
       }
 

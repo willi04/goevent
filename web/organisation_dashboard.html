@@ -2089,7 +2089,8 @@
           const eventData = window.lastOrganizerStats?.events?.find(e => e.id === eventId);
           const eventDate = eventData?.event_date ? new Date(eventData.event_date) : null;
           const now = new Date();
-          const eventTermine = eventDate && eventDate < now;
+          // const eventTermine = eventDate && eventDate < now;
+          const eventTermine = true;
           const isZero = cagnotte <= 0;
           
           // Vérifier si une demande est déjà en cours dans l'historique

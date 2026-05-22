@@ -1963,14 +1963,25 @@ def admin_update_user(user_id: int, data: dict, db: Session = Depends(get_db),
                       current_user: User = Depends(get_current_user)):
     if current_user.role != "admin":
         raise HTTPException(403, "Accès refusé")
+    
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(404, "Utilisateur introuvable")
+    
     if "is_active" in data:
-        user.is_active = data["is_active"]
+        nouveau_statut = data["is_active"]
+        user.is_active = nouveau_statut
+        
+        # 🔴 LA CORRECTION : On répercute le statut sur tous ses événements
+        if user.role in ["organizer", "organisation"]:
+            db.query(Event).filter(Event.organizer_id == user.id).update(
+                {"is_active": nouveau_statut}
+            )
+            
     db.commit()
-    return {"message": "Utilisateur mis à jour"}
+    return {"message": "Utilisateur et ses événements mis à jour"}
 
+    
 @app.get("/admin/events")
 def admin_list_events(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if current_user.role != "admin":

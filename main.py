@@ -19,6 +19,7 @@ from datetime import datetime, timedelta
 from typing import Optional, List
 import random
 import uuid
+import pyotp
 import os
 import httpx
 import pathlib
@@ -120,6 +121,8 @@ class User(Base):
     events = relationship("Event", back_populates="organizer_user", foreign_keys="[Event.organizer_id]")
     tickets = relationship("Ticket", back_populates="owner", foreign_keys="Ticket.user_id")
     favorites    = relationship("Favorite", back_populates="user")
+    two_factor_secret = Column(String, nullable=True)
+    is_2fa_enabled = Column(Boolean, default=False)
     orange_money = Column(String(20), nullable=True)
 
 
@@ -422,6 +425,8 @@ class FundraisingCampaignCreate(BaseModel):
     beneficiary_email: Optional[str] = None
     goal_fcfa: float
     ends_at: Optional[datetime] = None
+
+
 # ── SÉCURITÉ ───────────────────────────────────────────────────
 def hash_pin(pin): return pwd_context.hash(pin[:72])
 def verify_pin(plain, hashed): return pwd_context.verify(plain[:72], hashed)
@@ -658,6 +663,7 @@ def envoyer_mail_code(email_client, code_secret):
 class UserLogin(BaseModel):
     phone_number: str
     pin_code: str
+    totp_code: Optional[str] = None
 
 class Token(BaseModel):
     access_token: str
@@ -742,6 +748,8 @@ class FeedbackCreate(BaseModel):
     email_contact: Optional[str] = None
     page_origin: Optional[str] = None
 
+class Verify2FA(BaseModel):
+    code: str = Field(..., min_length=6, max_length=6)
 
 class FeedbackUpdate(BaseModel):
     status: Optional[str] = None
@@ -1162,6 +1170,42 @@ async def reset_password(data: dict, db: Session = Depends(get_db)):
 
     return {"status": "success", "message": "Mot de passe modifié avec succès"}
 
+@app.post("/auth/2fa/setup")
+def setup_2fa(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    # 1. On réserve cette sécurité aux organisateurs
+    if current_user.role != "organizer":
+        raise HTTPException(status_code=403, detail="Le 2FA est réservé aux organisateurs.")
+    
+    # 2. Générer un secret unique en base 32
+    secret = pyotp.random_base32()
+    current_user.two_factor_secret = secret
+    db.commit()
+    
+    # 3. Créer l'URI pour configurer Google Authenticator
+    totp = pyotp.TOTP(secret)
+    identifiant = current_user.email if current_user.email else current_user.phone_number
+    provisioning_uri = totp.provisioning_uri(name=identifiant, issuer_name="GoEvent")
+    
+    return {
+        "secret": secret, 
+        "qr_code_url": provisioning_uri,
+        "message": "Scannez ce QR Code (ou entrez le secret) dans Google Authenticator."
+    }
+
+@app.post("/auth/2fa/verify")
+def verify_2fa(data: Verify2FA, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    if not current_user.two_factor_secret:
+        raise HTTPException(status_code=400, detail="Veuillez d'abord configurer le 2FA.")
+        
+    totp = pyotp.TOTP(current_user.two_factor_secret)
+    
+    # Vérification du code à 6 chiffres
+    if totp.verify(data.code):
+        current_user.is_2fa_enabled = True
+        db.commit()
+        return {"message": "Sécurité 2FA activée avec succès !"}
+    else:
+        raise HTTPException(status_code=401, detail="Code invalide ou expiré.")
 
 @app.post("/organizer/events/{event_id}/cancel-request")
 def request_cancellation(event_id: int, data: CancelRequestCreate, db: Session = Depends(get_db),
@@ -1312,6 +1356,18 @@ def login(request: Request, data: UserLogin, db: Session = Depends(get_db)):
         tentatives_restantes = 5 - user.failed_login_attempts
         raise HTTPException(401, f"Numéro ou PIN incorrect. {tentatives_restantes} tentative(s) restante(s).")
 
+    # --- NOUVEAU : VÉRIFICATION 2FA ---
+    if user.role == "organizer" and user.is_2fa_enabled:
+        if not data.totp_code:
+            raise HTTPException(
+                status_code=403, 
+                detail="Code d'authentification 2FA requis pour ce compte."
+            )
+        
+        totp = pyotp.TOTP(user.two_factor_secret)
+        if not totp.verify(data.totp_code):
+            raise HTTPException(status_code=401, detail="Code 2FA invalide.")
+    
     # ✅ Succès
     user.failed_login_attempts = 0
     user.locked_until = None

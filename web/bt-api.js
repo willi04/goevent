@@ -8,14 +8,19 @@ const BT_API ="https://api.goevent.africa";
 // ── Auth ──────────────────────────────────────────────────────
 const btAuth = {
   getToken: () => localStorage.getItem("bt_token"),
+  getRefreshToken: () => localStorage.getItem("bt_refresh_token"),
   getUser: () => JSON.parse(localStorage.getItem("bt_user") || "null"),
   isLogged: () => !!localStorage.getItem("bt_token"),
-  save(token, user) {
+  
+  save(token, refreshToken, user) {
     localStorage.setItem("bt_token", token);
-    localStorage.setItem("bt_user", JSON.stringify(user));
+    if (refreshToken) localStorage.setItem("bt_refresh_token", refreshToken);
+    if (user) localStorage.setItem("bt_user", JSON.stringify(user));
   },
+  
   logout() {
     localStorage.removeItem("bt_token");
+    localStorage.removeItem("bt_refresh_token");
     localStorage.removeItem("bt_user");
     window.location.href = "index.html";
   },
@@ -32,36 +37,57 @@ function btDashRoute(role) {
 async function btFetch(path, opts) {
   opts = opts || {};
   var token = btAuth.getToken();
-  var res = await fetch(
-    BT_API + path,
-    Object.assign({}, opts, {
-      headers: Object.assign(
-        { "Content-Type": "application/json" },
-        token ? { Authorization: "Bearer " + token } : {},
-        opts.headers || {},
-      ),
-      body: opts.body ? JSON.stringify(opts.body) : undefined,
-    }),
-  );
-  var data = await res.json().catch(function () {
-    return {};
+  
+  var reqOpts = Object.assign({}, opts, {
+    headers: Object.assign(
+      { "Content-Type": "application/json" },
+      token ? { Authorization: "Bearer " + token } : {},
+      opts.headers || {},
+    ),
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
   });
 
-  // 🔒 Si 401 = session expirée → déconnexion automatique
+  var res = await fetch(BT_API + path, reqOpts);
+
+  // 🔒 GESTION DU 401 : Tentative de rafraîchissement invisible
   if (res.status === 401) {
+    var refreshToken = btAuth.getRefreshToken();
     var currentPage = window.location.pathname;
     var isAuthPage = currentPage.includes('login.html')
                   || currentPage.includes('signup.html')
                   || currentPage.includes('admin-login.html');
 
-    if (!isAuthPage) {
-      localStorage.removeItem("bt_token");
-      localStorage.removeItem("bt_user");
-      sessionStorage.setItem("auth_message", "Votre session a expiré. Reconnectez-vous.");
-      window.location.href = "login.html";
+    if (refreshToken && !path.includes("/auth/refresh")) {
+      try {
+        var refreshRes = await fetch(BT_API + "/auth/refresh", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refresh_token: refreshToken })
+        });
+
+        if (refreshRes.ok) {
+          var refreshData = await refreshRes.json();
+          btAuth.save(refreshData.access_token, refreshToken, null);
+          reqOpts.headers.Authorization = "Bearer " + refreshData.access_token;
+          res = await fetch(BT_API + path, reqOpts);
+        } else {
+          throw new Error("Refresh Token expiré");
+        }
+      } catch (e) {
+        if (!isAuthPage) {
+          btAuth.logout();
+          return;
+        }
+      }
+    } else if (!isAuthPage) {
+      btAuth.logout();
       return;
     }
   }
+
+  var data = await res.json().catch(function () {
+    return {};
+  });
 
   if (!res.ok) throw new Error(data.detail || "Erreur serveur");
   return data;

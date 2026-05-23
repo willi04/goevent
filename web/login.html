@@ -432,7 +432,7 @@
             pin_code: pin,
           });
 
-          btAuth.save(responseData.access_token, responseData.user);
+          btAuth.save(responseData.access_token, responseData.refresh_token, responseData.user);
           btToast("Connexion réussie ! Redirection...");
 
           setTimeout(function () {

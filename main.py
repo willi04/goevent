@@ -496,16 +496,16 @@ class SessionManager:
             log_security_event(self.db, "ip_change", request, user_id, f"IP changée: {last_log.ip_address} -> {current_ip}")
         return True  # Confort utilisateur
     
-    return jwt.encode(
-        {
+        return jwt.encode(
+            {
             "sub": str(user_id), 
             "role": role,
             "iat": datetime.utcnow(),
             "exp": datetime.utcnow() + duration
-        },
-        SECRET_KEY, 
-        algorithm=ALGORITHM
-    )
+            },
+            SECRET_KEY, 
+            algorithm=ALGORITHM
+        )
 
 def get_db():
     db = SessionLocal()
@@ -876,6 +876,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-no-referrer"
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+        
         return response
 
 app.add_middleware(SecurityHeadersMiddleware)

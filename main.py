@@ -1358,7 +1358,7 @@ def login(request: Request, data: UserLogin, db: Session = Depends(get_db)):
         raise HTTPException(401, f"Numéro ou PIN incorrect. {tentatives_restantes} tentative(s) restante(s).")
 
     # --- NOUVEAU : VÉRIFICATION 2FA ---
-    if user.role == "organizer" and user.is_2fa_enabled:
+    if user.role == "partner" and user.is_2fa_enabled:
         if not data.totp_code:
             raise HTTPException(
                 status_code=403, 

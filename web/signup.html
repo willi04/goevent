@@ -551,7 +551,7 @@
           btToast("Compte créé avec succès !");
 
           // On sauvegarde le token secret
-          btAuth.save(data.access_token, data.user);
+          btAuth.save(data.access_token, data.refresh_token, data.user);
 
           // Redirection intelligente !
           setTimeout(() => {

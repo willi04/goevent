@@ -9,7 +9,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, Field, validator
 from sqlalchemy import create_engine, Column, Integer, String, Boolean, Float, DateTime, ForeignKey, Text, or_,func
 from sqlalchemy.orm import declarative_base, sessionmaker, Session, relationship
 from sqlalchemy.dialects.postgresql import JSONB
@@ -23,6 +23,9 @@ import os
 import httpx
 import pathlib
 import smtplib
+import re
+import secrets
+from starlette.middleware.base import BaseHTTPMiddleware
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from dotenv import load_dotenv
@@ -450,16 +453,43 @@ def log_security_event(
         print(f"⚠️ Erreur log sécurité : {e}")
         db.rollback()
 
-def create_token(user_id, role):
-    # 🔒 Durée de session selon le niveau de sensibilité du rôle
-    if role == "admin":
-        duration = timedelta(hours=2)      # Très sensible
-    elif role == "organizer":
-        duration = timedelta(hours=8)      # Journée de travail
-    elif role == "agent":
-        duration = timedelta(hours=12)     # Shift d'événement complet
-    else:  # fan
-        duration = timedelta(days=7)       # Confort utilisateur
+def create_access_token(user_id: int, role: str) -> str:
+    return jwt.encode({
+        "sub": str(user_id),
+        "role": role,
+        "type": "access",
+        "iat": datetime.utcnow(),
+        "exp": datetime.utcnow() + timedelta(minutes=15)
+    }, SECRET_KEY, algorithm=ALGORITHM)
+
+def create_refresh_token(user_id: int, role: str) -> str:
+    return jwt.encode({
+        "sub": str(user_id),
+        "role": role,
+        "type": "refresh",
+        "iat": datetime.utcnow(),
+        "exp": datetime.utcnow() + timedelta(days=7)
+    }, SECRET_KEY, algorithm=ALGORITHM)
+
+class SessionManager:
+    def __init__(self, db: Session):
+        self.db = db
+    
+    def get_client_ip(self, request: Request) -> str:
+        if request.headers.get('x-forwarded-for'):
+            return request.headers.get('x-forwarded-for').split(',')[0].strip()
+        return request.client.host
+    
+    def verify_session(self, user_id: int, request: Request) -> bool:
+        current_ip = self.get_client_ip(request)
+        last_log = self.db.query(SecurityLog).filter(SecurityLog.user_id == user_id).order_by(SecurityLog.created_at.desc()).first()
+        
+        if last_log and last_log.ip_address and last_log.ip_address != current_ip:
+            time_since_last = datetime.utcnow() - last_log.created_at
+            if time_since_last.total_seconds() < 2:
+                return False 
+            log_security_event(self.db, "ip_change", request, user_id, f"IP changée: {last_log.ip_address} -> {current_ip}")
+        return True  # Confort utilisateur
     
     return jwt.encode(
         {
@@ -480,39 +510,31 @@ def get_db():
         db.close()
 
 def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    request: Request,
+    credentials: HTTPAuthorizationCredentials = Depends(security), 
     db: Session = Depends(get_db)
 ):
     if not credentials:
         raise HTTPException(status_code=401, detail="Token manquant")
     try:
         payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
-        user = db.query(User).filter(User.id == int(payload["sub"])).first()
+        if payload.get("type") != "access":
+            raise HTTPException(status_code=401, detail="Type de token invalide.")
         
-        if not user:
-            raise HTTPException(status_code=401, detail="Utilisateur introuvable")
+        user_id = int(payload.get("sub"))
+        user = db.query(User).filter(User.id == user_id).first()
         
-        # 🔒 Compte désactivé = pas d'accès
-        if not user.is_active:
-            raise HTTPException(status_code=403, detail="Compte désactivé")
-        
-        # 🔒 Le rôle dans le token doit correspondre au rôle actuel
-        if payload.get("role") != user.role:
-            raise HTTPException(status_code=401, detail="Session invalide, reconnectez-vous")
-        
+        if not user or not user.is_active:
+            raise HTTPException(status_code=401, detail="Utilisateur introuvable ou inactif")
+            
+        session_mgr = SessionManager(db)
+        if not session_mgr.verify_session(user.id, request):
+            raise HTTPException(status_code=401, detail="Changement d'IP suspect.")
+            
         return user
     except JWTError:
-        raise HTTPException(status_code=401, detail="Session expirée, reconnectez-vous")
-    if not credentials:
-        raise HTTPException(status_code=401, detail="Token manquant")
-    try:
-        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
-        user = db.query(User).filter(User.id == int(payload["sub"])).first()
-        if not user:
-            raise HTTPException(status_code=401, detail="Utilisateur introuvable")
-        return user
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Token invalide")
+        raise HTTPException(status_code=401, detail="Token expiré ou invalide")
+
 
 def get_optional_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
@@ -637,14 +659,71 @@ class UserLogin(BaseModel):
     phone_number: str
     pin_code: str
 
+class Token(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    expires_in: int
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+
 class UserRegister(BaseModel):
     phone_number: str
-    full_name: str
+    full_name: str = Field(..., min_length=2, max_length=100)
     pin_code: str
     role: str = "fan"
-    email: Optional[str] = None   
-    org_name: Optional[str] = None   
-    org_type: Optional[str] = None   
+    email: Optional[EmailStr] = None 
+    org_name: Optional[str] = Field(None, max_length=200)
+    org_type: Optional[str] = Field(None, max_length=100)
+    
+    @validator('phone_number')
+    def validate_phone(cls, v):
+        if not re.match(r'^\+236\d{8}$', v):
+            raise ValueError("Le numéro doit être au format RCA (+236XXXXXXXX)")
+        return v
+    
+    @validator('pin_code')
+    def validate_pin(cls, v):
+        if not re.match(r'^\d{4}$', v):
+            raise ValueError("Le code PIN doit contenir exactement 4 chiffres")
+        return v
+    
+    @validator('full_name')
+    def validate_name(cls, v):
+        if not re.match(r"^[a-zA-Z\s\-'.]+$", v):
+            raise ValueError("Le nom contient des caractères non valides")
+        return v
+
+class EventCreate(BaseModel):
+    title: str = Field(..., min_length=3, max_length=200)
+    description: str = Field("", max_length=5000)
+    location: str = Field(..., min_length=2, max_length=100)
+    category: str = Field("Concert", max_length=50)
+    event_date: datetime
+    price: float = Field(..., ge=0, le=1000000) 
+    total_seats: int = Field(..., ge=1, le=100000)
+    cover_image_url: Optional[str] = Field(None, max_length=2048)
+    ticket_tiers: Optional[list] = []
+    
+    @validator('event_date')
+    def validate_date(cls, v):
+        if v < datetime.utcnow():
+            raise ValueError("L'événement ne peut pas être dans le passé")
+        if v > datetime.utcnow() + timedelta(days=730):
+            raise ValueError("La date est trop lointaine (max 2 ans)")
+        return v
+    
+    @validator('cover_image_url')
+    def validate_image_url(cls, v):
+        if v and not v.startswith(('https://', 'http://')):
+            raise ValueError("L'URL doit commencer par http:// ou https://")
+        return v
+    
+    @validator('description')
+    def sanitize_description(cls, v):
+        from bleach import clean
+        return clean(v, tags=['p', 'br', 'strong', 'em', 'u', 'a'], attributes={'a': ['href']}, strip=True)
 
 class AgentCreate(BaseModel):
     full_name: str
@@ -673,23 +752,13 @@ class UserUpdate(BaseModel):
     email: Optional[str] = None
     org_name: Optional[str] = None
     org_type: Optional[str] = None
-    profile_picture: Optional[str] = None  
+    profile_picture: Optional[str] = Field(None, max_length=5242880) 
     orange_money: Optional[str] = None
 
 class TicketTier(BaseModel):
     name: str
     price: float
     seats: int
-class EventCreate(BaseModel):
-    title: str
-    description: str = ""
-    location: str
-    category: str = "Concert"
-    event_date: datetime
-    price: float
-    total_seats: int
-    cover_image_url: str = ""
-    ticket_tiers: Optional[List[TicketTier]] = []
 
 class EventUpdate(BaseModel):
     title: Optional[str] = None
@@ -778,6 +847,31 @@ class CancelRequestCreate(BaseModel):
 # ── APP ─────────────────────────────────────────────────────────
 app = FastAPI(title="GoEvent API", version="2.0.0")
 
+# ── HEADERS DE SÉCURITÉ ─────────────────────────────────────────
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        csp = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "font-src 'self' https://fonts.gstatic.com; "
+            "img-src 'self' data: https: blob:; "
+            "frame-ancestors 'none'; "
+            "form-action 'self'; "
+            "object-src 'none';"
+        )
+        response.headers["Content-Security-Policy"] = csp
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-no-referrer"
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+        return response
+
+app.add_middleware(SecurityHeadersMiddleware)
+
 # ── RATE LIMITING ───────────────────────────────────────────────
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
@@ -809,44 +903,6 @@ app.add_middleware(
     expose_headers=["Content-Length"],
     max_age=600,
 )
-
-# ── HEADERS DE SÉCURITÉ ─────────────────────────────────────────
-from starlette.middleware.base import BaseHTTPMiddleware
-
-class SecurityHeadersMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        response = await call_next(request)
-        
-        # Empêcher l'affichage dans un iframe (anti-clickjacking)
-        response.headers["X-Frame-Options"] = "DENY"
-        
-        # Empêcher le navigateur de "deviner" le type de fichier
-        response.headers["X-Content-Type-Options"] = "nosniff"
-        
-        # Empêcher la fuite de l'URL de provenance vers les sites externes
-        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        
-        # Forcer HTTPS pour les 6 prochains mois (HSTS)
-        response.headers["Strict-Transport-Security"] = "max-age=15552000; includeSubDomains"
-        
-        # Désactiver les fonctionnalités navigateur dangereuses
-        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=(), payment=()"
-        
-        # Content Security Policy (la plus importante contre XSS)
-        csp = (
-            "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com; "
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-            "font-src 'self' https://fonts.gstatic.com; "
-            "img-src 'self' data: https: blob:; "
-            "connect-src 'self' https://goevent-qk9q.onrender.com; "
-            "frame-ancestors 'none';"
-        )
-        response.headers["Content-Security-Policy"] = csp
-        
-        return response
-
-app.add_middleware(SecurityHeadersMiddleware)
 
 # Servir les fichiers web statiques si le dossier existe
 web_dir = pathlib.Path("web")
@@ -1264,15 +1320,40 @@ def login(request: Request, data: UserLogin, db: Session = Depends(get_db)):
     log_security_event(db, "login_success", request, user.id, f"Rôle: {user.role}")
 
     return {
-        "access_token": create_token(user.id, user.role),
+        "access_token": create_access_token(user.id, user.role),
+        "refresh_token": create_refresh_token(user.id, user.role),
         "token_type": "bearer",
+        "expires_in": 900,
         "user": {
-            "id": user.id, "name": user.full_name,
-            "role": user.role, "phone": user.phone_number,
-            "email": user.email,
-            "org_name": user.org_name, "org_type": user.org_type,
+            "id": user.id,
+            "name": user.full_name,
+            "role": user.role,
+            "phone_number": user.phone_number
         }
     }
+
+@app.post("/auth/refresh")
+@limiter.limit("10/minute")
+def refresh_access_token(request: Request, data: RefreshTokenRequest, db: Session = Depends(get_db)):
+    try:
+        payload = jwt.decode(data.refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
+        if payload.get("type") != "refresh":
+            raise HTTPException(401, "Type de token invalide")
+        
+        user_id = int(payload["sub"])
+        role = payload.get("role")
+        user = db.query(User).filter(User.id == user_id).first()
+        
+        if not user or not user.is_active or role != user.role:
+            raise HTTPException(401, "Accès refusé")
+            
+        return {
+            "access_token": create_access_token(user_id, role),
+            "token_type": "bearer",
+            "expires_in": 900
+        }
+    except JWTError:
+        raise HTTPException(401, "Refresh token invalide")
 
 @app.get("/auth/me")
 def me(current_user: User = Depends(get_current_user)):

@@ -166,4 +166,204 @@ def reserve_ticket_cash(data: CashReservation, db: Session = Depends(get_db),
 
 
 @router.post("/tickets/{ticket_id}/confirm-cash-payment")
-de
+def confirm_cash_payment(ticket_id: int, db: Session = Depends(get_db),
+                         current_user: User = Depends(get_current_user)):
+    if current_user.role not in ("organizer", "organisation", "agent"):
+        raise HTTPException(403, "Accès réservé aux organisateurs et agents")
+
+    ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
+    if not ticket:
+        raise HTTPException(404, "Billet introuvable")
+
+    if ticket.payment_status != "reservation_cash":
+        raise HTTPException(400, f"Ce billet n'est pas en attente de paiement cash (statut: {ticket.payment_status})")
+
+    event = ticket.event
+    if current_user.role in ("organizer", "organisation"):
+        if event.organizer_id != current_user.id:
+            raise HTTPException(403, "Cet événement n'est pas le vôtre")
+    elif current_user.role == "agent":
+        if current_user.agent_event_id and current_user.agent_event_id != event.id:
+            raise HTTPException(403, "Vous n'êtes pas assigné à cet événement")
+        org_name_required = event.organizer_user.org_name or event.organizer_user.full_name
+        if current_user.org_name != org_name_required:
+            raise HTTPException(403, "Vous n'êtes pas un agent de cet organisateur")
+
+    ticket.payment_status = "paye_cash"
+    ticket.cash_collected_by = current_user.id
+    ticket.cash_collected_at = datetime.utcnow()
+
+    from models.payment import Payment
+    cash_payment = Payment(
+        user_id=ticket.user_id,
+        ticket_id=ticket.id,
+        amount=ticket.cash_amount or 0,
+        base_price=ticket.cash_amount or 0,
+        platform_fee=0,
+        organizer_amount=ticket.cash_amount or 0,
+        status="completed",
+        transaction_id=ticket.payment_ref or f"CASH-{ticket.id}",
+    )
+    db.add(cash_payment)
+    db.commit()
+
+    log_security_event(db, "cash_collected", None, current_user.id,
+                       f"Cash encaissé pour ticket {ticket.id}, montant {ticket.cash_amount}")
+
+    return {
+        "success": True,
+        "message": f"Paiement de {int(ticket.cash_amount)} FCFA encaissé.",
+        "ticket": {
+            "id": ticket.id,
+            "fan_name": ticket.owner.full_name,
+            "amount": ticket.cash_amount,
+            "event_title": event.title,
+        },
+    }
+
+
+@router.get("/tickets/{ticket_id}/info")
+def get_ticket_info(ticket_id: int, db: Session = Depends(get_db),
+                    current_user: User = Depends(get_current_user)):
+    if current_user.role not in ("organizer", "organisation", "agent"):
+        raise HTTPException(403, "Accès refusé")
+    ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
+    if not ticket:
+        raise HTTPException(404, "Ticket introuvable")
+    return {
+        "id": ticket.id,
+        "qr_hash": ticket.qr_hash,
+        "payment_status": ticket.payment_status,
+    }
+
+
+@router.delete("/tickets/{ticket_id}/cancel-reservation")
+def cancel_cash_reservation(ticket_id: int, db: Session = Depends(get_db),
+                            current_user: User = Depends(get_current_user)):
+    ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
+    if not ticket:
+        raise HTTPException(404, "Réservation introuvable")
+
+    is_owner = (ticket.user_id == current_user.id)
+    is_event_organizer = (ticket.event.organizer_id == current_user.id
+                          and current_user.role in ("organizer", "organisation"))
+    if not (is_owner or is_event_organizer):
+        raise HTTPException(403, "Vous n'avez pas le droit d'annuler cette réservation")
+
+    if ticket.payment_status != "reservation_cash":
+        raise HTTPException(400, "Seules les réservations en attente de paiement peuvent être annulées.")
+
+    if ticket.event:
+        ticket.event.seats_sold = max(0, ticket.event.seats_sold - 1)
+
+    db.delete(ticket)
+    db.commit()
+    return {"success": True, "message": "Réservation annulée. La place a été libérée."}
+
+
+@router.get("/organizer/cash-reservations")
+def get_my_cash_reservations(db: Session = Depends(get_db),
+                             current_user: User = Depends(get_current_user)):
+    if current_user.role not in ("organizer", "organisation"):
+        raise HTTPException(403, "Réservé aux organisateurs")
+
+    my_events = db.query(Event).filter(Event.organizer_id == current_user.id).all()
+    my_event_ids = [e.id for e in my_events]
+    if not my_event_ids:
+        return {"reservations": [], "total_count": 0, "total_amount": 0}
+
+    reservations = (
+        db.query(Ticket)
+        .filter(Ticket.event_id.in_(my_event_ids), Ticket.payment_status == "reservation_cash")
+        .order_by(Ticket.purchased_at.desc())
+        .all()
+    )
+    total_amount = sum(t.cash_amount or 0 for t in reservations)
+
+    return {
+        "reservations": [{
+            "id": r.id,
+            "qr_hash": r.qr_hash,
+            "fan_name": r.owner.full_name,
+            "fan_phone": r.owner.phone_number,
+            "fan_email": r.owner.email,
+            "event_id": r.event_id,
+            "event_title": r.event.title if r.event else "?",
+            "event_date": r.event.event_date.isoformat() if r.event else None,
+            "amount": r.cash_amount,
+            "reserved_at": r.purchased_at.isoformat(),
+            "expires_at": r.reservation_expires_at.isoformat() if r.reservation_expires_at else None,
+        } for r in reservations],
+        "total_count": len(reservations),
+        "total_amount": total_amount,
+    }
+
+
+# ── SCAN & VALIDATION D'ENTRÉE ──────────────────────────────────
+@router.post("/scan")
+def valider_billet(data: ScanTicket, db: Session = Depends(get_db),
+                   current_user: User = Depends(get_current_user)):
+    if current_user.role not in ("agent", "organizer", "organisation"):
+        raise HTTPException(status_code=403, detail="Accès refusé. Réservé aux contrôleurs.")
+
+    ticket = db.query(Ticket).filter(Ticket.qr_hash == data.qr_data).first()
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Billet introuvable (Faux billet ou QR mal lu).")
+
+    if current_user.role == "agent":
+        if current_user.agent_event_id and current_user.agent_event_id != ticket.event_id:
+            raise HTTPException(status_code=403, detail="Vous n'êtes pas assigné à cet événement !")
+
+    if ticket.is_used:
+        date_used = ticket.used_at.strftime("%H:%M:%S") if ticket.used_at else "?"
+        raise HTTPException(status_code=400, detail=f"Alerte : Billet DÉJÀ UTILISÉ à {date_used} !")
+
+    if ticket.payment_status == "reservation_cash":
+        return {
+            "valid": False,
+            "requires_cash_payment": True,
+            "ticket_id": ticket.id,
+            "fan_name": ticket.owner.full_name,
+            "fan_phone": ticket.owner.phone_number,
+            "amount_to_collect": ticket.cash_amount,
+            "event": ticket.event.title,
+            "message": f"À ENCAISSER : {int(ticket.cash_amount)} FCFA",
+            "instructions": "Encaissez le cash, puis cliquez sur 'Confirmer l'encaissement' pour valider l'entrée.",
+        }
+
+    if ticket.payment_status not in ("paye", "paye_cash"):
+        raise HTTPException(status_code=400, detail=f"Billet non valide (statut: {ticket.payment_status}).")
+
+    try:
+        ticket.is_used = True
+        ticket.used_at = datetime.utcnow()
+        db.commit()
+        return {
+            "valid": True,
+            "requires_cash_payment": False,
+            "message": f"Validé ! {ticket.owner.full_name} peut entrer.",
+            "event": ticket.event.title,
+            "payment_method": ticket.payment_method or "online",
+        }
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Erreur interne lors de la sauvegarde.")
+
+
+@router.get("/tickets/scan/stats/{event_id}")
+def scan_stats(event_id: int, db: Session = Depends(get_db),
+               current_user: User = Depends(get_current_user)):
+    event = db.query(Event).filter(Event.id == event_id).first()
+    if not event:
+        raise HTTPException(404, "Événement introuvable")
+    total_paid = db.query(Ticket).filter(
+        Ticket.event_id == event_id, Ticket.payment_status == "paye").count()
+    total_used = db.query(Ticket).filter(
+        Ticket.event_id == event_id, Ticket.is_used == True).count()
+    return {
+        "event_title": event.title,
+        "billets_vendus": total_paid,
+        "personnes_entrees": total_used,
+        "personnes_restantes": total_paid - total_used,
+        "taux_entree": f"{(total_used/total_paid*100) if total_paid else 0:.1f}%",
+    }

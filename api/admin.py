@@ -15,10 +15,9 @@ from core.security import get_current_user, log_security_event
 from core.ngser import create_withdrawal_session
 from models.event import Event
 from models.ticket import Ticket
-from models.user import User
 from models.payment import Payment, PayoutRequest
 from models.partner import PartnerRequest, CancellationRequest
-from models.social import SecurityLog if False else None  # placeholder, voir note
+from models.user import User, SecurityLog
 from utils.serializers import _event_dict
 
 router = APIRouter()

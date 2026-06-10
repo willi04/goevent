@@ -1,9 +1,11 @@
 """
 api/organizer.py
 Routeur organisateur : demande de retrait (payout), historique des retraits,
-statistiques de ventes, demande d'annulation d'événement.
+statistiques de ventes, demande d'annulation d'événement, gestion des agents.
 """
-from fastapi import APIRouter, Depends, HTTPException, Request
+from datetime import datetime
+
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -15,10 +17,8 @@ from models.user import User
 from models.payment import Payment, PayoutRequest
 from models.partner import CancellationRequest
 from schemas.partner import CancelRequestCreate
-from utils.serializers import _event_dict
-
-from schemas.partner import CancelRequestCreate
 from schemas.auth import AgentCreate
+from utils.serializers import _event_dict
 
 router = APIRouter()
 
@@ -107,7 +107,7 @@ def organizer_stats(db: Session = Depends(get_db), current_user: User = Depends(
     events = db.query(Event).filter(Event.organizer_id == current_user.id).all()
 
     total_sold = sum(e.seats_sold for e in events)
-    active_events = [e for e in events if e.is_active and e.event_date >= __import__("datetime").datetime.utcnow()]
+    active_events = [e for e in events if e.is_active and e.event_date >= datetime.utcnow()]
 
     total_cagnotte_globale = 0.0
     for e in events:
@@ -165,6 +165,7 @@ def request_cancellation(event_id: int, data: CancelRequestCreate, db: Session =
     print(f"🚨 ALERTE ANNULATION : L'événement {event.title} demande à être annulé !")
 
     return {"message": "Demande d'annulation soumise."}
+
 
 # ── GESTION DES AGENTS (côté organisateur) ──────────────────────
 @router.post("/organizer/create-agent")

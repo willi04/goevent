@@ -5,6 +5,7 @@ Tous les appels à l'API NGSER passent par ici : sessions d'achat (B2B entrant)
 et sessions de retrait (B2C sortant vers l'organisateur).
 
 ⚠️ ZONE FINANCIÈRE — toute modification ici impacte des flux d'argent réels.
+La vérification SSL (verify) est pilotée par l'environnement : forcée en prod.
 """
 import httpx
 
@@ -26,7 +27,7 @@ async def create_payment_session(order_id: str, amount: int) -> tuple[int, dict]
         "transaction_amount": amount,
     }
 
-    async with httpx.AsyncClient(verify=False) as client:
+    async with httpx.AsyncClient(verify=settings.NGSER_VERIFY_SSL) as client:
         response = await client.post(
             f"{settings.NGSER_BASE_URL}/v3/sessions",
             json=payload,
@@ -57,7 +58,7 @@ async def create_withdrawal_session(order_id: str, amount: int, customer_phone: 
         "customer": customer_phone,
     }
 
-    async with httpx.AsyncClient(verify=False) as client:
+    async with httpx.AsyncClient(verify=settings.NGSER_VERIFY_SSL) as client:
         response = await client.post(
             f"{settings.NGSER_BASE_URL}/v3/sessions",
             json=payload,

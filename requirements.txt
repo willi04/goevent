@@ -19,3 +19,4 @@ email-validator>=2.1.0
 bleach>=6.1.0
 pyotp>=2.8.0
 qrcode>=7.4.2
+pydantic-settings==2.5.2

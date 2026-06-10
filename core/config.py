@@ -57,7 +57,8 @@ class Settings(BaseSettings):
                 "http://127.0.0.1:5500",
             ]
         return origins
-        
+    
+    @property    
     def NGSER_VERIFY_SSL(self) -> bool:
         # En prod : vérification SSL obligatoire (sécurité des flux d'argent).
         # En dev/test : tolérée désactivée si l'agrégateur a un certif de test invalide.

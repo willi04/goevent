@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     NGSER_WITHDRAWAL_TOKEN: str | None = None  # optionnel : retraits orga
     NGSER_SERVICE_NAME: str = "GOEVENT TEST"
 
+    # ── CRON / RÉCONCILIATION ───────────────────────────────────
+    RECONCILE_SECRET: str = ""
+    
     # ── HASHIDS (slugs événements) ──────────────────────────────
     HASHIDS_SALT: str = "GoEvent-RCA-2026-Bangui-Madoukou-Secret"
     HASHIDS_ALPHABET: str = (

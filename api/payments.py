@@ -224,7 +224,12 @@ async def ngser_webhook(request: Request, db: Session = Depends(get_db)):
             if payment_record:
                 payment_record.status = "completed"
 
-            event = db.query(Event).filter(Event.id == ticket.event_id).first()
+            event = (
+                db.query(Event)
+                .filter(Event.id == ticket.event_id)
+                .with_for_update()
+                .first()
+            )
             if event:
                 event.seats_sold += 1
 

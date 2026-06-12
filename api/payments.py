@@ -19,6 +19,10 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
+from fastapi import Header
+from core.config import settings
+from core.reconcile import reconcile_pending_payments
+
 from core.database import get_db
 from core.security import get_current_user
 from core.ngser import create_payment_session
@@ -299,3 +303,21 @@ def init_payment(event_id: int, db: Session = Depends(get_db),
         "ussd_code": "#150*50#",
         "instruction": f"Composez #150*50# sur Orange Money pour payer {int(total_a_payer)} FCFA",
     }
+
+# ── RÉCONCILIATION (cron externe, protégé par secret) ───────────
+@router.post("/admin/reconcile")
+async def trigger_reconcile(
+    x_reconcile_secret: str = Header(None),
+    db: Session = Depends(get_db),
+):
+    """
+    Rattrape les paiements 'en attente' dont le webhook s'est perdu (doc p.18).
+    Appelé par un cron externe (GitHub Actions), protégé par un secret en header.
+    PAS de get_current_user : c'est une machine qui appelle, pas un humain.
+    """
+    if not settings.RECONCILE_SECRET or x_reconcile_secret != settings.RECONCILE_SECRET:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+
+    summary = await reconcile_pending_payments(db)
+    print(f"🔄 Réconciliation terminée : {summary}")
+    return {"status": "success", "summary": summary}

@@ -161,18 +161,25 @@ async def ngser_webhook(request: Request, db: Session = Depends(get_db)):
         if str(order_id).startswith("WD"):
             try:
                 payout_id = int(str(order_id).split("-")[0].replace("WD", ""))
-                payout = db.query(PayoutRequest).filter(PayoutRequest.id == payout_id).first()
-                if payout and payout.status != "paye":
+                payout = (
+                    db.query(PayoutRequest)
+                    .filter(PayoutRequest.id == payout_id)
+                    .with_for_update()
+                    .first()
+                )
+                if payout and payout.status not in ("paye",):
                     if status_id == 1:
                         payout.status = "paye"
                         db.commit()
                         print(f"✅💸 Webhook : Retrait B2C {payout_id} validé.")
                     else:
-                        print(f"❌ Webhook : Échec retrait {payout_id} (status_id={status_id}).")
+                        # Échec : on relâche le verrou logique pour permettre un réessai admin.
+                        payout.status = "en_attente"
+                        db.commit()
+                        print(f"❌ Webhook : Échec retrait {payout_id} (status_id={status_id}) → remis en attente.")
             except Exception as e:
                 print(f"❌ Erreur lecture webhook retrait : {e}")
             return {"status": "success"}
-
         # ─────────────────────────────────────────────────────────
         # SCÉNARIO 2 : ACHAT DE BILLET (EVT...)
         # ─────────────────────────────────────────────────────────

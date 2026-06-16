@@ -146,6 +146,34 @@
         background: #9df6b9;
         color: #00210f;
       }
+      /* Carrousel hero */
+      #hero-carousel { height: 60vh; min-height: 480px; max-height: 720px; }
+      @media (min-width: 768px) {
+        #hero-carousel { height: 670px; min-height: 670px; }
+      }
+      .hero-slide {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        transition: opacity 0.8s ease-in-out;
+        pointer-events: none;
+      }
+      .hero-slide.active {
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .hero-indicator {
+        width: 8px;
+        height: 8px;
+        border-radius: 9999px;
+        background: rgba(255, 255, 255, 0.4);
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+      .hero-indicator.active {
+        background: #ffffff;
+        width: 32px;
+      }
     </style>
   </head>
   <body
@@ -305,54 +333,58 @@
     </div>
 
     <main class="flex-1 pt-[72px] md:pt-20">
+     <!-- ═══ HERO CARROUSEL — Régie publicitaire ═══ -->
+      <section id="hero-carousel" class="relative w-full overflow-hidden bg-[#03361e]" style="min-height: 60vh;">
+        <!-- Container des slides (rempli dynamiquement par JS) -->
+        <div id="hero-slides-track" class="relative w-full h-full" style="min-height: 60vh;">
+          <!-- Fallback statique si JS désactivé ou API down -->
+          <div class="hero-fallback-slide absolute inset-0 flex items-center px-6 md:px-16">
+            <div class="absolute inset-0 z-0">
+              <img
+                class="w-full h-full object-cover brightness-50"
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBLgDK-_QkFA7YCZQAtSH6m1rbySJFBnLlXxmapfO0X-x4Im4k-29hluoN5MZidYlINb7qZU7f1T0vqBAB4KffEYNgaTVsggqeYMOSWTwjUmKMcs_SyJ6IgfsmyPzAFaT3gt-CTcIBeJ2Wv9m1VH9MTy1HS_IbFMxgvFDliXYMLsfB_Js0M08u9wjMaEII1GyjgHN0xKAR53UxQtBR5Dkagtbzl01pQqj_xKfn0ji2XT7VN9ZCuHFNgBDcrtWtRddBvnGq57cb8Mw"
+                alt="GoEvent"
+              />
+              <div class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-90"></div>
+            </div>
+            <div class="relative z-10 max-w-4xl">
+              <h1 class="text-4xl md:text-7xl font-extrabold font-headline text-white leading-tight mb-6">
+                Vivez la <span class="text-primary-fixed">culture</span><br />centrafricaine
+              </h1>
+              <p class="text-lg md:text-xl text-surface-container-lowest/90 font-medium mb-10 max-w-xl">
+                Achetez vos billets en ligne, payez via Orange Money. Sécurisé, rapide et local.
+              </p>
+            </div>
+          </div>
+        </div>
+      
+        <!-- Indicateurs (points en bas, remplis dynamiquement) -->
+        <div id="hero-indicators" class="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex gap-2"></div>
+      
+        <!-- Boutons navigation (cachés s'il n'y a qu'1 slide) -->
+        <button
+          id="hero-prev"
+          onclick="heroCarousel.prev()"
+          class="hidden absolute left-4 top-1/2 -translate-y-1/2 z-30 w-12 h-12 rounded-full bg-black/30 hover:bg-black/60 text-white items-center justify-center transition-all backdrop-blur-sm"
+          aria-label="Slide précédente"
+        >
+          <span class="material-symbols-outlined">chevron_left</span>
+        </button>
+        <button
+          id="hero-next"
+          onclick="heroCarousel.next()"
+          class="hidden absolute right-4 top-1/2 -translate-y-1/2 z-30 w-12 h-12 rounded-full bg-black/30 hover:bg-black/60 text-white items-center justify-center transition-all backdrop-blur-sm"
+          aria-label="Slide suivante"
+        >
+          <span class="material-symbols-outlined">chevron_right</span>
+        </button>
+      </section>
+      
+      <!-- Barre de recherche mobile (gardée en dessous du hero) -->
       <div class="block md:hidden">
-        <section class="bg-[#03361e] pt-12 pb-24 px-6 relative">
-          <div
-            class="inline-flex items-center gap-2 bg-green-500/20 text-[#00d65b] border border-green-500/20 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest mb-6"
-          >
-            <span
-              class="w-1.5 h-1.5 rounded-full bg-[#00d65b] animate-pulse"
-            ></span>
-            Billetterie officielle RCA
-          </div>
-
-          <h1
-            class="text-[40px] font-black font-headline text-white leading-[1.05] mb-4 tracking-tight"
-          >
-            Vivez la <span class="text-[#00d65b]">culture</span
-            ><br />centrafricaine
-          </h1>
-
-          <p
-            class="text-gray-300 text-[13px] font-medium mb-8 leading-relaxed pr-4"
-          >
-            Achetez vos billets en ligne, payez via Orange Money. Sécurisé,
-            rapide et local.
-          </p>
-
-          <div class="flex items-center gap-3">
-            <button
-              onclick="window.location.href = 'event.html'"
-              class="flex-[3] bg-[#00d65b] text-gray-900 font-extrabold py-3.5 rounded-[14px] text-sm shadow-lg hover:brightness-110 active:scale-95 transition-all"
-            >
-              Découvrir les events
-            </button>
-            <button
-              onclick="window.location.href = 'user_dashboard.html'"
-              class="flex-[2] bg-white/5 border border-white/20 text-white font-extrabold py-3.5 rounded-[14px] text-sm hover:bg-white/10 active:scale-95 transition-all"
-            >
-              Mes billets
-            </button>
-          </div>
-        </section>
-
         <section class="px-6 relative z-10 -mt-12 mb-8">
-          <div
-            class="bg-white p-2 rounded-2xl shadow-xl shadow-gray-200/50 flex items-center gap-2 mb-6"
-          >
-            <span class="material-symbols-outlined text-gray-400 pl-2 text-xl"
-              >search</span
-            >
+          <div class="bg-white p-2 rounded-2xl shadow-xl shadow-gray-200/50 flex items-center gap-2 mb-6">
+            <span class="material-symbols-outlined text-gray-400 pl-2 text-xl">search</span>
             <input
               type="text"
               id="mobile-search"
@@ -362,9 +394,7 @@
             <button
               onclick="
                 const q = document.getElementById('mobile-search').value.trim();
-                if (q)
-                  window.location.href =
-                    'event.html?search=' + encodeURIComponent(q);
+                if (q) window.location.href = 'event.html?search=' + encodeURIComponent(q);
               "
               class="w-10 h-10 bg-gray-50 hover:bg-gray-100 rounded-xl flex items-center justify-center text-gray-500 transition-colors shrink-0"
             >
@@ -373,36 +403,6 @@
           </div>
         </section>
       </div>
-
-      <section
-        class="hidden md:flex relative min-h-[60vh] md:h-[670px] items-center px-6 md:px-16 overflow-hidden"
-      >
-        <div class="absolute inset-0 z-0">
-          <img
-            class="w-full h-full object-cover brightness-50"
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuBLgDK-_QkFA7YCZQAtSH6m1rbySJFBnLlXxmapfO0X-x4Im4k-29hluoN5MZidYlINb7qZU7f1T0vqBAB4KffEYNgaTVsggqeYMOSWTwjUmKMcs_SyJ6IgfsmyPzAFaT3gt-CTcIBeJ2Wv9m1VH9MTy1HS_IbFMxgvFDliXYMLsfB_Js0M08u9wjMaEII1GyjgHN0xKAR53UxQtBR5Dkagtbzl01pQqj_xKfn0ji2XT7VN9ZCuHFNgBDcrtWtRddBvnGq57cb8Mw"
-            alt="Concert Bangui"
-          />
-          <div
-            class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-90"
-          ></div>
-        </div>
-        <div class="relative z-10 max-w-4xl">
-          <h1
-            class="text-4xl md:text-7xl font-extrabold font-headline text-white leading-tight mb-6"
-          >
-            Vivez la <span class="text-primary-fixed">culture</span
-            ><br />centrafricaine
-          </h1>
-          <p
-            class="text-lg md:text-xl text-surface-container-lowest/90 font-medium mb-10 max-w-xl"
-          >
-            Achetez vos billets en ligne, payez via Orange Money. Sécurisé,
-            rapide et local.
-          </p>
-        </div>
-      </section>
-
       <section
         class="p-2 pb-12 px-6 md:px-16 bg-surface-container-low/30 overflow-hidden"
       >
@@ -705,7 +705,162 @@
           wrapper.ontouchend = () => resetTimer();
         }
       }
+      // ═══════════════════════════════════════════════════════════════
+// HERO CARROUSEL — Régie publicitaire
+// ═══════════════════════════════════════════════════════════════
 
+      const heroCarousel = {
+        slides: [],
+        current: 0,
+        timer: null,
+        intervalMs: 5000,
+      
+        async init() {
+          try {
+            const slides = await btApi.get("/ads/homepage");
+            if (!slides || slides.length === 0) {
+              // Fallback : on garde la slide statique déjà présente
+              console.log("[Hero] Aucune slide active, fallback statique");
+              return;
+            }
+            this.slides = slides;
+            this.render();
+            if (slides.length > 1) {
+              this.start();
+            }
+          } catch (err) {
+            console.warn("[Hero] API ads indisponible, fallback statique :", err.message);
+            // Le fallback HTML reste affiché, aucune action
+          }
+        },
+      
+        render() {
+          const track = document.getElementById("hero-slides-track");
+          const indicators = document.getElementById("hero-indicators");
+          const prevBtn = document.getElementById("hero-prev");
+          const nextBtn = document.getElementById("hero-next");
+          if (!track || !indicators) return;
+      
+          // Vider le fallback
+          track.innerHTML = "";
+      
+          // Construire les slides
+          track.innerHTML = this.slides.map((s, i) => this._slideHtml(s, i)).join("");
+      
+          // Indicateurs (uniquement si > 1 slide)
+          if (this.slides.length > 1) {
+            indicators.innerHTML = this.slides
+              .map((_, i) => `<button class="hero-indicator ${i === 0 ? "active" : ""}" onclick="heroCarousel.goTo(${i})" aria-label="Slide ${i + 1}"></button>`)
+              .join("");
+            prevBtn.classList.remove("hidden");
+            prevBtn.classList.add("md:flex");
+            nextBtn.classList.remove("hidden");
+            nextBtn.classList.add("md:flex");
+          } else {
+            indicators.innerHTML = "";
+          }
+      
+          // Pause sur hover (desktop)
+          const carouselEl = document.getElementById("hero-carousel");
+          if (carouselEl && this.slides.length > 1) {
+            carouselEl.addEventListener("mouseenter", () => this.pause());
+            carouselEl.addEventListener("mouseleave", () => this.start());
+            carouselEl.addEventListener("touchstart", () => this.pause(), { passive: true });
+            carouselEl.addEventListener("touchend", () => this.start(), { passive: true });
+          }
+        },
+      
+        _slideHtml(s, i) {
+          const cta = s.cta_link && s.cta_text
+            ? `<a href="${this._escapeAttr(s.cta_link)}" class="inline-flex items-center gap-2 mt-8 px-8 py-4 bg-primary-fixed text-on-primary-fixed rounded-full font-bold text-base md:text-lg hover:scale-105 active:scale-95 transition-transform shadow-2xl">
+                 ${this._escapeHtml(s.cta_text)}
+                 <span class="material-symbols-outlined">arrow_forward</span>
+               </a>`
+            : "";
+      
+          const subtitle = s.subtitle
+            ? `<p class="text-lg md:text-xl text-white/90 font-medium max-w-xl">${this._escapeHtml(s.subtitle)}</p>`
+            : "";
+      
+          return `
+            <div class="hero-slide ${i === 0 ? "active" : ""}" data-slide-index="${i}">
+              <div class="absolute inset-0 z-0">
+                <img
+                  class="w-full h-full object-cover brightness-50"
+                  src="${this._escapeAttr(s.image_url || "")}"
+                  alt="${this._escapeAttr(s.title || "")}"
+                  onerror="this.style.display='none'"
+                />
+                <div class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-90"></div>
+              </div>
+              <div class="absolute inset-0 flex items-center px-6 md:px-16">
+                <div class="relative z-10 max-w-4xl">
+                  <h1 class="text-4xl md:text-7xl font-extrabold font-headline text-white leading-tight mb-4 md:mb-6">
+                    ${this._escapeHtml(s.title || "")}
+                  </h1>
+                  ${subtitle}
+                  ${cta}
+                </div>
+              </div>
+            </div>
+          `;
+        },
+      
+        goTo(idx) {
+          const slides = document.querySelectorAll(".hero-slide");
+          const indicators = document.querySelectorAll(".hero-indicator");
+          slides.forEach((el, i) => el.classList.toggle("active", i === idx));
+          indicators.forEach((el, i) => el.classList.toggle("active", i === idx));
+          this.current = idx;
+          this._restart();
+        },
+      
+        next() {
+          this.goTo((this.current + 1) % this.slides.length);
+        },
+      
+        prev() {
+          this.goTo((this.current - 1 + this.slides.length) % this.slides.length);
+        },
+      
+        start() {
+          if (this.slides.length <= 1) return;
+          this.pause();
+          this.timer = setInterval(() => this.next(), this.intervalMs);
+        },
+      
+        pause() {
+          if (this.timer) {
+            clearInterval(this.timer);
+            this.timer = null;
+          }
+        },
+      
+        _restart() {
+          if (this.slides.length > 1) {
+            this.pause();
+            this.start();
+          }
+        },
+      
+        _escapeHtml(s) {
+          if (!s) return "";
+          return String(s)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+        },
+      
+        _escapeAttr(s) {
+          if (!s) return "";
+          return String(s).replace(/"/g, "&quot;").replace(/</g, "&lt;");
+        },
+      };
+      
+      // Lancement au DOMContentLoaded
+      window.addEventListener("DOMContentLoaded", () => heroCarousel.init());
       // 3. Chargement et Logique d'affichage
       async function loadPublicEvents(category = "") {
         const grid = document.getElementById("egrid");

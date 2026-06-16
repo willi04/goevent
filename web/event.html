@@ -347,6 +347,20 @@
                   <option value="Palais de la CEMAC">Palais de la CEMAC</option>
                 </select>
               </div>
+              <div class="mb-8">
+                <span class="text-xs font-label uppercase tracking-widest text-outline mb-4 block">Période</span>
+                <label class="flex items-start group cursor-pointer">
+                  <input
+                    id="include-past-filter"
+                    type="checkbox"
+                    class="rounded border-outline-variant text-primary focus:ring-primary w-5 h-5 transition-all mt-0.5"
+                  />
+                  <span class="ml-3 text-on-surface group-hover:text-primary transition-colors text-sm">
+                    Inclure les événements terminés
+                    <span class="block text-xs text-outline mt-0.5">(30 derniers jours uniquement)</span>
+                  </span>
+                </label>
+              </div>
             </div>
           </aside>
 
@@ -836,7 +850,7 @@
                   <span class="truncate">${e.location}</span>
                 </div>
                 <div class="flex items-center justify-between mt-auto">
-                  <span class="text-lg font-extrabold text-secondary">${isPast ? '---' : prixFormate}</span>
+                 <span class="text-lg font-extrabold ${isPast ? 'text-gray-400 line-through' : 'text-secondary'}">${prixFormate}</span>
                   ${btnHtml}
                 </div>
               </div>
@@ -856,6 +870,7 @@
         const priceFilter = document.getElementById("price-filter");
         const priceDisplay = document.getElementById("price-display");
         const locationFilter = document.getElementById("location-filter");
+        const includePastFilter = document.getElementById("include-past-filter");
 
         // Nouveaux venus : Tri et Pagination
         const sortSelect = document.getElementById("sort-select");
@@ -877,8 +892,15 @@
             params.append("page", currentPage);
             params.append("limit", itemsPerPage);
             if (sortSelect) params.append("sort_by", sortSelect.value);
-
-            if (searchInput && searchInput.value.trim() !== "") {
+            
+            // Filtre temporel : par défaut on n'affiche que les futurs.
+            // Si la checkbox est cochée, on élargit aux 30 derniers jours.
+            if (includePastFilter && includePastFilter.checked) {
+              params.append("include_past_days", "30");
+            } else {
+              params.append("upcoming_only", "true");
+            }
+                        if (searchInput && searchInput.value.trim() !== "") {
               params.append("q", searchInput.value.trim());
             }
             const checkedCats = Array.from(catCheckboxes)
@@ -986,6 +1008,9 @@
         if (locationFilter)
           locationFilter.addEventListener("change", updateFilters);
         if (sortSelect) sortSelect.addEventListener("change", updateFilters);
+        if (includePastFilter) {
+          includePastFilter.addEventListener("change", updateFilters);
+        }
         if (priceFilter) {
           priceFilter.addEventListener(
             "input",

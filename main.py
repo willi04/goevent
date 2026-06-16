@@ -22,6 +22,7 @@ from api import (
     auth, events, tickets, agent, social,
     organizer, dashboard, admin, payments,
 )
+from api import staff as staff_router
 
 Base.metadata.create_all(bind=engine)
 
@@ -61,6 +62,7 @@ app.include_router(dashboard.router)
 app.include_router(admin.router)
 app.include_router(payments.router)
 app.include_router(ads_router.router)
+app.include_router(staff_router.router)
 
 @app.get("/")
 def root():

@@ -319,6 +319,15 @@
             Annulations
           </button>
           <button
+              onclick="showTab('contracts')"
+              data-tab="contracts"
+              data-capability="ads_contracts_read"
+              class="tab-btn w-full text-left flex items-center gap-3"
+          >
+            <span class="material-symbols-outlined text-lg">handshake</span>
+            Régie pub
+          </button>
+          <button
               onclick="showTab('team')"
               data-tab="team"
               data-capability="staff_manage"
@@ -388,6 +397,15 @@
             class="tab-btn flex-shrink-0 text-red-600"
           >
             Annulations
+          </button>
+          <button
+              onclick="showTab('contracts')"
+              data-tab="contracts"
+              data-capability="ads_contracts_read"
+              class="tab-btn w-full text-left flex items-center gap-3"
+          >
+            <span class="material-symbols-outlined text-lg">handshake</span>
+            Régie pub
           </button>
           <button
             onclick="showTab('team')"
@@ -710,6 +728,70 @@
           <div id="cancellations-list" class="space-y-3"></div>
         </section>
 
+        <!-- ── SECTION CONTRATS RÉGIE PUB (Commit 8.6.c) ── -->
+        <section id="section-contracts" class="section-hidden">
+          <div class="flex flex-wrap justify-between items-center gap-3 mb-5">
+            <div>
+              <h2 class="text-xl font-black text-gray-900">Régie publicitaire</h2>
+              <p class="text-xs text-gray-500 mt-1">Contrats annonceurs externes (Orange, Total, marques...)</p>
+            </div>
+            <button onclick="openContractModal()" class="action-btn btn-primary flex items-center gap-2">
+              <span class="material-symbols-outlined text-base">add</span>
+              Nouveau contrat
+            </button>
+          </div>
+        
+          <!-- Stats rapides -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+            <div class="stat-card">
+              <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">En cours</p>
+              <p id="ctr-stat-active" class="text-2xl font-black text-green-700">—</p>
+            </div>
+            <div class="stat-card">
+              <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">En attente</p>
+              <p id="ctr-stat-pending" class="text-2xl font-black text-amber-600">—</p>
+            </div>
+            <div class="stat-card">
+              <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">CA facturé</p>
+              <p id="ctr-stat-billed" class="text-2xl font-black text-gray-900">—</p>
+            </div>
+            <div class="stat-card">
+              <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Impayés</p>
+              <p id="ctr-stat-unpaid" class="text-2xl font-black text-red-600">—</p>
+            </div>
+          </div>
+        
+          <!-- Filtres -->
+          <div class="flex gap-2 mb-4 flex-wrap">
+            <button onclick="filterContracts('all')" id="cf-all" class="action-btn btn-primary text-xs">Tous</button>
+            <button onclick="filterContracts('active')" id="cf-active" class="action-btn" style="background:#d1fae5;color:#065f46">Actifs</button>
+            <button onclick="filterContracts('pending')" id="cf-pending" class="action-btn" style="background:#fef9c3;color:#854d0e">En attente</button>
+            <button onclick="filterContracts('expired')" id="cf-expired" class="action-btn" style="background:#f3f4f6;color:#374151">Expirés</button>
+            <button onclick="filterContracts('cancelled')" id="cf-cancelled" class="action-btn" style="background:#fee2e2;color:#991b1b">Annulés</button>
+          </div>
+        
+          <div class="card overflow-hidden">
+            <div class="overflow-x-auto">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Annonceur</th>
+                    <th>Contact</th>
+                    <th>Période</th>
+                    <th>Montant</th>
+                    <th>Paiement</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="contracts-tbody">
+                  <tr><td colspan="7"><div class="empty-state"><span class="material-symbols-outlined">hourglass_empty</span>Chargement...</div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+        
         <!-- ── SECTION ÉQUIPE ── -->
         <section id="section-team" class="section-hidden">
           <div class="flex flex-wrap justify-between items-center gap-3 mb-5">
@@ -882,14 +964,104 @@
           </div>
         </div>
 
-        <p id="emp-error" class="text-red-500 text-xs mt-3 min-h-4"></p>
-
-        <button
-          onclick="createEmployee()"
-          class="action-btn btn-primary w-full mt-5 py-3 text-sm"
-        >
-          Créer l'employé
-        </button>
+        <!-- Modal : Créer / Modifier un contrat -->
+        <div id="contract-modal" class="modal-overlay hidden">
+          <div class="modal-box" style="max-width:560px">
+            <div class="flex justify-between items-center mb-6">
+              <h3 id="contract-modal-title" class="text-lg font-black text-gray-900">Nouveau contrat</h3>
+              <button onclick="closeContractModal()" class="text-gray-400 hover:text-red-500 transition-colors">
+                <span class="material-symbols-outlined">close</span>
+              </button>
+            </div>
+        
+            <div class="space-y-4">
+              <!-- Pré-remplissage tarifaire -->
+              <div id="ctr-pricing-hint" class="bg-blue-50 border border-blue-100 rounded-xl p-3">
+                <p class="text-[10px] font-bold text-blue-700 uppercase tracking-widest mb-2">Tarifs de référence</p>
+                <div class="flex gap-2 flex-wrap">
+                  <button type="button" onclick="applyPricing(7, 50000)" class="action-btn text-xs" style="background:#dbeafe;color:#1e40af">1 sem · 50 000</button>
+                  <button type="button" onclick="applyPricing(30, 150000)" class="action-btn text-xs" style="background:#dbeafe;color:#1e40af">1 mois · 150 000</button>
+                  <button type="button" onclick="applyPricing(90, 500000)" class="action-btn text-xs" style="background:#dbeafe;color:#1e40af">3 mois · 500 000</button>
+                </div>
+              </div>
+        
+              <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Annonceur *</label>
+                <input id="ctr-sponsor" type="text" class="input-field" placeholder="ex: Orange Centrafrique" />
+              </div>
+        
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Téléphone</label>
+                  <input id="ctr-phone" type="tel" class="input-field" placeholder="+236..." />
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Email</label>
+                  <input id="ctr-email" type="email" class="input-field" placeholder="contact@..." />
+                </div>
+              </div>
+        
+              <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Personne contact</label>
+                <input id="ctr-contact" type="text" class="input-field" placeholder="Nom du contact commercial" />
+              </div>
+        
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Début *</label>
+                  <input id="ctr-start" type="date" class="input-field" />
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Fin *</label>
+                  <input id="ctr-end" type="date" class="input-field" />
+                </div>
+              </div>
+        
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Montant (FCFA) *</label>
+                  <input id="ctr-amount" type="number" min="0" step="1000" class="input-field" placeholder="ex: 150000" />
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Déjà encaissé</label>
+                  <input id="ctr-paid" type="number" min="0" step="1000" class="input-field" placeholder="0" />
+                </div>
+              </div>
+        
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Statut</label>
+                  <select id="ctr-status" class="input-field">
+                    <option value="pending">En attente</option>
+                    <option value="active">Actif</option>
+                    <option value="expired">Expiré</option>
+                    <option value="cancelled">Annulé</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Paiement</label>
+                  <select id="ctr-payment" class="input-field">
+                    <option value="unpaid">Impayé</option>
+                    <option value="partial">Partiel</option>
+                    <option value="paid">Payé</option>
+                  </select>
+                </div>
+              </div>
+        
+              <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Notes internes</label>
+                <textarea id="ctr-notes" rows="2" class="input-field" placeholder="Commentaires libres..."></textarea>
+              </div>
+            </div>
+        
+            <p id="contract-error" class="text-red-500 text-xs mt-3 min-h-4"></p>
+        
+            <div class="flex gap-2 mt-5">
+              <button onclick="closeContractModal()" class="action-btn flex-1 py-3" style="background:#f3f4f6;color:#374151">Annuler</button>
+              <button id="btn-contract-submit" onclick="submitContract()" class="action-btn btn-primary flex-1 py-3">Créer</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1006,6 +1178,7 @@
               { tab: "cancellations", cap: "moderate_cancellations" },
               { tab: "team",          cap: "staff_manage" },
               { tab: "feedbacks",     cap: "moderate_feedbacks" },
+              { tab: "contracts",     cap: "ads_contracts_read" },
           ];
       
           for (const { tab, cap } of priorityOrder) {
@@ -1032,6 +1205,7 @@
           cancellations: "moderate_cancellations",
           team:          "staff_manage",
           feedbacks:     "moderate_feedbacks",
+          contracts:     "ads_contracts_read",
       };
       
       function showTab(tab) {
@@ -1057,6 +1231,7 @@
           if (tab === "cancellations") loadCancellations();
           if (tab === "feedbacks") loadFeedbacks();
           if (tab === "team") loadStaff();
+          if (tab === "contracts") loadContracts();
           // 'team' n'est pas dans la liste de chargement actuelle —
           //  la section Équipe est statique (juste un bouton "Créer le premier employé").
           //  Sera branché en 8.6.b avec un appel à loadStaff().
@@ -1585,6 +1760,225 @@
           const code = document.getElementById("pin-modal-code").textContent;
           navigator.clipboard.writeText(code).then(() => btToast("PIN copié", "success"));
       }
+      
+      // ═══════════════════════════════════════════════════════════════
+      // CONTRATS RÉGIE PUB (Commit 8.6.c)
+      // ═══════════════════════════════════════════════════════════════
+      
+      let allContracts = [];
+      let contractEditId = null;
+      let contractFilter = "all";
+      
+      async function loadContracts() {
+          const tbody = document.getElementById("contracts-tbody");
+          try {
+              allContracts = await btApi.get("/admin/ads/contracts");
+              renderContractStats(allContracts);
+              renderContracts();
+          } catch (e) {
+              tbody.innerHTML = `<tr><td colspan="7" class="text-center text-red-500 py-8 text-sm">${e.message || 'Erreur'}</td></tr>`;
+          }
+      }
+      
+      function renderContractStats(list) {
+          const now = new Date();
+          let active = 0, pending = 0, billed = 0, unpaid = 0;
+          list.forEach(c => {
+              if (c.status === "active") active++;
+              if (c.status === "pending") pending++;
+              billed += c.amount_fcfa || 0;
+              if (c.payment_status !== "paid") unpaid += (c.amount_fcfa || 0) - (c.paid_amount || 0);
+          });
+          document.getElementById("ctr-stat-active").textContent = active;
+          document.getElementById("ctr-stat-pending").textContent = pending;
+          document.getElementById("ctr-stat-billed").textContent = billed.toLocaleString("fr-FR") + " F";
+          document.getElementById("ctr-stat-unpaid").textContent = unpaid.toLocaleString("fr-FR") + " F";
+      }
+      
+      function filterContracts(status) {
+          contractFilter = status;
+          ["all","active","pending","expired","cancelled"].forEach(s => {
+              const btn = document.getElementById("cf-" + s);
+              if (!btn) return;
+              if (s === status) {
+                  btn.className = "action-btn btn-primary text-xs";
+              } else {
+                  const colors = {
+                      all: "background:#f3f4f6;color:#374151",
+                      active: "background:#d1fae5;color:#065f46",
+                      pending: "background:#fef9c3;color:#854d0e",
+                      expired: "background:#f3f4f6;color:#374151",
+                      cancelled: "background:#fee2e2;color:#991b1b",
+                  };
+                  btn.className = "action-btn text-xs";
+                  btn.setAttribute("style", colors[s]);
+              }
+          });
+          renderContracts();
+      }
+      
+      function renderContracts() {
+          const tbody = document.getElementById("contracts-tbody");
+          const list = contractFilter === "all" ? allContracts : allContracts.filter(c => c.status === contractFilter);
+      
+          if (!list.length) {
+              tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><span class="material-symbols-outlined">handshake</span><p class="font-bold text-gray-400 mt-2">Aucun contrat</p></div></td></tr>';
+              return;
+          }
+      
+          const statusBadge = (s) => {
+              if (s === "active") return '<span class="badge badge-green">Actif</span>';
+              if (s === "pending") return '<span class="badge badge-yellow">En attente</span>';
+              if (s === "expired") return '<span class="badge badge-gray">Expiré</span>';
+              if (s === "cancelled") return '<span class="badge badge-red">Annulé</span>';
+              return '<span class="badge badge-gray">—</span>';
+          };
+          const paymentBadge = (p) => {
+              if (p === "paid") return '<span class="badge badge-green">Payé</span>';
+              if (p === "partial") return '<span class="badge badge-yellow">Partiel</span>';
+              return '<span class="badge badge-red">Impayé</span>';
+          };
+          const fmtDate = (d) => d ? new Date(d).toLocaleDateString("fr-FR") : "—";
+      
+          tbody.innerHTML = list.map(c => `
+              <tr>
+                  <td><span class="font-bold text-gray-900 text-sm">${c.sponsor_name}</span></td>
+                  <td>
+                      <div class="text-xs text-gray-500">
+                          ${c.sponsor_contact ? `<div>${c.sponsor_contact}</div>` : ''}
+                          ${c.sponsor_phone ? `<div class="font-mono">${c.sponsor_phone}</div>` : ''}
+                          ${c.sponsor_email ? `<div>${c.sponsor_email}</div>` : ''}
+                      </div>
+                  </td>
+                  <td><span class="text-xs text-gray-500">${fmtDate(c.start_date)}<br>→ ${fmtDate(c.end_date)}</span></td>
+                  <td>
+                      <div class="text-xs">
+                          <div class="font-bold text-gray-900">${(c.amount_fcfa || 0).toLocaleString("fr-FR")} F</div>
+                          ${c.paid_amount > 0 ? `<div class="text-green-600">Reçu : ${c.paid_amount.toLocaleString("fr-FR")}</div>` : ''}
+                      </div>
+                  </td>
+                  <td>${paymentBadge(c.payment_status)}</td>
+                  <td>${statusBadge(c.status)}</td>
+                  <td>
+                      <div class="flex gap-2 flex-wrap">
+                          <button onclick="openContractModal(${c.id})" class="action-btn text-xs" style="background:#f3f4f6;color:#374151">Modifier</button>
+                          <button onclick="deleteContract(${c.id})" class="action-btn btn-danger text-xs">Suppr.</button>
+                      </div>
+                  </td>
+              </tr>
+          `).join("");
+      }
+      
+      function openContractModal(id) {
+          contractEditId = id || null;
+          document.getElementById("contract-error").textContent = "";
+          document.getElementById("contract-modal-title").textContent = id ? "Modifier le contrat" : "Nouveau contrat";
+          document.getElementById("btn-contract-submit").textContent = id ? "Enregistrer" : "Créer";
+          document.getElementById("ctr-pricing-hint").style.display = id ? "none" : "";
+      
+          // Reset
+          ["ctr-sponsor","ctr-phone","ctr-email","ctr-contact","ctr-start","ctr-end","ctr-amount","ctr-paid","ctr-notes"].forEach(k => document.getElementById(k).value = "");
+          document.getElementById("ctr-status").value = "pending";
+          document.getElementById("ctr-payment").value = "unpaid";
+      
+          if (id) {
+              const c = allContracts.find(x => x.id === id);
+              if (c) {
+                  document.getElementById("ctr-sponsor").value = c.sponsor_name || "";
+                  document.getElementById("ctr-phone").value = c.sponsor_phone || "";
+                  document.getElementById("ctr-email").value = c.sponsor_email || "";
+                  document.getElementById("ctr-contact").value = c.sponsor_contact || "";
+                  document.getElementById("ctr-start").value = c.start_date ? c.start_date.split("T")[0] : "";
+                  document.getElementById("ctr-end").value = c.end_date ? c.end_date.split("T")[0] : "";
+                  document.getElementById("ctr-amount").value = c.amount_fcfa || "";
+                  document.getElementById("ctr-paid").value = c.paid_amount || "";
+                  document.getElementById("ctr-status").value = c.status || "pending";
+                  document.getElementById("ctr-payment").value = c.payment_status || "unpaid";
+                  document.getElementById("ctr-notes").value = c.notes || "";
+              }
+          }
+      
+          document.getElementById("contract-modal").classList.remove("hidden");
+      }
+      
+      function closeContractModal() {
+          document.getElementById("contract-modal").classList.add("hidden");
+          contractEditId = null;
+      }
+      
+      function applyPricing(days, amount) {
+          const start = document.getElementById("ctr-start").value;
+          const base = start ? new Date(start) : new Date();
+          const end = new Date(base);
+          end.setDate(end.getDate() + days);
+          if (!start) document.getElementById("ctr-start").value = base.toISOString().split("T")[0];
+          document.getElementById("ctr-end").value = end.toISOString().split("T")[0];
+          document.getElementById("ctr-amount").value = amount;
+      }
+      
+      async function submitContract() {
+          const errEl = document.getElementById("contract-error");
+          errEl.textContent = "";
+      
+          const sponsor = document.getElementById("ctr-sponsor").value.trim();
+          const start = document.getElementById("ctr-start").value;
+          const end = document.getElementById("ctr-end").value;
+          const amount = parseFloat(document.getElementById("ctr-amount").value) || 0;
+          const paid = parseFloat(document.getElementById("ctr-paid").value) || 0;
+      
+          if (sponsor.length < 2) { errEl.textContent = "Annonceur requis"; return; }
+          if (!start || !end) { errEl.textContent = "Dates de début et fin requises"; return; }
+          if (new Date(end) <= new Date(start)) { errEl.textContent = "La fin doit être après le début"; return; }
+          if (amount < 0) { errEl.textContent = "Montant invalide"; return; }
+      
+          const body = {
+              sponsor_name: sponsor,
+              sponsor_contact: document.getElementById("ctr-contact").value.trim() || null,
+              sponsor_phone: document.getElementById("ctr-phone").value.trim() || null,
+              sponsor_email: document.getElementById("ctr-email").value.trim() || null,
+              amount_fcfa: amount,
+              paid_amount: paid,
+              start_date: start + "T00:00:00",
+              end_date: end + "T23:59:59",
+              status: document.getElementById("ctr-status").value,
+              payment_status: document.getElementById("ctr-payment").value,
+              notes: document.getElementById("ctr-notes").value.trim() || null,
+          };
+      
+          const btn = document.getElementById("btn-contract-submit");
+          const orig = btn.textContent;
+          btn.disabled = true;
+          btn.textContent = "Envoi...";
+      
+          try {
+              if (contractEditId) {
+                  await btApi.patch(`/admin/ads/contracts/${contractEditId}`, body);
+                  btToast("Contrat mis à jour", "success");
+              } else {
+                  await btApi.post("/admin/ads/contracts", body);
+                  btToast("Contrat créé", "success");
+              }
+              closeContractModal();
+              loadContracts();
+          } catch (e) {
+              errEl.textContent = e.message || "Erreur";
+          } finally {
+              btn.disabled = false;
+              btn.textContent = orig;
+          }
+      }
+      
+      async function deleteContract(id) {
+          if (!confirm("Supprimer définitivement ce contrat ?\n(Impossible si une affiche y est liée)")) return;
+          try {
+              await btApi.delete(`/admin/ads/contracts/${id}`);
+              btToast("Contrat supprimé", "success");
+              loadContracts();
+          } catch (e) {
+              btToast(e.message || "Erreur", "error");
+          }
+      }
+      
       // ── ANNULATIONS ─────────────────────────────────────────────
       async function loadCancellations() {
         const list = document.getElementById("cancellations-list");

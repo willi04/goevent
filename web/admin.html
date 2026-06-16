@@ -215,7 +215,7 @@
     </style>
     <script src="auth-guard.js"></script>
     <script>
-        requireAuth(["admin"]); 
+        requireAuth(["admin", "staff"]); 
     </script>
   </head>
   <body class="min-h-screen">
@@ -234,15 +234,16 @@
           >
         </div>
         <div>
-          <h1 class="text-base font-black text-gray-900 leading-tight">
-            GoEvent Admin
+          <h1 id="admin-header-title" class="text-base font-black text-gray-900 leading-tight">
+              GoEvent Admin
           </h1>
           <p
+            id="admin-header-subtitle"
             class="text-[10px] font-bold text-green-700 uppercase tracking-widest"
           >
-            Console Super-Admin
+            Console
           </p>
-        </div>
+      </div>
       </div>
       <div class="flex items-center gap-3">
         <span
@@ -261,74 +262,81 @@
     <div class="flex">
       <!-- Sidebar desktop -->
       <aside
-        class="sidebar bg-white border-r border-gray-100 min-h-screen p-4 space-y-1"
+          class="sidebar bg-white border-r border-gray-100 min-h-screen p-4 space-y-1"
       >
-        <button
-          onclick="showTab('dashboard')"
-          data-tab="dashboard"
-          class="tab-btn active w-full text-left flex items-center gap-3"
-        >
-          <span class="material-symbols-outlined text-lg">dashboard</span>
-          Dashboard
-        </button>
-        <button
-          onclick="showTab('events')"
-          data-tab="events"
-          class="tab-btn w-full text-left flex items-center gap-3"
-        >
-          <span class="material-symbols-outlined text-lg">stadium</span>
-          Événements
-        </button>
-        <button
-          onclick="showTab('users')"
-          data-tab="users"
-          class="tab-btn w-full text-left flex items-center gap-3"
-        >
-          <span class="material-symbols-outlined text-lg">group</span>
-          Utilisateurs
-        </button>
-        <button
-          onclick="showTab('finance')"
-          data-tab="finance"
-          class="tab-btn w-full text-left flex items-center gap-3"
-        >
-          <span class="material-symbols-outlined text-lg">payments</span>
-          Finance
-        </button>
-        <button
-          onclick="showTab('partners')"
-          data-tab="partners"
-          class="tab-btn w-full text-left flex items-center gap-3"
-        >
-          <span class="material-symbols-outlined text-lg">handshake</span>
-          Partenaires
-        </button>
-        <button
-          onclick="showTab('cancellations')"
-          data-tab="cancellations"
-          class="tab-btn w-full text-left flex items-center gap-3 text-red-600"
-        >
-          <span class="material-symbols-outlined text-lg">cancel</span>
-          Annulations
-        </button>
-        <button
-          onclick="showTab('team')"
-          data-tab="team"
-          class="tab-btn w-full text-left flex items-center gap-3"
-        >
-          <span class="material-symbols-outlined text-lg">badge</span> Équipe
-        </button>
-        <button
-          onclick="showTab('feedbacks')"
-          data-tab="feedbacks"
-          class="tab-btn w-full text-left flex items-center gap-3"
-        >
-          <span class="material-symbols-outlined text-lg">forum</span>
-          <span>Feedbacks</span>
-          <span id="badge-feedbacks-new" class="ml-auto bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full hidden">0</span>
-        </button>
+          <button
+              onclick="showTab('dashboard')"
+              data-tab="dashboard"
+              data-capability="view_dashboard"
+              class="tab-btn active w-full text-left flex items-center gap-3"
+          >
+            <span class="material-symbols-outlined text-lg">dashboard</span>
+            Dashboard
+          </button>
+          <button
+              onclick="showTab('events')"
+              data-tab="events"
+              data-capability="view_events"
+              class="tab-btn w-full text-left flex items-center gap-3"
+          >
+            <span class="material-symbols-outlined text-lg">stadium</span>
+            Événements
+          </button>
+          <button
+              onclick="showTab('users')"
+              data-tab="users"
+              data-capability="view_users"
+              class="tab-btn w-full text-left flex items-center gap-3"
+          >
+            <span class="material-symbols-outlined text-lg">group</span>
+            Utilisateurs
+          </button>
+          <button
+              onclick="showTab('finance')"
+              data-tab="finance"
+              data-capability="view_finance"
+              class="tab-btn w-full text-left flex items-center gap-3"
+          >
+            <span class="material-symbols-outlined text-lg">payments</span>
+            Finance
+          </button>
+          <button
+              onclick="showTab('partners')"
+              data-tab="partners"
+              data-capability="moderate_partners"
+              class="tab-btn w-full text-left flex items-center gap-3"
+          >
+            <span class="material-symbols-outlined text-lg">handshake</span>
+            Partenaires
+          </button>
+          <button
+              onclick="showTab('cancellations')"
+              data-tab="cancellations"
+              data-capability="moderate_cancellations"
+              class="tab-btn w-full text-left flex items-center gap-3 text-red-600"
+          >
+            <span class="material-symbols-outlined text-lg">cancel</span>
+            Annulations
+          </button>
+          <button
+              onclick="showTab('team')"
+              data-tab="team"
+              data-capability="staff_manage"
+              class="tab-btn w-full text-left flex items-center gap-3"
+          >
+            <span class="material-symbols-outlined text-lg">badge</span> Équipe
+          </button>
+          <button
+              onclick="showTab('feedbacks')"
+              data-tab="feedbacks"
+              data-capability="moderate_feedbacks"
+              class="tab-btn w-full text-left flex items-center gap-3"
+          >
+            <span class="material-symbols-outlined text-lg">forum</span>
+            <span>Feedbacks</span>
+            <span id="badge-feedbacks-new" class="ml-auto bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full hidden">0</span>
+          </button>
       </aside>
-
       <!-- Main content -->
       <main class="flex-1 p-6 space-y-6 overflow-x-hidden">
         <!-- Tabs mobile -->
@@ -336,6 +344,7 @@
           <button
             onclick="showTab('dashboard')"
             data-tab="dashboard"
+            data-capability="view_dashboard"
             class="tab-btn active flex-shrink-0"
           >
             Dashboard
@@ -343,6 +352,7 @@
           <button
             onclick="showTab('events')"
             data-tab="events"
+            data-capability="view_events"
             class="tab-btn flex-shrink-0"
           >
             Événements
@@ -350,6 +360,7 @@
           <button
             onclick="showTab('users')"
             data-tab="users"
+            data-capability="view_users"
             class="tab-btn flex-shrink-0"
           >
             Utilisateurs
@@ -357,6 +368,7 @@
           <button
             onclick="showTab('finance')"
             data-tab="finance"
+            data-capability="view_finance"
             class="tab-btn flex-shrink-0"
           >
             Finance
@@ -364,6 +376,7 @@
           <button
             onclick="showTab('partners')"
             data-tab="partners"
+            data-capability="moderate_partners"
             class="tab-btn flex-shrink-0"
           >
             Partenaires
@@ -371,6 +384,7 @@
           <button
             onclick="showTab('cancellations')"
             data-tab="cancellations"
+            data-capability="moderate_cancellations"
             class="tab-btn flex-shrink-0 text-red-600"
           >
             Annulations
@@ -378,6 +392,7 @@
           <button
             onclick="showTab('team')"
             data-tab="team"
+            data-capability="staff_manage"
             class="tab-btn flex-shrink-0"
           >
             Équipe
@@ -385,6 +400,7 @@
           <button
             onclick="showTab('feedbacks')"
             data-tab="feedbacks"
+            data-capability="moderate_feedbacks"
             class="tab-btn flex-shrink-0"
           >
             <span class="material-symbols-outlined text-lg">forum</span>
@@ -887,34 +903,158 @@
       let allUsers = [];
       let currentTab = "dashboard";
 
-      // ── AUTH CHECK ──────────────────────────────────────────────
-      document.addEventListener("DOMContentLoaded", () => {
-        const user = btAuth.getUser();
-        if (!user || user.role !== "admin") {
-          window.location.href = "admin-login.html";
-          return;
-        }
-        document.getElementById("admin-name").textContent =
-          user.name || "Admin";
-        loadDashboard();
+      // ═══════════════════════════════════════════════════════════════
+      // PERMISSIONS & INITIALISATION MULTI-PROFILS
+      // ═══════════════════════════════════════════════════════════════
+      
+      let currentPermissions = null;  // capabilities du user connecté, chargé à l'init
+      
+      document.addEventListener("DOMContentLoaded", async () => {
+          const user = btAuth.getUser();
+          // Garde locale supplémentaire (requireAuth fait déjà le job, ceinture + bretelles)
+          if (!user || (user.role !== "admin" && user.role !== "staff")) {
+              window.location.href = "login.html";
+              return;
+          }
+      
+          // Nom affiché dans le header
+          document.getElementById("admin-name").textContent = user.name || "Membre GoEvent";
+      
+          // Charger les permissions AVANT toute autre initialisation
+          try {
+              currentPermissions = await btApi.get("/admin/staff/me/permissions");
+          } catch (err) {
+              console.error("Impossible de charger les permissions :", err);
+              btToast("Erreur de chargement des permissions. Veuillez vous reconnecter.", "error");
+              setTimeout(() => btAuth.logout(), 2000);
+              return;
+          }
+      
+          // Personnaliser le header selon le profil
+          _applyProfileHeader(currentPermissions);
+      
+          // Masquer les onglets sidebar interdits
+          _applyCapabilitiesToSidebar(currentPermissions.capabilities);
+      
+          // Trouver le premier onglet autorisé et l'activer
+          const firstAllowedTab = _findFirstAllowedTab(currentPermissions.capabilities);
+          if (firstAllowedTab) {
+              showTab(firstAllowedTab);
+          } else {
+              // Profil sans aucune capability — ne devrait jamais arriver, mais on protège
+              document.querySelectorAll('section[id^="section-"]').forEach(s => s.classList.add("section-hidden"));
+              document.querySelector("main").insertAdjacentHTML("afterbegin",
+                  '<div class="card p-8 text-center"><h2 class="text-xl font-black text-gray-900">Bienvenue</h2><p class="text-sm text-gray-500 mt-2">Aucune section ne vous est attribuée. Contactez l\'administrateur.</p></div>'
+              );
+          }
       });
+      
+      
+      function _applyProfileHeader(perms) {
+          const title = document.getElementById("admin-header-title");
+          const subtitle = document.getElementById("admin-header-subtitle");
+          if (!title || !subtitle) return;
+      
+          // Mapping profil → libellé
+          const labels = {
+              admin: { title: "GoEvent Admin", subtitle: "Console Super-Admin" },
+              commercial: { title: "GoEvent Régie", subtitle: "Espace Commercial" },
+              cm: { title: "GoEvent Communauté", subtitle: "Espace Community Manager" },
+              designer: { title: "GoEvent Affiches", subtitle: "Espace Designer" },
+          };
+      
+          let key;
+          if (perms.is_admin) {
+              key = "admin";
+          } else if (perms.staff_function && labels[perms.staff_function]) {
+              key = perms.staff_function;
+          } else {
+              key = "admin"; // fallback
+          }
+      
+          title.textContent = labels[key].title;
+          subtitle.textContent = labels[key].subtitle;
+      }
+      
+      
+      function _applyCapabilitiesToSidebar(caps) {
+          if (!caps) return;
+      
+          // Boucle sur tous les boutons (sidebar desktop ET mobile) qui ont data-capability
+          document.querySelectorAll("[data-capability]").forEach(btn => {
+              const required = btn.getAttribute("data-capability");
+              const allowed = caps[required] === true;
+              if (!allowed) {
+                  btn.style.display = "none";
+              }
+          });
+      }
+      
+      
+      function _findFirstAllowedTab(caps) {
+          // Ordre de priorité : Dashboard d'abord, puis l'ordre naturel de la sidebar
+          const priorityOrder = [
+              { tab: "dashboard",     cap: "view_dashboard" },
+              { tab: "events",        cap: "view_events" },
+              { tab: "users",         cap: "view_users" },
+              { tab: "finance",       cap: "view_finance" },
+              { tab: "partners",      cap: "moderate_partners" },
+              { tab: "cancellations", cap: "moderate_cancellations" },
+              { tab: "team",          cap: "staff_manage" },
+              { tab: "feedbacks",     cap: "moderate_feedbacks" },
+          ];
+      
+          for (const { tab, cap } of priorityOrder) {
+              if (caps[cap] === true) return tab;
+          }
+          return null;
+      }
+      
+      
+      // Helper exposé pour usage dans 8.6.b/c/d
+      function hasCapability(name) {
+          if (!currentPermissions) return false;
+          return currentPermissions.capabilities[name] === true;
+      }
 
       // ── NAVIGATION ──────────────────────────────────────────────
+      // Mapping onglet → capability requise (cohérent avec data-capability dans le HTML)
+      const TAB_CAPABILITIES = {
+          dashboard:     "view_dashboard",
+          events:        "view_events",
+          users:         "view_users",
+          finance:       "view_finance",
+          partners:      "moderate_partners",
+          cancellations: "moderate_cancellations",
+          team:          "staff_manage",
+          feedbacks:     "moderate_feedbacks",
+      };
+      
       function showTab(tab) {
-        currentTab = tab;
-        document.querySelectorAll("[data-tab]").forEach((b) => {
-          b.classList.toggle("active", b.dataset.tab === tab);
-        });
-        document.querySelectorAll('section[id^="section-"]').forEach((s) => {
-          s.classList.toggle("section-hidden", s.id !== `section-${tab}`);
-        });
-        if (tab === "dashboard") loadDashboard();
-        if (tab === "events") loadEvents();
-        if (tab === "users") loadUsers();
-        if (tab === "finance") loadFinance();
-        if (tab === "partners") loadPartners();
-        if (tab === "cancellations") loadCancellations();
-        if (tab === "feedbacks") loadFeedbacks();
+          // Garde-fou côté client : refuse l'affichage si capability manquante
+          const requiredCap = TAB_CAPABILITIES[tab];
+          if (requiredCap && !hasCapability(requiredCap)) {
+              btToast("Vous n'avez pas accès à cette section.", "error");
+              return;
+          }
+      
+          currentTab = tab;
+          document.querySelectorAll("[data-tab]").forEach((b) => {
+              b.classList.toggle("active", b.dataset.tab === tab);
+          });
+          document.querySelectorAll('section[id^="section-"]').forEach((s) => {
+              s.classList.toggle("section-hidden", s.id !== `section-${tab}`);
+          });
+          if (tab === "dashboard") loadDashboard();
+          if (tab === "events") loadEvents();
+          if (tab === "users") loadUsers();
+          if (tab === "finance") loadFinance();
+          if (tab === "partners") loadPartners();
+          if (tab === "cancellations") loadCancellations();
+          if (tab === "feedbacks") loadFeedbacks();
+          // 'team' n'est pas dans la liste de chargement actuelle —
+          //  la section Équipe est statique (juste un bouton "Créer le premier employé").
+          //  Sera branché en 8.6.b avec un appel à loadStaff().
       }
 
       // ── DASHBOARD ───────────────────────────────────────────────

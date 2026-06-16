@@ -175,10 +175,14 @@ def me(current_user: User = Depends(get_current_user)):
         "id": current_user.id,
         "name": current_user.full_name,
         "phone": current_user.phone_number,
+        "phone_number": current_user.phone_number,  # alias pour cohérence front
         "email": current_user.email,
         "role": current_user.role,
         "org_name": current_user.org_name,
         "org_type": current_user.org_type,
+        "staff_function": current_user.staff_function,
+        "commission_rate": current_user.commission_rate,
+        "is_active": current_user.is_active,
         "created_at": current_user.created_at,
     }
 

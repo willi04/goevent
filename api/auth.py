@@ -69,7 +69,8 @@ if data.role not in ROLES_INSCRIPTIBLES:
             "id": user.id,
             "name": user.full_name,
             "role": user.role,
-            "phone_number": user.phone_number,
+            "phone_number": user.phone_number,   # uniformisé (login utilise phone_number, pas phone)
+            "phone": user.phone_number, 
             "email": user.email,
             "org_name": user.org_name,
             "org_type": user.org_type,
@@ -130,17 +131,19 @@ def login(request: Request, data: UserLogin, db: Session = Depends(get_db)):
     log_security_event(db, "login_success", request, user.id, f"Rôle: {user.role}")
 
     return {
-        "access_token": create_access_token(user.id, user.role),
-        "refresh_token": create_refresh_token(user.id, user.role),
-        "token_type": "bearer",
-        "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        "user": {
-            "id": user.id,
-            "name": user.full_name,
-            "role": user.role,
-            "phone_number": user.phone_number,
-        },
-    }
+    "access_token": create_access_token(user.id, user.role),
+    "refresh_token": create_refresh_token(user.id, user.role),
+    "token_type": "bearer",
+    "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+    "user": {
+        "id": user.id,
+        "name": user.full_name,
+        "role": user.role,
+        "phone_number": user.phone_number,
+        "staff_function": user.staff_function,  # nouveau — utilisé par admin.html
+        "org_name": user.org_name,              # nouveau — déjà attendu par d'autres pages
+    },
+}
 
 
 # ── REFRESH ─────────────────────────────────────────────────────

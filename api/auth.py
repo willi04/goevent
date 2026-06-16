@@ -36,47 +36,47 @@ from core.permissions import ROLES_VALIDES
 @router.post("/auth/register")
 @limiter.limit("3/minute")
 def register(request: Request, data: UserRegister, db: Session = Depends(get_db)):
-   # Inscription publique : seulement fan/organizer/agent autorisés.
-# admin/staff sont créés via routes admin dédiées (Commit 8.4).
-# partner est réservé pour usage futur, non inscriptible publiquement.
-ROLES_INSCRIPTIBLES = ("fan", "organizer", "agent")
-if data.role not in ROLES_INSCRIPTIBLES:
-    raise HTTPException(400, f"Rôle invalide pour inscription publique. Valeurs : {ROLES_INSCRIPTIBLES}")
-    if len(data.pin_code) != 4 or not data.pin_code.isdigit():
-        raise HTTPException(400, "Le PIN doit être 4 chiffres")
-    if db.query(User).filter(User.phone_number == data.phone_number).first():
-        raise HTTPException(400, "Ce numéro est déjà utilisé")
-
-    user = User(
-        phone_number=data.phone_number,
-        full_name=data.full_name,
-        email=data.email,
-        pin_hash=hash_pin(data.pin_code),
-        role=data.role,
-        org_name=data.org_name,
-        org_type=data.org_type,
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-
-    return {
-        "access_token": create_access_token(user.id, user.role),
-        "refresh_token": create_refresh_token(user.id, user.role),
-        "token_type": "bearer",
-        "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        "user": {
-            "id": user.id,
-            "name": user.full_name,
-            "role": user.role,
-            "phone_number": user.phone_number,   # uniformisé (login utilise phone_number, pas phone)
-            "phone": user.phone_number, 
-            "email": user.email,
-            "org_name": user.org_name,
-            "org_type": user.org_type,
-            "staff_function": user.staff_function,
-        },
-    }
+    # Inscription publique : seulement fan/organizer/agent autorisés.
+    # admin/staff sont créés via routes admin dédiées (Commit 8.4).
+    # partner est réservé pour usage futur, non inscriptible publiquement.
+    ROLES_INSCRIPTIBLES = ("fan", "organizer", "agent")
+    if data.role not in ROLES_INSCRIPTIBLES:
+        raise HTTPException(400, f"Rôle invalide pour inscription publique. Valeurs : {ROLES_INSCRIPTIBLES}")
+        if len(data.pin_code) != 4 or not data.pin_code.isdigit():
+            raise HTTPException(400, "Le PIN doit être 4 chiffres")
+        if db.query(User).filter(User.phone_number == data.phone_number).first():
+            raise HTTPException(400, "Ce numéro est déjà utilisé")
+    
+        user = User(
+            phone_number=data.phone_number,
+            full_name=data.full_name,
+            email=data.email,
+            pin_hash=hash_pin(data.pin_code),
+            role=data.role,
+            org_name=data.org_name,
+            org_type=data.org_type,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    
+        return {
+            "access_token": create_access_token(user.id, user.role),
+            "refresh_token": create_refresh_token(user.id, user.role),
+            "token_type": "bearer",
+            "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+            "user": {
+                "id": user.id,
+                "name": user.full_name,
+                "role": user.role,
+                "phone_number": user.phone_number,   # uniformisé (login utilise phone_number, pas phone)
+                "phone": user.phone_number, 
+                "email": user.email,
+                "org_name": user.org_name,
+                "org_type": user.org_type,
+                "staff_function": user.staff_function,
+            },
+        }
 
 
 # ── LOGIN ───────────────────────────────────────────────────────

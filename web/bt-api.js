@@ -813,4 +813,98 @@ function btWireSidebar(role) {
   });
 }
 
+// ═══════════════════════════════════════════════════════════════
+// COMPRESSEUR IMAGE — bt-api.js
+// Compresse une image (File) en JPG ≤ 1 Mo, max 1920×1080.
+// Qualité dynamique 85% → 60%. PNG transparent → JPG fond blanc.
+// ═══════════════════════════════════════════════════════════════
+
+async function btCompressImage(file, options) {
+  options = options || {};
+  var maxWidth = options.maxWidth || 1920;
+  var maxHeight = options.maxHeight || 1080;
+  var targetBytes = options.targetBytes || 1024 * 1024;  // 1 Mo
+  var maxBytes = options.maxBytes || 10 * 1024 * 1024;   // 10 Mo brut
+  var skipBelow = options.skipBelow || 1024 * 1024;      // < 1 Mo : skip
+
+  if (!(file instanceof File) && !(file instanceof Blob)) {
+    throw new Error("btCompressImage attend un File ou Blob");
+  }
+  if (file.size > maxBytes) {
+    throw new Error("Image trop lourde (max " + Math.round(maxBytes / 1024 / 1024) + " Mo)");
+  }
+
+  // Skip compression si déjà sous la cible ET pas de redimensionnement nécessaire
+  // On charge quand même l'image pour vérifier les dimensions
+  var img = await _btLoadImage(file);
+
+  var needResize = img.width > maxWidth || img.height > maxHeight;
+  var needCompress = file.size > skipBelow;
+
+  if (!needResize && !needCompress) {
+    return await _btFileToBase64(file);
+  }
+
+  // Calcul des dimensions cibles (preserve ratio)
+  var ratio = Math.min(maxWidth / img.width, maxHeight / img.height, 1);
+  var targetW = Math.round(img.width * ratio);
+  var targetH = Math.round(img.height * ratio);
+
+  // Canvas avec fond blanc (gère la transparence PNG)
+  var canvas = document.createElement("canvas");
+  canvas.width = targetW;
+  canvas.height = targetH;
+  var ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#FFFFFF";
+  ctx.fillRect(0, 0, targetW, targetH);
+  ctx.drawImage(img, 0, 0, targetW, targetH);
+
+  // Compression dynamique par paliers
+  var qualities = [0.85, 0.80, 0.75, 0.70, 0.65, 0.60];
+  var bestBase64 = null;
+  for (var i = 0; i < qualities.length; i++) {
+    var base64 = canvas.toDataURL("image/jpeg", qualities[i]);
+    var approxBytes = (base64.length * 3) / 4;
+    bestBase64 = base64;
+    if (approxBytes <= targetBytes) {
+      return base64;
+    }
+  }
+
+  // À 60% on est encore au-dessus : on refuse
+  var finalBytes = (bestBase64.length * 3) / 4;
+  if (finalBytes > targetBytes) {
+    throw new Error(
+      "Image trop dense même après compression maximale. " +
+      "Fournissez une version plus petite ou moins détaillée."
+    );
+  }
+  return bestBase64;
+}
+
+function _btLoadImage(file) {
+  return new Promise(function (resolve, reject) {
+    var img = new Image();
+    var url = URL.createObjectURL(file);
+    img.onload = function () {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror = function () {
+      URL.revokeObjectURL(url);
+      reject(new Error("Image illisible"));
+    };
+    img.src = url;
+  });
+}
+
+function _btFileToBase64(file) {
+  return new Promise(function (resolve, reject) {
+    var reader = new FileReader();
+    reader.onload = function () { resolve(reader.result); };
+    reader.onerror = function () { reject(new Error("Lecture du fichier impossible")); };
+    reader.readAsDataURL(file);
+  });
+}
+
 console.log("[BT] bt-api.js v4 — Design Stitch");

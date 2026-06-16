@@ -93,6 +93,7 @@ function _redirectWithMessage(page, message) {
 
 function _getDashboardByRole(role) {
     if (role === "admin")     return "admin.html";
+    if (role === "staff")     return "admin.html";
     if (role === "organizer") return "organisation_dashboard.html";
     if (role === "agent")     return "scanner.html";
     return "user_dashboard.html";

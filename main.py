@@ -17,7 +17,7 @@ from middleware.security_headers import SecurityHeadersMiddleware
 
 # Import de TOUS les modèles avant create_all
 import models  # noqa: F401
-
+from api import ads as ads_router
 from api import (
     auth, events, tickets, agent, social,
     organizer, dashboard, admin, payments,
@@ -60,7 +60,7 @@ app.include_router(organizer.router)
 app.include_router(dashboard.router)
 app.include_router(admin.router)
 app.include_router(payments.router)
-
+app.include_router(ads_router.router)
 
 @app.get("/")
 def root():

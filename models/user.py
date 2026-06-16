@@ -1,6 +1,6 @@
 """models/user.py — User, SecurityLog, PasswordReset"""
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Text, Float
 from sqlalchemy.orm import relationship
 from core.database import Base
 
@@ -24,10 +24,15 @@ class User(Base):
     two_factor_secret = Column(String, nullable=True)
     is_2fa_enabled = Column(Boolean, default=False)
     orange_money = Column(String(20), nullable=True)
-
+    # ─── CHANTIER RH (Commit 8.1) ───
+    referred_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    commission_rate     = Column(Float, nullable=True)       # ex: 0.25 = 25%
+    staff_function      = Column(String(50), nullable=True)  # commercial | cm | designer
+    
     events    = relationship("Event", back_populates="organizer_user", foreign_keys="[Event.organizer_id]")
     tickets   = relationship("Ticket", back_populates="owner", foreign_keys="Ticket.user_id")
     favorites = relationship("Favorite", back_populates="user")
+    referrer = relationship("User", remote_side="User.id", foreign_keys=[referred_by_user_id])
 
 
 class SecurityLog(Base):

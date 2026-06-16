@@ -30,12 +30,21 @@ def list_events(
     location: Optional[str] = None,
     max_price: Optional[float] = None,
     upcoming_only: bool = False,
+    include_past_days: int = Query(0, ge=0, le=3650),
     db: Session = Depends(get_db),
 ):
     query = db.query(Event).filter(Event.is_active == True)
 
+    # Filtre temporel
+    # Priorité 1 : upcoming_only=true → seuls les futurs (compat existante index.html)
+    # Priorité 2 : include_past_days > 0 → futurs + N derniers jours
+    # Sinon (défaut) : tout est retourné (compat historique)
     if upcoming_only:
         query = query.filter(Event.event_date >= datetime.utcnow())
+    elif include_past_days > 0:
+        from datetime import timedelta
+        cutoff = datetime.utcnow() - timedelta(days=include_past_days)
+        query = query.filter(Event.event_date >= cutoff)
 
     if q:
         query = query.filter(or_(
@@ -70,7 +79,6 @@ def list_events(
         "limit": limit,
         "events": [_event_dict(e) for e in events],
     }
-
 
 @router.get("/categories")
 def get_categories(db: Session = Depends(get_db)):

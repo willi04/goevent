@@ -97,6 +97,11 @@ def _capabilities_for(user: User) -> dict:
                 "fb_ads_manage": True,
                 "moderate_feedbacks": True,
                 "commissions_view": True,
+                 # ─── Capabilities ex-designer absorbées temporairement ───
+                # À RETIRER le jour où un Designer dédié est embauché.
+                # Cf. TECH_Core dette P3 — "Capabilities designer chez CM".
+                "ads_slides_read": True,
+                "ads_slides_write": True,
             })
         elif fn == "designer":
             caps.update({

@@ -61,17 +61,19 @@ if data.role not in ROLES_INSCRIPTIBLES:
     db.refresh(user)
 
     return {
-        "message": "Compte créé",
-        "user_id": user.id,
-        "role": user.role,
         "access_token": create_access_token(user.id, user.role),
         "refresh_token": create_refresh_token(user.id, user.role),
         "token_type": "bearer",
         "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         "user": {
-            "id": user.id, "name": user.full_name,
-            "role": user.role, "phone": user.phone_number,
-            "org_name": user.org_name, "org_type": user.org_type,
+            "id": user.id,
+            "name": user.full_name,
+            "role": user.role,
+            "phone_number": user.phone_number,
+            "email": user.email,
+            "org_name": user.org_name,
+            "org_type": user.org_type,
+            "staff_function": user.staff_function,
         },
     }
 

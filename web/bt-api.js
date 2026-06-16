@@ -28,6 +28,7 @@ const btAuth = {
 
 function btDashRoute(role) {
   if (role === "admin") return "admin.html";
+  if (role === "staff") return "admin.html";     // ← staff partage le back-office admin
   if (role === "agent") return "scanner.html";
   if (role === "organizer") return "organisation_dashboard.html";
   return "user_dashboard.html";

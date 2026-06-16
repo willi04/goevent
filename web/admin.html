@@ -328,6 +328,15 @@
             Régie pub
           </button>
           <button
+              onclick="showTab('slides')"
+              data-tab="slides"
+              data-capability="ads_slides_read"
+              class="tab-btn w-full text-left flex items-center gap-3"
+          >
+            <span class="material-symbols-outlined text-lg">view_carousel</span>
+            Affiches
+          </button>
+          <button
               onclick="showTab('team')"
               data-tab="team"
               data-capability="staff_manage"
@@ -406,6 +415,14 @@
           >
             <span class="material-symbols-outlined text-lg">handshake</span>
             Régie pub
+          </button>
+          <button
+              onclick="showTab('slides')"
+              data-tab="slides"
+              data-capability="ads_slides_read"
+              class="tab-btn flex-shrink-0"
+          >
+            Affiches
           </button>
           <button
             onclick="showTab('team')"
@@ -791,7 +808,52 @@
             </div>
           </div>
         </section>
+
+        <!-- ── SECTION AFFICHES (Commit 8.6.d) ── -->
+        <section id="section-slides" class="section-hidden">
+          <div class="flex flex-wrap justify-between items-center gap-3 mb-5">
+            <div>
+              <h2 class="text-xl font-black text-gray-900">Affiches du carrousel</h2>
+              <p class="text-xs text-gray-500 mt-1">Slides diffusées dans le hero de l'accueil</p>
+            </div>
+            <button onclick="openSlideModal()" class="action-btn btn-primary flex items-center gap-2">
+              <span class="material-symbols-outlined text-base">add</span>
+              Nouvelle affiche
+            </button>
+          </div>
         
+          <!-- Stats -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+            <div class="stat-card">
+              <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">En diffusion</p>
+              <p id="sl-stat-live" class="text-2xl font-black text-green-700">—</p>
+            </div>
+            <div class="stat-card">
+              <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Programmées</p>
+              <p id="sl-stat-scheduled" class="text-2xl font-black text-blue-700">—</p>
+            </div>
+            <div class="stat-card">
+              <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Slots commerciaux</p>
+              <p id="sl-stat-ad" class="text-2xl font-black text-gray-900">— / 4</p>
+            </div>
+            <div class="stat-card">
+              <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Slot système</p>
+              <p id="sl-stat-system" class="text-2xl font-black text-amber-600">— / 1</p>
+            </div>
+          </div>
+        
+          <!-- Filtres -->
+          <div class="flex gap-2 mb-4 flex-wrap">
+            <button onclick="filterSlides('all')" id="sf-all" class="action-btn btn-primary text-xs">Toutes</button>
+            <button onclick="filterSlides('ad')" id="sf-ad" class="action-btn" style="background:#dbeafe;color:#1e40af">Commerciales</button>
+            <button onclick="filterSlides('system')" id="sf-system" class="action-btn" style="background:#fef3c7;color:#92400e">Système</button>
+            <button onclick="filterSlides('active')" id="sf-active" class="action-btn" style="background:#d1fae5;color:#065f46">Actives</button>
+          </div>
+        
+          <div id="slides-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="card p-6 empty-state col-span-full"><span class="material-symbols-outlined">hourglass_empty</span>Chargement...</div>
+          </div>
+        </section>
         <!-- ── SECTION ÉQUIPE ── -->
         <section id="section-team" class="section-hidden">
           <div class="flex flex-wrap justify-between items-center gap-3 mb-5">
@@ -1062,6 +1124,109 @@
             </div>
           </div>
         </div>
+
+      <!-- Modal : Créer / Modifier une slide -->
+      <div id="slide-modal" class="modal-overlay hidden">
+        <div class="modal-box" style="max-width:640px">
+          <div class="flex justify-between items-center mb-6">
+            <h3 id="slide-modal-title" class="text-lg font-black text-gray-900">Nouvelle affiche</h3>
+            <button onclick="closeSlideModal()" class="text-gray-400 hover:text-red-500 transition-colors">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          </div>
+      
+          <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Type *</label>
+                <select id="sl-type" class="input-field" onchange="onSlideTypeChange()">
+                  <option value="ad">Commerciale (annonceur)</option>
+                  <option value="system">Système (GoEvent)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Position</label>
+                <input id="sl-position" type="number" min="0" max="10" class="input-field" placeholder="0" />
+                <p class="text-[10px] text-gray-400 mt-1">0 = en premier, 99 = en dernier</p>
+              </div>
+            </div>
+      
+            <div id="sl-contract-wrapper">
+              <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Contrat lié *</label>
+              <select id="sl-contract" class="input-field">
+                <option value="">Sélectionner un contrat...</option>
+              </select>
+              <p class="text-[10px] text-gray-400 mt-1">Obligatoire pour les slides commerciales</p>
+            </div>
+      
+            <div>
+              <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Image (max 10 Mo) *</label>
+              <input id="sl-image-file" type="file" accept="image/jpeg,image/png" onchange="onSlideImagePick(event)" class="w-full text-xs file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-gray-100 file:font-bold file:cursor-pointer" />
+              <p id="sl-image-info" class="text-[10px] text-gray-400 mt-1">Format hero : 1920×1080 recommandé. Compression auto à 1 Mo.</p>
+              <div id="sl-image-preview-wrap" class="hidden mt-3">
+                <img id="sl-image-preview" class="w-full h-40 object-cover rounded-xl border border-gray-200" />
+              </div>
+            </div>
+      
+            <div>
+              <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Titre *</label>
+              <input id="sl-title" type="text" maxlength="200" class="input-field" placeholder="ex: Orange Money — Payez en 1 clic" />
+            </div>
+      
+            <div>
+              <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Sous-titre</label>
+              <textarea id="sl-subtitle" rows="2" maxlength="300" class="input-field" placeholder="Texte secondaire affiché sous le titre"></textarea>
+            </div>
+      
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Texte CTA</label>
+                <input id="sl-cta-text" type="text" maxlength="50" class="input-field" placeholder="ex: Découvrir" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Lien CTA</label>
+                <input id="sl-cta-link" type="text" maxlength="500" class="input-field" placeholder="https://... ou event.html" />
+              </div>
+            </div>
+      
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Début diffusion</label>
+                <input id="sl-starts" type="datetime-local" class="input-field" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Fin diffusion</label>
+                <input id="sl-ends" type="datetime-local" class="input-field" />
+              </div>
+            </div>
+      
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input id="sl-active" type="checkbox" checked class="w-4 h-4" />
+              <span class="text-sm font-bold text-gray-700">Active (diffusée si dans la fenêtre temporelle)</span>
+            </label>
+          </div>
+      
+          <p id="slide-error" class="text-red-500 text-xs mt-3 min-h-4"></p>
+      
+          <div class="flex gap-2 mt-5">
+            <button onclick="previewSlide()" class="action-btn flex-1 py-3" style="background:#ede9fe;color:#5b21b6">Aperçu</button>
+            <button onclick="closeSlideModal()" class="action-btn flex-1 py-3" style="background:#f3f4f6;color:#374151">Annuler</button>
+            <button id="btn-slide-submit" onclick="submitSlide()" class="action-btn btn-primary flex-1 py-3">Créer</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Modal : Aperçu rendu réel -->
+      <div id="slide-preview-modal" class="modal-overlay hidden" style="background:rgba(0,0,0,0.8);z-index:1100">
+        <div style="background:#000;border-radius:1rem;width:100%;max-width:1100px;max-height:90vh;overflow:hidden;position:relative">
+          <button onclick="document.getElementById('slide-preview-modal').classList.add('hidden')" class="absolute top-3 right-3 z-50 bg-white/90 rounded-full w-10 h-10 flex items-center justify-center hover:bg-white">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+          <div id="slide-preview-content" style="position:relative;width:100%;aspect-ratio:1920/670;background:#03361e">
+            <!-- rempli par previewSlide() -->
+          </div>
+        </div>
+      </div>
       </div>
     </div>
 
@@ -1179,6 +1344,7 @@
               { tab: "team",          cap: "staff_manage" },
               { tab: "feedbacks",     cap: "moderate_feedbacks" },
               { tab: "contracts",     cap: "ads_contracts_read" },
+              { tab: "slides",        cap: "ads_slides_read" },
           ];
       
           for (const { tab, cap } of priorityOrder) {
@@ -1206,6 +1372,7 @@
           team:          "staff_manage",
           feedbacks:     "moderate_feedbacks",
           contracts:     "ads_contracts_read",
+          slides:        "ads_slides_read",
       };
       
       function showTab(tab) {
@@ -1232,6 +1399,7 @@
           if (tab === "feedbacks") loadFeedbacks();
           if (tab === "team") loadStaff();
           if (tab === "contracts") loadContracts();
+          if (tab === "slides") loadSlides();
           // 'team' n'est pas dans la liste de chargement actuelle —
           //  la section Équipe est statique (juste un bouton "Créer le premier employé").
           //  Sera branché en 8.6.b avec un appel à loadStaff().
@@ -1977,6 +2145,315 @@
           } catch (e) {
               btToast(e.message || "Erreur", "error");
           }
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      // AFFICHES / SLIDES (Commit 8.6.d)
+      // ═══════════════════════════════════════════════════════════════
+      
+      let allSlides = [];
+      let slideEditId = null;
+      let slideFilter = "all";
+      let slideImageBase64 = "";
+      
+      async function loadSlides() {
+          const grid = document.getElementById("slides-grid");
+          try {
+              allSlides = await btApi.get("/admin/ads/slides");
+              renderSlideStats(allSlides);
+              renderSlides();
+          } catch (e) {
+              grid.innerHTML = `<div class="col-span-full text-center text-red-500 py-8 text-sm">${e.message || 'Erreur'}</div>`;
+          }
+      }
+      
+      function renderSlideStats(list) {
+          const now = new Date();
+          const inWindow = (s) => {
+              if (!s.is_active) return false;
+              if (s.starts_at && new Date(s.starts_at) > now) return false;
+              if (s.ends_at && new Date(s.ends_at) < now) return false;
+              return true;
+          };
+          const live = list.filter(inWindow);
+          const liveAd = live.filter(s => s.type === "ad").length;
+          const liveSys = live.filter(s => s.type === "system").length;
+          const scheduled = list.filter(s => s.is_active && s.starts_at && new Date(s.starts_at) > now).length;
+      
+          document.getElementById("sl-stat-live").textContent = live.length;
+          document.getElementById("sl-stat-scheduled").textContent = scheduled;
+          document.getElementById("sl-stat-ad").textContent = liveAd + " / 4";
+          document.getElementById("sl-stat-system").textContent = liveSys + " / 1";
+      }
+      
+      function filterSlides(f) {
+          slideFilter = f;
+          ["all","ad","system","active"].forEach(s => {
+              const btn = document.getElementById("sf-" + s);
+              if (!btn) return;
+              if (s === f) {
+                  btn.className = "action-btn btn-primary text-xs";
+              } else {
+                  const colors = {
+                      all: "background:#f3f4f6;color:#374151",
+                      ad: "background:#dbeafe;color:#1e40af",
+                      system: "background:#fef3c7;color:#92400e",
+                      active: "background:#d1fae5;color:#065f46",
+                  };
+                  btn.className = "action-btn text-xs";
+                  btn.setAttribute("style", colors[s]);
+              }
+          });
+          renderSlides();
+      }
+      
+      function renderSlides() {
+          const grid = document.getElementById("slides-grid");
+          const now = new Date();
+          let list = allSlides;
+          if (slideFilter === "ad") list = list.filter(s => s.type === "ad");
+          else if (slideFilter === "system") list = list.filter(s => s.type === "system");
+          else if (slideFilter === "active") {
+              list = list.filter(s => {
+                  if (!s.is_active) return false;
+                  if (s.starts_at && new Date(s.starts_at) > now) return false;
+                  if (s.ends_at && new Date(s.ends_at) < now) return false;
+                  return true;
+              });
+          }
+      
+          if (!list.length) {
+              grid.innerHTML = '<div class="card p-6 empty-state col-span-full"><span class="material-symbols-outlined">view_carousel</span><p class="font-bold text-gray-400 mt-2">Aucune affiche</p></div>';
+              return;
+          }
+      
+          const isLive = (s) => {
+              if (!s.is_active) return false;
+              if (s.starts_at && new Date(s.starts_at) > now) return false;
+              if (s.ends_at && new Date(s.ends_at) < now) return false;
+              return true;
+          };
+          const fmt = (d) => d ? new Date(d).toLocaleDateString("fr-FR", {day:"2-digit", month:"short"}) : "—";
+      
+          grid.innerHTML = list.map(s => `
+              <div class="card overflow-hidden flex flex-col">
+                  <div class="relative h-32 bg-gray-100">
+                      ${s.image_url ? `<img src="${s.image_url}" class="w-full h-full object-cover" />` : '<div class="w-full h-full flex items-center justify-center text-gray-300"><span class="material-symbols-outlined text-4xl">image</span></div>'}
+                      ${isLive(s) ? '<div class="absolute top-2 left-2 bg-green-500 text-white text-[10px] font-black px-2 py-1 rounded-full flex items-center gap-1"><span class="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>EN DIFFUSION</div>' : ''}
+                      <div class="absolute top-2 right-2 ${s.type === 'system' ? 'bg-amber-500' : 'bg-blue-500'} text-white text-[10px] font-black px-2 py-1 rounded-full uppercase">${s.type === 'system' ? 'Système' : 'Pub'}</div>
+                  </div>
+                  <div class="p-4 flex-1 flex flex-col">
+                      <h3 class="font-black text-sm text-gray-900 mb-1 line-clamp-2">${s.title}</h3>
+                      ${s.sponsor_name ? `<p class="text-[10px] text-gray-500 mb-2">${s.sponsor_name}</p>` : '<p class="text-[10px] text-gray-400 mb-2">—</p>'}
+                      <div class="text-[10px] text-gray-500 mb-3">
+                          <div>${fmt(s.starts_at)} → ${fmt(s.ends_at)}</div>
+                          <div>Position : ${s.position}</div>
+                      </div>
+                      <div class="mt-auto flex flex-wrap gap-1">
+                          <button onclick='previewSlideFromList(${JSON.stringify(s).replace(/'/g, "&#39;")})' class="action-btn text-[10px]" style="background:#ede9fe;color:#5b21b6">Aperçu</button>
+                          <button onclick="openSlideModal(${s.id})" class="action-btn text-[10px]" style="background:#f3f4f6;color:#374151">Modifier</button>
+                          <button onclick="toggleSlide(${s.id}, ${s.is_active})" class="action-btn text-[10px] ${s.is_active ? 'btn-danger' : 'btn-success'}">${s.is_active ? 'Désactiver' : 'Activer'}</button>
+                          <button onclick="deleteSlide(${s.id})" class="action-btn btn-danger text-[10px]">Suppr.</button>
+                      </div>
+                  </div>
+              </div>
+          `).join("");
+      }
+      
+      function onSlideTypeChange() {
+          const type = document.getElementById("sl-type").value;
+          document.getElementById("sl-contract-wrapper").style.display = type === "ad" ? "" : "none";
+      }
+      
+      async function loadContractsForSelect() {
+          try {
+              const list = await btApi.get("/admin/ads/contracts");
+              const sel = document.getElementById("sl-contract");
+              sel.innerHTML = '<option value="">Sélectionner un contrat...</option>' + list.map(c => `<option value="${c.id}">${c.sponsor_name} — ${(c.amount_fcfa||0).toLocaleString("fr-FR")} F</option>`).join("");
+              return list;
+          } catch (e) { return []; }
+      }
+      
+      async function openSlideModal(id) {
+          slideEditId = id || null;
+          slideImageBase64 = "";
+          document.getElementById("slide-error").textContent = "";
+          document.getElementById("slide-modal-title").textContent = id ? "Modifier l'affiche" : "Nouvelle affiche";
+          document.getElementById("btn-slide-submit").textContent = id ? "Enregistrer" : "Créer";
+      
+          ["sl-title","sl-subtitle","sl-cta-text","sl-cta-link","sl-starts","sl-ends","sl-image-file"].forEach(k => document.getElementById(k).value = "");
+          document.getElementById("sl-position").value = 0;
+          document.getElementById("sl-type").value = "ad";
+          document.getElementById("sl-active").checked = true;
+          document.getElementById("sl-image-preview-wrap").classList.add("hidden");
+          document.getElementById("sl-image-info").textContent = "Format hero : 1920×1080 recommandé. Compression auto à 1 Mo.";
+      
+          await loadContractsForSelect();
+          onSlideTypeChange();
+      
+          if (id) {
+              const s = allSlides.find(x => x.id === id);
+              if (s) {
+                  document.getElementById("sl-type").value = s.type || "ad";
+                  document.getElementById("sl-position").value = s.position || 0;
+                  document.getElementById("sl-contract").value = s.ad_contract_id || "";
+                  document.getElementById("sl-title").value = s.title || "";
+                  document.getElementById("sl-subtitle").value = s.subtitle || "";
+                  document.getElementById("sl-cta-text").value = s.cta_text || "";
+                  document.getElementById("sl-cta-link").value = s.cta_link || "";
+                  document.getElementById("sl-starts").value = s.starts_at ? s.starts_at.substring(0,16) : "";
+                  document.getElementById("sl-ends").value = s.ends_at ? s.ends_at.substring(0,16) : "";
+                  document.getElementById("sl-active").checked = !!s.is_active;
+                  onSlideTypeChange();
+                  if (s.image_url) {
+                      slideImageBase64 = s.image_url;
+                      document.getElementById("sl-image-preview").src = s.image_url;
+                      document.getElementById("sl-image-preview-wrap").classList.remove("hidden");
+                      document.getElementById("sl-image-info").textContent = "Image actuelle conservée si non remplacée.";
+                  }
+              }
+          }
+      
+          document.getElementById("slide-modal").classList.remove("hidden");
+      }
+      
+      function closeSlideModal() {
+          document.getElementById("slide-modal").classList.add("hidden");
+          slideEditId = null;
+          slideImageBase64 = "";
+      }
+      
+      async function onSlideImagePick(event) {
+          const file = event.target.files[0];
+          if (!file) return;
+          const info = document.getElementById("sl-image-info");
+          info.textContent = "Compression en cours...";
+          try {
+              if (typeof btCompressImage !== "function") {
+                  const r = new FileReader();
+                  r.onload = () => {
+                      slideImageBase64 = r.result;
+                      document.getElementById("sl-image-preview").src = slideImageBase64;
+                      document.getElementById("sl-image-preview-wrap").classList.remove("hidden");
+                      info.textContent = "Image chargée (sans compression — btCompressImage manquant).";
+                  };
+                  r.readAsDataURL(file);
+                  return;
+              }
+              const b64 = await btCompressImage(file);
+              slideImageBase64 = b64;
+              document.getElementById("sl-image-preview").src = b64;
+              document.getElementById("sl-image-preview-wrap").classList.remove("hidden");
+              const approxKb = Math.round((b64.length * 3 / 4) / 1024);
+              info.textContent = `Compressée à ~${approxKb} Ko (max 1 Mo cible).`;
+          } catch (e) {
+              info.textContent = e.message || "Erreur compression";
+              slideImageBase64 = "";
+          }
+      }
+      
+      async function submitSlide() {
+          const errEl = document.getElementById("slide-error");
+          errEl.textContent = "";
+          const type = document.getElementById("sl-type").value;
+          const title = document.getElementById("sl-title").value.trim();
+          const contractId = document.getElementById("sl-contract").value;
+      
+          if (title.length < 2) { errEl.textContent = "Titre requis"; return; }
+          if (!slideImageBase64) { errEl.textContent = "Image requise"; return; }
+          if (type === "ad" && !contractId) { errEl.textContent = "Contrat lié obligatoire pour une slide commerciale"; return; }
+      
+          const starts = document.getElementById("sl-starts").value;
+          const ends = document.getElementById("sl-ends").value;
+          if (starts && ends && new Date(ends) <= new Date(starts)) { errEl.textContent = "Fin doit être après début"; return; }
+      
+          const body = {
+              title: title,
+              subtitle: document.getElementById("sl-subtitle").value.trim() || null,
+              image_url: slideImageBase64,
+              cta_text: document.getElementById("sl-cta-text").value.trim() || null,
+              cta_link: document.getElementById("sl-cta-link").value.trim() || null,
+              position: parseInt(document.getElementById("sl-position").value) || 0,
+              is_active: document.getElementById("sl-active").checked,
+              starts_at: starts ? starts + ":00" : null,
+              ends_at: ends ? ends + ":00" : null,
+              ad_contract_id: type === "ad" ? parseInt(contractId) : null,
+          };
+      
+          const btn = document.getElementById("btn-slide-submit");
+          const orig = btn.textContent;
+          btn.disabled = true;
+          btn.textContent = "Envoi...";
+      
+          try {
+              if (slideEditId) {
+                  await btApi.patch(`/admin/ads/slides/${slideEditId}`, body);
+                  btToast("Affiche mise à jour", "success");
+              } else {
+                  await btApi.post(`/admin/ads/slides?slide_type=${type}`, body);
+                  btToast("Affiche créée", "success");
+              }
+              closeSlideModal();
+              loadSlides();
+          } catch (e) {
+              errEl.textContent = e.message || "Erreur";
+          } finally {
+              btn.disabled = false;
+              btn.textContent = orig;
+          }
+      }
+      
+      async function toggleSlide(id, isActive) {
+          try {
+              await btApi.patch(`/admin/ads/slides/${id}`, { is_active: !isActive });
+              btToast(isActive ? "Affiche désactivée" : "Affiche activée", "success");
+              loadSlides();
+          } catch (e) {
+              btToast(e.message || "Erreur", "error");
+          }
+      }
+      
+      async function deleteSlide(id) {
+          if (!confirm("Supprimer définitivement cette affiche ?")) return;
+          try {
+              await btApi.delete(`/admin/ads/slides/${id}`);
+              btToast("Affiche supprimée", "success");
+              loadSlides();
+          } catch (e) {
+              btToast(e.message || "Erreur", "error");
+          }
+      }
+      
+      function previewSlide() {
+          const data = {
+              image_url: slideImageBase64,
+              title: document.getElementById("sl-title").value.trim() || "Titre de l'affiche",
+              subtitle: document.getElementById("sl-subtitle").value.trim(),
+              cta_text: document.getElementById("sl-cta-text").value.trim(),
+              cta_link: document.getElementById("sl-cta-link").value.trim(),
+          };
+          renderSlidePreview(data);
+      }
+      
+      function previewSlideFromList(s) {
+          renderSlidePreview(s);
+      }
+      
+      function renderSlidePreview(s) {
+          const cta = (s.cta_text && s.cta_link) ? `<a href="javascript:void(0)" style="display:inline-flex;align-items:center;gap:8px;margin-top:24px;padding:12px 28px;background:#9df6b9;color:#00210f;border-radius:9999px;font-weight:700;font-size:16px;text-decoration:none">${s.cta_text} →</a>` : "";
+          const sub = s.subtitle ? `<p style="font-size:18px;color:rgba(255,255,255,0.9);max-width:600px;margin-top:8px">${s.subtitle}</p>` : "";
+          document.getElementById("slide-preview-content").innerHTML = `
+              ${s.image_url ? `<img src="${s.image_url}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.5)" />` : '<div style="position:absolute;inset:0;background:#03361e"></div>'}
+              <div style="position:absolute;inset:0;background:linear-gradient(to top,#f9f9f9,transparent,transparent);opacity:0.9"></div>
+              <div style="position:absolute;inset:0;display:flex;align-items:center;padding:64px;z-index:10">
+                  <div style="max-width:900px">
+                      <h1 style="font-size:56px;font-weight:800;color:white;line-height:1.1;font-family:'Plus Jakarta Sans',sans-serif">${s.title}</h1>
+                      ${sub}
+                      ${cta}
+                  </div>
+              </div>
+          `;
+          document.getElementById("slide-preview-modal").classList.remove("hidden");
       }
       
       // ── ANNULATIONS ─────────────────────────────────────────────

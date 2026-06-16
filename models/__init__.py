@@ -7,6 +7,7 @@ from models.payment import Payment, PayoutRequest
 from models.social import Favorite, Follower, Feedback
 from models.partner import PartnerRequest, CancellationRequest
 from models.cms import HomepageContent, AdContract, FundraisingCampaign
+from .commission import Commission
 
 __all__ = [
     "Base",

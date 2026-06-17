@@ -20,6 +20,12 @@ from models.payment import Payment, PayoutRequest
 from models.partner import PartnerRequest, CancellationRequest
 from utils.serializers import _event_dict
 
+from core.permissions import (
+    get_current_admin,
+    get_current_admin_or_staff,
+    require_staff_function,
+)
+
 router = APIRouter()
 
 
@@ -87,9 +93,11 @@ def admin_global_stats(db: Session = Depends(get_db),
 
 # ── USERS ───────────────────────────────────────────────────────
 @router.get("/admin/users")
-def admin_list_users(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
-        raise HTTPException(403, "Accès refusé")
+def admin_list_users(db: Session = Depends(get_db),
+                     current_user: User = Depends(get_current_admin_or_staff)):
+    # Admin voit tout. Commercial uniquement (besoin métier : démarche orgas).
+    if current_user.role == "staff" and current_user.staff_function != "commercial":
+        raise HTTPException(403, "Réservé aux commerciaux")
     users = db.query(User).order_by(User.created_at.desc()).all()
     return [{
         "id": u.id, "name": u.full_name, "phone": u.phone_number,
@@ -101,10 +109,7 @@ def admin_list_users(db: Session = Depends(get_db), current_user: User = Depends
 
 @router.put("/admin/users/{user_id}")
 def admin_update_user(user_id: int, data: dict, db: Session = Depends(get_db),
-                      current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
-        raise HTTPException(403, "Accès refusé")
-
+                      current_user: User = Depends(get_current_admin)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(404, "Utilisateur introuvable")
@@ -112,7 +117,6 @@ def admin_update_user(user_id: int, data: dict, db: Session = Depends(get_db),
     if "is_active" in data:
         nouveau_statut = data["is_active"]
         user.is_active = nouveau_statut
-        # Répercuter le statut sur tous les événements de l'organisateur
         if user.role in ["organizer", "organisation"]:
             db.query(Event).filter(Event.organizer_id == user.id).update(
                 {"is_active": nouveau_statut}
@@ -124,18 +128,15 @@ def admin_update_user(user_id: int, data: dict, db: Session = Depends(get_db),
 
 # ── EVENTS ──────────────────────────────────────────────────────
 @router.get("/admin/events")
-def admin_list_events(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
-        raise HTTPException(403, "Accès refusé")
+def admin_list_events(db: Session = Depends(get_db),
+                      current_user: User = Depends(get_current_admin_or_staff)):
     events = db.query(Event).order_by(Event.created_at.desc()).all()
     return [_event_dict(e) for e in events]
 
 
 @router.put("/admin/events/{event_id}")
 def admin_update_event(event_id: int, data: dict, db: Session = Depends(get_db),
-                       current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
-        raise HTTPException(403, "Accès refusé")
+                       current_user: User = Depends(get_current_admin)):
     event = db.query(Event).filter(Event.id == event_id).first()
     if not event:
         raise HTTPException(404, "Événement introuvable")
@@ -144,12 +145,10 @@ def admin_update_event(event_id: int, data: dict, db: Session = Depends(get_db),
     db.commit()
     return {"message": "Événement mis à jour"}
 
-
 # ── PARTENAIRES ─────────────────────────────────────────────────
 @router.get("/admin/partners")
-def admin_list_partners(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
-        raise HTTPException(403, "Accès refusé")
+def admin_list_partners(db: Session = Depends(get_db),
+                        current_user: User = Depends(require_staff_function("commercial"))):
     partners = db.query(PartnerRequest).order_by(PartnerRequest.created_at.desc()).all()
     return [{
         "id": p.id, "company_name": p.company_name, "email": p.email,
@@ -157,12 +156,9 @@ def admin_list_partners(db: Session = Depends(get_db), current_user: User = Depe
         "message": p.message, "status": p.status, "created_at": p.created_at,
     } for p in partners]
 
-
 @router.put("/admin/partners/{partner_id}")
 def admin_update_partner(partner_id: int, data: dict, db: Session = Depends(get_db),
-                         current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
-        raise HTTPException(403, "Accès refusé")
+                         current_user: User = Depends(require_staff_function("commercial"))):
     partner = db.query(PartnerRequest).filter(PartnerRequest.id == partner_id).first()
     if not partner:
         raise HTTPException(404, "Demande introuvable")
@@ -171,13 +167,10 @@ def admin_update_partner(partner_id: int, data: dict, db: Session = Depends(get_
     db.commit()
     return {"message": "Demande mise à jour"}
 
-
 # ── RETRAITS (PAYOUTS) ──────────────────────────────────────────
 @router.get("/admin/payouts")
-async def get_all_payouts(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403)
-
+async def get_all_payouts(db: Session = Depends(get_db),
+                          current_user: User = Depends(require_staff_function("commercial"))):
     payouts = db.query(PayoutRequest).order_by(PayoutRequest.created_at.desc()).all()
 
     # Résolution des organisateurs en UNE requête (anti N+1)
@@ -201,16 +194,13 @@ async def get_all_payouts(db: Session = Depends(get_db), current_user: User = De
         })
     return result
 
-
 @router.post("/admin/payouts/{payout_id}/validate")
 async def validate_payout(payout_id: int, db: Session = Depends(get_db),
-                          current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Accès non autorisé")
+                          current_user: User = Depends(get_current_admin)):
+    # 🔒 SORTIE D'ARGENT : RÉSERVÉ ADMIN STRICT.
+    # Même un commercial ne valide PAS les payouts. Politique : un seul humain
+    # peut déclencher un virement, et il a un compte admin dédié.
 
-    # 🔒 VERROU : on lock la ligne payout, on vérifie + on réserve le statut
-    # AVANT tout appel réseau. Un 2e clic simultané attend le commit puis voit
-    # un statut != "en_attente" → rejeté. Pas de double-virement.
     payout = (
         db.query(PayoutRequest)
         .filter(PayoutRequest.id == payout_id)
@@ -226,14 +216,13 @@ async def validate_payout(payout_id: int, db: Session = Depends(get_db),
     if payout.status != "en_attente":
         raise HTTPException(status_code=400, detail=f"Statut non traitable : {payout.status}")
 
-    # On réserve atomiquement : le 2e clic verra "en_cours" et sera bloqué.
     payout.status = "en_cours"
     db.commit()
 
     orga = db.query(User).filter(User.id == payout.organizer_id).first()
     phone_number = orga.orange_money if (orga and orga.orange_money) else (orga.phone_number if orga else None)
     if not phone_number:
-        payout.status = "en_attente"  # rollback logique : on relâche la réservation
+        payout.status = "en_attente"
         db.commit()
         raise HTTPException(status_code=400, detail="Numéro de réception introuvable pour cet organisateur.")
 
@@ -249,8 +238,6 @@ async def validate_payout(payout_id: int, db: Session = Depends(get_db),
         print(f"📡 [NGSER RETRAIT RÉPONSE BRUTE] Code HTTP: {status_code} | Contenu: {raw_text}")
 
         if status_code == 200 and "payment_url" in response_data:
-            # Session créée, virement en attente de confirmation webhook (WD...).
-            # Le statut reste "en_cours" ; le webhook le passera à "paye".
             print(f"🔗 Session de retrait créée : {response_data['payment_url']}")
             return {
                 "status": "success",
@@ -262,7 +249,6 @@ async def validate_payout(payout_id: int, db: Session = Depends(get_db),
             db.commit()
             return {"status": "success", "message": f"Retrait de {payout.amount} FCFA effectué"}
         else:
-            # Échec NGSER : on relâche la réservation pour permettre un nouvel essai.
             payout.status = "en_attente"
             db.commit()
             error_msg = response_data.get("description", f"Erreur NGSER (Code HTTP {status_code})")
@@ -271,7 +257,6 @@ async def validate_payout(payout_id: int, db: Session = Depends(get_db),
     except HTTPException:
         raise
     except Exception as e:
-        # Erreur réseau/interne : on relâche pour réessai manuel.
         payout.status = "en_attente"
         db.commit()
         print(f"❌ Erreur Interne Retrait : {str(e)}")
@@ -297,10 +282,7 @@ def get_admin_cancellations(db: Session = Depends(get_db), current_user: User = 
 
 @router.post("/admin/cancellations/{request_id}/approve")
 def approve_cancellation(request_id: int, request: Request, db: Session = Depends(get_db),
-                         current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
-        raise HTTPException(403, "Accès refusé")
-
+                         current_user: User = Depends(get_current_admin)):
     cancel_req = db.query(CancellationRequest).filter(CancellationRequest.id == request_id).first()
     if not cancel_req:
         raise HTTPException(404, "Demande introuvable")
@@ -312,7 +294,6 @@ def approve_cancellation(request_id: int, request: Request, db: Session = Depend
     event_id_for_log = cancel_req.event_id
 
     if event:
-        # Couper le lien demande -> event pour ne pas bloquer la suppression (FK)
         cancel_req.event_id = None
         db.query(Ticket).filter(Ticket.event_id == event.id).delete()
         db.query(User).filter(User.agent_event_id == event.id).delete()
@@ -324,18 +305,14 @@ def approve_cancellation(request_id: int, request: Request, db: Session = Depend
     log_security_event(db, "event_cancelled", request, current_user.id, f"Event #{event_id_for_log}")
     return {"message": "Événement définitivement supprimé."}
 
-
 # ── LOGS DE SÉCURITÉ ────────────────────────────────────────────
 @router.get("/admin/security-logs")
 def get_security_logs(
     limit: int = 100,
     event_type: str = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_admin),
 ):
-    if current_user.role != "admin":
-        raise HTTPException(403, "Accès refusé")
-
     query = db.query(SecurityLog).order_by(SecurityLog.created_at.desc())
     if event_type:
         query = query.filter(SecurityLog.event_type == event_type)

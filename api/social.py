@@ -9,6 +9,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
+from core.permissions import get_current_admin, require_staff_function
 from core.database import get_db
 from core.limiter import limiter
 from core.security import get_current_user, get_optional_user, log_security_event
@@ -190,11 +191,8 @@ def list_feedbacks(
     limit: int = 50,
     offset: int = 0,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_staff_function("cm")),
 ):
-    if current_user.role != "admin":
-        raise HTTPException(403, "Accès réservé aux administrateurs")
-
     query = db.query(Feedback)
     if status:
         query = query.filter(Feedback.status == status)
@@ -263,10 +261,7 @@ def list_feedbacks(
 
 @router.patch("/admin/feedbacks/{feedback_id}")
 def update_feedback(feedback_id: int, data: FeedbackUpdate, db: Session = Depends(get_db),
-                    current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
-        raise HTTPException(403, "Accès réservé aux administrateurs")
-
+                    current_user: User = Depends(require_staff_function("cm"))):
     fb = db.query(Feedback).filter(Feedback.id == feedback_id).first()
     if not fb:
         raise HTTPException(404, "Feedback introuvable")
@@ -287,13 +282,9 @@ def update_feedback(feedback_id: int, data: FeedbackUpdate, db: Session = Depend
 
     return {"status": "success", "feedback_id": fb.id, "new_status": fb.status}
 
-
 @router.delete("/admin/feedbacks/{feedback_id}")
 def delete_feedback(feedback_id: int, db: Session = Depends(get_db),
-                    current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
-        raise HTTPException(403, "Accès réservé aux administrateurs")
-
+                    current_user: User = Depends(get_current_admin)):
     fb = db.query(Feedback).filter(Feedback.id == feedback_id).first()
     if not fb:
         raise HTTPException(404, "Feedback introuvable")

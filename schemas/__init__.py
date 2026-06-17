@@ -1,6 +1,6 @@
 from schemas.auth import (
     UserLogin, Token, RefreshTokenRequest, UserRegister,
-    UserUpdate, PinChange, Verify2FA, AgentCreate,
+    UserUpdate, PinChange, AgentCreate,
 )
 from schemas.event import EventCreate, EventUpdate
 from schemas.ticket import BuyTicket, ScanTicket, CashReservation, TicketTier

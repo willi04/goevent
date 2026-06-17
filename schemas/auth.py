@@ -62,10 +62,6 @@ class PinChange(BaseModel):
     new_pin: str
 
 
-class Verify2FA(BaseModel):
-    code: str = Field(..., min_length=6, max_length=6)
-
-
 class AgentCreate(BaseModel):
     full_name: str
     phone_number: str

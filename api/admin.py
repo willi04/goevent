@@ -23,27 +23,66 @@ from utils.serializers import _event_dict
 router = APIRouter()
 
 
-# ── STATS GLOBALES ──────────────────────────────────────────────
+# ── STATS GLOBALES (filtrées selon le profil) ───────────────────
 @router.get("/admin/global-stats")
-def admin_global_stats(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
+def admin_global_stats(db: Session = Depends(get_db),
+                       current_user: User = Depends(get_current_user)):
+    """
+    Stats dashboard. Filtre selon profil (admin / commercial / cm / designer).
+    Refuse fan/organizer/agent.
+    Renvoie uniquement les champs autorisés pour le profil.
+    Le frontend affiche dynamiquement les cartes correspondantes.
+    """
+    role = current_user.role
+    fn = current_user.staff_function
+
+    if role not in ("admin", "staff"):
         raise HTTPException(403, "Accès refusé")
-    total_tickets = db.query(Ticket).filter(Ticket.payment_status == "paye").count()
-    total_users = db.query(User).filter(User.role.in_(["fan", "organizer"])).count()
-    total_events = db.query(Event).filter(Event.is_active == True).count()
-    total_orgas = db.query(User).filter(User.role == "organizer").count()
-    pending_payouts = db.query(PayoutRequest).filter(PayoutRequest.status == "en_attente").count()
-    revenue_net = db.query(func.sum(Payment.platform_fee)).filter(Payment.status == "completed").scalar() or 0
-    ca_total = db.query(func.sum(Payment.amount)).filter(Payment.status == "completed").scalar() or 0
-    return {
-        "total_tickets": total_tickets,
-        "total_users": total_users,
-        "total_events": total_events,
-        "total_orgas": total_orgas,
-        "pending_payouts": pending_payouts,
-        "revenue_net": round(revenue_net, 2),
-        "ca_total": round(ca_total, 2),
-    }
+    if role == "staff" and fn not in ("commercial", "cm", "designer"):
+        raise HTTPException(403, "Profil staff non reconnu")
+
+    # Imports locaux pour éviter les cycles
+    from models.cms import HomepageContent
+    from models.social import Feedback
+
+    stats = {}
+
+    # Champ commun à tous : events actifs
+    stats["total_events"] = db.query(Event).filter(Event.is_active == True).count()
+
+    # Champs admin & commercial (vision business globale)
+    if role == "admin" or fn == "commercial":
+        stats["total_users"] = db.query(User).filter(User.role.in_(["fan", "organizer"])).count()
+        stats["total_orgas"] = db.query(User).filter(User.role == "organizer").count()
+        stats["total_tickets"] = db.query(Ticket).filter(Ticket.payment_status == "paye").count()
+
+    # Champs admin uniquement (financier sensible)
+    if role == "admin":
+        stats["revenue_net"] = round(
+            db.query(func.sum(Payment.platform_fee))
+              .filter(Payment.status == "completed").scalar() or 0, 2
+        )
+        stats["ca_total"] = round(
+            db.query(func.sum(Payment.amount))
+              .filter(Payment.status == "completed").scalar() or 0, 2
+        )
+        stats["pending_payouts"] = db.query(PayoutRequest).filter(
+            PayoutRequest.status == "en_attente"
+        ).count()
+
+    # Champs CM & designer (visuels)
+    if role == "admin" or fn in ("cm", "designer"):
+        stats["slides_active"] = db.query(HomepageContent).filter(
+            HomepageContent.is_active == True
+        ).count()
+
+    # Champ CM (modération communautaire)
+    if role == "admin" or fn == "cm":
+        stats["feedbacks_new"] = db.query(Feedback).filter(
+            Feedback.status == "nouveau"
+        ).count()
+
+    return stats
 
 
 # ── USERS ───────────────────────────────────────────────────────

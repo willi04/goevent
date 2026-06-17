@@ -1,0 +1,31 @@
+name: NGSER Reconcile
+
+on:
+  schedule:
+    # Toutes les 5 minutes
+    - cron: '*/5 * * * *'
+  workflow_dispatch:  # Déclenchement manuel possible depuis GitHub UI
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Call /admin/reconcile
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X POST \
+            "https://api.goevent.africa/admin/reconcile" \
+            -H "X-Reconcile-Secret: ${{ secrets.RECONCILE_SECRET }}" \
+            -H "Content-Type: application/json")
+
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | head -n-1)
+
+          echo "HTTP $http_code"
+          echo "Response: $body"
+
+          if [ "$http_code" -ne 200 ]; then
+            echo "❌ Réconciliation a échoué"
+            exit 1
+          fi
+          echo "✅ Réconciliation OK"

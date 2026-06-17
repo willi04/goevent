@@ -23,6 +23,7 @@ from fastapi import Header
 from core.config import settings
 from core.reconcile import reconcile_pending_payments
 
+from utils.locks import lock_event_for_booking, lock_event_for_release
 from core.database import get_db
 from core.security import get_current_user
 from core.ngser import create_payment_session
@@ -43,17 +44,17 @@ async def initiate_ngser_payment(
     current_user: User = Depends(get_current_user),
 ):
     """
-    1. Crée le billet 'en attente'
-    2. Demande le lien de paiement à NGSER
-    3. Renvoie {payment_url, ticket_id} au frontend
+    1. Verrou pessimiste + check quota + PRÉ-RÉSERVATION (seats_sold += 1)
+    2. Création ticket 'en_attente_om' + payment 'pending'
+    3. Appel NGSER pour le lien de paiement
+    4. Si NGSER échoue → libère la place
+    Note : si l'utilisateur abandonne sans payer, la place reste réservée
+    jusqu'au cron de réconciliation (P1) qui libère les en_attente_om > 15min.
     """
-    event = db.query(Event).filter(Event.id == data.event_id, Event.is_active == True).first()
-    if not event:
-        raise HTTPException(404, "Événement introuvable")
-    if event.seats_sold >= event.total_seats:
-        raise HTTPException(400, "Événement complet")
+    # 1. Verrou + check quota atomique (P0 anti-survente)
+    event = lock_event_for_booking(db, data.event_id)
 
-    # Calcul du prix (tier éventuel)
+    # 2. Prix (tier éventuel)
     prix_base = float(event.price)
     if data.tier_name and event.ticket_tiers:
         tier = next((t for t in event.ticket_tiers if t.get("name") == data.tier_name), None)
@@ -63,7 +64,6 @@ async def initiate_ngser_payment(
     if prix_base <= 0:
         raise HTTPException(400, "Prix invalide pour un paiement Orange Money")
 
-    # Commissions
     frais_acheteur = prix_base * 0.04
     total_a_payer = prix_base + frais_acheteur
     frais_organisateur = prix_base * 0.07
@@ -73,7 +73,6 @@ async def initiate_ngser_payment(
     if data.email and not current_user.email:
         current_user.email = data.email
 
-    # order_id : max 25 caractères (contrainte NGSER, doc p.8)
     order_id = f"EVT{event.id}-{uuid.uuid4().hex[:10].upper()}"
 
     new_ticket = Ticket(
@@ -98,16 +97,19 @@ async def initiate_ngser_payment(
         transaction_id=order_id,
     )
     db.add(payment)
+
+    # 3. PRÉ-RÉSERVATION : la place est comptée AVANT l'appel NGSER.
+    #    Le verrou pessimiste garantit l'atomicité avec d'autres workers.
+    event.seats_sold += 1
     db.commit()
     db.refresh(new_ticket)
 
-    # Appel NGSER (montant entier — total avec frais acheteur)
+    # 4. Appel NGSER (verrou relâché par le commit)
     try:
         status_code, response_data = await create_payment_session(
             order_id=order_id,
             amount=int(total_a_payer),
         )
-
         if status_code == 200 and "payment_url" in response_data:
             return {
                 "status": "success",
@@ -116,13 +118,29 @@ async def initiate_ngser_payment(
             }
         else:
             print(f"❌ Erreur API NGSER : HTTP {status_code} | {response_data}")
+            _libere_place_init_echouee(db, new_ticket.id, event.id)
             raise HTTPException(400, "Impossible d'initialiser le paiement avec Orange Money.")
     except HTTPException:
         raise
     except Exception as e:
         print(f"❌ Erreur Serveur NGSER : {str(e)}")
+        _libere_place_init_echouee(db, new_ticket.id, event.id)
         raise HTTPException(503, "Le service de paiement est temporairement indisponible.")
 
+
+def _libere_place_init_echouee(db: Session, ticket_id: int, event_id: int):
+    """Libère la pré-réservation si l'appel NGSER initial a échoué."""
+    try:
+        ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
+        if ticket and ticket.payment_status == "en_attente_om":
+            ticket.payment_status = "echec_init_ngser"
+            event = lock_event_for_release(db, event_id)
+            if event:
+                event.seats_sold = max(0, event.seats_sold - 1)
+            db.commit()
+    except Exception as e:
+        print(f"⚠️ Erreur libération place après échec init NGSER : {e}")
+        db.rollback()
 
 # ── WEBHOOK NGSER (Instant Payment Notification) ────────────────
 @router.post("/payment/ngser-webhook")
@@ -190,8 +208,7 @@ async def ngser_webhook(request: Request, db: Session = Depends(get_db)):
         ticket = db.query(Ticket).filter(Ticket.payment_ref == order_id).first()
         payment_record = db.query(Payment).filter(Payment.transaction_id == order_id).first()
 
-        # 2. Idempotence : le ticket doit exister ET être en attente.
-        #    Un webhook rejoué (ticket déjà 'paye') est ignoré sans effet de bord.
+        # Idempotence : ticket doit exister et être en attente OM
         if not ticket:
             print(f"⚠️ Webhook : aucun ticket pour order_id={order_id}")
             return {"status": "success"}
@@ -202,52 +219,52 @@ async def ngser_webhook(request: Request, db: Session = Depends(get_db)):
 
         # 3. SUCCÈS (status_id == 1)
         if status_id == 1:
-            # 3a. VÉRIFICATION DU MONTANT (recommandation NGSER doc p.17).
-            #     Si le montant payé ne correspond pas au montant attendu,
-            #     on considère la transaction comme un échec — pas de validation.
+            # 3a. Vérification du montant (reco NGSER doc p.17)
             if transaction_amount is not None and payment_record is not None:
                 try:
                     recu = float(transaction_amount)
                     attendu = float(payment_record.amount)
-                    # tolérance d'arrondi (1 FCFA)
                     if abs(recu - attendu) > 1:
                         ticket.payment_status = "echec_paiement"
                         if payment_record:
                             payment_record.status = "failed"
+                        # Libération : la place avait été pré-réservée à l'initiate
+                        ev = lock_event_for_release(db, ticket.event_id)
+                        if ev:
+                            ev.seats_sold = max(0, ev.seats_sold - 1)
                         db.commit()
                         print(f"🚨 Webhook : MONTANT INCOHÉRENT order={order_id} "
-                              f"reçu={recu} attendu={attendu} → REJETÉ.")
+                              f"reçu={recu} attendu={attendu} → REJETÉ + place libérée.")
                         return {"status": "error", "message": "Montant incohérent"}
                 except (TypeError, ValueError):
-                    print(f"⚠️ Webhook : transaction_amount illisible ({transaction_amount}), "
-                          f"validation prudente refusée.")
+                    ticket.payment_status = "echec_paiement"
+                    if payment_record:
+                        payment_record.status = "failed"
+                    ev = lock_event_for_release(db, ticket.event_id)
+                    if ev:
+                        ev.seats_sold = max(0, ev.seats_sold - 1)
+                    db.commit()
+                    print(f"⚠️ Webhook : transaction_amount illisible ({transaction_amount}) → place libérée.")
                     return {"status": "error", "message": "Montant illisible"}
 
-            # 3b. Montant OK (ou non fourni mais statut succès) → on valide.
+            # 3b. Montant OK → validation. PAS d'incrément seats_sold (déjà fait à l'initiate)
             ticket.payment_status = "paye"
             if payment_record:
                 payment_record.status = "completed"
-
-            event = (
-                db.query(Event)
-                .filter(Event.id == ticket.event_id)
-                .with_for_update()
-                .first()
-            )
-            if event:
-                event.seats_sold += 1
-
             db.commit()
-            print(f"✅🎫 Webhook : Billet {ticket.id} validé.")
+            print(f"✅🎫 Webhook : Billet {ticket.id} validé (place déjà comptée).")
             return {"status": "success"}
 
-        # 4. ÉCHEC (status_id 0, 2, ou autre)
+        # 4. ÉCHEC (status_id 0, 2, ou autre) → libération de la place pré-réservée
         else:
             ticket.payment_status = "echec_paiement"
             if payment_record:
                 payment_record.status = "failed"
+            ev = lock_event_for_release(db, ticket.event_id)
+            if ev:
+                ev.seats_sold = max(0, ev.seats_sold - 1)
             db.commit()
-            print(f"❌ Webhook : Paiement échoué order={order_id} (status_id={status_id}).")
+            print(f"❌ Webhook : Paiement échoué order={order_id} (status_id={status_id}) → place libérée.")
             return {"status": "success"}
 
     except Exception as e:

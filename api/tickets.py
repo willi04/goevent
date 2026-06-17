@@ -170,7 +170,14 @@ def confirm_cash_payment(ticket_id: int, db: Session = Depends(get_db),
     if current_user.role not in ("organizer", "organisation", "agent"):
         raise HTTPException(403, "Accès réservé aux organisateurs et agents")
 
-    ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
+    # P0 — Verrou pessimiste sur le ticket : si 2 agents scannent le même QR
+    # cash simultanément, un seul peut commit l'encaissement.
+    ticket = (
+        db.query(Ticket)
+        .filter(Ticket.id == ticket_id)
+        .with_for_update()
+        .first()
+    )
     if not ticket:
         raise HTTPException(404, "Billet introuvable")
 

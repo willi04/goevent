@@ -151,7 +151,7 @@
               res.user.role === "staff" ||
               res.user.role === "commercial"
             ) {
-              btAuth.save(res.access_token, res.user);
+              btAuth.save(res.access_token, res.refresh_token, res.user);
               window.location.href = "admin.html";
             } else {
               errText.textContent =

@@ -443,112 +443,14 @@
           </button>
         </div>
 
-        <!-- ── SECTION DASHBOARD ── -->
+       <!-- ── SECTION DASHBOARD ── -->
         <section id="section-dashboard">
           <h2 class="text-xl font-black text-gray-900 mb-5">Vue d'ensemble</h2>
-
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div class="stat-card">
-              <p
-                class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1"
-              >
-                Bénéfices nets
-              </p>
-              <p id="stat-revenue" class="text-2xl font-black text-green-700">
-                —
-              </p>
-              <p class="text-[10px] text-gray-400 mt-1">Commissions GoEvent</p>
-            </div>
-            <div class="stat-card">
-              <p
-                class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1"
-              >
-                Volume CA
-              </p>
-              <p id="stat-ca" class="text-2xl font-black text-gray-900">—</p>
-              <p class="text-[10px] text-gray-400 mt-1">Total brut encaissé</p>
-            </div>
-            <div class="stat-card">
-              <p
-                class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1"
-              >
-                Billets vendus
-              </p>
-              <p id="stat-tickets" class="text-2xl font-black text-gray-900">
-                —
-              </p>
-              <p class="text-[10px] text-gray-400 mt-1">
-                Tous statuts confondus
-              </p>
-            </div>
-            <div class="stat-card">
-              <p
-                class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1"
-              >
-                Utilisateurs
-              </p>
-              <p id="stat-users" class="text-2xl font-black text-gray-900">—</p>
-              <p class="text-[10px] text-gray-400 mt-1">Fans + Organisateurs</p>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="stat-card flex items-center gap-4">
-              <div
-                class="w-12 h-12 rounded-2xl bg-green-50 text-green-700 flex items-center justify-center flex-shrink-0"
-              >
-                <span
-                  class="material-symbols-outlined"
-                  style="font-variation-settings: &quot;FILL&quot; 1"
-                  >stadium</span
-                >
-              </div>
-              <div>
-                <p id="stat-events" class="text-xl font-black text-gray-900">
-                  —
-                </p>
-                <p class="text-[10px] font-bold text-gray-400 uppercase">
-                  Événements actifs
-                </p>
-              </div>
-            </div>
-            <div class="stat-card flex items-center gap-4">
-              <div
-                class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center flex-shrink-0"
-              >
-                <span
-                  class="material-symbols-outlined"
-                  style="font-variation-settings: &quot;FILL&quot; 1"
-                  >groups</span
-                >
-              </div>
-              <div>
-                <p id="stat-orgas" class="text-xl font-black text-gray-900">
-                  —
-                </p>
-                <p class="text-[10px] font-bold text-gray-400 uppercase">
-                  Organisateurs
-                </p>
-              </div>
-            </div>
-            <div class="stat-card flex items-center gap-4">
-              <div
-                class="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center flex-shrink-0"
-              >
-                <span
-                  class="material-symbols-outlined animate-pulse"
-                  style="font-variation-settings: &quot;FILL&quot; 1"
-                  >pending</span
-                >
-              </div>
-              <div>
-                <p id="stat-payouts" class="text-xl font-black text-gray-900">
-                  —
-                </p>
-                <p class="text-[10px] font-bold text-gray-400 uppercase">
-                  Retraits en attente
-                </p>
-              </div>
+        
+          <!-- Cartes générées dynamiquement par renderDashboardCards() -->
+          <div id="dashboard-cards-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="col-span-full text-center text-gray-400 py-8 text-sm">
+              Chargement...
             </div>
           </div>
         </section>
@@ -1405,27 +1307,63 @@
           //  Sera branché en 8.6.b avec un appel à loadStaff().
       }
 
-      // ── DASHBOARD ───────────────────────────────────────────────
+     // ── DASHBOARD ───────────────────────────────────────────────
       async function loadDashboard() {
         try {
           const s = await btApi.get("/admin/global-stats");
-          document.getElementById("stat-revenue").textContent =
-            (s.revenue_net || 0).toLocaleString() + " FCFA";
-          document.getElementById("stat-ca").textContent =
-            (s.ca_total || 0).toLocaleString() + " FCFA";
-          document.getElementById("stat-tickets").textContent =
-            s.total_tickets || 0;
-          document.getElementById("stat-users").textContent =
-            s.total_users || 0;
-          document.getElementById("stat-events").textContent =
-            s.total_events || 0;
-          document.getElementById("stat-orgas").textContent =
-            s.total_orgas || 0;
-          document.getElementById("stat-payouts").textContent =
-            s.pending_payouts || 0;
+          renderDashboardCards(s);
         } catch (e) {
           console.error("Stats:", e);
+          document.getElementById("dashboard-cards-grid").innerHTML =
+            '<div class="col-span-full text-center text-red-500 py-8 text-sm">Erreur de chargement</div>';
         }
+      }
+      
+      // Catalogue des cartes possibles. Chaque entrée :
+      //   key      : champ attendu dans la réponse /admin/global-stats
+      //   label    : titre affiché
+      //   hint     : sous-titre
+      //   format   : (v) => string
+      //   color    : couleur du chiffre (Tailwind class)
+      //   icon     : material symbol (optionnel)
+      const DASHBOARD_CARDS = [
+        { key: "revenue_net",     label: "Bénéfices nets",     hint: "Commissions GoEvent",
+          format: v => (v||0).toLocaleString() + " FCFA",      color: "text-green-700" },
+        { key: "ca_total",        label: "Volume CA",          hint: "Total brut encaissé",
+          format: v => (v||0).toLocaleString() + " FCFA",      color: "text-gray-900" },
+        { key: "total_tickets",   label: "Billets vendus",     hint: "Tous statuts",
+          format: v => (v||0).toString(),                      color: "text-gray-900" },
+        { key: "total_users",     label: "Utilisateurs",       hint: "Fans + Organisateurs",
+          format: v => (v||0).toString(),                      color: "text-gray-900" },
+        { key: "total_events",    label: "Événements actifs",  hint: "Actuellement publiés",
+          format: v => (v||0).toString(),                      color: "text-green-700", icon: "stadium" },
+        { key: "total_orgas",     label: "Organisateurs",      hint: "Inscrits",
+          format: v => (v||0).toString(),                      color: "text-amber-600", icon: "groups" },
+        { key: "pending_payouts", label: "Retraits en attente",hint: "À valider",
+          format: v => (v||0).toString(),                      color: "text-red-600",   icon: "pending" },
+        { key: "slides_active",   label: "Affiches en ligne",  hint: "Carrousel hero",
+          format: v => (v||0).toString(),                      color: "text-blue-700",  icon: "view_carousel" },
+        { key: "feedbacks_new",   label: "Feedbacks nouveaux", hint: "À modérer",
+          format: v => (v||0).toString(),                      color: "text-red-600",   icon: "forum" },
+      ];
+      
+      function renderDashboardCards(stats) {
+        const grid = document.getElementById("dashboard-cards-grid");
+        // On garde uniquement les cartes dont la clé est présente dans la réponse
+        const visible = DASHBOARD_CARDS.filter(c => stats[c.key] !== undefined);
+      
+        if (!visible.length) {
+          grid.innerHTML = '<div class="col-span-full text-center text-gray-400 py-8 text-sm">Aucune donnée disponible pour votre profil.</div>';
+          return;
+        }
+      
+        grid.innerHTML = visible.map(c => `
+          <div class="stat-card">
+            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">${c.label}</p>
+            <p class="text-2xl font-black ${c.color}">${c.format(stats[c.key])}</p>
+            <p class="text-[10px] text-gray-400 mt-1">${c.hint}</p>
+          </div>
+        `).join("");
       }
 
       // ── ÉVÉNEMENTS ──────────────────────────────────────────────

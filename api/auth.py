@@ -23,7 +23,7 @@ from core.email import envoyer_mail_code
 from models.user import User, PasswordReset
 from schemas.auth import (
     UserRegister, UserLogin, RefreshTokenRequest,
-    UserUpdate, PinChange, Verify2FA,
+    UserUpdate, PinChange,
 )
 
 router = APIRouter()

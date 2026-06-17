@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from utils.locks import lock_event_for_booking, lock_event_for_release
 from core.database import get_db
 from core.security import get_current_user, log_security_event
 from models.event import Event
@@ -91,9 +92,8 @@ def my_paid_tickets(db: Session = Depends(get_db), current_user: User = Depends(
 @router.post("/tickets/reserve-cash")
 def reserve_ticket_cash(data: CashReservation, db: Session = Depends(get_db),
                         current_user: User = Depends(get_current_user)):
-    event = db.query(Event).filter(Event.id == data.event_id, Event.is_active == True).first()
-    if not event:
-        raise HTTPException(404, "Événement introuvable")
+    # P0 — Verrou pessimiste + check quota atomique (anti-survente)
+    event = lock_event_for_booking(db, data.event_id)
 
     deadline = event.event_date - timedelta(hours=24)
     if datetime.utcnow() > deadline:
@@ -102,8 +102,7 @@ def reserve_ticket_cash(data: CashReservation, db: Session = Depends(get_db),
             "Vous pouvez encore acheter via Orange Money à l'entrée.")
     if event.event_date < datetime.utcnow():
         raise HTTPException(400, "Événement déjà passé")
-    if event.seats_sold >= event.total_seats:
-        raise HTTPException(400, "Événement complet")
+    # NB : check seats_sold ≥ total_seats fait par lock_event_for_booking (409)
 
     nb_reservations = db.query(Ticket).filter(
         Ticket.user_id == current_user.id,
@@ -253,8 +252,10 @@ def cancel_cash_reservation(ticket_id: int, db: Session = Depends(get_db),
     if ticket.payment_status != "reservation_cash":
         raise HTTPException(400, "Seules les réservations en attente de paiement peuvent être annulées.")
 
-    if ticket.event:
-        ticket.event.seats_sold = max(0, ticket.event.seats_sold - 1)
+    # P0 — Verrou pessimiste sur Event pour décrément atomique
+    event = lock_event_for_release(db, ticket.event_id)
+    if event:
+        event.seats_sold = max(0, event.seats_sold - 1)
 
     db.delete(ticket)
     db.commit()

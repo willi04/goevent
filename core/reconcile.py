@@ -9,10 +9,10 @@ from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 
 from core.ngser import check_payment_status
+from utils.locks import lock_event_for_release
 from models.ticket import Ticket
 from models.event import Event
 from models.payment import Payment
-
 # Fenêtre de réconciliation : on ne touche pas un ticket trop récent
 # (webhook peut être en route) ni trop vieux (abandonné).
 GRACE_MINUTES = 15
@@ -57,7 +57,8 @@ async def reconcile_pending_payments(db: Session) -> dict:
 
         code = str(data.get("code", ""))
 
-        # SUCCESS (code "1") → on valide comme le webhook, avec verrou anti-survente
+        # SUCCESS (code "1") → on valide. La place a DÉJÀ été comptée à l'initiate
+        # (pré-réservation P0), donc PAS d'incrément ici. Sinon double comptage.
         if code == "1":
             payment_record = db.query(Payment).filter(Payment.transaction_id == order_id).first()
 
@@ -67,38 +68,39 @@ async def reconcile_pending_payments(db: Session) -> dict:
             if recu is not None and payment_record is not None:
                 try:
                     if abs(float(recu) - float(payment_record.amount)) > 1:
+                        # Montant incohérent → on rejette ET on libère la place pré-réservée
                         ticket.payment_status = "echec_paiement"
                         payment_record.status = "failed"
+                        ev = lock_event_for_release(db, ticket.event_id)
+                        if ev:
+                            ev.seats_sold = max(0, ev.seats_sold - 1)
                         db.commit()
-                        print(f"🚨 Réconciliation : montant incohérent {order_id} → rejeté.")
+                        print(f"🚨 Réconciliation : montant incohérent {order_id} → rejeté + place libérée.")
                         summary["failed"] += 1
                         continue
                 except (TypeError, ValueError):
                     pass
 
-            event = (
-                db.query(Event)
-                .filter(Event.id == ticket.event_id)
-                .with_for_update()
-                .first()
-            )
             ticket.payment_status = "paye"
             if payment_record:
                 payment_record.status = "completed"
-            if event:
-                event.seats_sold += 1
             db.commit()
-            print(f"✅ Réconciliation : billet {ticket.id} validé ({order_id}).")
+            print(f"✅ Réconciliation : billet {ticket.id} validé ({order_id}) — place déjà comptée.")
             summary["validated"] += 1
 
         # FAIL (codes "0", "2", "5", "6") ou NOT EXIST (code "4")
+       # FAIL (codes "0", "2", "5", "6") ou NOT EXIST (code "4")
+        # → libération de la place pré-réservée (P0)
         elif code in ("0", "2", "4", "5", "6"):
             payment_record = db.query(Payment).filter(Payment.transaction_id == order_id).first()
             ticket.payment_status = "echec_paiement"
             if payment_record:
                 payment_record.status = "failed"
+            ev = lock_event_for_release(db, ticket.event_id)
+            if ev:
+                ev.seats_sold = max(0, ev.seats_sold - 1)
             db.commit()
-            print(f"❌ Réconciliation : paiement échoué {order_id} (code={code}).")
+            print(f"❌ Réconciliation : paiement échoué {order_id} (code={code}) → place libérée.")
             summary["failed"] += 1
 
         # PENDING (code "3") → on laisse, prochain passage

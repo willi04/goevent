@@ -7,7 +7,6 @@ import random
 import string
 from datetime import datetime, timedelta
 
-import pyotp
 from fastapi import APIRouter, Depends, HTTPException, Request
 from jose import jwt, JWTError
 from sqlalchemy.orm import Session
@@ -42,41 +41,42 @@ def register(request: Request, data: UserRegister, db: Session = Depends(get_db)
     ROLES_INSCRIPTIBLES = ("fan", "organizer", "agent")
     if data.role not in ROLES_INSCRIPTIBLES:
         raise HTTPException(400, f"Rôle invalide pour inscription publique. Valeurs : {ROLES_INSCRIPTIBLES}")
-        if len(data.pin_code) != 4 or not data.pin_code.isdigit():
-            raise HTTPException(400, "Le PIN doit être 4 chiffres")
-        if db.query(User).filter(User.phone_number == data.phone_number).first():
-            raise HTTPException(400, "Ce numéro est déjà utilisé")
-    
-        user = User(
-            phone_number=data.phone_number,
-            full_name=data.full_name,
-            email=data.email,
-            pin_hash=hash_pin(data.pin_code),
-            role=data.role,
-            org_name=data.org_name,
-            org_type=data.org_type,
-        )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-    
-        return {
-            "access_token": create_access_token(user.id, user.role),
-            "refresh_token": create_refresh_token(user.id, user.role),
-            "token_type": "bearer",
-            "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-            "user": {
-                "id": user.id,
-                "name": user.full_name,
-                "role": user.role,
-                "phone_number": user.phone_number,   # uniformisé (login utilise phone_number, pas phone)
-                "phone": user.phone_number, 
-                "email": user.email,
-                "org_name": user.org_name,
-                "org_type": user.org_type,
-                "staff_function": user.staff_function,
-            },
-        }
+
+    if len(data.pin_code) != 4 or not data.pin_code.isdigit():
+        raise HTTPException(400, "Le PIN doit être 4 chiffres")
+    if db.query(User).filter(User.phone_number == data.phone_number).first():
+        raise HTTPException(400, "Ce numéro est déjà utilisé")
+
+    user = User(
+        phone_number=data.phone_number,
+        full_name=data.full_name,
+        email=data.email,
+        pin_hash=hash_pin(data.pin_code),
+        role=data.role,
+        org_name=data.org_name,
+        org_type=data.org_type,
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    return {
+        "access_token": create_access_token(user.id, user.role),
+        "refresh_token": create_refresh_token(user.id, user.role),
+        "token_type": "bearer",
+        "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        "user": {
+            "id": user.id,
+            "name": user.full_name,
+            "role": user.role,
+            "phone_number": user.phone_number,
+            "phone": user.phone_number,
+            "email": user.email,
+            "org_name": user.org_name,
+            "org_type": user.org_type,
+            "staff_function": user.staff_function,
+        },
+    }
 
 
 # ── LOGIN ───────────────────────────────────────────────────────
@@ -115,15 +115,7 @@ def login(request: Request, data: UserLogin, db: Session = Depends(get_db)):
                            f"Tentative {user.failed_login_attempts}/5")
         tentatives_restantes = 5 - user.failed_login_attempts
         raise HTTPException(401, f"Numéro ou PIN incorrect. {tentatives_restantes} tentative(s) restante(s).")
-
-    # --- VÉRIFICATION 2FA ---
-    if user.role == "partner" and user.is_2fa_enabled:
-        if not data.totp_code:
-            raise HTTPException(status_code=403, detail="Code d'authentification 2FA requis pour ce compte.")
-        totp = pyotp.TOTP(user.two_factor_secret)
-        if not totp.verify(data.totp_code):
-            raise HTTPException(status_code=401, detail="Code 2FA invalide.")
-
+        
     user.failed_login_attempts = 0
     user.locked_until = None
     db.commit()
@@ -209,40 +201,6 @@ def change_pin(data: PinChange, db: Session = Depends(get_db),
     current_user.pin_hash = hash_pin(data.new_pin)
     db.commit()
     return {"message": "PIN modifié avec succès"}
-
-
-# ── 2FA (TOTP) ──────────────────────────────────────────────────
-@router.post("/auth/2fa/setup")
-def setup_2fa(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    if current_user.role != "organizer":
-        raise HTTPException(status_code=403, detail="Le 2FA est réservé aux organisateurs.")
-
-    secret = pyotp.random_base32()
-    current_user.two_factor_secret = secret
-    db.commit()
-
-    totp = pyotp.TOTP(secret)
-    identifiant = current_user.email if current_user.email else current_user.phone_number
-    provisioning_uri = totp.provisioning_uri(name=identifiant, issuer_name="GoEvent")
-
-    return {
-        "secret": secret,
-        "qr_code_url": provisioning_uri,
-        "message": "Scannez ce QR Code (ou entrez le secret) dans Google Authenticator.",
-    }
-
-
-@router.post("/auth/2fa/verify")
-def verify_2fa(data: Verify2FA, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    if not current_user.two_factor_secret:
-        raise HTTPException(status_code=400, detail="Veuillez d'abord configurer le 2FA.")
-
-    totp = pyotp.TOTP(current_user.two_factor_secret)
-    if totp.verify(data.code):
-        current_user.is_2fa_enabled = True
-        db.commit()
-        return {"message": "Sécurité 2FA activée avec succès !"}
-    raise HTTPException(status_code=401, detail="Code invalide ou expiré.")
 
 
 # ── MOT DE PASSE OUBLIÉ / RESET PIN ─────────────────────────────

@@ -39,7 +39,12 @@ def process_ngser_response(
       "skipped"         → ticket déjà traité (idempotence)
       "no_ticket"       → ticket introuvable
     """
-    ticket = db.query(Ticket).filter(Ticket.payment_ref == order_id).first()
+    ticket = (
+        db.query(Ticket)
+        .filter(Ticket.payment_ref == order_id)
+        .with_for_update()
+        .first()
+    )
     if not ticket:
         return {"action": "no_ticket"}
     

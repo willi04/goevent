@@ -1023,26 +1023,34 @@
       }
 
       async function updatePin() {
-        const btn = document.getElementById("btn-save-pin");
-        const pin = document.getElementById("set-pin").value.trim();
-
-        if (pin.length !== 4) return;
-
-        btn.disabled = true;
-        btn.innerHTML = "Mise à jour...";
-        try {
-          await btApi.put("/auth/me", { pin_code: pin });
-          if (typeof btToast === "function")
-            btToast("Code PIN modifié avec succès !", "success");
-          document.getElementById("set-pin").value = "";
-          validatePinForm();
-        } catch (e) {
-          if (typeof btToast === "function")
-            btToast("Erreur lors de la modification du PIN", "error");
-          validatePinForm();
-        }
+          const btn = document.getElementById("btn-save-pin");
+          const newPin = document.getElementById("set-pin").value.trim();
+      
+          if (newPin.length !== 4 || !/^\d{4}$/.test(newPin)) return;
+      
+          // Demander l'ancien PIN
+          const oldPin = prompt("Pour des raisons de sécurité, saisissez votre PIN actuel :");
+          if (oldPin === null) return;  // Annulé
+          if (oldPin.length !== 4 || !/^\d{4}$/.test(oldPin)) {
+              btToast("Ancien PIN invalide (4 chiffres requis)", "error");
+              return;
+          }
+      
+          btn.disabled = true;
+          btn.innerHTML = "Mise à jour...";
+          try {
+              await btApi.put("/auth/pin", { old_pin: oldPin, new_pin: newPin });
+              if (typeof btToast === "function")
+                  btToast("Code PIN modifié avec succès !", "success");
+              document.getElementById("set-pin").value = "";
+              validatePinForm();
+          } catch (e) {
+              if (typeof btToast === "function")
+                  btToast(e.message || "Erreur lors de la modification du PIN", "error");
+              validatePinForm();
+          }
       }
-
+      
       function formatPrice(price) {
         if (typeof window.btPrice === "function") return btPrice(price);
         return price === 0

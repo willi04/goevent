@@ -2455,21 +2455,16 @@
         }
       }
       async function approuverAnnulation(requestId) {
-        if (
-          !confirm(
-            "⚠️ ATTENTION : Cela va supprimer l'événement et tous les billets associés. Êtes-vous sûr ?",
-          )
-        )
-          return;
-
-        try {
-          await btApi.post("/admin/cancellations/" + requestId + "/approve");
-          btToast("L'événement a été supprimé !", "success");
-          loadCancellations(); // Rafraîchit la liste
-          loadEvents(); // Rafraîchit aussi les stats de base
-        } catch (error) {
-          btToast(error.message || "Erreur lors de la suppression", "error");
-        }
+          if (!confirm("⚠️ ATTENTION : Cela va annuler l'événement, créer les demandes de remboursement et notifier tous les acheteurs par email. Êtes-vous sûr ?")) return;
+      
+          try {
+              const res = await btApi.post("/admin/cancellations/" + requestId + "/approve");
+              btToast(`Annulation traitée. ${res.refunds_created} remboursement(s) à effectuer, ${res.emails_sent} email(s) envoyé(s).`, "success");
+              loadCancellations();
+              loadEvents();
+          } catch (error) {
+              btToast(error.message || "Erreur lors de l'annulation", "error");
+          }
       }
       // ════════════════════════════════════════════════════════
       // GESTION DES FEEDBACKS

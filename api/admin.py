@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from datetime import datetime
 from core.database import get_db
 from core.security import get_current_user, log_security_event
 from core.ngser import create_withdrawal_session
@@ -283,28 +284,148 @@ def get_admin_cancellations(db: Session = Depends(get_db), current_user: User = 
 @router.post("/admin/cancellations/{request_id}/approve")
 def approve_cancellation(request_id: int, request: Request, db: Session = Depends(get_db),
                          current_user: User = Depends(get_current_admin)):
+    """
+    Annulation propre avec création des demandes de remboursement.
+    - Refuse si un payout 'paye' existe (l'orga a déjà touché → cas litigieux à traiter manuellement)
+    - Crée 1 RefundRequest par ticket payé en ligne (paye + paye_cash)
+    - Email "événement annulé" pour tous les acheteurs (payés + réservations cash)
+    - Ne supprime RIEN : event passe is_active=False, status sémantique 'annule'
+    """
+    from models.refund import RefundRequest
+    from core.email import envoyer_mail_annulation
+    
     cancel_req = db.query(CancellationRequest).filter(CancellationRequest.id == request_id).first()
     if not cancel_req:
         raise HTTPException(404, "Demande introuvable")
-
     if cancel_req.status == "traite":
         raise HTTPException(400, "Cette demande a déjà été traitée")
 
-    event = db.query(Event).filter(Event.id == cancel_req.event_id).first()
-    event_id_for_log = cancel_req.event_id
+    event = db.query(Event).filter(Event.id == cancel_req.event_id).with_for_update().first()
+    if not event:
+        raise HTTPException(404, "Événement introuvable")
 
-    if event:
-        cancel_req.event_id = None
-        db.query(Ticket).filter(Ticket.event_id == event.id).delete()
-        db.query(User).filter(User.agent_event_id == event.id).delete()
-        db.delete(event)
+    # 🔒 GARDE : si un payout a été versé, on bloque
+    payout_paye = db.query(PayoutRequest).filter(
+        PayoutRequest.event_id == event.id,
+        PayoutRequest.status == "paye",
+    ).first()
+    if payout_paye:
+        raise HTTPException(
+            409,
+            f"Impossible d'annuler : un retrait de {int(payout_paye.amount)} FCFA "
+            f"a déjà été versé à l'organisateur. Récupérez d'abord les fonds, "
+            f"puis traitez manuellement."
+        )
 
+    # 🔒 GARDE : annuler les payouts en_attente sur cet event
+    db.query(PayoutRequest).filter(
+        PayoutRequest.event_id == event.id,
+        PayoutRequest.status == "en_attente",
+    ).update({"status": "annule"})
+
+    # Récupération des tickets concernés (payés ou réservés cash)
+    tickets_paye_online = db.query(Ticket).filter(
+        Ticket.event_id == event.id,
+        Ticket.payment_status == "paye",
+    ).all()
+    
+    tickets_paye_cash = db.query(Ticket).filter(
+        Ticket.event_id == event.id,
+        Ticket.payment_status == "paye_cash",
+    ).all()
+    
+    tickets_reservation_cash = db.query(Ticket).filter(
+        Ticket.event_id == event.id,
+        Ticket.payment_status == "reservation_cash",
+    ).all()
+
+    # Résolution des users en une requête (anti N+1)
+    user_ids = {t.user_id for t in tickets_paye_online + tickets_paye_cash + tickets_reservation_cash}
+    users_map = {}
+    if user_ids:
+        users = db.query(User).filter(User.id.in_(user_ids)).all()
+        users_map = {u.id: u for u in users}
+
+    refunds_created = 0
+    emails_queued = []
+
+    # 1. Remboursements pour les paiements Orange Money en ligne
+    #    On rembourse uniquement le prix de base (pas les 4% frais GoEvent)
+    for ticket in tickets_paye_online:
+        user = users_map.get(ticket.user_id)
+        if not user:
+            continue
+        
+        payment = db.query(Payment).filter(Payment.ticket_id == ticket.id).first()
+        prix_base = payment.base_price if payment else (ticket.cash_amount or event.price)
+        
+        refund = RefundRequest(
+            ticket_id=ticket.id,
+            user_id=user.id,
+            event_id=event.id,
+            event_title=event.title,
+            amount=prix_base,
+            phone_number=user.orange_money or user.phone_number,
+            status="a_rembourser",
+        )
+        db.add(refund)
+        ticket.payment_status = "annule_rembourse_en_attente"
+        if payment:
+            payment.status = "refund_pending"
+        refunds_created += 1
+        emails_queued.append((user.email, user.full_name, event.title, prix_base, True))
+
+    # 2. Remboursements pour les paiements cash (encaissés par l'agent)
+    for ticket in tickets_paye_cash:
+        user = users_map.get(ticket.user_id)
+        if not user:
+            continue
+        prix_cash = ticket.cash_amount or event.price
+        
+        refund = RefundRequest(
+            ticket_id=ticket.id,
+            user_id=user.id,
+            event_id=event.id,
+            event_title=event.title,
+            amount=prix_cash,
+            phone_number=user.orange_money or user.phone_number,
+            status="a_rembourser",
+            admin_note="Payé cash à l'agent — remboursement à effectuer par l'organisateur ou GoEvent",
+        )
+        db.add(refund)
+        ticket.payment_status = "annule_rembourse_en_attente"
+        refunds_created += 1
+        emails_queued.append((user.email, user.full_name, event.title, prix_cash, True))
+
+    # 3. Réservations cash : juste libérer + email, pas de remboursement
+    for ticket in tickets_reservation_cash:
+        user = users_map.get(ticket.user_id)
+        ticket.payment_status = "annule"
+        if user:
+            emails_queued.append((user.email, user.full_name, event.title, 0, False))
+
+    # 4. Désactivation de l'event (PAS de suppression)
+    event.is_active = False
     cancel_req.status = "traite"
     db.commit()
 
-    log_security_event(db, "event_cancelled", request, current_user.id, f"Event #{event_id_for_log}")
-    return {"message": "Événement définitivement supprimé."}
+    # 5. Envoi des emails (best-effort, ne bloque pas la transaction)
+    for email, name, title, amount, is_refund in emails_queued:
+        if email:
+            try:
+                envoyer_mail_annulation(email, name, title, amount, is_refund)
+            except Exception as e:
+                print(f"⚠️ Email annulation échoué pour {email}: {e}")
 
+    log_security_event(db, "event_cancelled_with_refunds", request, current_user.id,
+                       f"Event #{event.id} annulé, {refunds_created} remboursements créés")
+
+    return {
+        "message": "Annulation traitée.",
+        "refunds_created": refunds_created,
+        "emails_sent": len(emails_queued),
+    }
+                             
 # ── LOGS DE SÉCURITÉ ────────────────────────────────────────────
 @router.get("/admin/security-logs")
 def get_security_logs(
@@ -327,3 +448,103 @@ def get_security_logs(
         "details": l.details,
         "created_at": l.created_at,
     } for l in logs]
+
+
+# ── REMBOURSEMENTS ──────────────────────────────────────────────
+@router.get("/admin/refunds")
+def list_refunds(
+    status: str = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin),
+):
+    """Liste des remboursements à effectuer / effectués. Admin strict (sortie d'argent)."""
+    from models.refund import RefundRequest
+    
+    q = db.query(RefundRequest).order_by(RefundRequest.created_at.desc())
+    if status:
+        q = q.filter(RefundRequest.status == status)
+    refunds = q.all()
+    
+    # Anti N+1 sur les users
+    user_ids = {r.user_id for r in refunds}
+    users_map = {}
+    if user_ids:
+        users = db.query(User).filter(User.id.in_(user_ids)).all()
+        users_map = {u.id: u for u in users}
+    
+    stats = {
+        "total": db.query(RefundRequest).count(),
+        "a_rembourser": db.query(RefundRequest).filter(RefundRequest.status == "a_rembourser").count(),
+        "paye": db.query(RefundRequest).filter(RefundRequest.status == "paye").count(),
+    }
+    montant_a_payer = db.query(func.sum(RefundRequest.amount)).filter(
+        RefundRequest.status == "a_rembourser"
+    ).scalar() or 0
+    stats["amount_pending"] = float(montant_a_payer)
+    
+    items = []
+    for r in refunds:
+        u = users_map.get(r.user_id)
+        items.append({
+            "id": r.id,
+            "ticket_id": r.ticket_id,
+            "user_name": u.full_name if u else "Utilisateur supprimé",
+            "user_email": u.email if u else None,
+            "event_id": r.event_id,
+            "event_title": r.event_title,
+            "amount": r.amount,
+            "phone_number": r.phone_number,
+            "status": r.status,
+            "payment_proof": r.payment_proof,
+            "admin_note": r.admin_note,
+            "created_at": r.created_at.isoformat(),
+            "paid_at": r.paid_at.isoformat() if r.paid_at else None,
+        })
+    
+    return {"items": items, "stats": stats}
+
+
+@router.post("/admin/refunds/{refund_id}/mark-paid")
+def mark_refund_paid(
+    refund_id: int,
+    data: dict,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin),
+):
+    """Marque un remboursement comme effectué manuellement. Admin strict."""
+    from models.refund import RefundRequest
+    
+    payment_proof = (data.get("payment_proof") or "").strip()
+    if not payment_proof or len(payment_proof) < 4:
+        raise HTTPException(400, "Le numéro de transaction Orange Money est requis (min 4 caractères)")
+    
+    refund = db.query(RefundRequest).filter(RefundRequest.id == refund_id).with_for_update().first()
+    if not refund:
+        raise HTTPException(404, "Remboursement introuvable")
+    if refund.status == "paye":
+        raise HTTPException(400, "Ce remboursement a déjà été marqué payé")
+    if refund.status == "annule":
+        raise HTTPException(400, "Ce remboursement a été annulé")
+    
+    refund.status = "paye"
+    refund.payment_proof = payment_proof
+    refund.admin_note = (data.get("admin_note") or "").strip() or refund.admin_note
+    refund.paid_at = datetime.utcnow()
+    refund.paid_by = current_user.id
+    
+    # Marquer le ticket comme définitivement remboursé
+    ticket = db.query(Ticket).filter(Ticket.id == refund.ticket_id).first()
+    if ticket:
+        ticket.payment_status = "annule_rembourse"
+    
+    payment = db.query(Payment).filter(Payment.ticket_id == refund.ticket_id).first()
+    if payment:
+        payment.status = "refunded"
+    
+    db.commit()
+    
+    log_security_event(db, "refund_paid", request, current_user.id,
+                       f"Refund #{refund.id} payé ({refund.amount} FCFA, ref={payment_proof})")
+    
+    return {"status": "success", "message": "Remboursement marqué comme effectué"}

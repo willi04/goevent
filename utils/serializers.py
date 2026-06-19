@@ -8,6 +8,15 @@ from utils.slugs import event_id_to_slug
 
 def _event_dict(e, include_organizer=True):
     org = e.organizer_user
+    
+    # Résolution organizer-safe (ne crashe pas si org_user est None)
+    if org:
+        organizer_name = org.org_name or org.full_name or "Organisateur"
+        organizer_role = org.role or "artiste"
+    else:
+        organizer_name = "Organisateur supprimé"
+        organizer_role = "artiste"
+    
     return {
         "id": e.id,
         "title": e.title,
@@ -23,8 +32,8 @@ def _event_dict(e, include_organizer=True):
         "is_sold_out": e.seats_sold >= e.total_seats,
         "cover_image_url": e.cover_image_url,
         "is_active": e.is_active,
-        "organizer": org.org_name or org.full_name if org else "Organisateur",
-        "organizer_role": org.role if org else "artiste",
+        "organizer": organizer_name,
+        "organizer_role": organizer_role,
         "organizer_id": e.organizer_id,
         "ticket_tiers": e.ticket_tiers,
     }

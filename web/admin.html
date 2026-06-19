@@ -354,6 +354,16 @@
             <span>Feedbacks</span>
             <span id="badge-feedbacks-new" class="ml-auto bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full hidden">0</span>
           </button>
+          <button
+              onclick="showTab('refunds')"
+              data-tab="refunds"
+              data-capability="view_finance"
+              class="tab-btn w-full text-left flex items-center gap-3"
+          >
+            <span class="material-symbols-outlined text-lg">currency_exchange</span>
+            <span>Remboursements</span>
+            <span id="badge-refunds-pending" class="ml-auto bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full hidden">0</span>
+          </button>
       </aside>
       <!-- Main content -->
       <main class="flex-1 p-6 space-y-6 overflow-x-hidden">
@@ -440,6 +450,15 @@
           >
             <span class="material-symbols-outlined text-lg">forum</span>
             Feedbacks
+          </button>
+          <button
+              onclick="showTab('refunds')"
+              data-tab="refunds"
+              data-capability="view_finance"
+              class="tab-btn flex-shrink-0"
+          >
+            <span class="material-symbols-outlined text-lg">currency_exchange</span>
+            Remboursements
           </button>
         </div>
 
@@ -756,6 +775,69 @@
             <div class="card p-6 empty-state col-span-full"><span class="material-symbols-outlined">hourglass_empty</span>Chargement...</div>
           </div>
         </section>
+
+        <!-- ── SECTION REMBOURSEMENTS ── -->
+        <section id="section-refunds" class="section-hidden">
+          <div class="flex flex-wrap justify-between items-center gap-3 mb-5">
+            <div>
+              <h2 class="text-xl font-black text-gray-900">Remboursements</h2>
+              <p class="text-xs text-gray-500 mt-1">Demandes générées par les annulations d'événements</p>
+            </div>
+            <button onclick="loadRefunds()" class="action-btn flex items-center gap-2" style="background:#f3f4f6;color:#374151">
+              <span class="material-symbols-outlined text-base">refresh</span>
+              Actualiser
+            </button>
+          </div>
+        
+          <!-- Stats -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+            <div class="stat-card">
+              <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">À rembourser</p>
+              <p id="rf-stat-pending" class="text-2xl font-black text-red-600">—</p>
+            </div>
+            <div class="stat-card">
+              <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Montant en attente</p>
+              <p id="rf-stat-amount" class="text-2xl font-black text-amber-600">—</p>
+            </div>
+            <div class="stat-card">
+              <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Déjà payés</p>
+              <p id="rf-stat-paid" class="text-2xl font-black text-green-700">—</p>
+            </div>
+            <div class="stat-card">
+              <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total créés</p>
+              <p id="rf-stat-total" class="text-2xl font-black text-gray-900">—</p>
+            </div>
+          </div>
+        
+          <!-- Filtres -->
+          <div class="flex gap-2 mb-4 flex-wrap">
+            <button onclick="filterRefunds('a_rembourser')" id="rff-pending" class="action-btn btn-primary text-xs">À rembourser</button>
+            <button onclick="filterRefunds('paye')" id="rff-paid" class="action-btn text-xs" style="background:#d1fae5;color:#065f46">Payés</button>
+            <button onclick="filterRefunds('all')" id="rff-all" class="action-btn text-xs" style="background:#f3f4f6;color:#374151">Tous</button>
+          </div>
+        
+          <div class="card overflow-hidden">
+            <div class="overflow-x-auto">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Acheteur</th>
+                    <th>Événement</th>
+                    <th>Montant</th>
+                    <th>Numéro OM</th>
+                    <th>Demandé le</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="refunds-tbody">
+                  <tr><td colspan="7"><div class="empty-state"><span class="material-symbols-outlined">hourglass_empty</span>Chargement...</div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+        
         <!-- ── SECTION ÉQUIPE ── -->
         <section id="section-team" class="section-hidden">
           <div class="flex flex-wrap justify-between items-center gap-3 mb-5">
@@ -1117,6 +1199,50 @@
           </div>
         </div>
       </div>
+      <!-- Modal : Marquer un remboursement payé -->
+      <div id="refund-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-lg font-black text-gray-900">Confirmer le remboursement</h3>
+            <button onclick="closeRefundModal()" class="text-gray-400 hover:text-red-500 transition-colors">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          </div>
+      
+          <div id="refund-modal-summary" class="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-5"></div>
+      
+          <div class="space-y-4">
+            <div>
+              <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                Numéro de transaction Orange Money *
+              </label>
+              <input id="refund-proof" type="text" class="input-field" placeholder="Ex: OM240315-A7F2B9" />
+              <p class="text-[10px] text-gray-400 mt-1">
+                Référence du virement OM que vous venez d'effectuer (visible sur le SMS de confirmation).
+              </p>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                Note (optionnel)
+              </label>
+              <textarea id="refund-note" rows="2" class="input-field" placeholder="Note interne..."></textarea>
+            </div>
+          </div>
+      
+          <p id="refund-error" class="text-red-500 text-xs mt-3 min-h-4"></p>
+      
+          <div class="bg-red-50 border border-red-100 rounded-xl p-3 mt-4">
+            <p class="text-[11px] text-red-700 font-bold">
+              ⚠️ Action irréversible. Marquez "payé" UNIQUEMENT après avoir effectivement viré l'argent.
+            </p>
+          </div>
+      
+          <div class="flex gap-2 mt-5">
+            <button onclick="closeRefundModal()" class="action-btn flex-1 py-3" style="background:#f3f4f6;color:#374151">Annuler</button>
+            <button id="btn-refund-submit" onclick="submitRefundPaid()" class="action-btn btn-primary flex-1 py-3">Confirmer</button>
+          </div>
+        </div>
+      </div>
       
       <!-- Modal : Aperçu rendu réel -->
       <div id="slide-preview-modal" class="modal-overlay hidden" style="background:rgba(0,0,0,0.8);z-index:1100">
@@ -1241,6 +1367,7 @@
               { tab: "events",        cap: "view_events" },
               { tab: "users",         cap: "view_users" },
               { tab: "finance",       cap: "view_finance" },
+              { tab: "refunds",       cap: "view_finance" },
               { tab: "partners",      cap: "moderate_partners" },
               { tab: "cancellations", cap: "moderate_cancellations" },
               { tab: "team",          cap: "staff_manage" },
@@ -2623,6 +2750,191 @@
           if (typeof btToast === "function") btToast(err.message || "Erreur", "error");
         }
       }
+
+      // ═══════════════════════════════════════════════════════════════
+      // REMBOURSEMENTS
+      // ═══════════════════════════════════════════════════════════════
+      
+      let allRefunds = [];
+      let refundFilter = "a_rembourser";
+      let currentRefundId = null;
+      
+      // Brancher dans showTab : déclenchement du loadRefunds
+      const _origShowTab = window.showTab;
+      window.showTab = function(tab) {
+          _origShowTab(tab);
+          if (tab === "refunds") loadRefunds();
+      };
+      
+      async function loadRefunds() {
+          const tbody = document.getElementById("refunds-tbody");
+          try {
+              const data = await btApi.get("/admin/refunds");
+              allRefunds = data.items || [];
+              const stats = data.stats || {};
+      
+              document.getElementById("rf-stat-pending").textContent = stats.a_rembourser || 0;
+              document.getElementById("rf-stat-amount").textContent = (stats.amount_pending || 0).toLocaleString("fr-FR") + " F";
+              document.getElementById("rf-stat-paid").textContent = stats.paye || 0;
+              document.getElementById("rf-stat-total").textContent = stats.total || 0;
+      
+              // Badge sidebar
+              const badge = document.getElementById("badge-refunds-pending");
+              if (badge) {
+                  if (stats.a_rembourser > 0) {
+                      badge.textContent = stats.a_rembourser;
+                      badge.classList.remove("hidden");
+                  } else {
+                      badge.classList.add("hidden");
+                  }
+              }
+      
+              renderRefunds();
+          } catch (e) {
+              tbody.innerHTML = `<tr><td colspan="7" class="text-center text-red-500 py-8 text-sm">${e.message || 'Erreur'}</td></tr>`;
+          }
+      }
+      
+      function filterRefunds(status) {
+          refundFilter = status;
+          ["a_rembourser", "paye", "all"].forEach(s => {
+              const key = s === "a_rembourser" ? "pending" : (s === "paye" ? "paid" : "all");
+              const btn = document.getElementById("rff-" + key);
+              if (!btn) return;
+              if (s === status) {
+                  btn.className = "action-btn btn-primary text-xs";
+              } else {
+                  const colors = {
+                      a_rembourser: "background:#fee2e2;color:#991b1b",
+                      paye: "background:#d1fae5;color:#065f46",
+                      all: "background:#f3f4f6;color:#374151",
+                  };
+                  btn.className = "action-btn text-xs";
+                  btn.setAttribute("style", colors[s]);
+              }
+          });
+          renderRefunds();
+      }
+      
+      function renderRefunds() {
+          const tbody = document.getElementById("refunds-tbody");
+          const list = refundFilter === "all" ? allRefunds : allRefunds.filter(r => r.status === refundFilter);
+      
+          if (!list.length) {
+              tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><span class="material-symbols-outlined">check_circle</span><p class="font-bold text-gray-400 mt-2">Aucun remboursement dans cette catégorie</p></div></td></tr>';
+              return;
+          }
+      
+          const statusBadge = (s) => {
+              if (s === "a_rembourser") return '<span class="badge badge-red">À payer</span>';
+              if (s === "paye") return '<span class="badge badge-green">Payé</span>';
+              if (s === "annule") return '<span class="badge badge-gray">Annulé</span>';
+              return '<span class="badge badge-gray">—</span>';
+          };
+      
+          tbody.innerHTML = list.map(r => `
+              <tr>
+                  <td>
+                      <p class="font-bold text-gray-900 text-sm">${_escapeHtml(r.user_name)}</p>
+                      ${r.user_email ? `<p class="text-[11px] text-gray-400">${_escapeHtml(r.user_email)}</p>` : ''}
+                  </td>
+                  <td>
+                      <p class="text-xs font-bold text-gray-700 max-w-[200px] truncate">${_escapeHtml(r.event_title)}</p>
+                      <p class="text-[10px] text-gray-400">Ticket #${r.ticket_id}</p>
+                  </td>
+                  <td><span class="font-black text-gray-900">${(r.amount || 0).toLocaleString("fr-FR")} F</span></td>
+                  <td><span class="text-xs font-mono">${_escapeHtml(r.phone_number || '—')}</span></td>
+                  <td><span class="text-xs text-gray-500">${new Date(r.created_at).toLocaleDateString("fr-FR")}</span></td>
+                  <td>
+                      ${statusBadge(r.status)}
+                      ${r.payment_proof ? `<p class="text-[10px] text-gray-400 mt-1 font-mono">Réf: ${_escapeHtml(r.payment_proof)}</p>` : ''}
+                  </td>
+                  <td>
+                      ${r.status === "a_rembourser" 
+                          ? `<button onclick="openRefundModal(${r.id})" class="action-btn btn-primary text-xs">Marquer payé</button>` 
+                          : (r.paid_at ? `<span class="text-[10px] text-gray-400">Payé le ${new Date(r.paid_at).toLocaleDateString("fr-FR")}</span>` : '—')
+                      }
+                  </td>
+              </tr>
+          `).join("");
+      }
+      
+      function openRefundModal(id) {
+          const refund = allRefunds.find(r => r.id === id);
+          if (!refund) return;
+          currentRefundId = id;
+      
+          document.getElementById("refund-modal-summary").innerHTML = `
+              <p class="text-[10px] font-bold text-amber-700 uppercase tracking-widest mb-2">Récap</p>
+              <p class="text-sm text-gray-900"><strong>${_escapeHtml(refund.user_name)}</strong></p>
+              <p class="text-xs text-gray-500 mt-1">${_escapeHtml(refund.event_title)}</p>
+              <div class="flex justify-between items-center mt-3 pt-3 border-t border-amber-200">
+                  <span class="text-xs text-gray-500">À virer sur</span>
+                  <span class="font-mono text-sm font-bold">${_escapeHtml(refund.phone_number)}</span>
+              </div>
+              <div class="flex justify-between items-center mt-1">
+                  <span class="text-xs text-gray-500">Montant</span>
+                  <span class="font-black text-lg text-amber-700">${(refund.amount || 0).toLocaleString("fr-FR")} FCFA</span>
+              </div>
+          `;
+          document.getElementById("refund-proof").value = "";
+          document.getElementById("refund-note").value = "";
+          document.getElementById("refund-error").textContent = "";
+          document.getElementById("refund-modal").classList.remove("hidden");
+      }
+      
+      function closeRefundModal() {
+          document.getElementById("refund-modal").classList.add("hidden");
+          currentRefundId = null;
+      }
+      
+      async function submitRefundPaid() {
+          const errEl = document.getElementById("refund-error");
+          errEl.textContent = "";
+          const proof = document.getElementById("refund-proof").value.trim();
+          const note = document.getElementById("refund-note").value.trim();
+      
+          if (proof.length < 4) {
+              errEl.textContent = "Le numéro de transaction OM est obligatoire (min 4 caractères)";
+              return;
+          }
+      
+          const btn = document.getElementById("btn-refund-submit");
+          const orig = btn.textContent;
+          btn.disabled = true;
+          btn.textContent = "Envoi...";
+      
+          try {
+              await btApi.post(`/admin/refunds/${currentRefundId}/mark-paid`, {
+                  payment_proof: proof,
+                  admin_note: note,
+              });
+              btToast("Remboursement marqué comme payé", "success");
+              closeRefundModal();
+              loadRefunds();
+          } catch (e) {
+              errEl.textContent = e.message || "Erreur";
+          } finally {
+              btn.disabled = false;
+              btn.textContent = orig;
+          }
+      }
+      
+      function _escapeHtml(s) {
+          if (!s) return "";
+          const div = document.createElement("div");
+          div.textContent = String(s);
+          return div.innerHTML;
+      }
+      
+      // Charger le badge au démarrage si on a la capability
+      document.addEventListener("DOMContentLoaded", () => {
+          setTimeout(() => {
+              if (typeof hasCapability === "function" && hasCapability("view_finance")) {
+                  loadRefunds();
+              }
+          }, 1500);
+      });
     </script>
   </body>
 </html>

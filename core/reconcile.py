@@ -22,9 +22,12 @@ MAX_AGE_HOURS = 24
 async def reconcile_pending_payments(db: Session) -> dict:
     """
     Parcourt les tickets 'en_attente_om' dans la fenêtre [15min .. 24h],
-    vérifie leur statut réel chez NGSER, et les traite.
+    vérifie leur statut réel chez NGSER, et les traite via la logique
+    unifiée process_ngser_response (même code que le webhook).
     Retourne un résumé { checked, validated, failed, still_pending, errors }.
     """
+    from core.payment_processing import process_ngser_response
+    
     now = datetime.utcnow()
     floor_recent = now - timedelta(minutes=GRACE_MINUTES)
     floor_old = now - timedelta(hours=MAX_AGE_HOURS)
@@ -56,58 +59,28 @@ async def reconcile_pending_payments(db: Session) -> dict:
             continue
 
         code = str(data.get("code", ""))
-
-        # SUCCESS (code "1") → on valide. La place a DÉJÀ été comptée à l'initiate
-        # (pré-réservation P0), donc PAS d'incrément ici. Sinon double comptage.
-        if code == "1":
-            payment_record = db.query(Payment).filter(Payment.transaction_id == order_id).first()
-
-            # Vérification du montant (reco doc p.17), si disponible
-            inner = data.get("data") or {}
-            recu = inner.get("transaction_amount")
-            if recu is not None and payment_record is not None:
-                try:
-                    if abs(float(recu) - float(payment_record.amount)) > 1:
-                        # Montant incohérent → on rejette ET on libère la place pré-réservée
-                        ticket.payment_status = "echec_paiement"
-                        payment_record.status = "failed"
-                        ev = lock_event_for_release(db, ticket.event_id)
-                        if ev:
-                            ev.seats_sold = max(0, ev.seats_sold - 1)
-                        db.commit()
-                        print(f"🚨 Réconciliation : montant incohérent {order_id} → rejeté + place libérée.")
-                        summary["failed"] += 1
-                        continue
-                except (TypeError, ValueError):
-                    pass
-
-            ticket.payment_status = "paye"
-            if payment_record:
-                payment_record.status = "completed"
-            db.commit()
-            print(f"✅ Réconciliation : billet {ticket.id} validé ({order_id}) — place déjà comptée.")
+        inner = data.get("data") or {}
+        transaction_amount = inner.get("transaction_amount")
+        
+        result = process_ngser_response(
+            db=db,
+            order_id=order_id,
+            code=code,
+            transaction_amount=transaction_amount,
+        )
+        
+        action = result.get("action")
+        if action == "validated":
             summary["validated"] += 1
-
-        # FAIL (codes "0", "2", "5", "6") ou NOT EXIST (code "4")
-       # FAIL (codes "0", "2", "5", "6") ou NOT EXIST (code "4")
-        # → libération de la place pré-réservée (P0)
-        elif code in ("0", "2", "4", "5", "6"):
-            payment_record = db.query(Payment).filter(Payment.transaction_id == order_id).first()
-            ticket.payment_status = "echec_paiement"
-            if payment_record:
-                payment_record.status = "failed"
-            ev = lock_event_for_release(db, ticket.event_id)
-            if ev:
-                ev.seats_sold = max(0, ev.seats_sold - 1)
-            db.commit()
-            print(f"❌ Réconciliation : paiement échoué {order_id} (code={code}) → place libérée.")
+        elif action in ("failed", "rejected_amount"):
             summary["failed"] += 1
-
-        # PENDING (code "3") → on laisse, prochain passage
-        else:
+        elif action == "pending":
             summary["still_pending"] += 1
+        # "skipped" / "no_ticket" → on ne compte pas (idempotence)
 
     return summary
+
+
     
 async def expire_old_orphans(db: Session, hours: int = 24) -> dict:
     """

@@ -104,3 +104,84 @@ def envoyer_mail_code(email_client, code_secret):
         print(f"🔒 Code de sécurité envoyé à {email_client}")
     except Exception as e:
         print(f"❌ Erreur envoi code de sécurité : {e}")
+
+def envoyer_mail_annulation(email_client, nom_client, event_title, amount, is_refund):
+    """
+    Email de notification d'annulation.
+    is_refund=True  → message avec annonce de remboursement sous 7 jours
+    is_refund=False → message simple (cas réservation cash non payée)
+    """
+    if not settings.SENDER_EMAIL or not settings.SENDER_PASSWORD:
+        print("⚠️ Email credentials missing, skipping email")
+        return
+
+    msg = MIMEMultipart()
+    msg["From"] = f"GoEvent <{settings.SENDER_EMAIL}>"
+    msg["To"] = email_client
+    msg["Subject"] = f"❌ Événement annulé : {event_title}"
+
+    if is_refund:
+        refund_block = f"""
+            <div style="background-color: #f0fdf4; border-left: 4px solid #00502c; padding: 15px; margin: 25px 0; text-align: left;">
+                <p style="color: #00502c; font-size: 13px; margin: 0; font-weight: bold;">💰 REMBOURSEMENT</p>
+                <p style="color: #1a1c1c; font-size: 14px; margin: 8px 0 0 0;">
+                    Le montant de <strong>{int(amount)} FCFA</strong> vous sera reversé sur votre compte Orange Money
+                    dans un délai de <strong>7 jours ouvrés</strong>.
+                </p>
+                <p style="color: #6b7280; font-size: 11px; margin: 8px 0 0 0;">
+                    Note : les frais de service (4%) ne sont pas remboursés conformément à nos CGU.
+                </p>
+            </div>
+        """
+    else:
+        refund_block = """
+            <div style="background-color: #fff7ed; border-left: 4px solid #f97316; padding: 15px; margin: 25px 0; text-align: left;">
+                <p style="color: #c2410c; font-size: 13px; margin: 0; font-weight: bold;">ℹ️ INFORMATION</p>
+                <p style="color: #1a1c1c; font-size: 14px; margin: 8px 0 0 0;">
+                    Votre réservation cash est annulée. Aucun paiement n'avait été effectué, aucun remboursement n'est nécessaire.
+                </p>
+            </div>
+        """
+
+    html_body = f"""
+    <html>
+    <body style="font-family: 'Arial', sans-serif; background-color: #f4f4f4; padding: 20px; text-align: center;">
+        <div style="background-color: #ffffff; max-width: 500px; margin: 0 auto; padding: 30px; border-radius: 20px; border: 1px solid #e2e2e2; box-shadow: 0 10px 25px rgba(0,0,0,0.05);">
+            <h2 style="color: #00502c; font-size: 24px; margin-bottom: 5px;">GoEvent</h2>
+            <p style="color: #888; font-size: 12px; text-transform: uppercase; letter-spacing: 2px;">Avis d'annulation</p>
+
+            <h3 style="color: #1a1c1c; font-size: 20px; margin-top: 25px;">Bonjour {nom_client or "cher utilisateur"},</h3>
+
+            <p style="color: #4b5563; font-size: 14px; line-height: 1.6; margin-top: 15px;">
+                Nous avons le regret de vous informer que l'événement suivant, pour lequel vous aviez réservé une place, a été annulé par l'organisateur :
+            </p>
+
+            <div style="background-color: #f9fafb; padding: 15px; border-radius: 10px; margin: 20px 0;">
+                <p style="color: #1a1c1c; font-size: 16px; font-weight: bold; margin: 0;">{event_title}</p>
+            </div>
+
+            {refund_block}
+
+            <p style="color: #6b7280; font-size: 12px; line-height: 1.5; margin-top: 25px;">
+                Pour toute question, contactez notre support à <a href="mailto:support@goevent.africa" style="color: #00502c;">support@goevent.africa</a>.
+            </p>
+
+            <p style="color: #aaa; font-size: 11px; margin-top: 20px;">
+                — L'équipe GoEvent
+            </p>
+        </div>
+    </body>
+    </html>
+    """
+
+    msg.attach(MIMEText(html_body, "html"))
+
+    try:
+        server = smtplib.SMTP("smtp.gmail.com", 587)
+        server.starttls()
+        server.login(settings.SENDER_EMAIL, settings.SENDER_PASSWORD)
+        server.send_message(msg)
+        server.quit()
+        print(f"📧 Email annulation envoyé à {email_client}")
+    except Exception as e:
+        print(f"❌ Erreur envoi email annulation : {e}")

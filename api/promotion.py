@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 from core.database import get_db
 from core.security import get_current_user, log_security_event
 from core.permissions import require_staff_function, get_current_admin_or_staff
-from core.ngser import _process_ngser_response
+from core.ngser import create_payment_session
 from core.config import BOOST_PACKAGES, FB_PACK_MIN_BUDGET, FB_PACK_MARGIN_RATE
 
 from models.user import User
@@ -74,7 +74,7 @@ def _check_event_ownership(db: Session, event_id: int, user: User) -> Event:
 # ═════════════════════════════════════════════════════════════════════
 
 @router.post("/organizer/boost/initiate", response_model=BoostInitiateOut)
-def initiate_boost(
+async def initiate_boost(
     data: BoostInitiateIn,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -116,19 +116,31 @@ def initiate_boost(
     db.add(boost)
     db.flush()  # pour avoir boost.id
 
-    # Init paiement NGSER
+    # Init paiement NGSER (async)
     try:
-        payment_url = init_ngser_payment(
+        status_code, ngser_data = await create_payment_session(
             order_id=order_id,
             amount=pkg["amount_fcfa"],
-            phone=data.phone,
-            description=f"Boost {pkg['label']} - {event.title[:50]}",
         )
     except Exception as e:
-        # En cas d'échec init : on supprime le BoostOrder (pas de pollution BD)
         db.delete(boost)
         db.commit()
-        raise HTTPException(502, f"Erreur initialisation paiement : {str(e)[:100]}")
+        raise HTTPException(502, f"Erreur réseau NGSER : {str(e)[:100]}")
+
+    # NGSER renvoie typiquement {"data": {"payment_url": "..."}} ou {"payment_url": "..."}
+    payment_url = (
+        (ngser_data.get("data") or {}).get("payment_url")
+        or ngser_data.get("payment_url")
+    )
+
+    if status_code >= 400 or not payment_url:
+        # Échec init NGSER : on supprime le BoostOrder (pas de pollution BD)
+        db.delete(boost)
+        db.commit()
+        err_msg = (ngser_data.get("errors_messages") or ["Échec NGSER"])[0] if isinstance(
+            ngser_data.get("errors_messages"), list
+        ) else "Échec NGSER"
+        raise HTTPException(502, f"Erreur initialisation paiement : {err_msg}")
 
     db.commit()
 
@@ -143,7 +155,6 @@ def initiate_boost(
         amount_fcfa=pkg["amount_fcfa"],
         boost_order_id=boost.id,
     )
-
 
 @router.get("/organizer/boost/my", response_model=List[BoostOrderOut])
 def list_my_boosts(
@@ -187,7 +198,7 @@ def list_my_boosts(
 
 
 @router.post("/organizer/fb-package/request", response_model=FbPackRequestOut)
-def request_fb_package(
+async def request_fb_package(
     data: FbPackRequestIn,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -229,17 +240,29 @@ def request_fb_package(
     db.add(pack)
     db.flush()
 
+    # Init paiement NGSER (async)
     try:
-        payment_url = init_ngser_payment(
+        status_code, ngser_data = await create_payment_session(
             order_id=order_id,
             amount=total,
-            phone=data.phone,
-            description=f"Pack FB Ads - {event.title[:50]}",
         )
     except Exception as e:
         db.delete(pack)
         db.commit()
-        raise HTTPException(502, f"Erreur initialisation paiement : {str(e)[:100]}")
+        raise HTTPException(502, f"Erreur réseau NGSER : {str(e)[:100]}")
+
+    payment_url = (
+        (ngser_data.get("data") or {}).get("payment_url")
+        or ngser_data.get("payment_url")
+    )
+
+    if status_code >= 400 or not payment_url:
+        db.delete(pack)
+        db.commit()
+        err_msg = (ngser_data.get("errors_messages") or ["Échec NGSER"])[0] if isinstance(
+            ngser_data.get("errors_messages"), list
+        ) else "Échec NGSER"
+        raise HTTPException(502, f"Erreur initialisation paiement : {err_msg}")
 
     db.commit()
 
@@ -256,7 +279,6 @@ def request_fb_package(
         total_paid_fcfa=total,
         fb_package_id=pack.id,
     )
-
 
 @router.get("/organizer/fb-package/my", response_model=List[FbPackOut])
 def list_my_fb_packages(

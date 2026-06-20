@@ -144,8 +144,8 @@ def organizer_stats(db: Session = Depends(get_db), current_user: User = Depends(
 @router.post("/organizer/events/{event_id}/cancel-request")
 def request_cancellation(event_id: int, data: CancelRequestCreate, db: Session = Depends(get_db),
                          current_user: User = Depends(get_current_user)):
-    if current_user.role != "organizer":
-        raise HTTPException(403, "Accès refusé")
+    if current_user.role not in ("organizer", "organisation"):
+        raise HTTPException(403, "Accès réservé aux organisateurs")
 
     if len(data.reason) < 100:
         raise HTTPException(400, "La raison doit faire au moins 100 caractères.")
@@ -171,6 +171,8 @@ def request_cancellation(event_id: int, data: CancelRequestCreate, db: Session =
 @router.post("/organizer/create-agent")
 def create_agent(agent: AgentCreate, db: Session = Depends(get_db),
                  current_user: User = Depends(get_current_user)):
+    if current_user.role not in ("organizer", "organisation"):
+        raise HTTPException(403, "Accès réservé aux organisateurs")
     if len(agent.pin_code) != 4 or not agent.pin_code.isdigit():
         raise HTTPException(400, "Le PIN doit être 4 chiffres")
 

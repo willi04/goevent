@@ -49,12 +49,21 @@ class UserRegister(BaseModel):
 
 
 class UserUpdate(BaseModel):
-    full_name: Optional[str] = None
-    email: Optional[str] = None
-    org_name: Optional[str] = None
-    org_type: Optional[str] = None
+    full_name: Optional[str] = Field(None, min_length=2, max_length=100)
+    email: Optional[EmailStr] = None
+    org_name: Optional[str] = Field(None, max_length=200)
+    org_type: Optional[str] = Field(None, max_length=100)
     profile_picture: Optional[str] = Field(None, max_length=5242880)
     orange_money: Optional[str] = None
+
+    @validator("orange_money")
+    def validate_orange_money(cls, v):
+        if v is None or v == "":
+            return v
+        v = v.strip()
+        if not re.match(r"^\+236\d{8}$", v):
+            raise ValueError("Le numéro Orange Money doit être au format RCA (+236XXXXXXXX)")
+        return v
 
 
 class PinChange(BaseModel):

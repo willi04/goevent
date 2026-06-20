@@ -337,6 +337,16 @@
             Affiches
           </button>
           <button
+                onclick="showTab('fbpacks')"
+                data-tab="fbpacks"
+                data-capability="fb_packages_manage"
+                class="tab-btn w-full text-left flex items-center gap-3"
+            >
+              <span class="material-symbols-outlined text-lg">campaign</span>
+              <span>Pack Facebook</span>
+              <span id="badge-fbpacks-pending" class="ml-auto bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full hidden">0</span>
+            </button>
+          <button
               onclick="showTab('team')"
               data-tab="team"
               data-capability="staff_manage"
@@ -433,6 +443,14 @@
               class="tab-btn flex-shrink-0"
           >
             Affiches
+          </button>
+          <button
+              onclick="showTab('fbpacks')"
+              data-tab="fbpacks"
+              data-capability="fb_packages_manage"
+              class="tab-btn flex-shrink-0"
+          >
+            Pack FB
           </button>
           <button
             onclick="showTab('team')"
@@ -775,7 +793,92 @@
             <div class="card p-6 empty-state col-span-full"><span class="material-symbols-outlined">hourglass_empty</span>Chargement...</div>
           </div>
         </section>
-
+        
+        <!-- ── SECTION PACK FACEBOOK ADS (Chantier 17) ── -->
+        <section id="section-fbpacks" class="section-hidden">
+          <div class="flex flex-wrap justify-between items-center gap-3 mb-5">
+            <div>
+              <h2 class="text-xl font-black text-gray-900">Demandes Pack Facebook Ads</h2>
+              <p class="text-xs text-gray-500 mt-1">Campagnes Facebook à lancer et suivre pour les organisateurs</p>
+            </div>
+            <button onclick="loadFbPacks()" class="action-btn flex items-center gap-2" style="background:#f3f4f6;color:#374151">
+              <span class="material-symbols-outlined text-base">refresh</span>
+              Actualiser
+            </button>
+          </div>
+        
+          <!-- Stats -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+            <div class="stat-card">
+              <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">À traiter</p>
+              <p id="fbp-stat-pending" class="text-2xl font-black text-red-600">—</p>
+            </div>
+            <div class="stat-card">
+              <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Campagnes actives</p>
+              <p id="fbp-stat-active" class="text-2xl font-black text-green-700">—</p>
+            </div>
+            <div class="stat-card">
+              <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Budget total géré</p>
+              <p id="fbp-stat-budget" class="text-2xl font-black text-blue-700">—</p>
+            </div>
+            <div class="stat-card">
+              <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total demandes</p>
+              <p id="fbp-stat-total" class="text-2xl font-black text-gray-900">—</p>
+            </div>
+          </div>
+        
+          <!-- Filtres -->
+          <div class="flex gap-2 mb-4 flex-wrap">
+            <button onclick="filterFbPacks('paye_attente_cm')" id="fbpf-pending" class="action-btn btn-primary text-xs">À traiter</button>
+            <button onclick="filterFbPacks('actif')" id="fbpf-active" class="action-btn text-xs" style="background:#d1fae5;color:#065f46">Actives</button>
+            <button onclick="filterFbPacks('termine')" id="fbpf-done" class="action-btn text-xs" style="background:#f3f4f6;color:#374151">Terminées</button>
+            <button onclick="filterFbPacks('all')" id="fbpf-all" class="action-btn text-xs" style="background:#f3f4f6;color:#374151">Toutes</button>
+          </div>
+        
+          <div id="fbpacks-list" class="space-y-3">
+            <div class="card p-6 empty-state"><span class="material-symbols-outlined">hourglass_empty</span>Chargement...</div>
+          </div>
+        </section>
+        
+        <!-- Modal : Lancer / Mettre à jour un Pack FB -->
+        <div id="fbpack-modal" class="modal-overlay hidden">
+          <div class="modal-box">
+            <div class="flex justify-between items-center mb-6">
+              <h3 id="fbpack-modal-title" class="text-lg font-black text-gray-900">Lancer la campagne FB</h3>
+              <button onclick="closeFbPackModal()" class="text-gray-400 hover:text-red-500 transition-colors">
+                <span class="material-symbols-outlined">close</span>
+              </button>
+            </div>
+        
+            <div id="fbpack-modal-summary" class="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-5"></div>
+        
+            <div class="space-y-4">
+              <div id="fbpack-cmpid-wrapper">
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                  ID Campagne Facebook *
+                </label>
+                <input id="fbpack-cmpid" type="text" class="input-field" placeholder="Ex: 23859876541230789" />
+                <p class="text-[10px] text-gray-400 mt-1">
+                  Récupérez l'ID depuis Facebook Ads Manager (URL ou colonne "ID de la campagne").
+                </p>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                  Note CM (optionnel)
+                </label>
+                <textarea id="fbpack-note" rows="3" class="input-field" placeholder="Notes internes (ciblage choisi, ajustements, etc.)"></textarea>
+              </div>
+            </div>
+        
+            <p id="fbpack-error" class="text-red-500 text-xs mt-3 min-h-4"></p>
+        
+            <div class="flex gap-2 mt-5">
+              <button onclick="closeFbPackModal()" class="action-btn flex-1 py-3" style="background:#f3f4f6;color:#374151">Annuler</button>
+              <button id="btn-fbpack-submit" onclick="submitFbPackAction()" class="action-btn btn-primary flex-1 py-3">Confirmer</button>
+            </div>
+          </div>
+        </div>
+        
         <!-- ── SECTION REMBOURSEMENTS ── -->
         <section id="section-refunds" class="section-hidden">
           <div class="flex flex-wrap justify-between items-center gap-3 mb-5">
@@ -1374,6 +1477,7 @@
               { tab: "feedbacks",     cap: "moderate_feedbacks" },
               { tab: "contracts",     cap: "ads_contracts_read" },
               { tab: "slides",        cap: "ads_slides_read" },
+              { tab: "fbpacks",       cap: "fb_packages_manage" },
           ];
       
           for (const { tab, cap } of priorityOrder) {
@@ -1402,6 +1506,8 @@
           feedbacks:     "moderate_feedbacks",
           contracts:     "ads_contracts_read",
           slides:        "ads_slides_read",
+          fbpacks:       "fb_packages_manage",
+          refunds:       "view_finance",
       };
       
       function showTab(tab) {
@@ -1429,9 +1535,7 @@
           if (tab === "team") loadStaff();
           if (tab === "contracts") loadContracts();
           if (tab === "slides") loadSlides();
-          // 'team' n'est pas dans la liste de chargement actuelle —
-          //  la section Équipe est statique (juste un bouton "Créer le premier employé").
-          //  Sera branché en 8.6.b avec un appel à loadStaff().
+          if (tab === "fbpacks") loadFbPacks();
       }
 
      // ── DASHBOARD ───────────────────────────────────────────────
@@ -2932,6 +3036,308 @@
           setTimeout(() => {
               if (typeof hasCapability === "function" && hasCapability("view_finance")) {
                   loadRefunds();
+              }
+          }, 1500);
+      });
+      // ═══════════════════════════════════════════════════════════════
+      // PACK FACEBOOK ADS (Chantier 17 — CM workflow)
+      // ═══════════════════════════════════════════════════════════════
+      
+      let allFbPacks = [];
+      let fbpackFilter = "paye_attente_cm";
+      let currentFbPackId = null;
+      let currentFbPackAction = "launch";  // launch | complete | cancel
+      
+      async function loadFbPacks() {
+          const listEl = document.getElementById("fbpacks-list");
+          try {
+              // Le backend filtre par statut via query param ; on charge tout côté admin/cm
+              allFbPacks = await btApi.get("/admin/fb-packages");
+              renderFbPackStats(allFbPacks);
+              renderFbPacks();
+              updateFbPackBadge(allFbPacks);
+          } catch (e) {
+              listEl.innerHTML = `<div class="card p-6 text-center text-red-500 text-sm">${e.message || 'Erreur de chargement'}</div>`;
+          }
+      }
+      
+      function renderFbPackStats(list) {
+          const pending = list.filter(p => p.status === "paye_attente_cm").length;
+          const active = list.filter(p => p.status === "actif").length;
+          const totalBudget = list
+              .filter(p => p.status === "actif" || p.status === "paye_attente_cm" || p.status === "termine")
+              .reduce((sum, p) => sum + (p.budget_fb_fcfa || 0), 0);
+      
+          document.getElementById("fbp-stat-pending").textContent = pending;
+          document.getElementById("fbp-stat-active").textContent = active;
+          document.getElementById("fbp-stat-budget").textContent = totalBudget.toLocaleString("fr-FR") + " F";
+          document.getElementById("fbp-stat-total").textContent = list.length;
+      }
+      
+      function updateFbPackBadge(list) {
+          const pending = list.filter(p => p.status === "paye_attente_cm").length;
+          const badge = document.getElementById("badge-fbpacks-pending");
+          if (!badge) return;
+          if (pending > 0) {
+              badge.textContent = pending;
+              badge.classList.remove("hidden");
+          } else {
+              badge.classList.add("hidden");
+          }
+      }
+      
+      function filterFbPacks(status) {
+          fbpackFilter = status;
+          ["paye_attente_cm", "actif", "termine", "all"].forEach(s => {
+              const map = { "paye_attente_cm": "pending", "actif": "active", "termine": "done", "all": "all" };
+              const btn = document.getElementById("fbpf-" + map[s]);
+              if (!btn) return;
+              if (s === status) {
+                  btn.className = "action-btn btn-primary text-xs";
+              } else {
+                  const colors = {
+                      "paye_attente_cm": "background:#fee2e2;color:#991b1b",
+                      "actif": "background:#d1fae5;color:#065f46",
+                      "termine": "background:#f3f4f6;color:#374151",
+                      "all": "background:#f3f4f6;color:#374151",
+                  };
+                  btn.className = "action-btn text-xs";
+                  btn.setAttribute("style", colors[s]);
+              }
+          });
+          renderFbPacks();
+      }
+      
+      function renderFbPacks() {
+          const listEl = document.getElementById("fbpacks-list");
+          const list = fbpackFilter === "all" ? allFbPacks : allFbPacks.filter(p => p.status === fbpackFilter);
+      
+          if (!list.length) {
+              const msg = fbpackFilter === "paye_attente_cm"
+                  ? "Aucune demande à traiter pour l'instant. Bonne journée !"
+                  : "Aucun Pack FB dans cette catégorie.";
+              listEl.innerHTML = `<div class="card p-6 empty-state"><span class="material-symbols-outlined">campaign</span><p class="font-bold text-gray-400 mt-2">${msg}</p></div>`;
+              return;
+          }
+      
+          listEl.innerHTML = list.map(p => renderFbPackCard(p)).join("");
+      }
+      
+      function renderFbPackCard(p) {
+          const statusBadge = fbpackStatusBadge(p.status);
+          const dateCreated = new Date(p.created_at).toLocaleDateString("fr-FR", {
+              day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit"
+          });
+          const dateLaunched = p.launched_at
+              ? new Date(p.launched_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })
+              : null;
+      
+          // Actions disponibles selon statut
+          let actions = "";
+          if (p.status === "paye_attente_cm") {
+              actions = `
+                  <button onclick="openFbPackModal(${p.id}, 'launch')" class="action-btn btn-primary text-xs">
+                      <span class="material-symbols-outlined text-sm">play_arrow</span> Lancer la campagne
+                  </button>
+                  <button onclick="openFbPackModal(${p.id}, 'cancel')" class="action-btn btn-danger text-xs">
+                      <span class="material-symbols-outlined text-sm">cancel</span> Annuler
+                  </button>
+              `;
+          } else if (p.status === "actif") {
+              actions = `
+                  <button onclick="openFbPackModal(${p.id}, 'complete')" class="action-btn btn-success text-xs">
+                      <span class="material-symbols-outlined text-sm">check_circle</span> Marquer terminée
+                  </button>
+              `;
+          }
+      
+          // Ciblage
+          const targetingParts = [];
+          if (p.age_range) targetingParts.push(`Âge : ${_escapeHtml(p.age_range)}`);
+          if (p.zone) targetingParts.push(`Zone : ${_escapeHtml(p.zone)}`);
+          const targeting = targetingParts.length
+              ? `<div class="text-xs text-gray-500 mt-1">${targetingParts.join(" · ")}</div>`
+              : "";
+      
+          // Notes orga
+          const orgaNotes = p.notes
+              ? `<div class="mt-3 p-3 bg-gray-50 rounded-lg border-l-2 border-blue-300">
+                     <p class="text-[10px] font-bold text-blue-700 uppercase tracking-widest mb-1">Notes de l'organisateur</p>
+                     <p class="text-xs text-gray-700 whitespace-pre-wrap">${_escapeHtml(p.notes)}</p>
+                 </div>`
+              : "";
+      
+          // Notes CM
+          const cmNotes = p.cm_notes
+              ? `<div class="mt-2 p-3 bg-yellow-50 rounded-lg border-l-2 border-yellow-400">
+                     <p class="text-[10px] font-bold text-yellow-700 uppercase tracking-widest mb-1">Notes CM</p>
+                     <p class="text-xs text-yellow-900 whitespace-pre-wrap">${_escapeHtml(p.cm_notes)}</p>
+                 </div>`
+              : "";
+      
+          // ID campagne FB si lancée
+          const fbCmpId = p.fb_campaign_id
+              ? `<div class="text-[10px] text-gray-500 mt-1 font-mono">FB Campaign ID : ${_escapeHtml(p.fb_campaign_id)}</div>`
+              : "";
+      
+          return `
+              <div class="card p-5 ${p.status === 'paye_attente_cm' ? 'border-l-4 border-red-500' : ''}">
+                  <div class="flex justify-between items-start gap-4 flex-wrap mb-3">
+                      <div class="flex-1 min-w-0">
+                          <div class="flex items-center gap-2 mb-1 flex-wrap">
+                              <span class="material-symbols-outlined text-blue-600">campaign</span>
+                              <p class="font-black text-gray-900 truncate">${_escapeHtml(p.event_title)}</p>
+                              ${statusBadge}
+                          </div>
+                          ${targeting}
+                          <div class="text-[11px] text-gray-400 mt-2">
+                              Demandé le ${dateCreated}
+                              ${dateLaunched ? ` · Lancé le ${dateLaunched}` : ""}
+                          </div>
+                          <div class="text-[10px] text-gray-400 mt-1 font-mono">UTM : ${_escapeHtml(p.utm_campaign)}</div>
+                          ${fbCmpId}
+                      </div>
+                      <div class="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 text-right shrink-0">
+                          <p class="text-[10px] font-bold text-blue-700 uppercase tracking-widest">Budget FB</p>
+                          <p class="text-xl font-black text-blue-900">${(p.budget_fb_fcfa || 0).toLocaleString("fr-FR")} F</p>
+                          <p class="text-[10px] text-gray-500 mt-1">Marge GoEvent : ${(p.margin_fcfa || 0).toLocaleString("fr-FR")} F</p>
+                      </div>
+                  </div>
+      
+                  ${orgaNotes}
+                  ${cmNotes}
+      
+                  ${actions ? `<div class="flex flex-wrap gap-2 mt-4 pt-3 border-t border-gray-100">${actions}</div>` : ""}
+              </div>
+          `;
+      }
+      
+      function fbpackStatusBadge(status) {
+          const map = {
+              "en_attente_om":      ["badge-yellow",  "En attente paiement"],
+              "paye_attente_cm":    ["badge-red",     "À TRAITER"],
+              "actif":              ["badge-green",   "Campagne active"],
+              "termine":            ["badge-gray",    "Terminée"],
+              "annule":             ["badge-red",     "Annulée"],
+              "echec_paiement":     ["badge-red",     "Paiement échoué"],
+              "expire_abandonne":   ["badge-gray",    "Abandonnée"],
+          };
+          const [cls, label] = map[status] || ["badge-gray", status];
+          return `<span class="badge ${cls}">${label}</span>`;
+      }
+      
+      function openFbPackModal(id, action) {
+          const pack = allFbPacks.find(p => p.id === id);
+          if (!pack) return;
+          currentFbPackId = id;
+          currentFbPackAction = action;
+      
+          // Titre + sommaire selon action
+          const titleEl = document.getElementById("fbpack-modal-title");
+          const summaryEl = document.getElementById("fbpack-modal-summary");
+          const cmpidWrapper = document.getElementById("fbpack-cmpid-wrapper");
+          const submitBtn = document.getElementById("btn-fbpack-submit");
+      
+          if (action === "launch") {
+              titleEl.textContent = "Lancer la campagne FB";
+              cmpidWrapper.style.display = "";
+              submitBtn.textContent = "Lancer";
+              submitBtn.className = "action-btn btn-primary flex-1 py-3";
+          } else if (action === "complete") {
+              titleEl.textContent = "Marquer la campagne terminée";
+              cmpidWrapper.style.display = "none";
+              submitBtn.textContent = "Confirmer terminée";
+              submitBtn.className = "action-btn btn-success flex-1 py-3";
+          } else if (action === "cancel") {
+              titleEl.textContent = "Annuler la demande";
+              cmpidWrapper.style.display = "none";
+              submitBtn.textContent = "Confirmer annulation";
+              submitBtn.className = "action-btn btn-danger flex-1 py-3";
+          }
+      
+          summaryEl.innerHTML = `
+              <p class="text-[10px] font-bold text-blue-700 uppercase tracking-widest mb-2">Récap</p>
+              <p class="text-sm text-gray-900 font-bold">${_escapeHtml(pack.event_title)}</p>
+              <div class="flex justify-between items-center mt-3 pt-3 border-t border-blue-200">
+                  <span class="text-xs text-gray-500">Budget à injecter dans FB</span>
+                  <span class="font-black text-blue-900">${(pack.budget_fb_fcfa || 0).toLocaleString("fr-FR")} FCFA</span>
+              </div>
+              <div class="flex justify-between items-center mt-1">
+                  <span class="text-xs text-gray-500">UTM tracking</span>
+                  <span class="font-mono text-[10px] text-gray-700">${_escapeHtml(pack.utm_campaign)}</span>
+              </div>
+              ${pack.age_range || pack.zone ? `
+                  <div class="mt-3 pt-3 border-t border-blue-200 text-xs text-gray-600">
+                      <strong>Ciblage demandé :</strong>
+                      ${pack.age_range ? ` Âge ${_escapeHtml(pack.age_range)}` : ""}
+                      ${pack.zone ? ` · Zone ${_escapeHtml(pack.zone)}` : ""}
+                  </div>
+              ` : ""}
+          `;
+      
+          // Reset champs
+          document.getElementById("fbpack-cmpid").value = pack.fb_campaign_id || "";
+          document.getElementById("fbpack-note").value = pack.cm_notes || "";
+          document.getElementById("fbpack-error").textContent = "";
+      
+          document.getElementById("fbpack-modal").classList.remove("hidden");
+      }
+      
+      function closeFbPackModal() {
+          document.getElementById("fbpack-modal").classList.add("hidden");
+          currentFbPackId = null;
+          currentFbPackAction = null;
+      }
+      
+      async function submitFbPackAction() {
+          const errEl = document.getElementById("fbpack-error");
+          errEl.textContent = "";
+      
+          const note = document.getElementById("fbpack-note").value.trim();
+          const fbCmpId = document.getElementById("fbpack-cmpid").value.trim();
+      
+          // Validation spécifique à 'launch'
+          if (currentFbPackAction === "launch" && !fbCmpId) {
+              errEl.textContent = "L'ID de la campagne Facebook est obligatoire pour lancer.";
+              return;
+          }
+      
+          // Confirmation pour annulation
+          if (currentFbPackAction === "cancel") {
+              if (!confirm("Confirmer l'annulation de cette demande ?\nL'organisateur devra être remboursé manuellement.")) return;
+          }
+      
+          const btn = document.getElementById("btn-fbpack-submit");
+          const orig = btn.textContent;
+          btn.disabled = true;
+          btn.textContent = "Envoi...";
+      
+          try {
+              const body = { action: currentFbPackAction };
+              if (currentFbPackAction === "launch") {
+                  body.fb_campaign_id = fbCmpId;
+              }
+              if (note) {
+                  body.cm_notes = note;
+              }
+      
+              await btApi.patch(`/admin/fb-packages/${currentFbPackId}`, body);
+              btToast("Action effectuée avec succès", "success");
+              closeFbPackModal();
+              loadFbPacks();
+          } catch (e) {
+              errEl.textContent = e.message || "Erreur";
+          } finally {
+              btn.disabled = false;
+              btn.textContent = orig;
+          }
+      }
+      
+      // Charger le badge au démarrage si on a la capability
+      document.addEventListener("DOMContentLoaded", () => {
+          setTimeout(() => {
+              if (typeof hasCapability === "function" && hasCapability("fb_packages_manage")) {
+                  loadFbPacks();
               }
           }, 1500);
       });

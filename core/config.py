@@ -7,6 +7,16 @@ au lieu de crasher au premier paiement.
 """
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# ─── Chantier 17 : Régie publicitaire forfaitaire ─────────────────────
+
+BOOST_PACKAGES = {
+    "7d":  {"duration_days": 7,  "amount_fcfa": 10_000,  "label": "7 jours"},
+    "30d": {"duration_days": 30, "amount_fcfa": 35_000,  "label": "30 jours"},
+    "90d": {"duration_days": 90, "amount_fcfa": 130_000, "label": "90 jours"},
+}
+
+FB_PACK_MIN_BUDGET = 35_000   # Budget Facebook minimum (FCFA)
+FB_PACK_MARGIN_RATE = 0.30    # 30% de marge GoEvent fixe
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -60,7 +70,7 @@ class Settings(BaseSettings):
                 "http://127.0.0.1:5500",
             ]
         return origins
-    
+        
     @property    
     def NGSER_VERIFY_SSL(self) -> bool:
         # En prod : vérification SSL obligatoire (sécurité des flux d'argent).

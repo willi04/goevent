@@ -1,238 +1,448 @@
 """
-core/payment_processing.py
-Traitement unifié des réponses NGSER.
-Source unique de vérité pour : webhook (validation directe) et cron (rattrapage).
-
-Dispatch par préfixe order_id :
-  EVT-... ou legacy → ticket (achat billet)
-  BST-...           → boost organisateur (Chantier 17)
-  FBP-...           → pack Facebook Ads (Chantier 17)
+Chantier 17 : Routes Régie publicitaire forfaitaire.
+- Boost organisateur (forfait 10k/35k/130k)
+- Pack Facebook Ads (min 35k + 30% marge)
 """
-from datetime import datetime, timedelta
-from typing import Optional
 
+import uuid
+import re
+from datetime import datetime
+from typing import List
+
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from utils.locks import lock_event_for_release
-from models.ticket import Ticket
-from models.payment import Payment
+from core.database import get_db
+from core.security import get_current_user, log_security_event
+from core.permissions import require_staff_function, get_current_admin_or_staff
+from core.ngser import create_payment_session
+from core.config import BOOST_PACKAGES, FB_PACK_MIN_BUDGET, FB_PACK_MARGIN_RATE
+
+from models.user import User
+from models.event import Event
 from models.promotion import BoostOrder, FbAdPackage
 
+from schemas.promotion import (
+    BoostInitiateIn, BoostInitiateOut, BoostOrderOut,
+    FbPackRequestIn, FbPackRequestOut, FbPackOut,
+    FbPackAdminUpdateIn,
+)
 
-def process_ngser_response(
-    db: Session,
-    order_id: str,
-    code: str,
-    transaction_amount: Optional[int] = None,
-) -> dict:
-    """
-    Logique unifiée de traitement d'une réponse NGSER (webhook ou cron).
-    Idempotent. Dispatch par préfixe order_id.
-    
-    Codes NGSER (doc p.16) :
-      "1" = SUCCESS, "0"/"2"/"4"/"5"/"6" = FAIL, "3" = PENDING
-    """
-    if not order_id:
-        return {"action": "no_order_id"}
-
-    if order_id.startswith("BST-"):
-        return _process_boost(db, order_id, code, transaction_amount)
-    if order_id.startswith("FBP-"):
-        return _process_fbpack(db, order_id, code, transaction_amount)
-
-    # Par défaut : achat ticket (préfixe EVT- ou sans préfixe pour legacy)
-    return _process_ticket(db, order_id, code, transaction_amount)
+router = APIRouter(tags=["promotion"])
 
 
-# ─── Branche TICKET (achat billet) ────────────────────────────────────
+# ─── Helpers internes ────────────────────────────────────────────────
 
-def _process_ticket(
-    db: Session,
-    order_id: str,
-    code: str,
-    transaction_amount: Optional[int] = None,
-) -> dict:
-    ticket = (
-        db.query(Ticket)
-        .filter(Ticket.payment_ref == order_id)
-        .with_for_update()
-        .first()
-    )
-    if not ticket:
-        return {"action": "no_ticket"}
-
-    # Idempotence
-    if ticket.payment_status != "en_attente_om":
-        return {"action": "skipped", "current_status": ticket.payment_status}
-
-    payment_record = db.query(Payment).filter(Payment.transaction_id == order_id).first()
-
-    # SUCCESS
-    if code == "1":
-        if transaction_amount is not None and payment_record is not None:
-            try:
-                recu = float(transaction_amount)
-                attendu = float(payment_record.amount)
-                if abs(recu - attendu) > 1:
-                    ticket.payment_status = "echec_paiement"
-                    payment_record.status = "failed"
-                    ev = lock_event_for_release(db, ticket.event_id)
-                    if ev:
-                        ev.seats_sold = max(0, ev.seats_sold - 1)
-                    db.commit()
-                    print(f"🚨 process_ngser : montant incohérent {order_id} reçu={recu} attendu={attendu} → rejeté + place libérée.")
-                    return {"action": "rejected_amount", "received": recu, "expected": attendu}
-            except (TypeError, ValueError):
-                ticket.payment_status = "echec_paiement"
-                if payment_record:
-                    payment_record.status = "failed"
-                ev = lock_event_for_release(db, ticket.event_id)
-                if ev:
-                    ev.seats_sold = max(0, ev.seats_sold - 1)
-                db.commit()
-                print(f"⚠️ process_ngser : montant illisible ({transaction_amount}) → place libérée.")
-                return {"action": "rejected_amount", "reason": "unreadable"}
-
-        # Validation
-        ticket.payment_status = "paye"
-        if payment_record:
-            payment_record.status = "completed"
-        db.commit()
-        print(f"✅ process_ngser : billet {ticket.id} validé ({order_id}).")
-        return {"action": "validated", "ticket_id": ticket.id}
-
-    # FAIL
-    if code in ("0", "2", "4", "5", "6"):
-        ticket.payment_status = "echec_paiement"
-        if payment_record:
-            payment_record.status = "failed"
-        ev = lock_event_for_release(db, ticket.event_id)
-        if ev:
-            ev.seats_sold = max(0, ev.seats_sold - 1)
-        db.commit()
-        print(f"❌ process_ngser : paiement échoué {order_id} (code={code}) → place libérée.")
-        return {"action": "failed", "code": code}
-
-    # PENDING ("3") ou inconnu
-    return {"action": "pending", "code": code}
+def _slugify_event_for_utm(title: str) -> str:
+    """Slug court pour UTM (max 30 chars, ASCII only)."""
+    s = re.sub(r"[^a-zA-Z0-9]+", "-", title.lower()).strip("-")
+    return s[:30] or "event"
 
 
-# ─── Branche BOOST (Chantier 17) ──────────────────────────────────────
-
-def _process_boost(
-    db: Session,
-    order_id: str,
-    code: str,
-    transaction_amount: Optional[int] = None,
-) -> dict:
-    boost = (
+def _event_has_active_boost(db: Session, event_id: int) -> bool:
+    """Q1 actée : 1 seul boost actif max par event."""
+    now = datetime.utcnow()
+    return (
         db.query(BoostOrder)
-        .filter(BoostOrder.payment_ref == order_id)
-        .with_for_update()
+        .filter(
+            BoostOrder.event_id == event_id,
+            BoostOrder.status == "actif",
+            BoostOrder.ends_at > now,
+        )
         .first()
+        is not None
     )
-    if not boost:
-        return {"action": "no_boost", "order_id": order_id}
 
-    # Idempotence
-    if boost.status != "en_attente_om":
-        return {"action": "skipped", "boost_id": boost.id, "current_status": boost.status}
 
-    # PENDING
-    if code == "3":
-        return {"action": "pending", "boost_id": boost.id}
+def _check_event_ownership(db: Session, event_id: int, user: User) -> Event:
+    """Garde : l'event existe et appartient bien à l'orga."""
+    event = db.query(Event).filter(Event.id == event_id).first()
+    if not event:
+        raise HTTPException(404, "Événement introuvable")
+    if event.organizer_id != user.id:
+        raise HTTPException(403, "Cet événement ne vous appartient pas")
+    if not event.is_active:
+        raise HTTPException(400, "Événement inactif ou annulé")
+    # Event doit être à venir (pas de promo sur du passé)
+    if event.event_date and event.event_date < datetime.utcnow():
+        raise HTTPException(400, "L'événement est déjà passé")
+    return event
 
-    # FAIL
-    if code in ("0", "2", "4", "5", "6"):
-        boost.status = "echec_paiement"
+
+# ═════════════════════════════════════════════════════════════════════
+# ROUTES ORGANISATEUR
+# ═════════════════════════════════════════════════════════════════════
+
+@router.post("/organizer/boost/initiate", response_model=BoostInitiateOut)
+async def initiate_boost(
+    data: BoostInitiateIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    L'organisateur lance un boost forfaitaire.
+    Crée un BoostOrder en 'en_attente_om' + init paiement NGSER.
+    Activation via webhook (process_ngser_response → branche BST).
+    """
+    if current_user.role not in ("organizer", "organisation"):
+        raise HTTPException(403, "Accès réservé aux organisateurs")
+
+    # Vérifications event
+    event = _check_event_ownership(db, data.event_id, current_user)
+
+    # Q1 : 1 boost actif max
+    if _event_has_active_boost(db, data.event_id):
+        raise HTTPException(409, "Cet événement a déjà un boost actif. Attendez son expiration.")
+
+    # Package
+    pkg = BOOST_PACKAGES.get(data.package_code)
+    if not pkg:
+        raise HTTPException(400, "Package invalide")
+
+    # Génération order_id avec préfixe BST-
+    order_id = f"BST-{uuid.uuid4().hex[:16].upper()}"
+
+    # Création BoostOrder
+    boost = BoostOrder(
+        organizer_id=current_user.id,
+        event_id=event.id,
+        boost_type="forfait",
+        package_code=data.package_code,
+        duration_days=pkg["duration_days"],
+        amount_fcfa=pkg["amount_fcfa"],
+        status="en_attente_om",
+        payment_ref=order_id,
+    )
+    db.add(boost)
+    db.flush()  # pour avoir boost.id
+
+    # Init paiement NGSER
+    try:
+        status_code, response_data = await create_payment_session(
+            order_id=order_id,
+            amount=pkg["amount_fcfa"],
+        )
+    except Exception as e:
+        db.delete(boost)
         db.commit()
-        print(f"❌ process_ngser BOOST : paiement échoué {order_id} (code={code}).")
-        return {"action": "failed", "boost_id": boost.id, "code": code}
+        print(f"❌ Erreur réseau NGSER (Boost) : {str(e)}")
+        raise HTTPException(503, "Le service de paiement est temporairement indisponible.")
 
-    # SUCCESS
-    if code == "1":
-        # Vérif montant
-        if transaction_amount is not None:
-            try:
-                recu = float(transaction_amount)
-                attendu = float(boost.amount_fcfa)
-                if abs(recu - attendu) > 1:
-                    boost.status = "echec_paiement"
-                    db.commit()
-                    print(f"🚨 process_ngser BOOST : montant incohérent {order_id} reçu={recu} attendu={attendu}.")
-                    return {"action": "rejected_amount", "boost_id": boost.id,
-                            "received": recu, "expected": attendu}
-            except (TypeError, ValueError):
-                boost.status = "echec_paiement"
-                db.commit()
-                print(f"⚠️ process_ngser BOOST : montant illisible ({transaction_amount}).")
-                return {"action": "rejected_amount", "boost_id": boost.id, "reason": "unreadable"}
-
-        # Activation du boost
-        now = datetime.utcnow()
-        boost.status = "actif"
-        boost.starts_at = now
-        boost.ends_at = now + timedelta(days=boost.duration_days)
+    if status_code != 200 or "payment_url" not in response_data:
+        db.delete(boost)
         db.commit()
-        print(f"✅ process_ngser BOOST : boost {boost.id} activé jusqu'au {boost.ends_at}.")
-        return {"action": "validated", "boost_id": boost.id,
-                "starts_at": boost.starts_at.isoformat(),
-                "ends_at": boost.ends_at.isoformat()}
+        print(f"❌ NGSER init Boost : HTTP {status_code} | {response_data}")
+        raise HTTPException(400, "Impossible d'initialiser le paiement Orange Money.")
 
-    # Code inconnu
-    return {"action": "pending", "boost_id": boost.id, "code": code}
+    payment_url = response_data["payment_url"]
+
+    db.commit()
+
+    log_security_event(
+        db, "boost_initiated", None, current_user.id,
+        f"Boost {data.package_code} event {event.id} - {pkg['amount_fcfa']} FCFA",
+    )
+
+    return BoostInitiateOut(
+        payment_url=payment_url,
+        payment_ref=order_id,
+        amount_fcfa=pkg["amount_fcfa"],
+        boost_order_id=boost.id,
+    )
 
 
-# ─── Branche FBPACK (Chantier 17) ─────────────────────────────────────
+@router.get("/organizer/boost/my", response_model=List[BoostOrderOut])
+def list_my_boosts(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Liste des boosts de l'organisateur (tous statuts, plus récents d'abord)."""
+    if current_user.role not in ("organizer", "organisation"):
+        raise HTTPException(403, "Accès réservé aux organisateurs")
 
-def _process_fbpack(
-    db: Session,
-    order_id: str,
-    code: str,
-    transaction_amount: Optional[int] = None,
-) -> dict:
-    pack = (
+    boosts = (
+        db.query(BoostOrder)
+        .filter(BoostOrder.organizer_id == current_user.id)
+        .order_by(BoostOrder.created_at.desc())
+        .limit(50)
+        .all()
+    )
+
+    # Résolution event_title sans N+1
+    event_ids = list({b.event_id for b in boosts})
+    events_map = {
+        e.id: e.title
+        for e in db.query(Event.id, Event.title).filter(Event.id.in_(event_ids)).all()
+    } if event_ids else {}
+
+    return [
+        BoostOrderOut(
+            id=b.id,
+            event_id=b.event_id,
+            event_title=events_map.get(b.event_id, "Événement supprimé"),
+            package_code=b.package_code,
+            duration_days=b.duration_days,
+            amount_fcfa=b.amount_fcfa,
+            status=b.status,
+            starts_at=b.starts_at,
+            ends_at=b.ends_at,
+            created_at=b.created_at,
+        )
+        for b in boosts
+    ]
+
+
+@router.post("/organizer/fb-package/request", response_model=FbPackRequestOut)
+async def request_fb_package(
+    data: FbPackRequestIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    L'organisateur demande un Pack Facebook Ads.
+    total_paid = budget_fb × (1 + 30%). Le CM traitera après paiement.
+    """
+    if current_user.role not in ("organizer", "organisation"):
+        raise HTTPException(403, "Accès réservé aux organisateurs")
+
+    event = _check_event_ownership(db, data.event_id, current_user)
+
+    # Garde minimum (déjà validé Pydantic mais double-sécurité)
+    if data.budget_fb_fcfa < FB_PACK_MIN_BUDGET:
+        raise HTTPException(400, f"Budget Facebook minimum : {FB_PACK_MIN_BUDGET} FCFA")
+
+    # Calcul marge + total
+    margin = int(round(data.budget_fb_fcfa * FB_PACK_MARGIN_RATE))
+    total = data.budget_fb_fcfa + margin
+
+    # Order ID + UTM unique
+    order_id = f"FBP-{uuid.uuid4().hex[:16].upper()}"
+    utm = f"fb-{_slugify_event_for_utm(event.title)}-{event.id}-{uuid.uuid4().hex[:6]}"
+
+    pack = FbAdPackage(
+        organizer_id=current_user.id,
+        event_id=event.id,
+        budget_fb_fcfa=data.budget_fb_fcfa,
+        margin_fcfa=margin,
+        total_paid_fcfa=total,
+        age_range=data.age_range,
+        zone=data.zone,
+        notes=data.notes,
+        utm_campaign=utm,
+        status="en_attente_om",
+        payment_ref=order_id,
+    )
+    db.add(pack)
+    db.flush()
+
+    # Init paiement NGSER
+    try:
+        status_code, response_data = await create_payment_session(
+            order_id=order_id,
+            amount=total,
+        )
+    except Exception as e:
+        db.delete(pack)
+        db.commit()
+        print(f"❌ Erreur réseau NGSER (Pack FB) : {str(e)}")
+        raise HTTPException(503, "Le service de paiement est temporairement indisponible.")
+
+    if status_code != 200 or "payment_url" not in response_data:
+        db.delete(pack)
+        db.commit()
+        print(f"❌ NGSER init Pack FB : HTTP {status_code} | {response_data}")
+        raise HTTPException(400, "Impossible d'initialiser le paiement Orange Money.")
+
+    payment_url = response_data["payment_url"]
+
+    db.commit()
+
+    log_security_event(
+        db, "fbpack_requested", None, current_user.id,
+        f"FB Pack event {event.id} - budget {data.budget_fb_fcfa} - total {total} FCFA",
+    )
+
+    return FbPackRequestOut(
+        payment_url=payment_url,
+        payment_ref=order_id,
+        budget_fb_fcfa=data.budget_fb_fcfa,
+        margin_fcfa=margin,
+        total_paid_fcfa=total,
+        fb_package_id=pack.id,
+    )
+
+
+@router.get("/organizer/fb-package/my", response_model=List[FbPackOut])
+def list_my_fb_packages(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Liste des Pack FB de l'organisateur."""
+    if current_user.role not in ("organizer", "organisation"):
+        raise HTTPException(403, "Accès réservé aux organisateurs")
+
+    packs = (
         db.query(FbAdPackage)
-        .filter(FbAdPackage.payment_ref == order_id)
-        .with_for_update()
-        .first()
+        .filter(FbAdPackage.organizer_id == current_user.id)
+        .order_by(FbAdPackage.created_at.desc())
+        .limit(50)
+        .all()
     )
+
+    event_ids = list({p.event_id for p in packs})
+    events_map = {
+        e.id: e.title
+        for e in db.query(Event.id, Event.title).filter(Event.id.in_(event_ids)).all()
+    } if event_ids else {}
+
+    return [
+        FbPackOut(
+            id=p.id,
+            event_id=p.event_id,
+            event_title=events_map.get(p.event_id, "Événement supprimé"),
+            budget_fb_fcfa=p.budget_fb_fcfa,
+            margin_fcfa=p.margin_fcfa,
+            total_paid_fcfa=p.total_paid_fcfa,
+            age_range=p.age_range,
+            zone=p.zone,
+            notes=p.notes,
+            utm_campaign=p.utm_campaign,
+            status=p.status,
+            fb_campaign_id=p.fb_campaign_id,
+            cm_notes=p.cm_notes,
+            created_at=p.created_at,
+            launched_at=p.launched_at,
+        )
+        for p in packs
+    ]
+
+
+# ═════════════════════════════════════════════════════════════════════
+# ROUTES ADMIN / CM
+# ═════════════════════════════════════════════════════════════════════
+
+@router.get(
+    "/admin/fb-packages",
+    response_model=List[FbPackOut],
+    dependencies=[Depends(require_staff_function("cm"))],
+)
+def admin_list_fb_packages(
+    status: str = None,
+    db: Session = Depends(get_db),
+):
+    """
+    Le CM voit toutes les demandes Pack FB.
+    Filtrable par statut (typiquement 'paye_attente_cm' pour sa queue de travail).
+    """
+    q = db.query(FbAdPackage)
+    if status:
+        q = q.filter(FbAdPackage.status == status)
+    packs = q.order_by(FbAdPackage.created_at.desc()).limit(100).all()
+
+    event_ids = list({p.event_id for p in packs})
+    events_map = {
+        e.id: e.title
+        for e in db.query(Event.id, Event.title).filter(Event.id.in_(event_ids)).all()
+    } if event_ids else {}
+
+    return [
+        FbPackOut(
+            id=p.id,
+            event_id=p.event_id,
+            event_title=events_map.get(p.event_id, "Événement supprimé"),
+            budget_fb_fcfa=p.budget_fb_fcfa,
+            margin_fcfa=p.margin_fcfa,
+            total_paid_fcfa=p.total_paid_fcfa,
+            age_range=p.age_range,
+            zone=p.zone,
+            notes=p.notes,
+            utm_campaign=p.utm_campaign,
+            status=p.status,
+            fb_campaign_id=p.fb_campaign_id,
+            cm_notes=p.cm_notes,
+            created_at=p.created_at,
+            launched_at=p.launched_at,
+        )
+        for p in packs
+    ]
+
+
+@router.patch(
+    "/admin/fb-packages/{pack_id}",
+    response_model=FbPackOut,
+    dependencies=[Depends(require_staff_function("cm"))],
+)
+def admin_update_fb_package(
+    pack_id: int,
+    data: FbPackAdminUpdateIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    CM met à jour un Pack FB :
+      - action='launch'   : statut paye_attente_cm → actif, fb_campaign_id requis
+      - action='complete' : statut actif → termine
+      - action='cancel'   : annulation (statut → annule)
+    """
+    pack = db.query(FbAdPackage).filter(FbAdPackage.id == pack_id).with_for_update().first()
     if not pack:
-        return {"action": "no_fbpack", "order_id": order_id}
+        raise HTTPException(404, "Pack FB introuvable")
 
-    if pack.status != "en_attente_om":
-        return {"action": "skipped", "fbpack_id": pack.id, "current_status": pack.status}
+    now = datetime.utcnow()
 
-    if code == "3":
-        return {"action": "pending", "fbpack_id": pack.id}
+    if data.action == "launch":
+        if pack.status != "paye_attente_cm":
+            raise HTTPException(409, f"Statut actuel '{pack.status}' incompatible avec 'launch'")
+        if not data.fb_campaign_id:
+            raise HTTPException(400, "fb_campaign_id requis pour lancer")
+        pack.status = "actif"
+        pack.fb_campaign_id = data.fb_campaign_id
+        pack.launched_at = now
+        if data.cm_notes:
+            pack.cm_notes = data.cm_notes
 
-    if code in ("0", "2", "4", "5", "6"):
-        pack.status = "echec_paiement"
-        db.commit()
-        print(f"❌ process_ngser FBPACK : paiement échoué {order_id} (code={code}).")
-        return {"action": "failed", "fbpack_id": pack.id, "code": code}
+    elif data.action == "complete":
+        if pack.status != "actif":
+            raise HTTPException(409, f"Statut actuel '{pack.status}' incompatible avec 'complete'")
+        pack.status = "termine"
+        pack.ended_at = now
+        if data.cm_notes:
+            pack.cm_notes = data.cm_notes
 
-    if code == "1":
-        if transaction_amount is not None:
-            try:
-                recu = float(transaction_amount)
-                attendu = float(pack.total_paid_fcfa)
-                if abs(recu - attendu) > 1:
-                    pack.status = "echec_paiement"
-                    db.commit()
-                    print(f"🚨 process_ngser FBPACK : montant incohérent {order_id} reçu={recu} attendu={attendu}.")
-                    return {"action": "rejected_amount", "fbpack_id": pack.id,
-                            "received": recu, "expected": attendu}
-            except (TypeError, ValueError):
-                pack.status = "echec_paiement"
-                db.commit()
-                print(f"⚠️ process_ngser FBPACK : montant illisible ({transaction_amount}).")
-                return {"action": "rejected_amount", "fbpack_id": pack.id, "reason": "unreadable"}
+    elif data.action == "cancel":
+        if pack.status in ("termine", "annule"):
+            raise HTTPException(409, f"Pack déjà en statut '{pack.status}'")
+        pack.status = "annule"
+        pack.ended_at = now
+        if data.cm_notes:
+            pack.cm_notes = data.cm_notes
 
-        # Paiement validé → en attente que le CM traite
-        pack.status = "paye_attente_cm"
-        db.commit()
-        print(f"✅ process_ngser FBPACK : pack {pack.id} payé, en attente du CM.")
-        return {"action": "validated", "fbpack_id": pack.id, "status": "paye_attente_cm"}
+    db.commit()
+    db.refresh(pack)
 
-    return {"action": "pending", "fbpack_id": pack.id, "code": code}
+    log_security_event(
+        db, f"fbpack_{data.action}", None, current_user.id,
+        f"Pack FB #{pack.id} action {data.action}",
+    )
+
+    # Event title pour la réponse
+    event = db.query(Event.title).filter(Event.id == pack.event_id).first()
+    event_title = event.title if event else "Événement supprimé"
+
+    return FbPackOut(
+        id=pack.id,
+        event_id=pack.event_id,
+        event_title=event_title,
+        budget_fb_fcfa=pack.budget_fb_fcfa,
+        margin_fcfa=pack.margin_fcfa,
+        total_paid_fcfa=pack.total_paid_fcfa,
+        age_range=pack.age_range,
+        zone=pack.zone,
+        notes=pack.notes,
+        utm_campaign=pack.utm_campaign,
+        status=pack.status,
+        fb_campaign_id=pack.fb_campaign_id,
+        cm_notes=pack.cm_notes,
+        created_at=pack.created_at,
+        launched_at=pack.launched_at,
+    )

@@ -96,23 +96,44 @@ class SessionManager:
             return request.headers.get("x-forwarded-for").split(",")[0].strip()
         return request.client.host
 
-    def verify_session(self, user_id: int, request: Request) -> bool:
+  def verify_session(self, user_id: int, request: Request) -> bool:
+        """
+        Détecte changement d'IP suspect (vol de token).
+        Tolérant aux changements wifi↔4G en RCA : on bloque uniquement si
+        2 IPs différentes apparaissent dans la même seconde (signe de session
+        clonée en parallèle), pas si l'utilisateur change simplement de réseau.
+        """
         current_ip = self.get_client_ip(request)
-        last_log = (
+        if not current_ip:
+            return True
+
+        # On regarde les 2 derniers logs (pas seulement le dernier)
+        recent_logs = (
             self.db.query(SecurityLog)
-            .filter(SecurityLog.user_id == user_id)
+            .filter(SecurityLog.user_id == user_id, SecurityLog.ip_address.isnot(None))
             .order_by(SecurityLog.created_at.desc())
-            .first()
+            .limit(2)
+            .all()
         )
 
-        if last_log and last_log.ip_address and last_log.ip_address != current_ip:
-            time_since_last = datetime.utcnow() - last_log.created_at
-            if time_since_last.total_seconds() < 2:
-                return False
-            log_security_event(
-                self.db, "ip_change", request, user_id,
-                f"IP changée: {last_log.ip_address} -> {current_ip}",
-            )
+        if not recent_logs:
+            return True
+
+        last_log = recent_logs[0]
+        if last_log.ip_address == current_ip:
+            return True
+
+        # IP différente : on bloque UNIQUEMENT si on voit 2 IPs distinctes
+        # dans une fenêtre <1 seconde (session clonée)
+        time_since_last = (datetime.utcnow() - last_log.created_at).total_seconds()
+        if time_since_last < 1:
+            return False
+
+        # Sinon : juste un changement de réseau, on log mais on laisse passer
+        log_security_event(
+            self.db, "ip_change", request, user_id,
+            f"IP changée: {last_log.ip_address} -> {current_ip} ({int(time_since_last)}s)",
+        )
         return True
 
 

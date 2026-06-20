@@ -21,7 +21,6 @@ router = APIRouter()
 
 
 @router.get("/events")
-@router.get("/events")
 def list_events(
     page: int = 1,
     limit: int = 6,
@@ -34,6 +33,11 @@ def list_events(
     include_past_days: int = Query(0, ge=0, le=3650),
     db: Session = Depends(get_db),
 ):
+    from models.promotion import BoostOrder
+    from sqlalchemy import case
+    import random
+    import time
+
     query = db.query(Event).filter(Event.is_active == True)
 
     # Filtre temporel
@@ -58,7 +62,7 @@ def list_events(
     if max_price is not None:
         query = query.filter(Event.price <= max_price)
 
-    # Tri standard
+    # Tri secondaire (utilisateur)
     if sort_by == "price_asc":
         order_clauses = [Event.price.asc()]
     elif sort_by == "price_desc":
@@ -68,49 +72,55 @@ def list_events(
     else:
         order_clauses = [Event.event_date.asc()]
 
-    # ─── Chantier 17 : tri boostés en tête ──────────────────────────
-    # Sous-requête : event_ids ayant un boost actif (non expiré).
-    # On utilise une jointure LEFT pour ne pas exclure les events sans boost,
-    # et on tri par "a un boost actif" DESC en premier critère.
-    from models.promotion import BoostOrder
-    from sqlalchemy import case, exists
-    
-    now = datetime.utcnow()
-    is_boosted_expr = exists().where(
-        (BoostOrder.event_id == Event.id) &
-        (BoostOrder.status == "actif") &
-        (BoostOrder.ends_at > now)
-    )
+    # ─── Chantier 17 : sélection des boostés visibles (rotation 5 min) ──
+    # On limite à MAX_BOOSTS_VISIBLE boostés visibles simultanément, peu importe
+    # combien sont actifs en BD. Rotation déterministe : même tirage pendant
+    # une fenêtre de 5 min serveur, pour cohérence cross-pages.
+    MAX_BOOSTS_VISIBLE = 6
+    ROTATION_BUCKET_SECONDS = 300  # 5 minutes
 
-    # Boostés d'abord, puis le tri standard demandé par l'utilisateur
-    query = query.order_by(is_boosted_expr.desc(), *order_clauses)
+    now = datetime.utcnow()
+    active_boost_event_ids = [
+        row[0]
+        for row in db.query(BoostOrder.event_id)
+        .filter(
+            BoostOrder.status == "actif",
+            BoostOrder.ends_at > now,
+        )
+        .all()
+    ]
+
+    # Tirage déterministe basé sur le bucket de 5 min
+    if len(active_boost_event_ids) > MAX_BOOSTS_VISIBLE:
+        bucket = int(time.time()) // ROTATION_BUCKET_SECONDS
+        rng = random.Random(bucket)
+        visible_boost_ids = set(rng.sample(active_boost_event_ids, MAX_BOOSTS_VISIBLE))
+    else:
+        visible_boost_ids = set(active_boost_event_ids)
+
+    # ─── Tri SQL : visibles_boostés d'abord, puis tri standard ──────────
+    if visible_boost_ids:
+        boost_priority = case(
+            (Event.id.in_(visible_boost_ids), 0),
+            else_=1,
+        )
+        query = query.order_by(boost_priority.asc(), *order_clauses)
+    else:
+        query = query.order_by(*order_clauses)
 
     total_items = query.count()
     skip = (page - 1) * limit
     events = query.offset(skip).limit(limit).all()
 
-    # ─── Résolution bulk des boosts actifs (anti N+1) ───────────────
-    event_ids = [e.id for e in events]
-    boosted_ids = set()
-    if event_ids:
-        boosted_rows = (
-            db.query(BoostOrder.event_id)
-            .filter(
-                BoostOrder.event_id.in_(event_ids),
-                BoostOrder.status == "actif",
-                BoostOrder.ends_at > now,
-            )
-            .all()
-        )
-        boosted_ids = {row[0] for row in boosted_rows}
-
+    # Le flag is_boosted est TRUE uniquement pour les IDs visibles dans ce bucket.
+    # Un boost actif mais "en rotation cachée" ce bucket-ci n'apparaît PAS comme boosté.
     return {
         "total": total_items,
         "page": page,
         "limit": limit,
-        "events": [_event_dict(e, is_boosted=(e.id in boosted_ids)) for e in events],
+        "events": [_event_dict(e, is_boosted=(e.id in visible_boost_ids)) for e in events],
     }
-
+    
 
 @router.get("/categories")
 def get_categories(db: Session = Depends(get_db)):

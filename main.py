@@ -20,7 +20,7 @@ import models  # noqa: F401
 from api import ads as ads_router
 from api import (
     auth, events, tickets, agent, social,
-    organizer, dashboard, admin, payments,
+    organizer, dashboard, admin, payments, promotion,
 )
 from api import staff as staff_router
 
@@ -63,6 +63,7 @@ app.include_router(admin.router)
 app.include_router(payments.router)
 app.include_router(ads_router.router)
 app.include_router(staff_router.router)
+app.include_router(promotion.router)
 
 @app.get("/")
 def root():

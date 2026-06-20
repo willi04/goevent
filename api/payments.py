@@ -272,55 +272,6 @@ async def ngser_webhook(request: Request, db: Session = Depends(get_db)):
         return {"status": "error"}
 
 
-# ── ANCIEN FLUX USSD (VESTIGE — à supprimer après vérif front) ──
-@router.post("/payment/init/{event_id}")
-def init_payment(event_id: int, db: Session = Depends(get_db),
-                 user: User = Depends(get_current_user)):
-    """
-    ⚠️ VESTIGE de simulation. Le vrai flux est /payment/initiate-ngser.
-    Conservé à l'identique tant qu'on n'a pas confirmé qu'aucune page ne l'appelle.
-    """
-    event = db.query(Event).get(event_id)
-    if not event:
-        raise HTTPException(status_code=404, detail="Événement introuvable")
-    if event.seats_sold >= event.total_seats:
-        raise HTTPException(status_code=400, detail="Événement complet")
-
-    transaction_id = str(uuid.uuid4())
-
-    prix_base = event.price
-    frais_acheteur = prix_base * 0.04
-    total_a_payer = prix_base + frais_acheteur
-    frais_organisateur = prix_base * 0.07
-    solde_orga = prix_base - frais_organisateur
-    tes_benefices = frais_acheteur + frais_organisateur
-
-    ticket = Ticket(user_id=user.id, event_id=event.id, payment_status="attente")
-    db.add(ticket)
-    db.flush()
-
-    payment = Payment(
-        user_id=user.id,
-        ticket_id=ticket.id,
-        amount=total_a_payer,
-        base_price=prix_base,
-        platform_fee=tes_benefices,
-        organizer_amount=solde_orga,
-        status="pending",
-        transaction_id=transaction_id,
-    )
-    db.add(payment)
-    db.commit()
-
-    return {
-        "status": "pending",
-        "transaction_id": transaction_id,
-        "ticket_id": ticket.id,
-        "amount": int(total_a_payer),
-        "ussd_code": "#150*50#",
-        "instruction": f"Composez #150*50# sur Orange Money pour payer {int(total_a_payer)} FCFA",
-    }
-
 # ── RÉCONCILIATION (cron externe, protégé par secret) ───────────
 @router.post("/admin/reconcile")
 async def trigger_reconcile(

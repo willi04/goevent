@@ -61,6 +61,7 @@ def _capabilities_for(user: User) -> dict:
         # Boost visibilité organisateurs + Pack FB Ads (Chantier 9.x)
         "boost_visibility_manage": False,
         "fb_ads_manage": False,
+        "fb_packages_manage": False,
         
         # Gestion équipe + commissions
         "staff_manage": False,
@@ -95,11 +96,10 @@ def _capabilities_for(user: User) -> dict:
                 "view_events": True,
                 "boost_visibility_manage": True,
                 "fb_ads_manage": True,
+                "fb_packages_manage": True,
                 "moderate_feedbacks": True,
                 "commissions_view": True,
                  # ─── Capabilities ex-designer absorbées temporairement ───
-                # À RETIRER le jour où un Designer dédié est embauché.
-                # Cf. TECH_Core dette P3 — "Capabilities designer chez CM".
                 "ads_slides_read": True,
                 "ads_slides_write": True,
             })

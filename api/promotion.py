@@ -11,6 +11,8 @@ from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import func
+from pydantic import BaseModel, Field
 
 from core.database import get_db
 from core.security import get_current_user, log_security_event
@@ -446,3 +448,47 @@ def admin_update_fb_package(
         created_at=pack.created_at,
         launched_at=pack.launched_at,
     )
+
+# ═════════════════════════════════════════════════════════════════════
+# SERVICES PREMIUM (pré-inscription publique)
+# ═════════════════════════════════════════════════════════════════════
+
+from pydantic import EmailStr
+from models.premium_interest import PremiumInterest
+
+
+class PremiumInterestIn(BaseModel):
+    email: EmailStr
+    services: Optional[str] = Field(None, max_length=500)
+
+
+@router.post("/premium-interest")
+def register_premium_interest(
+    data: PremiumInterestIn,
+    db: Session = Depends(get_db),
+):
+    """
+    Public : capture d'email pour les Services Premium à venir.
+    Pas d'auth requise (formulaire marketing sur partenaire.html).
+    Anti-spam : un email ne peut s'inscrire qu'une fois (idempotent).
+    """
+    email_lower = data.email.lower().strip()
+
+    # Idempotence : si déjà inscrit, on ne crée pas de doublon
+    existing = (
+        db.query(PremiumInterest)
+        .filter(func.lower(PremiumInterest.email) == email_lower)
+        .first()
+    )
+    if existing:
+        return {"status": "already_registered", "message": "Vous êtes déjà sur la liste d'attente"}
+
+    interest = PremiumInterest(
+        email=email_lower,
+        services=data.services or None,
+        source="partenaire_page",
+    )
+    db.add(interest)
+    db.commit()
+
+    return {"status": "success", "message": "Inscription enregistrée. Vous serez notifié au lancement."}

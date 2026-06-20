@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 from core.database import get_db
 from core.security import get_current_user, log_security_event
 from core.permissions import require_staff_function, get_current_admin_or_staff
-from core.ngser import init_ngser_payment
+from core.ngser import _process_ticket
 from core.config import BOOST_PACKAGES, FB_PACK_MIN_BUDGET, FB_PACK_MARGIN_RATE
 
 from models.user import User

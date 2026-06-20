@@ -979,27 +979,6 @@
               btToast(err.message || "Erreur compression image", "error");
           }
         });
-
-          const reader = new FileReader();
-          reader.onload = async () => {
-            const base64String = reader.result;
-            updateAllAvatars(base64String);
-            if (typeof btToast === "function")
-              btToast("Sauvegarde en cours...", "info");
-
-            try {
-              await btApi.put("/auth/me", { profile_picture: base64String });
-              user.profile_picture = base64String;
-              btAuth.save(btAuth.getToken(), user);
-              if (typeof btToast === "function")
-                btToast("Photo de profil mise à jour !", "success");
-            } catch (err) {
-              if (typeof btToast === "function")
-                btToast("Erreur lors de la sauvegarde.", "error");
-            }
-          };
-          reader.readAsDataURL(file);
-        });
       }
 
       async function saveUserSettings() {

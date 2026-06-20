@@ -891,15 +891,18 @@
           if (emptyState) emptyState.classList.add("hidden");
 
           // --- LOGIQUE DE SÉPARATION ---
+          //
+          // Le backend (Chantier 17) renvoie déjà les events triés :
+          //   1. Les boostés "visibles ce bucket 5 min" (max 6) en tête
+          //   2. Puis le reste trié par date d'événement croissante (Option α)
+          //
+          // Donc on consomme tel quel :
+          //   - VEDETTE : les 6 premiers (= les 6 boostés s'ils existent, sinon
+          //     complétés par les events les plus proches dans le temps)
+          //   - À VENIR : les 8 premiers (= boostés en tête + complétés par date)
 
-          // A. VEDETTE (Sponsors/Pub) : On garde les 6 plus récents pour le carrousel
           const featuredEvents = allEvents.slice(0, 6);
-
-          // B. À VENIR : On affiche les 8 événements les plus proches dans le temps
-          // On trie TOUTE la liste par date, puis on prend les 8 premiers
-          let upcomingEvents = [...allEvents]
-            .sort((a, b) => new Date(a.event_date) - new Date(b.event_date))
-            .slice(0, 8);
+          const upcomingEvents = allEvents.slice(0, 8);
 
           // MISE À JOUR DU COMPTEUR (Seulement pour la grille du bas)
           if (countEl) {
@@ -966,7 +969,14 @@
             ? event.price.toLocaleString("fr-FR") + " FCFA"
             : "Gratuit";
         const cat = event.category || "Événement";
-
+        // Chantier 17 : badge "Mis en avant" si event boosté ET visible ce bucket
+        const boostBadge = event.is_boosted
+          ? `<div class="absolute top-3 right-3 bg-gradient-to-r from-orange-500 to-red-500 text-white px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-lg flex items-center gap-1">
+               <span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1">local_fire_department</span>
+               Mis en avant
+             </div>`
+          : "";
+        
         return `
             <div class="bg-white rounded-[1.5rem] p-3 shadow-sm border border-gray-100 hover:shadow-lg hover:border-primary/30 transition-all duration-300 cursor-pointer group flex flex-col" onclick="window.location.href='event_detail.html?id=${event.id}'">
                 <div class="relative h-44 rounded-2xl overflow-hidden mb-4 bg-gray-100 shrink-0">
@@ -1027,15 +1037,24 @@
           `;
       }
       // Construction de la carte (Avec vraie catégorie dynamique !)
-      function renderNetflixCard(event, isCarousel = true) {
+     function renderNetflixCard(event, isCarousel = true) {
         const d = new Date(event.event_date);
         const dateStr = !isNaN(d)
           ? d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })
           : "Bientôt";
         const cardClass = isCarousel ? "netflix-card" : "w-full";
 
-        // ICI : On récupère vraiment la catégorie de l'événement depuis la base de données
         const vraieCategorie = event.category ? event.category : "Événement";
+
+        // Badge "Mis en avant" UNIQUEMENT si event boosté (Chantier 17).
+        // L'ancien badge "Sponsorisé" générique a été retiré car factuellement faux :
+        // tous les events du carrousel ne sont pas des pubs payantes.
+        const boostBadge = event.is_boosted
+          ? `<div class="absolute top-3 right-3 bg-gradient-to-r from-orange-500 to-red-500 text-white text-[9px] font-black uppercase px-2 py-1 rounded shadow-md flex items-center gap-1">
+               <span class="material-symbols-outlined text-[11px]" style="font-variation-settings: 'FILL' 1">local_fire_department</span>
+               Mis en avant
+             </div>`
+          : "";
 
         return `
             <div class="${cardClass}" onclick="window.location.href='event_detail.html?id=${event.id}'">
@@ -1043,9 +1062,7 @@
                     <img src="${event.cover_image_url || "default-event.jpg"}" class="w-full h-full object-cover opacity-80 transition-opacity duration-300 hover:opacity-100">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-transparent"></div>
                     
-                    <div class="absolute top-3 right-3 bg-secondary-container text-on-secondary-container text-[9px] font-black uppercase px-2 py-1 rounded shadow-md">
-                        Sponsorisé
-                    </div>
+                    ${boostBadge}
                     
                     <div class="absolute bottom-4 left-4 right-4">
                         <h3 class="text-white font-extrabold text-base md:text-lg line-clamp-1 leading-tight">${event.title}</h3>

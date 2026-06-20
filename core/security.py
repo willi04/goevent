@@ -96,7 +96,7 @@ class SessionManager:
             return request.headers.get("x-forwarded-for").split(",")[0].strip()
         return request.client.host
 
-  def verify_session(self, user_id: int, request: Request) -> bool:
+    def verify_session(self, user_id: int, request: Request) -> bool:
         """
         Détecte changement d'IP suspect (vol de token).
         Tolérant aux changements wifi↔4G en RCA : on bloque uniquement si

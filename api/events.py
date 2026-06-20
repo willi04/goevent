@@ -21,6 +21,7 @@ router = APIRouter()
 
 
 @router.get("/events")
+@router.get("/events")
 def list_events(
     page: int = 1,
     limit: int = 6,
@@ -36,9 +37,6 @@ def list_events(
     query = db.query(Event).filter(Event.is_active == True)
 
     # Filtre temporel
-    # Priorité 1 : upcoming_only=true → seuls les futurs (compat existante index.html)
-    # Priorité 2 : include_past_days > 0 → futurs + N derniers jours
-    # Sinon (défaut) : tout est retourné (compat historique)
     if upcoming_only:
         query = query.filter(Event.event_date >= datetime.utcnow())
     elif include_past_days > 0:
@@ -60,25 +58,59 @@ def list_events(
     if max_price is not None:
         query = query.filter(Event.price <= max_price)
 
+    # Tri standard
     if sort_by == "price_asc":
-        query = query.order_by(Event.price.asc())
+        order_clauses = [Event.price.asc()]
     elif sort_by == "price_desc":
-        query = query.order_by(Event.price.desc())
+        order_clauses = [Event.price.desc()]
     elif sort_by == "date_desc":
-        query = query.order_by(Event.event_date.desc())
+        order_clauses = [Event.event_date.desc()]
     else:
-        query = query.order_by(Event.event_date.asc())
+        order_clauses = [Event.event_date.asc()]
+
+    # ─── Chantier 17 : tri boostés en tête ──────────────────────────
+    # Sous-requête : event_ids ayant un boost actif (non expiré).
+    # On utilise une jointure LEFT pour ne pas exclure les events sans boost,
+    # et on tri par "a un boost actif" DESC en premier critère.
+    from models.promotion import BoostOrder
+    from sqlalchemy import case, exists
+    
+    now = datetime.utcnow()
+    is_boosted_expr = exists().where(
+        (BoostOrder.event_id == Event.id) &
+        (BoostOrder.status == "actif") &
+        (BoostOrder.ends_at > now)
+    )
+
+    # Boostés d'abord, puis le tri standard demandé par l'utilisateur
+    query = query.order_by(is_boosted_expr.desc(), *order_clauses)
 
     total_items = query.count()
     skip = (page - 1) * limit
     events = query.offset(skip).limit(limit).all()
 
+    # ─── Résolution bulk des boosts actifs (anti N+1) ───────────────
+    event_ids = [e.id for e in events]
+    boosted_ids = set()
+    if event_ids:
+        boosted_rows = (
+            db.query(BoostOrder.event_id)
+            .filter(
+                BoostOrder.event_id.in_(event_ids),
+                BoostOrder.status == "actif",
+                BoostOrder.ends_at > now,
+            )
+            .all()
+        )
+        boosted_ids = {row[0] for row in boosted_rows}
+
     return {
         "total": total_items,
         "page": page,
         "limit": limit,
-        "events": [_event_dict(e) for e in events],
+        "events": [_event_dict(e, is_boosted=(e.id in boosted_ids)) for e in events],
     }
+
 
 @router.get("/categories")
 def get_categories(db: Session = Depends(get_db)):

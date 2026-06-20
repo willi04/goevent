@@ -134,8 +134,8 @@ def create_event(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if current_user.role not in ("organizer", "agent"):
-        raise HTTPException(403, "Réservé aux organisations")
+    if current_user.role not in ("organizer", "organisation"):
+        raise HTTPException(403, "Réservé aux organisateurs")
     event = Event(**data.model_dump(), organizer_id=current_user.id)
     db.add(event)
     db.commit()

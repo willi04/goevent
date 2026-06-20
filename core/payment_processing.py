@@ -11,7 +11,7 @@ from models.payment import Payment
 from models.promotion import BoostOrder, FbAdPackage
 from datetime import timedelta
 
-def _process_ticket(db: Session, order_id: str, code: int,
+def _process_ngser_response(db: Session, order_id: str, code: int,
                           transaction_amount: Optional[int] = None) -> dict:
     """
     Logique unifiée de traitement d'une réponse NGSER (webhook ou cron).
@@ -33,7 +33,9 @@ def _process_ticket(db: Session, order_id: str, code: int,
     
     # Par défaut : achat ticket (préfixe EVT- ou sans préfixe pour legacy)
     return _process_ticket(db, order_id, code, transaction_amount)
-                              
+
+def _process_ticket(db: Session, order_id: str, code: int,
+                          transaction_amount: Optional[int] = None) -> dict:
     ticket = (
         db.query(Ticket)
         .filter(Ticket.payment_ref == order_id)

@@ -943,12 +943,42 @@
           const file = e.target.files[0];
           if (!file) return;
 
-          if (file.size > 2 * 1024 * 1024) {
+          if (file.size > 5 * 1024 * 1024) {
             if (typeof btToast === "function")
-              btToast("L'image est trop lourde (Max 2MB).", "error");
-            else alert("L'image est trop lourde (Max 2MB).");
+              btToast("L'image est trop lourde (Max 5MB).", "error");
             return;
           }
+
+          if (typeof btToast === "function") btToast("Compression en cours...", "info");
+          
+          try {
+            // Compression à 500x500 max, cible 500 Ko (avatar = petite zone)
+            const base64String = await btCompressImage(file, {
+              maxWidth: 500,
+              maxHeight: 500,
+              targetBytes: 500 * 1024,
+              skipBelow: 100 * 1024,
+            });
+            
+            updateAllAvatars(base64String);
+            if (typeof btToast === "function")
+              btToast("Sauvegarde en cours...", "info");
+
+            try {
+              await btApi.put("/auth/me", { profile_picture: base64String });
+              user.profile_picture = base64String;
+              btAuth.save(btAuth.getToken(), btAuth.getRefreshToken(), user);
+              if (typeof btToast === "function")
+                btToast("Photo mise à jour !", "success");
+            } catch (err) {
+              if (typeof btToast === "function")
+                btToast("Erreur lors de la sauvegarde.", "error");
+            }
+          } catch (err) {
+            if (typeof btToast === "function")
+              btToast(err.message || "Erreur compression image", "error");
+          }
+        });
 
           const reader = new FileReader();
           reader.onload = async () => {

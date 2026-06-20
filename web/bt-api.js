@@ -488,39 +488,6 @@ function btModal(contentHtml) {
   return ov;
 }
 
-// ── Paiement Mobile Money (CinetPay) ──────────────────────────
-async function btInitierPaiement(eventId, e) {
-  // 1. On bloque immédiatement le rechargement de la page
-  if (e) e.preventDefault();
-
-  // 2. On gère l'état visuel du bouton
-  var btn = e ? e.currentTarget : document.activeElement;
-  var originalText = btn.innerHTML;
-  btn.classList.add("bt-loading");
-  btn.innerHTML =
-    '<span class="material-symbols-outlined spin">sync</span> Chargement...';
-
-  try {
-    btToast("Préparation du paiement sécurisé...");
-
-    // On appelle notre route FastAPI
-    var data = await btApi.post("/payment/init/" + eventId, {});
-
-    // Si le backend renvoie bien l'URL de CinetPay, on redirige le fan
-    if (data && data.payment_url) {
-      window.location.href = data.payment_url;
-    } else {
-      btToast("Erreur : l'URL de paiement est introuvable.", "error");
-      btn.classList.remove("bt-loading");
-      btn.innerHTML = originalText;
-    }
-  } catch (err) {
-    btToast(err.message, "error");
-    btn.classList.remove("bt-loading");
-    btn.innerHTML = originalText;
-  }
-}
-
 // ── Mes Billets ───────────────────────────────────────────────
 // ── Affichage des billets (Dashboard) ──────────────────────────
 async function btShowTickets() {
@@ -591,11 +558,7 @@ async function btShowTickets() {
           (t.price ? t.price.toLocaleString("fr-FR") + " FCFA" : "Gratuit") +
           "</p>" +
           // Le bouton simuler (s'affiche uniquement si "ok" est faux)
-          (!ok
-            ? '<button onclick="btSimPay(' +
-              t.ticket_id +
-              ')" class="bg-yellow-400 text-yellow-900 px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-yellow-500 transition-all shadow-sm flex items-center gap-2"><span class="material-symbols-outlined text-lg">payments</span> Simuler Orange Money</button>'
-            : "") +
+          "" +
           "</div>" +
           "</div>"
         );
@@ -608,26 +571,6 @@ async function btShowTickets() {
     console.error("Erreur chargement billets:", err);
     container.innerHTML =
       '<p class="text-red-500 font-bold p-4 bg-red-50 rounded-xl">Impossible de charger les billets. Vérifiez la connexion au serveur.</p>';
-  }
-}
-
-// ── Fonction de simulation ──────────────────────────────────────
-function btSimPay(ticketId) {
-  btToast("Paiement Orange Money validé !");
-  // Dans la vraie vie, c'est FastAPI qui mettrait à jour le statut.
-  // Ici on fait juste une petite alerte pour prouver que le bouton marche.
-  alert(
-    "Simulation : Ce billet va maintenant passer en statut 'payé' et afficher son QR Code !",
-  );
-}
-
-async function btSimPay(id) {
-  try {
-    await btApi.post("/payment/simulate/" + id, {});
-    btToast("Paiement confirmé. Votre billet est maintenant valide.");
-    btShowTickets();
-  } catch (e) {
-    btToast(e.message, "error");
   }
 }
 

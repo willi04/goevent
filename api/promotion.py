@@ -452,7 +452,7 @@ def admin_update_fb_package(
 # ═════════════════════════════════════════════════════════════════════
 # SERVICES PREMIUM (pré-inscription publique)
 # ═════════════════════════════════════════════════════════════════════
-
+from typing import Optional
 from pydantic import EmailStr
 from models.premium_interest import PremiumInterest
 

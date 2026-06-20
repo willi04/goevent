@@ -248,6 +248,18 @@
             Équipe
           </a>
           <a
+          href="#"
+            id="mo-link-promotion-drawer"
+            onclick="
+              showSection('promotion');
+              toggleMobileMenu();
+            "
+            class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all"
+          >
+            <span class="material-symbols-outlined opacity-70">rocket_launch</span>
+            Promotion
+          </a>
+          <a
             href="#"
             id="mo-link-settings-drawer"
             onclick="
@@ -344,6 +356,9 @@
           </button>
           <button class="sb-link" id="link-team" onclick="showSection('team')">
             <span class="material-symbols-outlined">badge</span>Mon Équipe
+          </button>
+          <button class="sb-link" id="link-promotion" onclick="showSection('promotion')">
+            <span class="material-symbols-outlined">rocket_launch</span>Promotion
           </button>
           <button
             class="sb-link"
@@ -900,7 +915,304 @@
               </div>
             </div>
           </div>
+          
+          <!-- ═══════════════════════════════════════════════════════════════ -->
+          <!-- SECTION : PROMOTION (Chantier 17 - Boost + Pack FB)              -->
+          <!-- ═══════════════════════════════════════════════════════════════ -->
+          <div id="sec-promotion" class="hidden space-y-6 md:space-y-8">
 
+            <!-- Header -->
+            <div class="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100">
+              <div class="flex items-start justify-between flex-wrap gap-4">
+                <div>
+                  <h2 class="text-2xl md:text-3xl font-black text-gray-900 mb-2">
+                    🚀 Promotion
+                  </h2>
+                  <p class="text-sm text-gray-500">
+                    Donnez plus de visibilité à vos événements
+                  </p>
+                </div>
+                <button
+                  onclick="loadMyPromotions()"
+                  class="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl font-bold text-sm transition-colors"
+                >
+                  <span class="material-symbols-outlined text-base">refresh</span>
+                  Actualiser
+                </button>
+              </div>
+            </div>
+
+            <!-- Menu d'entrée : 2 cartes -->
+            <div id="promo-menu" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <!-- Carte Boost GoEvent -->
+              <button
+                onclick="showPromoView('boost')"
+                class="bg-white p-6 md:p-7 rounded-3xl shadow-sm border border-gray-100 hover:border-primary/30 hover:shadow-md transition-all text-left group"
+              >
+                <div class="w-14 h-14 bg-orange-100 group-hover:bg-orange-200 transition-colors rounded-2xl flex items-center justify-center mb-4">
+                  <span class="material-symbols-outlined text-3xl text-orange-600">local_fire_department</span>
+                </div>
+                <h3 class="text-xl font-extrabold font-headline text-gray-900 mb-2">
+                  Boost GoEvent
+                </h3>
+                <p class="text-sm text-gray-500 mb-4">
+                  Votre événement en tête de liste sur GoEvent avec un badge "🔥 Mis en avant"
+                </p>
+                <div class="flex items-center justify-between border-t border-gray-100 pt-4">
+                  <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Dès</span>
+                  <span class="font-black text-2xl text-primary">10 000 FCFA</span>
+                </div>
+              </button>
+
+              <!-- Carte Pack Facebook Ads -->
+              <button
+                onclick="showPromoView('fbpack')"
+                class="bg-white p-6 md:p-7 rounded-3xl shadow-sm border border-gray-100 hover:border-blue-300 hover:shadow-md transition-all text-left group"
+              >
+                <div class="w-14 h-14 bg-blue-100 group-hover:bg-blue-200 transition-colors rounded-2xl flex items-center justify-center mb-4">
+                  <span class="material-symbols-outlined text-3xl text-blue-600">campaign</span>
+                </div>
+                <h3 class="text-xl font-extrabold font-headline text-gray-900 mb-2">
+                  Pack Facebook Ads
+                </h3>
+                <p class="text-sm text-gray-500 mb-4">
+                  Notre Community Manager crée et gère votre campagne Facebook. Vous donnez le budget.
+                </p>
+                <div class="flex items-center justify-between border-t border-gray-100 pt-4">
+                  <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Dès</span>
+                  <span class="font-black text-2xl text-blue-600">35 000 FCFA</span>
+                </div>
+              </button>
+            </div>
+
+            <!-- Mes campagnes en cours -->
+            <div class="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100">
+              <h3 class="text-lg font-extrabold text-gray-900 mb-4 flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">trending_up</span>
+                Mes campagnes en cours
+              </h3>
+              <div id="promo-active-list" class="space-y-3">
+                <p class="text-center text-gray-400 py-6 text-sm">Chargement...</p>
+              </div>
+            </div>
+
+            <!-- Historique -->
+            <div class="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100">
+              <h3 class="text-lg font-extrabold text-gray-900 mb-4 flex items-center gap-2">
+                <span class="material-symbols-outlined text-gray-400">history</span>
+                Historique
+              </h3>
+              <div id="promo-history-list" class="space-y-3">
+                <p class="text-center text-gray-400 py-6 text-sm">Aucun historique pour le moment.</p>
+              </div>
+            </div>
+
+            <!-- ═══ SOUS-VUE : Lancer un Boost ═══ -->
+            <div id="promo-view-boost" class="hidden space-y-6">
+              <button
+                onclick="showPromoView('menu')"
+                class="flex items-center gap-2 text-sm font-bold text-gray-600 hover:text-primary transition-colors"
+              >
+                <span class="material-symbols-outlined">arrow_back</span>
+                Retour
+              </button>
+
+              <div class="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100">
+                <h2 class="text-2xl font-black font-headline text-gray-900 mb-2 flex items-center gap-2">
+                  🔥 Booster un événement
+                </h2>
+                <p class="text-sm text-gray-500 mb-6">
+                  Votre événement remontera en tête de la liste publique avec un badge "Mis en avant".
+                </p>
+
+                <!-- Sélection event -->
+                <div class="mb-6">
+                  <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                    1. Sélectionner l'événement
+                  </label>
+                  <select id="boost-event-select" class="w-full p-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none font-semibold text-gray-700">
+                    <option value="">Chargement des événements...</option>
+                  </select>
+                </div>
+
+                <!-- Sélection package -->
+                <div class="mb-6">
+                  <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
+                    2. Choisir la durée
+                  </label>
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <button type="button" onclick="selectBoostPackage('7d')" class="boost-pkg-card border-2 border-gray-200 rounded-2xl p-4 hover:border-primary transition-all text-left" data-pkg="7d">
+                      <div class="text-xs font-bold text-gray-400 uppercase tracking-widest">7 jours</div>
+                      <div class="text-2xl font-black text-gray-900 mt-2">10 000 <span class="text-sm font-bold text-gray-500">FCFA</span></div>
+                      <div class="text-[11px] text-gray-400 mt-1">≈ 1 428 / jour</div>
+                    </button>
+                    <button type="button" onclick="selectBoostPackage('30d')" class="boost-pkg-card border-2 border-gray-200 rounded-2xl p-4 hover:border-primary transition-all text-left relative" data-pkg="30d">
+                      <span class="absolute -top-2 right-3 bg-secondary-container text-on-secondary-container text-[10px] font-black px-2 py-0.5 rounded-full">POPULAIRE</span>
+                      <div class="text-xs font-bold text-gray-400 uppercase tracking-widest">30 jours</div>
+                      <div class="text-2xl font-black text-gray-900 mt-2">35 000 <span class="text-sm font-bold text-gray-500">FCFA</span></div>
+                      <div class="text-[11px] text-green-600 font-bold mt-1">≈ 1 166 / jour (-18%)</div>
+                    </button>
+                    <button type="button" onclick="selectBoostPackage('90d')" class="boost-pkg-card border-2 border-gray-200 rounded-2xl p-4 hover:border-primary transition-all text-left" data-pkg="90d">
+                      <div class="text-xs font-bold text-gray-400 uppercase tracking-widest">90 jours</div>
+                      <div class="text-2xl font-black text-gray-900 mt-2">130 000 <span class="text-sm font-bold text-gray-500">FCFA</span></div>
+                      <div class="text-[11px] text-gray-400 mt-1">≈ 1 444 / jour</div>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Numéro paiement -->
+                <div class="mb-6">
+                  <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                    3. Numéro Orange Money pour le paiement
+                  </label>
+                  <input
+                    type="text"
+                    id="boost-phone"
+                    placeholder="+236XXXXXXXX"
+                    class="w-full p-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none font-semibold text-gray-900"
+                  />
+                </div>
+
+                <!-- Récap + Bouton -->
+                <div class="bg-primary/5 border border-primary/20 rounded-2xl p-4 mb-4 hidden" id="boost-recap">
+                  <div class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Récap</div>
+                  <div class="text-base font-bold text-gray-900" id="boost-recap-text">—</div>
+                </div>
+
+                <button
+                  id="btn-initiate-boost"
+                  onclick="submitBoost()"
+                  disabled
+                  class="w-full py-4 bg-primary text-white rounded-xl font-bold shadow-md hover:bg-primary-container active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                >
+                  <span class="material-symbols-outlined">payments</span>
+                  Payer avec Orange Money
+                </button>
+              </div>
+            </div>
+
+            <!-- ═══ SOUS-VUE : Demander un Pack FB ═══ -->
+            <div id="promo-view-fbpack" class="hidden space-y-6">
+              <button
+                onclick="showPromoView('menu')"
+                class="flex items-center gap-2 text-sm font-bold text-gray-600 hover:text-primary transition-colors"
+              >
+                <span class="material-symbols-outlined">arrow_back</span>
+                Retour
+              </button>
+
+              <div class="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100">
+                <h2 class="text-2xl font-black font-headline text-gray-900 mb-2 flex items-center gap-2">
+                  📘 Pack Facebook Ads
+                </h2>
+                <p class="text-sm text-gray-500 mb-4">
+                  Notre Community Manager crée la pub, cible l'audience et gère la campagne Facebook pour votre événement.
+                </p>
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-6 text-xs text-amber-800 font-medium">
+                  <strong>Minimum :</strong> 35 000 FCFA de budget Facebook. <strong>Marge GoEvent :</strong> 30% (transparente).
+                </div>
+
+                <!-- Sélection event -->
+                <div class="mb-6">
+                  <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                    1. Sélectionner l'événement
+                  </label>
+                  <select id="fbpack-event-select" class="w-full p-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none font-semibold text-gray-700">
+                    <option value="">Chargement des événements...</option>
+                  </select>
+                </div>
+
+                <!-- Budget -->
+                <div class="mb-6">
+                  <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                    2. Budget Facebook souhaité (FCFA)
+                  </label>
+                  <input
+                    type="number"
+                    id="fbpack-budget"
+                    min="35000"
+                    step="5000"
+                    placeholder="50000"
+                    oninput="updateFbPackRecap()"
+                    class="w-full p-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none font-semibold text-gray-900 text-lg"
+                  />
+                </div>
+
+                <!-- Récap budget -->
+                <div id="fbpack-recap" class="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-6 hidden">
+                  <div class="space-y-2 text-sm">
+                    <div class="flex justify-between text-gray-700">
+                      <span>Budget pub Facebook</span>
+                      <span class="font-bold" id="fbpack-budget-display">— FCFA</span>
+                    </div>
+                    <div class="flex justify-between text-gray-700">
+                      <span>Frais GoEvent (30%)</span>
+                      <span class="font-bold" id="fbpack-margin-display">— FCFA</span>
+                    </div>
+                    <div class="border-t border-blue-300 pt-2 mt-2 flex justify-between text-blue-900">
+                      <span class="font-extrabold">Total à payer</span>
+                      <span class="text-xl font-black" id="fbpack-total-display">— FCFA</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Ciblage (optionnel) -->
+                <details class="mb-6 bg-gray-50 rounded-xl p-4">
+                  <summary class="text-sm font-bold text-gray-700 cursor-pointer">
+                    3. Ciblage souhaité (optionnel)
+                  </summary>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <div>
+                      <label class="block text-xs font-bold text-gray-500 mb-1">Tranche d'âge</label>
+                      <select id="fbpack-age" class="w-full p-3 bg-white border border-gray-200 rounded-xl text-sm font-semibold">
+                        <option value="">Toutes</option>
+                        <option value="18-25">18-25 ans</option>
+                        <option value="18-35">18-35 ans</option>
+                        <option value="25-45">25-45 ans</option>
+                        <option value="35-65">35-65 ans</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-xs font-bold text-gray-500 mb-1">Zone géographique</label>
+                      <input type="text" id="fbpack-zone" placeholder="Ex: Bangui, Bouar" class="w-full p-3 bg-white border border-gray-200 rounded-xl text-sm font-semibold">
+                    </div>
+                    <div class="md:col-span-2">
+                      <label class="block text-xs font-bold text-gray-500 mb-1">Notes pour le CM</label>
+                      <textarea id="fbpack-notes" rows="2" placeholder="Précisez le message, le style, etc." class="w-full p-3 bg-white border border-gray-200 rounded-xl text-sm"></textarea>
+                    </div>
+                  </div>
+                </details>
+
+                <!-- Numéro paiement -->
+                <div class="mb-6">
+                  <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                    4. Numéro Orange Money pour le paiement
+                  </label>
+                  <input
+                    type="text"
+                    id="fbpack-phone"
+                    placeholder="+236XXXXXXXX"
+                    class="w-full p-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none font-semibold text-gray-900"
+                  />
+                </div>
+
+                <div class="bg-gray-50 border border-gray-200 rounded-xl p-3 mb-4 text-xs text-gray-600">
+                  ⏱️ Délai : votre campagne sera lancée sous 24h ouvrables après paiement.
+                </div>
+
+                <button
+                  id="btn-initiate-fbpack"
+                  onclick="submitFbPack()"
+                  class="w-full py-4 bg-blue-600 text-white rounded-xl font-bold shadow-md hover:bg-blue-700 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                >
+                  <span class="material-symbols-outlined">payments</span>
+                  Payer avec Orange Money
+                </button>
+              </div>
+            </div>
+
+          </div>
+          
           <div id="sec-settings" class="hidden">
             <h2
               class="text-2xl md:text-3xl font-extrabold font-headline tracking-tight text-gray-900 mb-6 md:mb-8"
@@ -1312,6 +1624,7 @@
           "settings",
           "cash-reservations",
           "finance",
+          "promotion",
         ];
         sections.forEach((s) => {
           const el = document.getElementById("sec-" + s);
@@ -1477,6 +1790,10 @@
         }
         if (section === "finance") { 
           loadPayoutHistory();
+        }
+        if (section === "promotion") {
+          loadMyPromotions();
+          showPromoView("menu");
         }
       };
       
@@ -2547,7 +2864,340 @@
           if (modal && !modal.classList.contains("hidden")) closeShareModal();
         }
       });
+
+      // ════════════════════════════════════════════════════════
+      // CHANTIER 17 : PROMOTION (Boost + Pack FB)
+      // ════════════════════════════════════════════════════════
+
+      const BOOST_PACKAGES = {
+        "7d":  { duration: 7,  amount: 10000,  label: "7 jours" },
+        "30d": { duration: 30, amount: 35000,  label: "30 jours" },
+        "90d": { duration: 90, amount: 130000, label: "90 jours" },
+      };
+
+      let _selectedBoostPkg = null;
+      let _myBoosts = [];
+      let _myFbPacks = [];
+
+      // Bascule entre les 3 vues : menu / boost / fbpack
+      function showPromoView(view) {
+        const menu = document.getElementById("promo-menu");
+        const viewBoost = document.getElementById("promo-view-boost");
+        const viewFbPack = document.getElementById("promo-view-fbpack");
+
+        // Cartes "Mes campagnes en cours" et "Historique" : on les masque dans les sous-vues
+        const activeBlock = document.getElementById("promo-active-list")?.closest(".bg-white");
+        const historyBlock = document.getElementById("promo-history-list")?.closest(".bg-white");
+
+        if (view === "menu") {
+          menu.classList.remove("hidden");
+          viewBoost.classList.add("hidden");
+          viewFbPack.classList.add("hidden");
+          if (activeBlock) activeBlock.classList.remove("hidden");
+          if (historyBlock) historyBlock.classList.remove("hidden");
+        } else if (view === "boost") {
+          menu.classList.add("hidden");
+          viewBoost.classList.remove("hidden");
+          viewFbPack.classList.add("hidden");
+          if (activeBlock) activeBlock.classList.add("hidden");
+          if (historyBlock) historyBlock.classList.add("hidden");
+          populateEventSelects();
+          prefilOrangeMoneyFields();
+        } else if (view === "fbpack") {
+          menu.classList.add("hidden");
+          viewBoost.classList.add("hidden");
+          viewFbPack.classList.remove("hidden");
+          if (activeBlock) activeBlock.classList.add("hidden");
+          if (historyBlock) historyBlock.classList.add("hidden");
+          populateEventSelects();
+          prefilOrangeMoneyFields();
+        }
+      }
+
+      // Remplit les <select> de sélection d'event dans les 2 sous-vues
+      function populateEventSelects() {
+        const events = window.lastOrganizerStats?.events || [];
+        const now = new Date();
+        const futureEvents = events.filter(e => {
+          if (!e.event_date) return true;
+          return new Date(e.event_date) >= now;
+        });
+
+        const optionsHtml = futureEvents.length === 0
+          ? '<option value="">Aucun événement à venir</option>'
+          : '<option value="">Sélectionnez un événement...</option>' +
+            futureEvents.map(e => `<option value="${e.id}">${e.title}</option>`).join("");
+
+        const boostSel = document.getElementById("boost-event-select");
+        const fbpackSel = document.getElementById("fbpack-event-select");
+        if (boostSel) boostSel.innerHTML = optionsHtml;
+        if (fbpackSel) fbpackSel.innerHTML = optionsHtml;
+      }
+
+      function prefilOrangeMoneyFields() {
+        const om = user.orange_money || "";
+        const boostPhone = document.getElementById("boost-phone");
+        const fbpackPhone = document.getElementById("fbpack-phone");
+        if (boostPhone && !boostPhone.value) boostPhone.value = om;
+        if (fbpackPhone && !fbpackPhone.value) fbpackPhone.value = om;
+      }
+
+      // ─── BOOST ────────────────────────────────────────────
+
+      function selectBoostPackage(code) {
+        _selectedBoostPkg = code;
+        document.querySelectorAll(".boost-pkg-card").forEach(card => {
+          if (card.dataset.pkg === code) {
+            card.classList.remove("border-gray-200");
+            card.classList.add("border-primary", "bg-primary/5");
+          } else {
+            card.classList.add("border-gray-200");
+            card.classList.remove("border-primary", "bg-primary/5");
+          }
+        });
+
+        const pkg = BOOST_PACKAGES[code];
+        const recap = document.getElementById("boost-recap");
+        const recapText = document.getElementById("boost-recap-text");
+        if (recap && recapText) {
+          recap.classList.remove("hidden");
+          recapText.textContent = `${pkg.label} de boost — ${pkg.amount.toLocaleString("fr-FR")} FCFA`;
+        }
+
+        document.getElementById("btn-initiate-boost").disabled = false;
+      }
+
+      async function submitBoost() {
+        const eventId = parseInt(document.getElementById("boost-event-select").value);
+        const phone = document.getElementById("boost-phone").value.trim();
+
+        if (!eventId) {
+          btToast("Sélectionnez un événement", "error");
+          return;
+        }
+        if (!_selectedBoostPkg) {
+          btToast("Choisissez une durée de boost", "error");
+          return;
+        }
+        if (!phone || phone.length < 8) {
+          btToast("Numéro Orange Money invalide", "error");
+          return;
+        }
+
+        const btn = document.getElementById("btn-initiate-boost");
+        const origText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="material-symbols-outlined animate-spin">autorenew</span> Initialisation...';
+
+        try {
+          const res = await btApi.post("/organizer/boost/initiate", {
+            event_id: eventId,
+            package_code: _selectedBoostPkg,
+            phone: phone,
+          });
+
+          if (res.payment_url) {
+            btToast("Redirection vers Orange Money...", "success");
+            setTimeout(() => { window.location.href = res.payment_url; }, 800);
+          } else {
+            btToast("Erreur : pas d'URL de paiement reçue", "error");
+            btn.innerHTML = origText;
+            btn.disabled = false;
+          }
+        } catch (err) {
+          btToast(err.message || "Erreur lors de l'initialisation du boost", "error");
+          btn.innerHTML = origText;
+          btn.disabled = false;
+        }
+      }
+
+      // ─── PACK FB ──────────────────────────────────────────
+
+      function updateFbPackRecap() {
+        const budget = parseInt(document.getElementById("fbpack-budget").value) || 0;
+        const recap = document.getElementById("fbpack-recap");
+        if (budget < 35000) {
+          recap.classList.add("hidden");
+          return;
+        }
+        const margin = Math.round(budget * 0.30);
+        const total = budget + margin;
+        document.getElementById("fbpack-budget-display").textContent = budget.toLocaleString("fr-FR") + " FCFA";
+        document.getElementById("fbpack-margin-display").textContent = margin.toLocaleString("fr-FR") + " FCFA";
+        document.getElementById("fbpack-total-display").textContent = total.toLocaleString("fr-FR") + " FCFA";
+        recap.classList.remove("hidden");
+      }
+
+      async function submitFbPack() {
+        const eventId = parseInt(document.getElementById("fbpack-event-select").value);
+        const budget = parseInt(document.getElementById("fbpack-budget").value);
+        const phone = document.getElementById("fbpack-phone").value.trim();
+        const age_range = document.getElementById("fbpack-age").value || null;
+        const zone = document.getElementById("fbpack-zone").value.trim() || null;
+        const notes = document.getElementById("fbpack-notes").value.trim() || null;
+
+        if (!eventId) {
+          btToast("Sélectionnez un événement", "error");
+          return;
+        }
+        if (!budget || budget < 35000) {
+          btToast("Le budget minimum est de 35 000 FCFA", "error");
+          return;
+        }
+        if (!phone || phone.length < 8) {
+          btToast("Numéro Orange Money invalide", "error");
+          return;
+        }
+
+        const btn = document.getElementById("btn-initiate-fbpack");
+        const origText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="material-symbols-outlined animate-spin">autorenew</span> Initialisation...';
+
+        try {
+          const payload = {
+            event_id: eventId,
+            budget_fb_fcfa: budget,
+            phone: phone,
+          };
+          if (age_range) payload.age_range = age_range;
+          if (zone) payload.zone = zone;
+          if (notes) payload.notes = notes;
+
+          const res = await btApi.post("/organizer/fb-package/request", payload);
+
+          if (res.payment_url) {
+            btToast("Redirection vers Orange Money...", "success");
+            setTimeout(() => { window.location.href = res.payment_url; }, 800);
+          } else {
+            btToast("Erreur : pas d'URL de paiement reçue", "error");
+            btn.innerHTML = origText;
+            btn.disabled = false;
+          }
+        } catch (err) {
+          btToast(err.message || "Erreur lors de l'initialisation du Pack FB", "error");
+          btn.innerHTML = origText;
+          btn.disabled = false;
+        }
+      }
+
+      // ─── Liste campagnes actives + historique ──────────────
+
+      async function loadMyPromotions() {
+        const activeList = document.getElementById("promo-active-list");
+        const historyList = document.getElementById("promo-history-list");
+        if (!activeList || !historyList) return;
+
+        activeList.innerHTML = '<p class="text-center text-gray-400 py-6 text-sm">Chargement...</p>';
+
+        try {
+          const [boosts, fbpacks] = await Promise.all([
+            btApi.get("/organizer/boost/my").catch(() => []),
+            btApi.get("/organizer/fb-package/my").catch(() => []),
+          ]);
+          _myBoosts = boosts || [];
+          _myFbPacks = fbpacks || [];
+
+          const isActive = (s) => s === "actif" || s === "en_attente_om" || s === "paye_attente_cm";
+          const activeBoosts = _myBoosts.filter(b => isActive(b.status));
+          const activePacks = _myFbPacks.filter(p => isActive(p.status));
+          const historyBoosts = _myBoosts.filter(b => !isActive(b.status));
+          const historyPacks = _myFbPacks.filter(p => !isActive(p.status));
+
+          // ── Actives ──
+          if (activeBoosts.length === 0 && activePacks.length === 0) {
+            activeList.innerHTML = `
+              <div class="text-center py-8 text-gray-400">
+                <span class="material-symbols-outlined text-4xl">campaign</span>
+                <p class="font-bold text-gray-500 mt-2">Aucune campagne active</p>
+                <p class="text-sm mt-1">Boostez un événement pour le voir apparaître ici.</p>
+              </div>`;
+          } else {
+            activeList.innerHTML =
+              activeBoosts.map(renderBoostCard).join("") +
+              activePacks.map(renderFbPackCard).join("");
+          }
+
+          // ── Historique ──
+          if (historyBoosts.length === 0 && historyPacks.length === 0) {
+            historyList.innerHTML = '<p class="text-center text-gray-400 py-6 text-sm">Aucun historique pour le moment.</p>';
+          } else {
+            historyList.innerHTML =
+              historyBoosts.map(renderBoostCard).join("") +
+              historyPacks.map(renderFbPackCard).join("");
+          }
+        } catch (err) {
+          console.error("Erreur loadMyPromotions:", err);
+          activeList.innerHTML = '<p class="text-center text-red-400 py-6 text-sm">Erreur de chargement</p>';
+        }
+      }
+
+      function renderBoostCard(b) {
+        const statusInfo = boostStatusBadge(b.status);
+        const dateInfo = b.ends_at
+          ? `Jusqu'au ${new Date(b.ends_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}`
+          : `Créé le ${new Date(b.created_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}`;
+
+        return `
+          <div class="border border-gray-200 bg-orange-50/30 rounded-2xl p-4 flex items-center justify-between flex-wrap gap-3">
+            <div class="flex items-center gap-3 min-w-0 flex-1">
+              <div class="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-orange-600">local_fire_department</span>
+              </div>
+              <div class="min-w-0">
+                <p class="font-bold text-gray-900 text-sm truncate">🔥 Boost ${b.duration_days} jours — ${b.event_title}</p>
+                <p class="text-xs text-gray-500 mt-0.5">${dateInfo} · ${b.amount_fcfa.toLocaleString("fr-FR")} FCFA</p>
+              </div>
+            </div>
+            ${statusInfo}
+          </div>`;
+      }
+
+      function renderFbPackCard(p) {
+        const statusInfo = fbpackStatusBadge(p.status);
+        return `
+          <div class="border border-gray-200 bg-blue-50/30 rounded-2xl p-4 flex items-center justify-between flex-wrap gap-3">
+            <div class="flex items-center gap-3 min-w-0 flex-1">
+              <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-blue-600">campaign</span>
+              </div>
+              <div class="min-w-0">
+                <p class="font-bold text-gray-900 text-sm truncate">📘 Pack FB — ${p.event_title}</p>
+                <p class="text-xs text-gray-500 mt-0.5">Budget ${p.budget_fb_fcfa.toLocaleString("fr-FR")} FCFA · Total payé ${p.total_paid_fcfa.toLocaleString("fr-FR")} FCFA</p>
+              </div>
+            </div>
+            ${statusInfo}
+          </div>`;
+      }
+
+      function boostStatusBadge(status) {
+        const map = {
+          "actif":              ["bg-green-100 text-green-700",   "Actif",            "check_circle"],
+          "en_attente_om":      ["bg-orange-100 text-orange-700", "En attente paiement", "hourglass_empty"],
+          "expire":             ["bg-gray-100 text-gray-600",     "Terminé",          "history"],
+          "annule":             ["bg-red-100 text-red-700",       "Annulé",           "cancel"],
+          "echec_paiement":     ["bg-red-100 text-red-700",       "Paiement échoué",  "error"],
+          "expire_abandonne":   ["bg-gray-100 text-gray-500",     "Abandonné",        "block"],
+        };
+        const [cls, label, icon] = map[status] || ["bg-gray-100 text-gray-600", status, "info"];
+        return `<span class="inline-flex items-center gap-1 ${cls} px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap"><span class="material-symbols-outlined text-[14px]">${icon}</span>${label}</span>`;
+      }
+
+      function fbpackStatusBadge(status) {
+        const map = {
+          "en_attente_om":      ["bg-orange-100 text-orange-700", "En attente paiement", "hourglass_empty"],
+          "paye_attente_cm":    ["bg-yellow-100 text-yellow-700", "En attente CM",    "schedule"],
+          "actif":              ["bg-green-100 text-green-700",   "Campagne active",  "check_circle"],
+          "termine":            ["bg-gray-100 text-gray-600",     "Terminé",          "history"],
+          "annule":             ["bg-red-100 text-red-700",       "Annulé",           "cancel"],
+          "echec_paiement":     ["bg-red-100 text-red-700",       "Paiement échoué",  "error"],
+          "expire_abandonne":   ["bg-gray-100 text-gray-500",     "Abandonné",        "block"],
+        };
+        const [cls, label, icon] = map[status] || ["bg-gray-100 text-gray-600", status, "info"];
+        return `<span class="inline-flex items-center gap-1 ${cls} px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap"><span class="material-symbols-outlined text-[14px]">${icon}</span>${label}</span>`;
+      }
     </script>
+    
     <!-- ═══ MODALE DE PARTAGE ═══ -->
     <div id="share-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 items-center justify-center p-4 hidden">
       <div class="bg-white rounded-3xl max-w-md w-full p-6 md:p-8 relative shadow-2xl max-h-[90vh] overflow-y-auto">

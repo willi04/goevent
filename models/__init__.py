@@ -11,6 +11,8 @@ from models.cms import HomepageContent, AdContract, FundraisingCampaign
 from .commission import Commission
 from .promotion import BoostOrder, FbAdPackage
 from .premium_interest import PremiumInterest
+from models.promo import PromoCode, PromoUsage 
+
 
 __all__ = [
     "Base",

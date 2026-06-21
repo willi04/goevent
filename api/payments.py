@@ -1,18 +1,4 @@
-"""
-api/payments.py
-Routeur paiements NGSER (Orange Money).
-- initiate_ngser_payment : génère le lien de paiement (vrai flux d'achat)
-- ngser_webhook : notification post-paiement (Instant Payment Notification)
-  → SÉCURISÉ : vérification stricte du montant + statut + idempotence
-- init_payment : ancien flux USSD (VESTIGE — à supprimer après vérif front)
 
-⚠️ ZONE FINANCIÈRE CRITIQUE.
-NGSER ne fournit pas de signature de webhook (cf. doc). La sécurité repose sur :
-  1. order_id imprévisible (UUID)
-  2. vérification que le montant reçu == montant attendu en base (reco doc p.17)
-  3. validation du statut en base (on ne traite qu'une transaction 'en attente')
-  4. idempotence (un webhook rejoué ne re-crédite pas seats_sold)
-"""
 import json
 import uuid
 
@@ -24,6 +10,7 @@ from core.config import settings
 from core.reconcile import reconcile_pending_payments
 
 from utils.locks import lock_event_for_booking, lock_event_for_release
+from utils.promo import lock_promo_for_use, compute_discount, release_promo_usage
 from core.database import get_db
 from core.security import get_current_user
 from core.ngser import create_payment_session
@@ -31,6 +18,7 @@ from models.event import Event
 from models.ticket import Ticket
 from models.user import User
 from models.payment import Payment, PayoutRequest
+from models.promo import PromoUsage
 from schemas.payment import PaymentConfirm
 
 router = APIRouter()
@@ -54,7 +42,7 @@ async def initiate_ngser_payment(
     # 1. Verrou + check quota atomique (P0 anti-survente)
     event = lock_event_for_booking(db, data.event_id)
 
-    # 2. Prix (tier éventuel)
+   # 2. Prix (tier éventuel)
     prix_base = float(event.price)
     if data.tier_name and event.ticket_tiers:
         tier = next((t for t in event.ticket_tiers if t.get("name") == data.tier_name), None)
@@ -63,6 +51,31 @@ async def initiate_ngser_payment(
 
     if prix_base <= 0:
         raise HTTPException(400, "Prix invalide pour un paiement Orange Money")
+
+    # 2.bis APPLICATION CODE PROMO (Chantier 19.A)
+    # La promo s'applique UNIQUEMENT sur prix_base, jamais sur les frais GoEvent (4% + 7%).
+    # Verrou pessimiste + revalidation atomique des 7 checks dans lock_promo_for_use.
+    promo_obj = None
+    discount_fcfa = 0
+    if data.promo_code:
+        promo_obj = lock_promo_for_use(
+            db,
+            user_id=current_user.id,
+            event_id=event.id,
+            tier_name=data.tier_name,
+            code=data.promo_code,
+            organizer_id=event.organizer_id,
+        )
+        discount_fcfa = compute_discount(promo_obj, prix_base)
+        prix_base = max(0.0, prix_base - discount_fcfa)
+
+        # Si la promo rend le prix=0, on refuse côté OM : NGSER ne sait pas traiter un montant 0.
+        # Le fan doit basculer sur le flux cash (qui acceptera la promo et générera un billet gratuit).
+        if prix_base <= 0:
+            raise HTTPException(
+                400,
+                "Le code promo rend ce billet gratuit. Choisissez le paiement cash à l'entrée."
+            )
 
     frais_acheteur = prix_base * 0.04
     total_a_payer = prix_base + frais_acheteur
@@ -97,6 +110,18 @@ async def initiate_ngser_payment(
         transaction_id=order_id,
     )
     db.add(payment)
+
+    # Insertion PromoUsage en 'reserved' + incrément used_count (Chantier 19.A)
+    # Le verrou with_for_update sur promo_obj (via lock_promo_for_use) est encore actif jusqu'au commit.
+    if promo_obj:
+        db.add(PromoUsage(
+            promo_id=promo_obj.id,
+            user_id=current_user.id,
+            ticket_id=new_ticket.id,
+            discount_fcfa=discount_fcfa,
+            status="reserved",
+        ))
+        promo_obj.used_count += 1
 
     # 3. PRÉ-RÉSERVATION : la place est comptée AVANT l'appel NGSER.
     #    Le verrou pessimiste garantit l'atomicité avec d'autres workers.
@@ -137,6 +162,8 @@ def _libere_place_init_echouee(db: Session, ticket_id: int, event_id: int):
             event = lock_event_for_release(db, event_id)
             if event:
                 event.seats_sold = max(0, event.seats_sold - 1)
+            # Libération de l'éventuelle promo associée (Chantier 19.A)
+            release_promo_usage(db, ticket_id)
             db.commit()
     except Exception as e:
         print(f"⚠️ Erreur libération place après échec init NGSER : {e}")

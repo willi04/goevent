@@ -7,7 +7,7 @@ class PaymentConfirm(BaseModel):
     email: Optional[str] = None
     full_name: Optional[str] = None
     tier_name: Optional[str] = None
-
+    promo_code: Optional[str] = None
 
 class OrderCreateLegacy(BaseModel):
     event_id: int

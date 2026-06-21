@@ -10,11 +10,16 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from utils.locks import lock_event_for_booking, lock_event_for_release
+from utils.promo import (
+    lock_promo_for_use, compute_discount,
+    confirm_promo_usage, release_promo_usage,
+)
 from core.database import get_db
 from core.security import get_current_user, log_security_event
 from models.event import Event
 from models.ticket import Ticket
 from models.user import User
+from models.promo import PromoUsage
 from schemas.ticket import BuyTicket, ScanTicket, CashReservation
 
 router = APIRouter()
@@ -122,6 +127,23 @@ def reserve_ticket_cash(data: CashReservation, db: Session = Depends(get_db),
         except (ValueError, TypeError):
             prix_base = float(event.price)
 
+    # APPLICATION CODE PROMO (Chantier 19.A)
+    # Cas particulier flux cash : si la promo rend prix=0, on accepte
+    # (génération d'un billet gratuit, statut "paye" direct).
+    promo_obj = None
+    discount_fcfa = 0
+    if data.promo_code:
+        promo_obj = lock_promo_for_use(
+            db,
+            user_id=current_user.id,
+            event_id=event.id,
+            tier_name=data.tier_name,
+            code=data.promo_code,
+            organizer_id=event.organizer_id,
+        )
+        discount_fcfa = compute_discount(promo_obj, prix_base)
+        prix_base = max(0.0, prix_base - discount_fcfa)
+
     est_gratuit = (prix_base <= 0)
     status_final = "paye" if est_gratuit else "reservation_cash"
     methode_final = "gratuit" if est_gratuit else "cash"
@@ -141,6 +163,22 @@ def reserve_ticket_cash(data: CashReservation, db: Session = Depends(get_db),
     )
     db.add(new_ticket)
     event.seats_sold += 1
+    db.flush()  # pour avoir new_ticket.id avant la PromoUsage
+
+    # Insertion PromoUsage (Chantier 19.A)
+    # - Flux cash payant : statut "reserved" (sera "confirmed" à l'encaissement par l'agent)
+    # - Flux gratuit (promo rend prix=0) : statut "confirmed" direct (billet finalisé)
+    if promo_obj:
+        usage_status = "confirmed" if est_gratuit else "reserved"
+        db.add(PromoUsage(
+            promo_id=promo_obj.id,
+            user_id=current_user.id,
+            ticket_id=new_ticket.id,
+            discount_fcfa=discount_fcfa,
+            status=usage_status,
+        ))
+        promo_obj.used_count += 1
+
     db.commit()
     db.refresh(new_ticket)
 
@@ -198,6 +236,9 @@ def confirm_cash_payment(ticket_id: int, db: Session = Depends(get_db),
     ticket.payment_status = "paye_cash"
     ticket.cash_collected_by = current_user.id
     ticket.cash_collected_at = datetime.utcnow()
+
+    # Confirmation de l'éventuelle promo associée (Chantier 19.A)
+    confirm_promo_usage(db, ticket.id)
 
     from models.payment import Payment
     cash_payment = Payment(
@@ -259,10 +300,15 @@ def cancel_cash_reservation(ticket_id: int, db: Session = Depends(get_db),
     if ticket.payment_status != "reservation_cash":
         raise HTTPException(400, "Seules les réservations en attente de paiement peuvent être annulées.")
 
-    # P0 — Verrou pessimiste sur Event pour décrément atomique
+   # P0 — Verrou pessimiste sur Event pour décrément atomique
     event = lock_event_for_release(db, ticket.event_id)
     if event:
         event.seats_sold = max(0, event.seats_sold - 1)
+
+    # Libération promo AVANT delete (Chantier 19.A)
+    # Critique : sans ça, le ON DELETE CASCADE supprimerait la PromoUsage
+    # sans décrémenter used_count, laissant le code artificiellement épuisé.
+    release_promo_usage(db, ticket.id)
 
     db.delete(ticket)
     db.commit()

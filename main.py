@@ -21,7 +21,7 @@ from api import ads as ads_router
 from api import (
     auth, events, tickets, agent, social,
     organizer, dashboard, admin, payments, promotion,
-    promo_codes,
+    promo_codes, audience,
 )
 from api import staff as staff_router
 
@@ -66,7 +66,7 @@ app.include_router(ads_router.router)
 app.include_router(staff_router.router)
 app.include_router(promotion.router)
 app.include_router(promo_codes.router)
-
+app.include_router(audience.router)
 
 @app.get("/")
 def root():

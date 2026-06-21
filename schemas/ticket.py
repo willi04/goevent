@@ -20,3 +20,4 @@ class CashReservation(BaseModel):
     event_id: int
     tier_name: Optional[str] = None
     email: Optional[str] = None
+    promo_code: Optional[str] = None

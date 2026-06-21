@@ -14,6 +14,7 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from utils.locks import lock_event_for_release
+from utils.promo import confirm_promo_usage, release_promo_usage
 from models.ticket import Ticket
 from models.payment import Payment
 from models.promotion import BoostOrder, FbAdPackage
@@ -66,6 +67,7 @@ def _process_ticket(db, order_id, code, transaction_amount=None):
                     ev = lock_event_for_release(db, ticket.event_id)
                     if ev:
                         ev.seats_sold = max(0, ev.seats_sold - 1)
+                    release_promo_usage(db, ticket.id)  # Chantier 19.A
                     db.commit()
                     print(f"🚨 process_ngser : montant incohérent {order_id} reçu={recu} attendu={attendu}.")
                     return {"action": "rejected_amount", "received": recu, "expected": attendu}
@@ -76,12 +78,15 @@ def _process_ticket(db, order_id, code, transaction_amount=None):
                 ev = lock_event_for_release(db, ticket.event_id)
                 if ev:
                     ev.seats_sold = max(0, ev.seats_sold - 1)
+                release_promo_usage(db, ticket.id)  # Chantier 19.A
                 db.commit()
                 return {"action": "rejected_amount", "reason": "unreadable"}
 
         ticket.payment_status = "paye"
         if payment_record:
             payment_record.status = "completed"
+        # Confirmation promo (Chantier 19.A)
+        confirm_promo_usage(db, ticket.id)
         db.commit()
         print(f"✅ process_ngser : billet {ticket.id} validé ({order_id}).")
         return {"action": "validated", "ticket_id": ticket.id}
@@ -93,6 +98,7 @@ def _process_ticket(db, order_id, code, transaction_amount=None):
         ev = lock_event_for_release(db, ticket.event_id)
         if ev:
             ev.seats_sold = max(0, ev.seats_sold - 1)
+        release_promo_usage(db, ticket.id)  # Chantier 19.A
         db.commit()
         print(f"❌ process_ngser : paiement échoué {order_id} (code={code}).")
         return {"action": "failed", "code": code}

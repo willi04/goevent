@@ -261,6 +261,18 @@
           </a>
           <a
             href="#"
+            id="mo-link-audience-drawer"
+            onclick="
+              showSection('audience');
+              toggleMobileMenu();
+            "
+            class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all"
+          >
+            <span class="material-symbols-outlined opacity-70">groups_2</span>
+            Audience
+          </a>
+          <a
+            href="#"
             id="mo-link-settings-drawer"
             onclick="
               showSection('settings');
@@ -357,8 +369,11 @@
           <button class="sb-link" id="link-team" onclick="showSection('team')">
             <span class="material-symbols-outlined">badge</span>Mon Équipe
           </button>
-          <button class="sb-link" id="link-promotion" onclick="showSection('promotion')">
+         <button class="sb-link" id="link-promotion" onclick="showSection('promotion')">
             <span class="material-symbols-outlined">rocket_launch</span>Promotion
+          </button>
+          <button class="sb-link" id="link-audience" onclick="showSection('audience')">
+            <span class="material-symbols-outlined">groups_2</span>Audience
           </button>
           <button
             class="sb-link"
@@ -1260,7 +1275,6 @@
                   </button>
                 </div>
 
-                <!-- Tableau des codes -->
                 <div id="promo-codes-list" class="space-y-3">
                   <p class="text-center text-gray-400 py-6 text-sm">Chargement...</p>
                 </div>
@@ -1268,7 +1282,166 @@
             </div>
 
           </div>
-          
+
+          <!-- ═══════════════════════════════════════════════════════════════ -->
+          <!-- SECTION : AUDIENCE (Chantier 19.B)                              -->
+          <!-- ═══════════════════════════════════════════════════════════════ -->
+          <div id="sec-audience" class="hidden space-y-6 md:space-y-8">
+
+            <!-- Header + bandeau légal permanent -->
+            <div class="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100">
+              <div class="flex items-start justify-between flex-wrap gap-4 mb-4">
+                <div>
+                  <h2 class="text-2xl md:text-3xl font-black text-gray-900 mb-2">
+                    👥 Audience
+                  </h2>
+                  <p class="text-sm text-gray-500">
+                    Vos acheteurs, leurs historiques, vos segments.
+                  </p>
+                </div>
+                <button
+                  onclick="openExportModal()"
+                  id="btn-export-audience"
+                  class="bg-primary text-white px-5 py-3 rounded-xl font-bold text-sm shadow-md hover:bg-primary-container active:scale-95 transition-all flex items-center gap-2"
+                >
+                  <span class="material-symbols-outlined text-base">download</span>
+                  Exporter en CSV
+                </button>
+              </div>
+
+              <!-- Bandeau légal permanent (non-bloquant) -->
+              <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-3">
+                <span class="material-symbols-outlined text-amber-600 text-xl shrink-0">shield</span>
+                <div class="text-xs text-amber-900">
+                  <strong>Vos contacts sont protégés.</strong> Vous vous êtes engagé à ne pas les revendre ni les transférer à un tiers. Toute utilisation abusive entraîne suspension immédiate et poursuites. Vos téléchargements sont tracés.
+                </div>
+              </div>
+            </div>
+
+            <!-- Stats globales (header) -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
+              <div class="bg-white p-4 md:p-5 rounded-3xl shadow-sm border border-gray-100">
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Contacts uniques</p>
+                <p id="aud-total-contacts" class="text-2xl md:text-3xl font-black font-headline tracking-tight text-gray-900 mt-1">—</p>
+              </div>
+              <div class="bg-white p-4 md:p-5 rounded-3xl shadow-sm border border-gray-100">
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">CA confirmé</p>
+                <p id="aud-total-ca" class="text-2xl md:text-3xl font-black font-headline tracking-tight text-gray-900 mt-1">—</p>
+              </div>
+              <div class="bg-white p-4 md:p-5 rounded-3xl shadow-sm border border-gray-100">
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Événements</p>
+                <p id="aud-nb-events" class="text-2xl md:text-3xl font-black font-headline tracking-tight text-gray-900 mt-1">—</p>
+              </div>
+              <div class="bg-white p-4 md:p-5 rounded-3xl shadow-sm border border-gray-100">
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Acheteurs uniques</p>
+                <p id="aud-unique-buyers" class="text-2xl md:text-3xl font-black font-headline tracking-tight text-gray-900 mt-1">—</p>
+              </div>
+            </div>
+
+            <!-- 3 cartes Segments cliquables -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <button onclick="filterAudienceBySegment('recurrent')" class="seg-card bg-white p-5 rounded-3xl shadow-sm border-2 border-gray-100 hover:border-orange-300 transition-all text-left group" data-segment="recurrent">
+                <div class="flex items-center gap-3 mb-3">
+                  <div class="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center">
+                    <span class="material-symbols-outlined text-orange-600">repeat</span>
+                  </div>
+                  <div>
+                    <p class="text-xs font-bold text-orange-700 uppercase tracking-widest">🔥 Récurrents</p>
+                    <p class="text-[10px] text-gray-400">≥ 2 events achetés</p>
+                  </div>
+                </div>
+                <p class="text-3xl font-black text-orange-600" id="aud-seg-recurrent">—</p>
+                <p class="text-xs text-gray-500 mt-1">fans fidèles à choyer</p>
+              </button>
+
+              <button onclick="filterAudienceBySegment('premium')" class="seg-card bg-white p-5 rounded-3xl shadow-sm border-2 border-gray-100 hover:border-purple-300 transition-all text-left group" data-segment="premium">
+                <div class="flex items-center gap-3 mb-3">
+                  <div class="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
+                    <span class="material-symbols-outlined text-purple-600">workspace_premium</span>
+                  </div>
+                  <div>
+                    <p class="text-xs font-bold text-purple-700 uppercase tracking-widest">💰 Gros payeurs</p>
+                    <p class="text-[10px] text-gray-400">≥ 50k FCFA / 12 mois</p>
+                  </div>
+                </div>
+                <p class="text-3xl font-black text-purple-600" id="aud-seg-premium">—</p>
+                <p class="text-xs text-gray-500 mt-1">cible premium</p>
+              </button>
+
+              <button onclick="filterAudienceBySegment('dormant')" class="seg-card bg-white p-5 rounded-3xl shadow-sm border-2 border-gray-100 hover:border-blue-300 transition-all text-left group" data-segment="dormant">
+                <div class="flex items-center gap-3 mb-3">
+                  <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                    <span class="material-symbols-outlined text-blue-600">bedtime</span>
+                  </div>
+                  <div>
+                    <p class="text-xs font-bold text-blue-700 uppercase tracking-widest">💤 Dormants</p>
+                    <p class="text-[10px] text-gray-400">&gt; 90j sans achat</p>
+                  </div>
+                </div>
+                <p class="text-3xl font-black text-blue-600" id="aud-seg-dormant">—</p>
+                <p class="text-xs text-gray-500 mt-1">à réactiver</p>
+              </button>
+            </div>
+
+            <!-- Barre de filtres -->
+            <div class="bg-white p-5 md:p-6 rounded-3xl shadow-sm border border-gray-100">
+              <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                <div>
+                  <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Événement</label>
+                  <select id="aud-filter-event" onchange="reloadAudience()" class="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 focus:ring-2 focus:ring-primary/20 outline-none">
+                    <option value="">Tous mes events</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Statut</label>
+                  <select id="aud-filter-status" onchange="reloadAudience()" class="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 focus:ring-2 focus:ring-primary/20 outline-none">
+                    <option value="">Tous (commerciaux)</option>
+                    <option value="paye">Payé OM</option>
+                    <option value="paye_cash">Payé cash</option>
+                    <option value="reservation_cash">Réservation cash</option>
+                    <option value="en_attente_om">En attente OM</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Recherche</label>
+                  <input type="text" id="aud-filter-q" oninput="debounceReloadAudience()" placeholder="Nom, téléphone, email..." class="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 focus:ring-2 focus:ring-primary/20 outline-none">
+                </div>
+                <div class="flex items-end">
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="aud-filter-abandoned" onchange="reloadAudience()" class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary">
+                    <span class="text-xs font-bold text-gray-600">Inclure les abandons</span>
+                  </label>
+                </div>
+              </div>
+              <!-- Indicateur filtre segment actif -->
+              <div id="aud-segment-active" class="hidden mt-3 inline-flex items-center gap-2 bg-primary/10 text-primary px-3 py-1.5 rounded-full text-xs font-bold">
+                <span id="aud-segment-active-label">—</span>
+                <button onclick="clearSegmentFilter()" class="hover:text-primary-container">
+                  <span class="material-symbols-outlined text-sm">close</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Tableau Contacts -->
+            <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+              <div class="p-5 md:p-6 border-b border-gray-100 flex items-center justify-between">
+                <h3 class="text-lg font-extrabold text-gray-900">Contacts</h3>
+                <p id="aud-list-counter" class="text-xs text-gray-500 font-medium">—</p>
+              </div>
+              <div id="audience-list" class="divide-y divide-gray-50">
+                <div class="text-center py-12 text-gray-400">
+                  <span class="material-symbols-outlined text-5xl mb-2">hourglass_empty</span>
+                  <p class="font-bold">Chargement...</p>
+                </div>
+              </div>
+              <!-- Sentinel infinite scroll -->
+              <div id="audience-sentinel" class="py-6 text-center text-xs text-gray-400 hidden">
+                Chargement...
+              </div>
+            </div>
+
+          </div>
+
           <div id="sec-settings" class="hidden">
             <h2
               class="text-2xl md:text-3xl font-extrabold font-headline tracking-tight text-gray-900 mb-6 md:mb-8"
@@ -1681,6 +1854,7 @@
           "cash-reservations",
           "finance",
           "promotion",
+          "audience",
         ];
         sections.forEach((s) => {
           const el = document.getElementById("sec-" + s);
@@ -1837,7 +2011,7 @@
         }
       }
       
-      // Charger automatiquement quand on entre dans la section
+     // Charger automatiquement quand on entre dans la section
       const originalShowSection = window.showSection;
       window.showSection = function(section) {
         originalShowSection(section);
@@ -1850,6 +2024,9 @@
         if (section === "promotion") {
           loadMyPromotions();
           showPromoView("menu");
+        }
+        if (section === "audience") {
+          initAudienceSection();
         }
       };
       
@@ -3609,6 +3786,448 @@
         };
         const [cls, label, icon] = map[status] || ["bg-gray-100 text-gray-600", status, "info"];
         return `<span class="inline-flex items-center gap-1 ${cls} px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap"><span class="material-symbols-outlined text-[14px]">${icon}</span>${label}</span>`;
+      }
+
+      // ════════════════════════════════════════════════════════
+      // CHANTIER 19.B : AUDIENCE (listing + segments + export)
+      // ════════════════════════════════════════════════════════
+
+      const AUD_PAGE_SIZE = 50;
+      const AUD_MAX_TOTAL = 2000;
+
+      let _audState = {
+        offset: 0,
+        loading: false,
+        hasMore: true,
+        totalLoaded: 0,
+        filters: {
+          event_id: null,
+          status: null,
+          segment: null,
+          q: null,
+          include_abandoned: false,
+        },
+        observer: null,
+        debounceTimer: null,
+      };
+
+      function initAudienceSection() {
+        // Reset état au moment où l'orga entre dans l'onglet
+        _audState.offset = 0;
+        _audState.loading = false;
+        _audState.hasMore = true;
+        _audState.totalLoaded = 0;
+        _audState.filters = {
+          event_id: null,
+          status: null,
+          segment: null,
+          q: null,
+          include_abandoned: false,
+        };
+        if (_audState.observer) {
+          _audState.observer.disconnect();
+          _audState.observer = null;
+        }
+
+        // Reset UI filtres
+        const evSel = document.getElementById("aud-filter-event");
+        const stSel = document.getElementById("aud-filter-status");
+        const qInp = document.getElementById("aud-filter-q");
+        const abChk = document.getElementById("aud-filter-abandoned");
+        if (evSel) evSel.value = "";
+        if (stSel) stSel.value = "";
+        if (qInp) qInp.value = "";
+        if (abChk) abChk.checked = false;
+
+        clearSegmentFilter();
+        populateAudienceEventSelect();
+        loadAudienceStats();
+        loadAudienceList(true);
+        setupInfiniteScroll();
+      }
+
+      function populateAudienceEventSelect() {
+        const sel = document.getElementById("aud-filter-event");
+        if (!sel) return;
+
+        const events = window.lastOrganizerStats?.events || [];
+        const optionsHtml = events.length === 0
+          ? '<option value="">Aucun événement</option>'
+          : '<option value="">Tous mes events</option>' +
+            events.map(e => `<option value="${e.id}">${e.title}</option>`).join("");
+        sel.innerHTML = optionsHtml;
+      }
+
+      async function loadAudienceStats() {
+        try {
+          const stats = await btApi.get("/organizer/audience/stats");
+
+          document.getElementById("aud-total-contacts").textContent = stats.total_contacts.toLocaleString("fr-FR");
+          document.getElementById("aud-total-ca").textContent = parseInt(stats.total_ca_fcfa).toLocaleString("fr-FR") + " F";
+          document.getElementById("aud-nb-events").textContent = stats.nb_events;
+          document.getElementById("aud-unique-buyers").textContent = (stats.segments?.total_unique_buyers || 0).toLocaleString("fr-FR");
+
+          document.getElementById("aud-seg-recurrent").textContent = stats.segments?.recurrent || 0;
+          document.getElementById("aud-seg-premium").textContent = stats.segments?.premium || 0;
+          document.getElementById("aud-seg-dormant").textContent = stats.segments?.dormant || 0;
+        } catch (err) {
+          console.error("loadAudienceStats:", err);
+          ["aud-total-contacts","aud-total-ca","aud-nb-events","aud-unique-buyers","aud-seg-recurrent","aud-seg-premium","aud-seg-dormant"].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = "—";
+          });
+        }
+      }
+
+      function readAudienceFilters() {
+        const evSel = document.getElementById("aud-filter-event");
+        const stSel = document.getElementById("aud-filter-status");
+        const qInp = document.getElementById("aud-filter-q");
+        const abChk = document.getElementById("aud-filter-abandoned");
+
+        _audState.filters.event_id = evSel?.value ? parseInt(evSel.value) : null;
+        _audState.filters.status = stSel?.value || null;
+        _audState.filters.q = (qInp?.value || "").trim() || null;
+        _audState.filters.include_abandoned = !!abChk?.checked;
+      }
+
+      function buildAudienceQueryString() {
+        const f = _audState.filters;
+        const params = new URLSearchParams();
+        if (f.event_id) params.append("event_id", f.event_id);
+        if (f.status) params.append("status", f.status);
+        if (f.segment) params.append("segment", f.segment);
+        if (f.q) params.append("q", f.q);
+        if (f.include_abandoned) params.append("include_abandoned", "true");
+        return params.toString();
+      }
+
+      async function loadAudienceList(reset) {
+        if (_audState.loading) return;
+        if (reset) {
+          _audState.offset = 0;
+          _audState.totalLoaded = 0;
+          _audState.hasMore = true;
+          readAudienceFilters();
+        }
+        if (!_audState.hasMore) return;
+        if (_audState.totalLoaded >= AUD_MAX_TOTAL) {
+          showAudienceCap();
+          return;
+        }
+
+        _audState.loading = true;
+        const sentinel = document.getElementById("audience-sentinel");
+        const listEl = document.getElementById("audience-list");
+
+        if (reset && listEl) {
+          listEl.innerHTML = '<div class="text-center py-12 text-gray-400"><span class="material-symbols-outlined text-5xl mb-2">hourglass_empty</span><p class="font-bold">Chargement...</p></div>';
+        } else if (sentinel) {
+          sentinel.classList.remove("hidden");
+          sentinel.textContent = "Chargement...";
+        }
+
+        try {
+          const qs = buildAudienceQueryString();
+          const url = `/organizer/audience?${qs}&offset=${_audState.offset}&limit=${AUD_PAGE_SIZE}`;
+          const res = await btApi.get(url);
+
+          if (reset) {
+            listEl.innerHTML = "";
+          }
+
+          if (res.contacts.length === 0 && reset) {
+            listEl.innerHTML = `
+              <div class="text-center py-12 text-gray-400">
+                <span class="material-symbols-outlined text-5xl mb-2">person_off</span>
+                <p class="font-bold text-gray-500">Aucun contact trouvé</p>
+                <p class="text-sm mt-1">Ajustez vos filtres ou attendez les premières ventes.</p>
+              </div>`;
+          } else {
+            const html = res.contacts.map(renderAudienceRow).join("");
+            listEl.insertAdjacentHTML("beforeend", html);
+          }
+
+          _audState.offset += res.contacts.length;
+          _audState.totalLoaded += res.contacts.length;
+          _audState.hasMore = res.has_more && _audState.totalLoaded < AUD_MAX_TOTAL;
+
+          // Compteur
+          const counter = document.getElementById("aud-list-counter");
+          if (counter) {
+            counter.textContent = `${_audState.totalLoaded.toLocaleString("fr-FR")} / ${res.total.toLocaleString("fr-FR")} affichés`;
+          }
+
+          if (sentinel) {
+            if (_audState.hasMore) {
+              sentinel.classList.remove("hidden");
+              sentinel.textContent = "Scrollez pour charger plus...";
+            } else if (_audState.totalLoaded >= AUD_MAX_TOTAL && res.total > AUD_MAX_TOTAL) {
+              sentinel.classList.remove("hidden");
+              sentinel.innerHTML = `<div class="text-amber-700 bg-amber-50 border border-amber-200 rounded-xl p-3 inline-block"><strong>Limite affichage atteinte (${AUD_MAX_TOTAL.toLocaleString("fr-FR")}).</strong> Affinez vos filtres ou exportez en CSV pour la liste complète.</div>`;
+            } else {
+              sentinel.classList.add("hidden");
+            }
+          }
+        } catch (err) {
+          console.error("loadAudienceList:", err);
+          if (listEl) {
+            listEl.innerHTML = `<p class="text-center text-red-400 py-6 text-sm">Erreur de chargement : ${err.message || ""}</p>`;
+          }
+        } finally {
+          _audState.loading = false;
+        }
+      }
+
+      function showAudienceCap() {
+        const sentinel = document.getElementById("audience-sentinel");
+        if (sentinel) {
+          sentinel.classList.remove("hidden");
+          sentinel.innerHTML = `<div class="text-amber-700 bg-amber-50 border border-amber-200 rounded-xl p-3 inline-block"><strong>Limite affichage atteinte (${AUD_MAX_TOTAL.toLocaleString("fr-FR")}).</strong> Affinez vos filtres ou exportez en CSV.</div>`;
+        }
+      }
+
+      function renderAudienceRow(c) {
+        const segBadges = (c.segments || []).map(s => {
+          const map = {
+            "recurrent": ["bg-orange-100 text-orange-700", "🔥 Récurrent"],
+            "premium":   ["bg-purple-100 text-purple-700", "💰 Premium"],
+            "dormant":   ["bg-blue-100 text-blue-700",     "💤 Dormant"],
+          };
+          const [cls, label] = map[s] || ["bg-gray-100 text-gray-600", s];
+          return `<span class="${cls} text-[10px] font-bold px-2 py-0.5 rounded-full">${label}</span>`;
+        }).join(" ");
+
+        const statusBadgeCls = {
+          "paye":              "bg-green-100 text-green-700",
+          "paye_cash":         "bg-green-100 text-green-700",
+          "reservation_cash":  "bg-orange-100 text-orange-700",
+          "en_attente_om":     "bg-yellow-100 text-yellow-700",
+          "expire_abandonne":  "bg-gray-100 text-gray-500",
+          "echec_paiement":    "bg-red-100 text-red-700",
+          "echec_init_ngser":  "bg-red-100 text-red-700",
+        }[c.statut] || "bg-gray-100 text-gray-600";
+
+        const dateAchat = c.date_achat
+          ? new Date(c.date_achat).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })
+          : "—";
+
+        const prix = c.prix_paye_fcfa
+          ? parseInt(c.prix_paye_fcfa).toLocaleString("fr-FR") + " F"
+          : "Gratuit";
+
+        const tel = c.telephone || "—";
+        const email = c.email || "—";
+
+        return `
+          <div class="p-4 md:p-5 hover:bg-gray-50/50 transition-colors">
+            <div class="flex items-start justify-between gap-3 flex-wrap">
+              <div class="flex items-center gap-3 min-w-0 flex-1">
+                <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold text-sm shrink-0">
+                  ${(c.nom || "?").charAt(0).toUpperCase()}
+                </div>
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <p class="font-bold text-sm text-gray-900 truncate">${c.nom || "—"}</p>
+                    ${segBadges}
+                  </div>
+                  <p class="text-xs text-gray-500 mt-0.5 truncate">
+                    <span class="material-symbols-outlined text-[12px] align-middle">phone_iphone</span> ${tel} · 
+                    <span class="material-symbols-outlined text-[12px] align-middle">mail</span> ${email}
+                  </p>
+                  <p class="text-[11px] text-gray-400 mt-1 truncate">
+                    🎫 ${c.event_titre}${c.categorie ? ' · ' + c.categorie : ''} · ${dateAchat}
+                  </p>
+                </div>
+              </div>
+              <div class="text-right shrink-0">
+                <div class="text-base font-black text-gray-900">${prix}</div>
+                <span class="${statusBadgeCls} text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap">${c.statut}</span>
+              </div>
+            </div>
+          </div>`;
+      }
+
+      function debounceReloadAudience() {
+        if (_audState.debounceTimer) clearTimeout(_audState.debounceTimer);
+        _audState.debounceTimer = setTimeout(() => {
+          reloadAudience();
+        }, 350);
+      }
+
+      function reloadAudience() {
+        loadAudienceList(true);
+      }
+
+      function filterAudienceBySegment(segment) {
+        // Si on reclique sur le segment actif, on désactive
+        if (_audState.filters.segment === segment) {
+          clearSegmentFilter();
+          return;
+        }
+        _audState.filters.segment = segment;
+        updateSegmentBadgeUI();
+        loadAudienceList(true);
+      }
+
+      function clearSegmentFilter() {
+        _audState.filters.segment = null;
+        updateSegmentBadgeUI();
+        loadAudienceList(true);
+      }
+
+      function updateSegmentBadgeUI() {
+        // Update visuel des cartes segments
+        document.querySelectorAll(".seg-card").forEach(card => {
+          const seg = card.dataset.segment;
+          if (seg === _audState.filters.segment) {
+            card.classList.add("ring-2", "ring-primary", "ring-offset-2");
+          } else {
+            card.classList.remove("ring-2", "ring-primary", "ring-offset-2");
+          }
+        });
+
+        // Badge filtre actif
+        const badge = document.getElementById("aud-segment-active");
+        const label = document.getElementById("aud-segment-active-label");
+        if (_audState.filters.segment) {
+          const labels = {
+            "recurrent": "🔥 Récurrents uniquement",
+            "premium":   "💰 Gros payeurs uniquement",
+            "dormant":   "💤 Dormants uniquement",
+          };
+          if (label) label.textContent = labels[_audState.filters.segment] || _audState.filters.segment;
+          if (badge) badge.classList.remove("hidden");
+        } else {
+          if (badge) badge.classList.add("hidden");
+        }
+      }
+
+      function setupInfiniteScroll() {
+        if (_audState.observer) {
+          _audState.observer.disconnect();
+        }
+
+        const sentinel = document.getElementById("audience-sentinel");
+        if (!sentinel) return;
+
+        _audState.observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting && _audState.hasMore && !_audState.loading) {
+              loadAudienceList(false);
+            }
+          });
+        }, { rootMargin: "200px" });
+
+        _audState.observer.observe(sentinel);
+      }
+
+      // ──────────────────────────────────────────────────────
+      // EXPORT CSV avec confirmation
+      // ──────────────────────────────────────────────────────
+
+      function openExportModal() {
+        readAudienceFilters();
+        const f = _audState.filters;
+
+        // Récap des filtres actifs
+        const filtersList = [];
+        if (f.event_id) {
+          const evSel = document.getElementById("aud-filter-event");
+          const evName = evSel?.options[evSel.selectedIndex]?.text || `Event #${f.event_id}`;
+          filtersList.push(`Événement : <strong>${evName}</strong>`);
+        } else {
+          filtersList.push(`Événement : <strong>Tous</strong>`);
+        }
+        if (f.status) filtersList.push(`Statut : <strong>${f.status}</strong>`);
+        if (f.segment) filtersList.push(`Segment : <strong>${f.segment}</strong>`);
+        if (f.q) filtersList.push(`Recherche : <strong>"${f.q}"</strong>`);
+        if (f.include_abandoned) filtersList.push(`<strong>Inclut les abandons</strong>`);
+
+        const filtersHtml = filtersList.map(x => `<li>${x}</li>`).join("");
+
+        btModal(`
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+              <span class="material-symbols-outlined text-primary text-2xl">download</span>
+            </div>
+            <h3 class="mb-0">Confirmer l'export</h3>
+          </div>
+
+          <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-4">
+            <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Filtres appliqués</p>
+            <ul class="text-sm text-gray-700 space-y-1 list-disc list-inside">${filtersHtml}</ul>
+          </div>
+
+          <div class="bg-amber-50 border-2 border-amber-200 rounded-xl p-4 mb-4">
+            <p class="text-xs font-black text-amber-800 uppercase tracking-widest mb-2 flex items-center gap-2">
+              <span class="material-symbols-outlined text-base">shield</span>
+              Engagement légal
+            </p>
+            <p class="text-xs text-amber-900 leading-relaxed">
+              En téléchargeant ce fichier, vous vous engagez à <strong>ne pas revendre, céder ou partager</strong> ces contacts à un tiers. Tout usage abusif entraînera <strong>suspension immédiate et poursuites judiciaires</strong>. Votre téléchargement est <strong>horodaté et tracé</strong>.
+            </p>
+          </div>
+
+          <button onclick="doExportAudience(this)" class="bt-btn-primary">
+            <span class="material-symbols-outlined align-middle text-base mr-1">download</span>
+            Télécharger le CSV
+          </button>
+          <button onclick="this.closest('.bt-overlay').remove()" class="bt-btn-outline">
+            Annuler
+          </button>
+        `);
+      }
+
+      async function doExportAudience(btn) {
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = '<span class="material-symbols-outlined animate-spin">autorenew</span> Génération en cours...';
+        }
+
+        try {
+          readAudienceFilters();
+          const qs = buildAudienceQueryString();
+          const url = `${BT_API}/organizer/audience/export?${qs}`;
+          const token = btAuth.getToken();
+
+          const res = await fetch(url, {
+            method: "GET",
+            headers: { "Authorization": "Bearer " + token },
+          });
+
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.detail || `Erreur ${res.status}`);
+          }
+
+          const blob = await res.blob();
+          const downloadUrl = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = downloadUrl;
+
+          // Récupère le nom de fichier depuis Content-Disposition si possible
+          const cd = res.headers.get("Content-Disposition") || "";
+          const match = cd.match(/filename="?([^"]+)"?/);
+          a.download = match ? match[1] : "audience_export.csv";
+
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(downloadUrl);
+
+          btToast("Export téléchargé. Votre engagement légal est enregistré.", "success");
+
+          // Fermer la modale
+          const overlay = btn?.closest(".bt-overlay");
+          if (overlay) overlay.remove();
+        } catch (err) {
+          btToast(err.message || "Erreur lors de l'export", "error");
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<span class="material-symbols-outlined align-middle text-base mr-1">download</span> Télécharger le CSV';
+          }
+        }
       }
     </script>
     

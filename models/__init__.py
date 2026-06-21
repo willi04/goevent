@@ -12,6 +12,7 @@ from .commission import Commission
 from .promotion import BoostOrder, FbAdPackage
 from .premium_interest import PremiumInterest
 from models.promo import PromoCode, PromoUsage 
+from models.audience_log import AudienceExportLog
 
 
 __all__ = [
@@ -27,4 +28,5 @@ __all__ = [
     "BoostOrder", "FbAdPackage",
     "PremiumInterest",
     "PromoCode", "PromoUsage",
+    "AudienceExportLog",
 ]

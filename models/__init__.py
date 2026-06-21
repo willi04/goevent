@@ -23,5 +23,8 @@ __all__ = [
     "PartnerRequest", "CancellationRequest",
     "HomepageContent", "AdContract", "FundraisingCampaign",
     "Commission",
-    "RefundRequest", 
+    "RefundRequest",
+    "BoostOrder", "FbAdPackage",
+    "PremiumInterest",
+    "PromoCode", "PromoUsage",
 ]

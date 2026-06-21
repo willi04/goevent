@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from core.ngser import check_payment_status
 from utils.locks import lock_event_for_release
+from utils.promo import release_promo_usage
 from models.ticket import Ticket
 from models.event import Event
 from models.payment import Payment
@@ -193,6 +194,7 @@ async def expire_old_orphans(db: Session, hours: int = 24) -> dict:
             ev = lock_event_for_release(db, ticket.event_id)
             if ev:
                 ev.seats_sold = max(0, ev.seats_sold - 1)
+            release_promo_usage(db, ticket.id)  # Chantier 19.A
             db.commit()
             summary["expired"] += 1
             print(f"🧹 Orphelin ticket libéré : #{ticket.id} (créé {ticket.purchased_at}).")

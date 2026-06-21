@@ -185,7 +185,21 @@ def me(current_user: User = Depends(get_current_user)):
 @router.put("/auth/me")
 def update_profile(data: UserUpdate, db: Session = Depends(get_db),
                    current_user: User = Depends(get_current_user)):
-    for k, v in data.model_dump(exclude_none=True).items():
+    from sqlalchemy import func
+    payload = data.model_dump(exclude_none=True)
+
+    # Anti-collision email (Chantier 27 : index unique LOWER(email))
+    new_email = payload.get("email")
+    if new_email and new_email.lower() != (current_user.email or "").lower():
+        clash = (
+            db.query(User)
+            .filter(func.lower(User.email) == new_email.lower(), User.id != current_user.id)
+            .first()
+        )
+        if clash:
+            raise HTTPException(409, "Cet email est déjà utilisé par un autre compte")
+
+    for k, v in payload.items():
         setattr(current_user, k, v)
     db.commit()
     return {"message": "Profil mis à jour"}

@@ -361,6 +361,8 @@
       let currentEvent = null;
       let availableTiers = []; // NOUVEAU : Va stocker uniquement les billets disponibles
       let selectedTierIndex = null;
+      let appliedPromo = null;        // Chantier 19.A : code promo validé
+      let promoFromUrl = null;        // Chantier 19.A : code lu depuis ?promo=
 
       // 1. Menu Mobile
       function toggleMobileMenu() {
@@ -412,6 +414,7 @@
         const pathMatch = window.location.pathname.match(/^\/e\/([^\/]+)$/);
         const slug = params.get("slug") || (pathMatch ? pathMatch[1] : null);
         const eventId = params.get("id");
+        promoFromUrl = (params.get("promo") || "").trim().toUpperCase() || null;  // Chantier 19.A
         
         if (!eventId && !slug) {
           window.location.href = "/index.html";
@@ -549,11 +552,109 @@
           }
           
           renderTiers();
+
+          // Chantier 19.A : validation auto si ?promo=CODE dans l'URL
+          if (!isPast && promoFromUrl) {
+              tryApplyPromoFromUrl();
+          }
         } catch (error) {
           console.error("Erreur API :", error);
         }
       });
 
+      // ════════════════════════════════════════════════════════
+      // CHANTIER 19.A — Code promo (validation + bandeau + prix barré)
+      // ════════════════════════════════════════════════════════
+
+      async function tryApplyPromoFromUrl() {
+          if (!currentEvent || !promoFromUrl) return;
+          try {
+              const tierName = (selectedTierIndex !== null && availableTiers[selectedTierIndex])
+                ? availableTiers[selectedTierIndex].name
+                : null;
+              const res = await btApi.post("/promo-codes/validate", {
+                  event_id: currentEvent.id,
+                  tier_name: tierName,
+                  code: promoFromUrl,
+              });
+              if (res.valid) {
+                  appliedPromo = res;
+                  showPromoBanner(res, true);
+                  renderTiers(); // refresh prix
+              } else {
+                  showPromoBanner(res, false);
+              }
+          } catch (err) {
+              showPromoBanner({ code: promoFromUrl, message: err.message || "Code invalide" }, false);
+          }
+      }
+
+      function showPromoBanner(promo, isValid) {
+          // Supprime un bandeau existant
+          const existing = document.getElementById("promo-banner");
+          if (existing) existing.remove();
+
+          const section = document.getElementById("ticket-tiers-selection");
+          if (!section) return;
+
+          const banner = document.createElement("div");
+          banner.id = "promo-banner";
+          if (isValid) {
+              banner.className = "bg-green-50 border-2 border-green-200 rounded-2xl p-4 mb-4 flex items-center gap-3";
+              banner.innerHTML = `
+                  <span class="material-symbols-outlined text-green-600 text-2xl" style="font-variation-settings: 'FILL' 1">verified</span>
+                  <div class="flex-1 min-w-0">
+                      <p class="text-xs font-black uppercase tracking-widest text-green-700">Code appliqué</p>
+                      <p class="text-sm font-bold text-green-900 truncate">
+                          <span class="font-mono">${promo.code}</span> — ${promo.message}
+                      </p>
+                  </div>
+                  <button onclick="clearPromo()" class="text-green-600 hover:text-green-800 p-1" title="Retirer le code">
+                      <span class="material-symbols-outlined text-base">close</span>
+                  </button>`;
+          } else {
+              banner.className = "bg-orange-50 border-2 border-orange-200 rounded-2xl p-4 mb-4 flex items-center gap-3";
+              banner.innerHTML = `
+                  <span class="material-symbols-outlined text-orange-600 text-2xl">info</span>
+                  <div class="flex-1 min-w-0">
+                      <p class="text-xs font-black uppercase tracking-widest text-orange-700">Code non appliqué</p>
+                      <p class="text-sm font-bold text-orange-900 truncate">
+                          <span class="font-mono">${promo.code}</span> — ${promo.message}
+                      </p>
+                  </div>
+                  <button onclick="document.getElementById('promo-banner').remove()" class="text-orange-600 hover:text-orange-800 p-1">
+                      <span class="material-symbols-outlined text-base">close</span>
+                  </button>`;
+          }
+          section.parentNode.insertBefore(banner, section);
+      }
+
+      function clearPromo() {
+          appliedPromo = null;
+          promoFromUrl = null;
+          const b = document.getElementById("promo-banner");
+          if (b) b.remove();
+          renderTiers();
+      }
+
+      function computeDiscountedPrice(tierPrice) {
+          if (!appliedPromo) return tierPrice;
+          let discount = 0;
+          // appliedPromo vient de /validate : on récupère discount_fcfa basé sur le prix de validation.
+          // Pour les tiers multiples on recalcule côté UI pour rester juste.
+          // L'autorité reste backend (qui re-validera au moment du paiement).
+          // Ici on approxime visuellement.
+          // → on relit le code via les champs déjà validés
+          const codeStr = appliedPromo.code;
+          // Heuristique : si le validate a renvoyé un new_price pour un autre tier, on recalcule.
+          // Pour éviter un appel /validate par tier, on déduit le ratio sur le tier validé :
+          if (appliedPromo.original_price && appliedPromo.original_price > 0) {
+              const ratio = appliedPromo.discount_fcfa / appliedPromo.original_price;
+              discount = Math.round(tierPrice * ratio);
+          }
+          return Math.max(0, tierPrice - discount);
+      }
+      
       // 3. Dessiner les billets disponibles
      function renderTiers() {
             // CORRECTION : Le vrai ID de ton HTML
@@ -629,6 +730,16 @@
                   : "text-gray-400";
                 const classesTextePrix = "text-primary";
 
+                // Chantier 19.A : prix réduit éventuel
+                const discounted = computeDiscountedPrice(tier.price);
+                const hasDiscount = appliedPromo && discounted < tier.price;
+                const priceBlock = hasDiscount
+                  ? `<div class="text-right">
+                       <p class="text-xs text-gray-400 line-through font-bold">${tier.price.toLocaleString("fr-FR")} FCFA</p>
+                       <p class="font-headline font-extrabold text-base text-green-600">${discounted.toLocaleString("fr-FR")} FCFA</p>
+                     </div>`
+                  : `<p class="font-headline font-extrabold text-base ${classesTextePrix}">${tier.price.toLocaleString("fr-FR")} FCFA</p>`;
+
                 return `
                     <div onclick="selectTier(${index})" class="cursor-pointer border-2 rounded-[1.5rem] py-5 px-6 flex items-center gap-4 transition-all duration-200 ${classesBordure}">
                         <div class="flex items-center justify-center w-12 h-12 rounded-full border ${classesBadge} shrink-0">
@@ -638,7 +749,7 @@
                             <p class="font-headline font-extrabold text-base ${classesTexteTitre}">${tier.name}</p>
                             <p class="text-[10px] ${classesTexteAcces} font-bold uppercase tracking-wider">ACCÈS GARANTI</p>
                         </div>
-                        <p class="font-headline font-extrabold text-base ${classesTextePrix}">${tier.price.toLocaleString("fr-FR")} FCFA</p>
+                        ${priceBlock}
                     </div>
                 `;
               })
@@ -676,14 +787,16 @@
         // Billet sélectionné
         else {
           const selectedTier = availableTiers[selectedTierIndex];
+          const finalPrice = computeDiscountedPrice(selectedTier.price);  // Chantier 19.A
           btn.disabled = false;
           btn.className =
             "w-full py-4 md:py-5 rounded-2xl bg-primary text-white font-bold text-sm transition-all hover:bg-primary-container shadow-lg shadow-primary/20 active:scale-95";
-          btn.innerHTML = `Réserver • ${selectedTier.price.toLocaleString("fr-FR")} FCFA`;
+          btn.innerHTML = `Réserver • ${finalPrice.toLocaleString("fr-FR")} FCFA`;
         }
       }
 
       // 5. Passer à la caisse
+     // 5. Passer à la caisse
       function proceedToCheckout() {
         if (
           !currentEvent ||
@@ -699,6 +812,10 @@
         urlParams.append("title", currentEvent.title);
         urlParams.append("tier", selected.name);
         urlParams.append("price", selected.price);
+        // Chantier 19.A : propagation du code promo (UNIQUEMENT s'il a été validé)
+        if (appliedPromo && appliedPromo.code) {
+          urlParams.append("promo", appliedPromo.code);
+        }
         
         window.location.href = "checkout.html?" + urlParams.toString();
       }

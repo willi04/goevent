@@ -942,8 +942,8 @@
               </div>
             </div>
 
-            <!-- Menu d'entrée : 2 cartes -->
-            <div id="promo-menu" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+           <!-- Menu d'entrée : 3 cartes -->
+            <div id="promo-menu" class="grid grid-cols-1 md:grid-cols-3 gap-5">
               <!-- Carte Boost GoEvent -->
               <button
                 onclick="showPromoView('boost')"
@@ -981,6 +981,26 @@
                 <div class="flex items-center justify-between border-t border-gray-100 pt-4">
                   <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Dès</span>
                   <span class="font-black text-2xl text-blue-600">35 000 FCFA</span>
+                </div>
+              </button>
+
+              <!-- Carte Codes promo (Chantier 19.A) -->
+              <button
+                onclick="showPromoView('promo')"
+                class="bg-white p-6 md:p-7 rounded-3xl shadow-sm border border-gray-100 hover:border-purple-300 hover:shadow-md transition-all text-left group"
+              >
+                <div class="w-14 h-14 bg-purple-100 group-hover:bg-purple-200 transition-colors rounded-2xl flex items-center justify-center mb-4">
+                  <span class="material-symbols-outlined text-3xl text-purple-600">sell</span>
+                </div>
+                <h3 class="text-xl font-extrabold font-headline text-gray-900 mb-2">
+                  Codes promo
+                </h3>
+                <p class="text-sm text-gray-500 mb-4">
+                  Créez des réductions partageables pour vendre plus. Suivez les conversions en temps réel.
+                </p>
+                <div class="flex items-center justify-between border-t border-gray-100 pt-4">
+                  <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Marketing</span>
+                  <span class="font-black text-base text-purple-600">Gratuit</span>
                 </div>
               </button>
             </div>
@@ -1208,6 +1228,42 @@
                   <span class="material-symbols-outlined">payments</span>
                   Payer avec Orange Money
                 </button>
+              </div>
+            </div>
+
+            <!-- ═══ SOUS-VUE : Codes promo (Chantier 19.A) ═══ -->
+            <div id="promo-view-promo" class="hidden space-y-6">
+              <button
+                onclick="showPromoView('menu')"
+                class="flex items-center gap-2 text-sm font-bold text-gray-600 hover:text-primary transition-colors"
+              >
+                <span class="material-symbols-outlined">arrow_back</span>
+                Retour
+              </button>
+
+              <div class="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100">
+                <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
+                  <div>
+                    <h2 class="text-2xl font-black font-headline text-gray-900 mb-1 flex items-center gap-2">
+                      🎟️ Mes codes promo
+                    </h2>
+                    <p class="text-sm text-gray-500">
+                      Créez, partagez et suivez vos réductions.
+                    </p>
+                  </div>
+                  <button
+                    onclick="openPromoCreateModal()"
+                    class="w-full sm:w-auto bg-primary text-white px-5 py-3 rounded-xl font-bold text-sm shadow-md hover:bg-primary-container active:scale-95 transition-all flex items-center justify-center gap-2"
+                  >
+                    <span class="material-symbols-outlined text-base">add</span>
+                    Nouveau code
+                  </button>
+                </div>
+
+                <!-- Tableau des codes -->
+                <div id="promo-codes-list" class="space-y-3">
+                  <p class="text-center text-gray-400 py-6 text-sm">Chargement...</p>
+                </div>
               </div>
             </div>
 
@@ -2878,39 +2934,48 @@
       let _selectedBoostPkg = null;
       let _myBoosts = [];
       let _myFbPacks = [];
-
-      // Bascule entre les 3 vues : menu / boost / fbpack
+      
+      // Bascule entre les 4 vues : menu / boost / fbpack / promo
       function showPromoView(view) {
         const menu = document.getElementById("promo-menu");
         const viewBoost = document.getElementById("promo-view-boost");
         const viewFbPack = document.getElementById("promo-view-fbpack");
+        const viewPromo = document.getElementById("promo-view-promo");
 
         // Cartes "Mes campagnes en cours" et "Historique" : on les masque dans les sous-vues
         const activeBlock = document.getElementById("promo-active-list")?.closest(".bg-white");
         const historyBlock = document.getElementById("promo-history-list")?.closest(".bg-white");
 
+        const allViews = [viewBoost, viewFbPack, viewPromo];
+
         if (view === "menu") {
           menu.classList.remove("hidden");
-          viewBoost.classList.add("hidden");
-          viewFbPack.classList.add("hidden");
+          allViews.forEach(v => v && v.classList.add("hidden"));
           if (activeBlock) activeBlock.classList.remove("hidden");
           if (historyBlock) historyBlock.classList.remove("hidden");
         } else if (view === "boost") {
           menu.classList.add("hidden");
-          viewBoost.classList.remove("hidden");
-          viewFbPack.classList.add("hidden");
+          allViews.forEach(v => v && v.classList.add("hidden"));
+          if (viewBoost) viewBoost.classList.remove("hidden");
           if (activeBlock) activeBlock.classList.add("hidden");
           if (historyBlock) historyBlock.classList.add("hidden");
           populateEventSelects();
           prefilOrangeMoneyFields();
         } else if (view === "fbpack") {
           menu.classList.add("hidden");
-          viewBoost.classList.add("hidden");
-          viewFbPack.classList.remove("hidden");
+          allViews.forEach(v => v && v.classList.add("hidden"));
+          if (viewFbPack) viewFbPack.classList.remove("hidden");
           if (activeBlock) activeBlock.classList.add("hidden");
           if (historyBlock) historyBlock.classList.add("hidden");
           populateEventSelects();
           prefilOrangeMoneyFields();
+        } else if (view === "promo") {
+          menu.classList.add("hidden");
+          allViews.forEach(v => v && v.classList.add("hidden"));
+          if (viewPromo) viewPromo.classList.remove("hidden");
+          if (activeBlock) activeBlock.classList.add("hidden");
+          if (historyBlock) historyBlock.classList.add("hidden");
+          loadPromoCodes();
         }
       }
 
@@ -3181,6 +3246,355 @@
         };
         const [cls, label, icon] = map[status] || ["bg-gray-100 text-gray-600", status, "info"];
         return `<span class="inline-flex items-center gap-1 ${cls} px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap"><span class="material-symbols-outlined text-[14px]">${icon}</span>${label}</span>`;
+      }
+      // ════════════════════════════════════════════════════════
+      // CHANTIER 19.A : CODES PROMO (CRUD + partage)
+      // ════════════════════════════════════════════════════════
+
+      let _myPromoCodes = [];
+
+      async function loadPromoCodes() {
+        const listEl = document.getElementById("promo-codes-list");
+        if (!listEl) return;
+        listEl.innerHTML = '<p class="text-center text-gray-400 py-6 text-sm">Chargement...</p>';
+
+        try {
+          _myPromoCodes = await btApi.get("/organizer/promo-codes");
+          renderPromoCodes();
+        } catch (err) {
+          listEl.innerHTML = '<p class="text-center text-red-400 py-6 text-sm">Erreur de chargement</p>';
+          console.error("loadPromoCodes:", err);
+        }
+      }
+
+      function renderPromoCodes() {
+        const listEl = document.getElementById("promo-codes-list");
+        if (!listEl) return;
+
+        if (!_myPromoCodes || _myPromoCodes.length === 0) {
+          listEl.innerHTML = `
+            <div class="text-center py-12 text-gray-400">
+              <span class="material-symbols-outlined text-5xl mb-2">sell</span>
+              <p class="font-bold text-gray-500">Aucun code promo créé</p>
+              <p class="text-sm mt-1">Cliquez sur "Nouveau code" pour démarrer.</p>
+            </div>`;
+          return;
+        }
+
+        listEl.innerHTML = _myPromoCodes.map(renderPromoRow).join("");
+      }
+
+      function renderPromoRow(p) {
+        const valueLabel = p.discount_type === "percent"
+          ? `-${p.discount_value}%`
+          : `-${parseInt(p.discount_value).toLocaleString("fr-FR")} FCFA`;
+
+        const usageLabel = p.max_uses_global
+          ? `${p.used_count}/${p.max_uses_global}`
+          : `${p.used_count}`;
+
+        const statusBadge = p.is_active
+          ? '<span class="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap">Actif</span>'
+          : '<span class="bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap">Désactivé</span>';
+
+        const scopeLabel = p.event_id
+          ? (p.tier_name
+              ? `${p.event_title || "Événement"} · ${p.tier_name}`
+              : (p.event_title || "Événement"))
+          : "Tous événements";
+
+        return `
+          <div class="border border-gray-200 bg-white rounded-2xl p-4 flex flex-col gap-3 hover:border-purple-300 transition-colors">
+            <div class="flex items-start justify-between gap-3 flex-wrap">
+              <div class="flex items-center gap-3 min-w-0 flex-1">
+                <div class="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center shrink-0">
+                  <span class="material-symbols-outlined text-purple-600">sell</span>
+                </div>
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="font-black text-base text-gray-900 font-mono tracking-wide">${p.code}</span>
+                    ${statusBadge}
+                  </div>
+                  <p class="text-xs text-gray-500 mt-0.5 truncate">${scopeLabel}</p>
+                </div>
+              </div>
+              <div class="text-right shrink-0">
+                <div class="text-lg font-black text-purple-600">${valueLabel}</div>
+                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Usages : ${usageLabel}</div>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
+              ${p.share_link ? `
+              <button onclick="copyPromoLink('${p.share_link.replace(/'/g, "\\'")}', '${p.code}')" class="flex items-center gap-1 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-lg text-xs font-bold transition-colors">
+                <span class="material-symbols-outlined text-[14px]">link</span>
+                Copier le lien
+              </button>` : ''}
+              <button onclick="viewPromoStats(${p.id})" class="flex items-center gap-1 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-bold transition-colors">
+                <span class="material-symbols-outlined text-[14px]">analytics</span>
+                Stats
+              </button>
+              <button onclick="togglePromoActive(${p.id}, ${!p.is_active})" class="flex items-center gap-1 px-3 py-1.5 ${p.is_active ? 'bg-orange-50 hover:bg-orange-100 text-orange-700' : 'bg-green-50 hover:bg-green-100 text-green-700'} rounded-lg text-xs font-bold transition-colors">
+                <span class="material-symbols-outlined text-[14px]">${p.is_active ? 'toggle_off' : 'toggle_on'}</span>
+                ${p.is_active ? 'Désactiver' : 'Réactiver'}
+              </button>
+            </div>
+          </div>`;
+      }
+
+      function copyPromoLink(link, code) {
+        navigator.clipboard.writeText(link).then(() => {
+          btToast(`Lien du code ${code} copié !`, "success");
+        }).catch(() => {
+          btToast("Impossible de copier", "error");
+        });
+      }
+
+      async function togglePromoActive(promoId, newState) {
+        try {
+          await btApi.patch(`/organizer/promo-codes/${promoId}`, { is_active: newState });
+          btToast(newState ? "Code réactivé" : "Code désactivé", "success");
+          loadPromoCodes();
+        } catch (err) {
+          btToast(err.message || "Erreur", "error");
+        }
+      }
+
+      async function viewPromoStats(promoId) {
+        try {
+          const p = await btApi.get(`/organizer/promo-codes/${promoId}`);
+          const totalDiscount = parseInt(p.total_discount_fcfa || 0).toLocaleString("fr-FR");
+          const valueLabel = p.discount_type === "percent"
+            ? `-${p.discount_value}%`
+            : `-${parseInt(p.discount_value).toLocaleString("fr-FR")} FCFA`;
+
+          btModal(`
+            <h3>📊 Stats du code <span class="font-mono text-purple-600">${p.code}</span></h3>
+            <div class="space-y-4 mt-4">
+              <div class="grid grid-cols-2 gap-3">
+                <div class="bg-purple-50 border border-purple-200 rounded-xl p-3">
+                  <div class="text-[10px] font-bold text-purple-700 uppercase tracking-widest">Réduction</div>
+                  <div class="text-xl font-black text-purple-700 mt-1">${valueLabel}</div>
+                </div>
+                <div class="bg-green-50 border border-green-200 rounded-xl p-3">
+                  <div class="text-[10px] font-bold text-green-700 uppercase tracking-widest">Conversions</div>
+                  <div class="text-xl font-black text-green-700 mt-1">${p.confirmed_count || 0}</div>
+                </div>
+                <div class="bg-orange-50 border border-orange-200 rounded-xl p-3">
+                  <div class="text-[10px] font-bold text-orange-700 uppercase tracking-widest">Réservations en cours</div>
+                  <div class="text-xl font-black text-orange-700 mt-1">${(p.used_count || 0) - (p.confirmed_count || 0)}</div>
+                </div>
+                <div class="bg-gray-50 border border-gray-200 rounded-xl p-3">
+                  <div class="text-[10px] font-bold text-gray-700 uppercase tracking-widest">Total réduit</div>
+                  <div class="text-xl font-black text-gray-900 mt-1">${totalDiscount} F</div>
+                </div>
+              </div>
+              <div class="bg-gray-50 rounded-xl p-3">
+                <div class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Quota</div>
+                <p class="text-sm text-gray-700">
+                  Global : ${p.used_count}${p.max_uses_global ? '/' + p.max_uses_global : ' (illimité)'} ·
+                  Par fan : ${p.max_uses_per_user}
+                </p>
+              </div>
+              ${p.share_link ? `
+              <div class="bg-purple-50 rounded-xl p-3">
+                <div class="text-[10px] font-bold text-purple-700 uppercase tracking-widest mb-1">Lien partageable</div>
+                <p class="text-xs text-gray-600 font-mono break-all">${p.share_link}</p>
+              </div>` : ''}
+              <button onclick="this.closest('.bt-overlay').remove()" class="bt-btn-outline">Fermer</button>
+            </div>
+          `);
+        } catch (err) {
+          btToast(err.message || "Erreur", "error");
+        }
+      }
+
+      function openPromoCreateModal() {
+        const events = window.lastOrganizerStats?.events || [];
+        const now = new Date();
+        const futureEvents = events.filter(e => !e.event_date || new Date(e.event_date) >= now);
+
+        const eventOptions = futureEvents.length === 0
+          ? '<option value="">Aucun événement à venir</option>'
+          : '<option value="">— Sélectionner un événement —</option>' +
+            futureEvents.map(e => `<option value="${e.id}" data-tiers='${JSON.stringify(e.ticket_tiers || []).replace(/'/g, "&#39;")}'>${e.title}</option>`).join("");
+
+        btModal(`
+          <h3>🎟️ Nouveau code promo</h3>
+          <div class="space-y-4 mt-2">
+            <div class="bt-field">
+              <label class="bt-label">Code <span class="text-red-500">*</span></label>
+              <div class="flex gap-2">
+                <input type="text" id="pc-code" class="bt-input" placeholder="EX: ETE2026" maxlength="20" style="text-transform: uppercase;">
+                <button type="button" onclick="generatePromoCode()" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-bold whitespace-nowrap">
+                  Générer
+                </button>
+              </div>
+              <p class="text-[11px] text-gray-400 mt-1">Lettres, chiffres, tirets et underscores. 3-20 caractères.</p>
+            </div>
+
+            <div class="bt-g2">
+              <div class="bt-field">
+                <label class="bt-label">Type <span class="text-red-500">*</span></label>
+                <select id="pc-type" class="bt-input" onchange="updatePromoValueHint()">
+                  <option value="percent">Pourcentage (%)</option>
+                  <option value="fixed">Montant fixe (FCFA)</option>
+                </select>
+              </div>
+              <div class="bt-field">
+                <label class="bt-label">Valeur <span class="text-red-500">*</span></label>
+                <input type="number" id="pc-value" class="bt-input" placeholder="20" min="1" step="1">
+                <p id="pc-value-hint" class="text-[11px] text-gray-400 mt-1">Max 100 pour les %.</p>
+              </div>
+            </div>
+
+            <div class="bt-field">
+              <label class="bt-label">Événement (optionnel)</label>
+              <select id="pc-event" class="bt-input" onchange="updateTierSelect()">
+                ${eventOptions}
+              </select>
+              <p class="text-[11px] text-gray-400 mt-1">Laissez vide pour appliquer le code à tous vos événements.</p>
+            </div>
+
+            <div class="bt-field" id="pc-tier-wrap" style="display:none;">
+              <label class="bt-label">Catégorie de billet (optionnel)</label>
+              <select id="pc-tier" class="bt-input">
+                <option value="">Toutes les catégories</option>
+              </select>
+            </div>
+
+            <div class="bt-g2">
+              <div class="bt-field">
+                <label class="bt-label">Limite globale</label>
+                <input type="number" id="pc-max-global" class="bt-input" placeholder="∞ illimité" min="1">
+              </div>
+              <div class="bt-field">
+                <label class="bt-label">Max par fan</label>
+                <input type="number" id="pc-max-user" class="bt-input" value="1" min="1" max="100">
+              </div>
+            </div>
+
+            <div class="bt-g2">
+              <div class="bt-field">
+                <label class="bt-label">Début (optionnel)</label>
+                <input type="datetime-local" id="pc-starts" class="bt-input">
+              </div>
+              <div class="bt-field">
+                <label class="bt-label">Fin (optionnel)</label>
+                <input type="datetime-local" id="pc-ends" class="bt-input">
+              </div>
+            </div>
+
+            <button class="bt-btn-primary" id="pc-submit" onclick="submitPromoCreate()">
+              Créer le code
+            </button>
+          </div>
+        `);
+
+        // Uppercase automatique sur le champ code
+        const codeInput = document.getElementById("pc-code");
+        if (codeInput) {
+          codeInput.addEventListener("input", function() {
+            this.value = this.value.toUpperCase();
+          });
+        }
+      }
+
+      function updatePromoValueHint() {
+        const type = document.getElementById("pc-type").value;
+        const hint = document.getElementById("pc-value-hint");
+        const input = document.getElementById("pc-value");
+        if (type === "percent") {
+          hint.textContent = "Max 100 pour les %.";
+          input.max = 100;
+        } else {
+          hint.textContent = "Montant en FCFA.";
+          input.removeAttribute("max");
+        }
+      }
+
+      function updateTierSelect() {
+        const sel = document.getElementById("pc-event");
+        const wrap = document.getElementById("pc-tier-wrap");
+        const tierSel = document.getElementById("pc-tier");
+        if (!sel.value) {
+          wrap.style.display = "none";
+          return;
+        }
+        const opt = sel.options[sel.selectedIndex];
+        let tiers = [];
+        try {
+          tiers = JSON.parse((opt.getAttribute("data-tiers") || "[]").replace(/&#39;/g, "'"));
+        } catch (e) { tiers = []; }
+        if (!Array.isArray(tiers) || tiers.length <= 1) {
+          wrap.style.display = "none";
+          return;
+        }
+        tierSel.innerHTML = '<option value="">Toutes les catégories</option>' +
+          tiers.map(t => `<option value="${t.name}">${t.name}</option>`).join("");
+        wrap.style.display = "block";
+      }
+
+      async function generatePromoCode() {
+        try {
+          const res = await btApi.post("/organizer/promo-codes/generate-code", {});
+          document.getElementById("pc-code").value = res.code;
+        } catch (err) {
+          btToast(err.message || "Erreur génération", "error");
+        }
+      }
+
+      async function submitPromoCreate() {
+        const code = document.getElementById("pc-code").value.trim();
+        const type = document.getElementById("pc-type").value;
+        const value = parseFloat(document.getElementById("pc-value").value);
+        const eventId = document.getElementById("pc-event").value;
+        const tierEl = document.getElementById("pc-tier");
+        const tierName = tierEl ? tierEl.value : "";
+        const maxGlobal = document.getElementById("pc-max-global").value;
+        const maxUser = parseInt(document.getElementById("pc-max-user").value) || 1;
+        const startsAt = document.getElementById("pc-starts").value;
+        const endsAt = document.getElementById("pc-ends").value;
+
+        if (!code || code.length < 3) {
+          btToast("Code trop court (3 caractères min)", "error");
+          return;
+        }
+        if (!value || value <= 0) {
+          btToast("Valeur de réduction requise", "error");
+          return;
+        }
+        if (type === "percent" && value > 100) {
+          btToast("Pourcentage max : 100", "error");
+          return;
+        }
+
+        const payload = {
+          code: code,
+          discount_type: type,
+          discount_value: value,
+          max_uses_per_user: maxUser,
+        };
+        if (eventId) payload.event_id = parseInt(eventId);
+        if (tierName) payload.tier_name = tierName;
+        if (maxGlobal) payload.max_uses_global = parseInt(maxGlobal);
+        if (startsAt) payload.starts_at = new Date(startsAt).toISOString();
+        if (endsAt) payload.ends_at = new Date(endsAt).toISOString();
+
+        const btn = document.getElementById("pc-submit");
+        const orig = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = "Création...";
+
+        try {
+          await btApi.post("/organizer/promo-codes", payload);
+          btToast("Code promo créé !", "success");
+          document.querySelector(".bt-overlay:last-child").remove();
+          loadPromoCodes();
+        } catch (err) {
+          btToast(err.message || "Erreur création", "error");
+          btn.disabled = false;
+          btn.innerHTML = orig;
+        }
       }
 
       function fbpackStatusBadge(status) {

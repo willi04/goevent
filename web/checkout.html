@@ -533,6 +533,8 @@
       // Par défaut sur "cash" puisque Orange Money est en attente
       let selectedPaymentMethod = "cash"; 
       let currentEventPrice = 0; 
+      let promoCode = null;          // Chantier 19.A : code promo validé venant de event_detail
+      let promoDiscount = 0;         // Chantier 19.A : montant FCFA déduit du prix_base
 
       // ==========================================
       // 2. MENU MOBILE
@@ -556,10 +558,43 @@
             }
         }
       }
+      
 
       // ==========================================
       // 3. LOGIQUE D'AFFICHAGE DU PRIX ET MODE DE PAIEMENT
       // ==========================================
+      // Chantier 19.A : affichage banderole + ligne de réduction dans le récap
+      function showCheckoutPromoBanner(promo) {
+          // Bandeau au-dessus du bloc paiement
+          const paymentBlock = document.getElementById("payment-block");
+          if (paymentBlock && !document.getElementById("checkout-promo-banner")) {
+              const banner = document.createElement("div");
+              banner.id = "checkout-promo-banner";
+              banner.className = "bg-green-50 border-2 border-green-200 rounded-2xl p-4 flex items-center gap-3";
+              banner.innerHTML = `
+                  <span class="material-symbols-outlined text-green-600 text-2xl" style="font-variation-settings: 'FILL' 1">verified</span>
+                  <div class="flex-1 min-w-0">
+                      <p class="text-xs font-black uppercase tracking-widest text-green-700">Code promo</p>
+                      <p class="text-sm font-bold text-green-900">
+                          <span class="font-mono">${promo.code}</span> appliqué : -${promo.discount_fcfa.toLocaleString("fr-FR")} FCFA
+                      </p>
+                  </div>`;
+              paymentBlock.parentNode.insertBefore(banner, paymentBlock);
+          }
+
+          // Ligne dans le récap
+          const summaryBlock = document.querySelector("#summary-subtotal")?.closest(".space-y-3");
+          if (summaryBlock && !document.getElementById("summary-promo")) {
+              const line = document.createElement("div");
+              line.id = "summary-promo";
+              line.className = "flex justify-between text-green-600 font-medium";
+              line.innerHTML = `
+                  <span>Code ${promo.code}</span>
+                  <span class="font-bold">-${promo.discount_fcfa.toLocaleString("fr-FR")} FCFA</span>`;
+              summaryBlock.appendChild(line);
+          }
+      }
+
       function selectPaymentMethod(method) {
         selectedPaymentMethod = method;
         
@@ -667,6 +702,8 @@
         const params = new URLSearchParams(window.location.search);
         const eventId = params.get("id");
         const tierName = params.get("tier");
+        const promoFromUrl = (params.get("promo") || "").trim().toUpperCase() || null;  // Chantier 19.A
+      
       
         if (!eventId) {
           // Avertissement visible si tu testes sans l'ID dans l'URL
@@ -706,11 +743,33 @@
           }
           
           currentEventPrice = price; 
+
+          // Chantier 19.A : si on a un code promo dans l'URL, le valider en background
+          if (promoFromUrl && price > 0) {
+              try {
+                  const res = await btApi.post("/promo-codes/validate", {
+                      event_id: parseInt(eventId),
+                      tier_name: tierName,
+                      code: promoFromUrl,
+                  });
+                  if (res.valid) {
+                      promoCode = res.code;
+                      promoDiscount = res.discount_fcfa || 0;
+                      currentEventPrice = res.new_price || price;
+                      showCheckoutPromoBanner(res);
+                  } else {
+                      btToast(`Code ${promoFromUrl} non appliqué : ${res.message}`, "error");
+                  }
+              } catch (err) {
+                  console.warn("Validation promo échouée :", err);
+              }
+          }
+
           const sumSubtotal = document.getElementById("summary-subtotal");
-          if(sumSubtotal) sumSubtotal.textContent = price > 0 ? price.toLocaleString("fr-FR") + " FCFA" : "Gratuit";
+          if(sumSubtotal) sumSubtotal.textContent = currentEventPrice > 0 ? currentEventPrice.toLocaleString("fr-FR") + " FCFA" : "Gratuit";
           
           // --- LOGIQUE POUR ÉVÉNEMENT GRATUIT ---
-          if (price === 0) {
+          if (currentEventPrice === 0) {
               // 1. Cacher le bloc des moyens de paiement
               const paymentBlock = document.getElementById("payment-block");
               if (paymentBlock) paymentBlock.style.display = "none";
@@ -773,6 +832,7 @@
                 tier_name: tierName,
                 email: document.getElementById("buyer-email") ? document.getElementById("buyer-email").value : null
               };
+              if (promoCode) payload.promo_code = promoCode;  // Chantier 19.A
               
               // Appel de la NOUVELLE route NGSER
               const response = await btApi.post("/payment/initiate-ngser", payload);
@@ -795,6 +855,7 @@
               tier_name: tierName,
               email: document.getElementById("buyer-email") ? document.getElementById("buyer-email").value : null
             };
+            if (promoCode) payload.promo_code = promoCode;  // Chantier 19.A
             const response = await btApi.post("/tickets/reserve-cash", payload);
             const msgSuccess = currentEventPrice === 0 
                 ? "Billet gratuit généré avec succès !" 

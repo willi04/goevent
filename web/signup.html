@@ -105,8 +105,8 @@
     </style>
     <script src="auth-guard.js"></script>
     <script>
-        requireGuest(); 
-        showAuthMessage();
+        if (typeof requireGuest === "function") requireGuest();
+        if (typeof showAuthMessage === "function") showAuthMessage();
     </script>
   </head>
   <body class="bg-surface font-body text-on-surface">
@@ -172,14 +172,23 @@
             </div>
           </div>
           <p class="text-white/80 font-medium max-w-sm">
-            Plus de 2000 passionnés de culture nous ont déjà rejoint ce mois-ci.
+            Rejoignez la communauté des passionnés de culture Centrafricaine.
           </p>
         </div>
       </section>
       <!-- Right Panel: Sign Up Form -->
-      <section
-        class="w-full md:w-7/12 bg-surface flex items-center justify-center p-6 md:p-12 lg:p-20"
+     <section
+        class="w-full md:w-7/12 bg-surface flex items-center justify-center p-6 md:p-12 lg:p-20 relative"
       >
+        <!-- Bouton retour accueil -->
+        <a
+          href="index.html"
+          class="absolute top-6 left-6 flex items-center gap-1.5 text-on-surface-variant hover:text-primary font-bold text-sm transition-colors group"
+        >
+          <span class="material-symbols-outlined text-lg group-hover:-translate-x-0.5 transition-transform">arrow_back</span>
+          <span class="hidden sm:inline">Retour à l'accueil</span>
+        </a>
+
         <div class="w-full max-w-xl space-y-8">
           <div class="space-y-2">
             <h2
@@ -356,20 +365,20 @@
               />
               <label class="text-sm text-on-surface-variant" for="cgu">
                 J'accepte les
-                <a class="text-primary font-bold hover:underline" href="#"
+                <a class="text-primary font-bold hover:underline" href="cgu.html" target="_blank" rel="noopener"
                   >Conditions Générales d'Utilisation</a
                 >
                 et la
-                <a class="text-primary font-bold hover:underline" href="#"
+                <a class="text-primary font-bold hover:underline" href="confidentialite.html" target="_blank" rel="noopener"
                   >Politique de Confidentialité</a
                 >.
               </label>
             </div>
             <!-- Submit Button -->
-            <button
+           <button
+              id="btn-signup"
               class="w-full py-4 bg-gradient-to-r from-primary to-primary-container text-white font-bold rounded-full text-lg shadow-[0_12px_24px_-8px_rgba(0,80,44,0.3)] hover:shadow-[0_16px_32px_-8px_rgba(0,80,44,0.4)] click-bounce transition-all duration-300 flex items-center justify-center gap-2"
-              type="button"
-              onclick="doSignup()"
+              type="submit"
             >
               S'inscrire
               <span class="material-symbols-outlined">arrow_forward</span>
@@ -429,11 +438,6 @@
     <script src="bt-api.js"></script>
     <script src="pwa.js"></script>
     <script>
-      if (btAuth.isLogged()) {
-        var u = btAuth.getUser();
-        window.location.href = btDashRoute(u && u.role);
-      }
-
       // 1. Ajouter dynamiquement le champ "Organisation" sous le choix du rôle
       (function () {
         var roleSection = document
@@ -490,11 +494,24 @@
           : "";
 
         // 1. Vérification générale
-        if (!name || !phone || !pin || pin.length < 4 || !email) {
+        if (!name || !phone || !pin || !email) {
           btToast(
-            "Veuillez remplir Nom, Téléphone, PIN (4 chiffres) et email ! ",
+            "Veuillez remplir Nom, Téléphone, PIN et email.",
             "error",
           );
+          return;
+        }
+        if (name.trim().length < 2) {
+          btToast("Le nom doit comporter au moins 2 caractères.", "error");
+          return;
+        }
+        if (pin.length !== 4 || !/^\d{4}$/.test(pin)) {
+          btToast("Le PIN doit comporter exactement 4 chiffres.", "error");
+          return;
+        }
+        var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+          btToast("Adresse email invalide.", "error");
           return;
         }
 
@@ -529,9 +546,8 @@
           return;
         }
 
-        const btn =
-          document.querySelector('button[type="button"]') ||
-          document.querySelector("button.w-full");
+        const btn = document.getElementById("btn-signup");
+        if (!btn) return;
         const orig = btn.innerHTML;
         btn.innerHTML = "Création en cours...";
         btn.disabled = true;
@@ -542,7 +558,7 @@
           phone_number: phone.startsWith("+236") ? phone : "+236" + phone,
           pin_code: pin,
           role: selectedRole,
-          email: email || "",
+          email: email,
           org_name: orgName || null,
         };
 

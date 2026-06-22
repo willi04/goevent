@@ -435,9 +435,14 @@
     <script>
       // 1. Initialisation des menus et footers
       if (document.getElementById("navbar")) {
-        var bnEl = document.getElementById("bottom-nav-mobile");
         document.getElementById("navbar").innerHTML = btNavbar("follow");
       }
+      // Bottom nav mobile (composant centralisé bt-api.js)
+      if (typeof btMobileBottomNav === "function") {
+        var bnEl = document.getElementById("bottom-nav-mobile");
+        if (bnEl) bnEl.innerHTML = btMobileBottomNav("follow"); // ← clé adaptée par page
+      }
+      
       document.getElementById("footer").innerHTML = btFooter();
 
       function toggleMobileMenu() {

@@ -164,7 +164,9 @@ function btToast(msg, type) {
   });
   var el = document.createElement("div");
   el.className = "bt-toast";
-  var bg = type === "error" ? "#ba1a1a" : "#00502c";
+  var bg = type === "error" ? "#ba1a1a" 
+         : type === "info"  ? "#3b82f6" 
+         : "#00502c";
   el.style.cssText = [
     "position:fixed",
     "bottom:24px",
@@ -185,7 +187,9 @@ function btToast(msg, type) {
     "animation:btIn .3s cubic-bezier(.175,.885,.32,1.275)",
     "cursor:pointer",
   ].join(";");
-  var icon = type === "error" ? "error" : "check_circle";
+ var icon = type === "error" ? "error" 
+           : type === "info"  ? "info" 
+           : "check_circle";
   el.innerHTML =
     '<span class="material-symbols-outlined" style="font-size:1.3rem;font-variation-settings:\'FILL\' 1">' +
     icon +

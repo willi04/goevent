@@ -411,14 +411,46 @@ def scan_stats(event_id: int, db: Session = Depends(get_db),
     event = db.query(Event).filter(Event.id == event_id).first()
     if not event:
         raise HTTPException(404, "Événement introuvable")
-    total_paid = db.query(Ticket).filter(
-        Ticket.event_id == event_id, Ticket.payment_status == "paye").count()
-    total_used = db.query(Ticket).filter(
-        Ticket.event_id == event_id, Ticket.is_used == True).count()
+
+    # P0 — Restriction : seul agent assigné / organizer de l'event / admin
+    if current_user.role == "admin":
+        pass
+    elif current_user.role in ("organizer", "organisation"):
+        if event.organizer_id != current_user.id:
+            raise HTTPException(403, "Cet événement n'est pas le vôtre")
+    elif current_user.role == "agent":
+        if current_user.agent_event_id and current_user.agent_event_id != event.id:
+            raise HTTPException(403, "Vous n'êtes pas assigné à cet événement")
+        org_name_required = event.organizer_user.org_name or event.organizer_user.full_name
+        if current_user.org_name != org_name_required:
+            raise HTTPException(403, "Vous n'êtes pas un agent de cet organisateur")
+    else:
+        raise HTTPException(403, "Accès refusé")
+
+    # Billets validés = paye (NGSER + gratuits ont ce statut) + paye_cash (legacy)
+    total_confirmed = db.query(Ticket).filter(
+        Ticket.event_id == event_id,
+        Ticket.payment_status.in_(["paye", "paye_cash"]),
+    ).count()
+
+    # Personnes déjà scannées et entrées
+    total_entered = db.query(Ticket).filter(
+        Ticket.event_id == event_id,
+        Ticket.is_used == True,
+    ).count()
+
+    total_remaining = max(0, total_confirmed - total_entered)
+    taux = round((total_entered / total_confirmed * 100), 1) if total_confirmed else 0.0
+
     return {
         "event_title": event.title,
-        "billets_vendus": total_paid,
-        "personnes_entrees": total_used,
-        "personnes_restantes": total_paid - total_used,
-        "taux_entree": f"{(total_used/total_paid*100) if total_paid else 0:.1f}%",
+        "total_confirmed": total_confirmed,
+        "total_entered": total_entered,
+        "total_remaining": total_remaining,
+        "entry_rate_pct": taux,
+        # Compatibilité ancien contrat
+        "billets_vendus": total_confirmed,
+        "personnes_entrees": total_entered,
+        "personnes_restantes": total_remaining,
+        "taux_entree": f"{taux:.1f}%",
     }

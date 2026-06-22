@@ -576,7 +576,6 @@
     </main>
 
     <div id="footer"></div>
-    <div id="footer"></div>
 
     <script src="bt-api.js"></script>
     <script>
@@ -902,7 +901,11 @@
           //   - À VENIR : les 8 premiers (= boostés en tête + complétés par date)
 
           const featuredEvents = allEvents.slice(0, 6);
-          const upcomingEvents = allEvents.slice(0, 8);
+          const featuredEvents = allEvents.slice(0, 6);
+          // Si peu d'events, on autorise le doublon ; sinon on skip les vedettes
+          const upcomingEvents = allEvents.length > 10
+            ? allEvents.slice(6, 14)
+            : allEvents.slice(0, 8);
 
           // MISE À JOUR DU COMPTEUR (Seulement pour la grille du bas)
           if (countEl) {
@@ -984,6 +987,7 @@
                     <div class="absolute top-3 left-3 bg-white/95 backdrop-blur px-3 py-1.5 rounded-lg text-[10px] font-black uppercase text-primary tracking-wider shadow-sm">
                         ${cat}
                     </div>
+                    ${boostBadge}
                 </div>
                 <div class="px-2 flex flex-col flex-grow">
                     <h3 class="font-headline font-extrabold text-gray-900 text-lg line-clamp-2 mb-2 leading-tight group-hover:text-primary transition-colors">${event.title}</h3>
@@ -999,43 +1003,6 @@
           `;
       }
 
-      // Fonction helper pour dessiner une carte standard (Événements à venir)
-      function renderEventCard(event) {
-        const d = new Date(event.event_date);
-        const dateStr = !isNaN(d)
-          ? d.toLocaleDateString("fr-FR", {
-              day: "numeric",
-              month: "short",
-              year: "numeric",
-            })
-          : "Bientôt";
-        const priceAffichage =
-          event.price > 0
-            ? event.price.toLocaleString("fr-FR") + " FCFA"
-            : "Gratuit";
-        const vraieCategorie = event.category ? event.category : "Événement";
-
-        return `
-            <div class="bg-white rounded-[1.5rem] p-3 shadow-sm border border-gray-100 hover:shadow-lg hover:border-primary/30 transition-all duration-300 cursor-pointer group flex flex-col" onclick="window.location.href='event_detail.html?id=${event.id}'">
-                <div class="relative h-44 rounded-2xl overflow-hidden mb-4 bg-gray-100 shrink-0">
-                    <img src="${event.cover_image_url || "https://via.placeholder.com/400x300?text=GoEvent"}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">
-                    <div class="absolute top-3 left-3 bg-white/95 backdrop-blur px-3 py-1.5 rounded-lg text-[10px] font-black uppercase text-primary tracking-wider shadow-sm">
-                        ${vraieCategorie}
-                    </div>
-                </div>
-                <div class="px-2 flex flex-col flex-grow">
-                    <h3 class="font-headline font-extrabold text-gray-900 text-lg line-clamp-2 mb-2 leading-tight group-hover:text-primary transition-colors">${event.title}</h3>
-                    <p class="text-xs text-gray-500 flex items-center gap-1.5 mb-4 font-medium mt-auto">
-                        <span class="material-symbols-outlined text-[15px]">calendar_today</span> ${dateStr}
-                    </p>
-                    <div class="flex items-center justify-between pt-3 border-t border-gray-100">
-                        <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">À partir de</span>
-                        <span class="font-black text-primary text-base">${priceAffichage}</span>
-                    </div>
-                </div>
-            </div>
-          `;
-      }
       // Construction de la carte (Avec vraie catégorie dynamique !)
      function renderNetflixCard(event, isCarousel = true) {
         const d = new Date(event.event_date);
@@ -1075,28 +1042,8 @@
         `;
       }
 
-      // 4. Boutons de tri par catégories
-      document.querySelectorAll(".cat-btn").forEach((btn) => {
-        btn.addEventListener("click", async function () {
-          document
-            .querySelectorAll(".cat-btn")
-            .forEach((b) => b.classList.remove("active"));
-          this.classList.add("active");
-          const grid = document.getElementById("egrid");
-          if (grid) grid.style.opacity = "0.3";
-          await loadPublicEvents(this.getAttribute("data-cat"));
-          if (grid) grid.style.opacity = "1";
-        });
-      });
-
       // Lancement immédiat
       window.addEventListener("DOMContentLoaded", () => loadPublicEvents(""));
-
-      function doSearch() {
-        const query = document.getElementById("si").value.trim();
-        if (query)
-          window.location.href = `event.html?search=${encodeURIComponent(query)}`;
-      }
       document.getElementById("footer").innerHTML = btFooter();
     </script>
     <script src="pwa.js"></script>

@@ -347,6 +347,9 @@
 
     <div id="footer"></div>
     <div id="footer"></div>
+    <!-- ✅ BOTTOM NAV MOBILE (md:hidden gérée dans la fonction) -->
+    <div id="bottom-nav-mobile"></div>
+    
     <div id="image-lightbox" class="fixed inset-0 z-[10000] bg-black/95 hidden opacity-0 transition-opacity duration-300 items-center justify-center p-4 md:p-12 cursor-zoom-out">
       
       <button id="close-lightbox" class="absolute top-6 right-6 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-full backdrop-blur transition-all active:scale-95">
@@ -358,6 +361,7 @@
     <script src="bt-api.js"></script>
     <script src="pwa.js"></script>
     <script>
+      
       let currentEvent = null;
       let availableTiers = []; // NOUVEAU : Va stocker uniquement les billets disponibles
       let selectedTierIndex = null;
@@ -393,6 +397,12 @@
         ) {
           document.getElementById("navbar").innerHTML = btNavbar("evenements");
         }
+
+      // Bottom nav mobile (composant centralisé bt-api.js)
+      if (typeof btMobileBottomNav === "function") {
+        var bnEl = document.getElementById("bottom-nav-mobile");
+        if (bnEl) bnEl.innerHTML = btMobileBottomNav("accueil"); // ← clé adaptée par page
+      }
         
         // Mettre à jour les boutons d'auth de la sidebar mobile selon l'état de connexion
         const mobileAuthContainer = document.getElementById("mobile-auth-buttons");

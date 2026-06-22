@@ -150,10 +150,6 @@
       </button>
     </div>
     <script>
-      // 1. Le Vigile : Redirection immédiate si non connecté
-      if (!btAuth.isLogged()) {
-        window.location.href = "login.html";
-      }
 
       const currentUser = btAuth.getUser();
       let html5QrCode;
@@ -194,9 +190,23 @@
           .catch((err) => {
             console.error("Erreur d'accès à la caméra :", err);
             btToast(
-              "Impossible d'accéder à la caméra. Avez-vous accepté les permissions ?",
+              "Impossible d'accéder à la caméra. Vérifiez les permissions.",
               "error",
             );
+            // Afficher un bouton de récupération
+            const reader = document.getElementById("reader");
+            if (reader) {
+              reader.innerHTML = `
+                <div class="bg-red-50 border-2 border-red-200 rounded-3xl p-8 text-center">
+                  <span class="material-symbols-outlined text-red-500 text-6xl mb-3">videocam_off</span>
+                  <p class="font-bold text-red-700 mb-4">Caméra inaccessible</p>
+                  <p class="text-sm text-red-600 mb-4">Vérifiez que vous avez autorisé l'accès à la caméra dans les paramètres de votre navigateur.</p>
+                  <button onclick="window.location.reload()" class="px-6 py-3 bg-red-500 text-white rounded-full font-bold hover:bg-red-600 active:scale-95 transition-all">
+                    Réessayer
+                  </button>
+                </div>
+              `;
+            }
           });
       }
 
@@ -205,6 +215,23 @@
       let currentCashTicketId = null;
 
       async function onScanSuccess(decodedText, decodedResult) {
+        // Feedback haptic + sonore pour agent en environnement bruyant
+        try {
+          if (navigator.vibrate) navigator.vibrate(100);
+          // Bip audio léger (Web Audio API)
+          const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.frequency.value = 800;
+          gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.15);
+        } catch (e) {
+          // Pas de feedback dispo : on continue silencieusement
+        }
         // On met la caméra en pause
         html5QrCode.pause(true);
       
@@ -244,7 +271,7 @@
               "text-3xl font-black mb-2 uppercase tracking-wide text-orange-600";
             
             // Afficher le montant
-            cashAmountEl.textContent = `${parseInt(response.amount_to_collect).toLocaleString('fr-FR')} FCFA`;
+            cashAmountEl.textContent = `${Math.round(Number(response.amount_to_collect)).toLocaleString('fr-FR')} FCFA`;
             cashAmountDisplay.classList.remove("hidden");
             
             // Infos du fan
@@ -373,6 +400,15 @@
 
       // 5. Permettre à l'Agent de finir sa journée
       async function logoutAgent() {
+        const confirmed = confirm(
+          "⚠️ ATTENTION\n\n" +
+          "Quitter va SUPPRIMER DÉFINITIVEMENT votre compte agent.\n" +
+          "Vous ne pourrez plus scanner avec ce compte.\n\n" +
+          "Si l'événement n'est pas terminé, fermez simplement l'onglet (votre session reste active 24h).\n\n" +
+          "Êtes-vous sûr de vouloir terminer définitivement ?"
+        );
+        if (!confirmed) return;
+
         const btn = document.querySelector('button[onclick="logoutAgent()"]');
         if (btn)
           btn.innerHTML =

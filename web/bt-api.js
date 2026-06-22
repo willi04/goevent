@@ -475,7 +475,67 @@ function btEventCard(e) {
     "</div>"
   );
 }
+// ── BOTTOM NAV MOBILE — Persistante sur pages publiques ───────
+function btMobileBottomNav(activePage) {
+  activePage = activePage || "";
+  var user = btAuth.getUser();
+  var isLogged = btAuth.isLogged();
 
+  // 3 onglets fixes + 1 contextualisé (auth)
+  var tabs = [
+    { key: "accueil",    href: "index.html",  icon: "home",     label: "Accueil" },
+    { key: "evenements", href: "event.html",  icon: "stadium",  label: "Events" },
+    { key: "follow",     href: "follow.html", icon: "favorite", label: "Follow" },
+  ];
+
+  if (isLogged) {
+    tabs.push({
+      key: "compte",
+      href: btDashRoute(user && user.role),
+      icon: "person",
+      label: "Espace",
+    });
+  } else {
+    tabs.push({
+      key: "login",
+      href: "login.html",
+      icon: "login",
+      label: "Connexion",
+    });
+  }
+
+  var tabsHtml = tabs
+    .map(function (t) {
+      var isActive = activePage === t.key;
+      var colorCls = isActive ? "text-primary" : "text-gray-500";
+      var fillStyle = isActive ? "font-variation-settings:'FILL' 1;" : "";
+      return (
+        '<a href="' +
+        t.href +
+        '" class="flex flex-col items-center justify-center gap-0.5 flex-1 active:scale-95 transition-transform">' +
+        '<span class="material-symbols-outlined ' +
+        colorCls +
+        '" style="font-size:24px;' +
+        fillStyle +
+        '">' +
+        t.icon +
+        "</span>" +
+        '<span class="text-[10px] font-bold ' +
+        colorCls +
+        '">' +
+        t.label +
+        "</span>" +
+        "</a>"
+      );
+    })
+    .join("");
+
+  return (
+    '<nav class="md:hidden fixed bottom-0 left-0 right-0 z-[90] bg-white/95 backdrop-blur border-t border-gray-100 flex items-stretch h-[60px]" style="padding-bottom:env(safe-area-inset-bottom)">' +
+    tabsHtml +
+    "</nav>"
+  );
+}
 // ── Modal générique ───────────────────────────────────────────
 function btModal(contentHtml) {
   var ov = document.createElement("div");

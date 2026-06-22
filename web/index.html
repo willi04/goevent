@@ -332,7 +332,7 @@
       </div>
     </div>
 
-    <main class="flex-1 pt-[72px] md:pt-20">
+    <main class="flex-1 pt-[72px] md:pt-20 pb-[60px] md:pb-0">
      <!-- ═══ HERO CARROUSEL — Régie publicitaire ═══ -->
       <section id="hero-carousel" class="relative w-full overflow-hidden bg-[#03361e]" style="min-height: 60vh;">
         <!-- Container des slides (rempli dynamiquement par JS) -->
@@ -577,6 +577,8 @@
 
     <div id="footer"></div>
     <div id="footer"></div>
+    <!-- ✅ BOTTOM NAV MOBILE (md:hidden gérée dans la fonction) -->
+    <div id="bottom-nav-mobile"></div>
 
     <script src="bt-api.js"></script>
     <script>
@@ -594,6 +596,7 @@
 
       // 1. Navbar et Menu Mobile
       if (typeof btNavbar === "function") {
+        var bnEl = document.getElementById("bottom-nav-mobile");
         document.getElementById("navbar").innerHTML = btNavbar("accueil");
       }
 

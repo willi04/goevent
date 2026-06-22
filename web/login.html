@@ -106,8 +106,8 @@
     </style>
     <script src="auth-guard.js"></script>
     <script>
-        requireGuest(); 
-        showAuthMessage();
+        if (typeof requireGuest === "function") requireGuest();
+        if (typeof showAuthMessage === "function") showAuthMessage();
     </script>
   </head>
   <body
@@ -124,7 +124,7 @@
           "
         ></div>
         <div class="relative z-10">
-          <div class="flex items-center space-x-3">
+          <a href="index.html" class="flex items-center space-x-3 hover:opacity-90 transition-opacity">
             <img
               src="icons/event.png"
               alt="Logo"
@@ -134,7 +134,7 @@
               class="text-3xl md:text-2xl font-headline font-extrabold tracking-tight text-surface-container-lowest"
               >GoEvent</span
             >
-          </div>
+          </a>
 
           <div class="mt-24 space-y-6 hidden md:block">
             <h1
@@ -182,9 +182,18 @@
         </div>
       </section>
 
-      <section
-        class="w-full md:w-1/2 bg-surface flex items-center justify-center p-8 md:p-24"
+     <section
+        class="w-full md:w-1/2 bg-surface flex items-center justify-center p-8 md:p-24 relative"
       >
+        <!-- Bouton retour accueil (visible sur mobile + desktop) -->
+        <a
+          href="index.html"
+          class="absolute top-6 left-6 flex items-center gap-1.5 text-on-surface-variant hover:text-primary font-bold text-sm transition-colors group"
+        >
+          <span class="material-symbols-outlined text-lg group-hover:-translate-x-0.5 transition-transform">arrow_back</span>
+          <span class="hidden sm:inline">Retour à l'accueil</span>
+        </a>
+
         <div class="w-full max-w-md space-y-10">
           <header class="space-y-3">
             <h2 class="text-4xl font-headline font-extrabold text-on-surface">
@@ -401,10 +410,6 @@
     <script src="bt-api.js"></script>
     <script src="pwa.js"></script>
     <script>
-      if (btAuth.isLogged()) {
-        var u = btAuth.getUser();
-        window.location.href = btDashRoute(u && u.role);
-      }
 
       async function doLogin() {
         var phoneInput = document.getElementById("phone");

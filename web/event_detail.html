@@ -404,20 +404,10 @@
         if (bnEl) bnEl.innerHTML = btMobileBottomNav("evenements"); // ← clé adaptée par page
       }
         
-        // Mettre à jour les boutons d'auth de la sidebar mobile selon l'état de connexion
+        // Drawer auth mobile (centralisé bt-api.js)
         const mobileAuthContainer = document.getElementById("mobile-auth-buttons");
-        if (mobileAuthContainer) {
-          if (btAuth.isLogged()) {
-            const user = btAuth.getUser() || {};
-            const dashUrl = btDashRoute(user.role);
-            mobileAuthContainer.innerHTML = 
-              '<a href="' + dashUrl + '" class="block w-full text-center text-primary font-bold py-3.5 rounded-xl border-2 border-primary hover:bg-primary/5 transition-all">Mon espace</a>' +
-              '<button onclick="btAuth.logout(); window.location.href=\'/index.html\';" class="block w-full text-center bg-red-500 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition-all">Déconnexion</button>';
-          } else {
-            mobileAuthContainer.innerHTML = 
-              '<a href="login.html" class="block w-full text-center text-primary font-bold py-3.5 rounded-xl border-2 border-primary hover:bg-primary/5 transition-all">Se connecter</a>' +
-              '<a href="signup.html" class="block w-full text-center bg-primary text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 active:scale-95 transition-all">S\'inscrire</a>';
-          }
+        if (mobileAuthContainer && typeof btMobileAuthSection === "function") {
+          mobileAuthContainer.innerHTML = btMobileAuthSection();
         }
 
        const params = new URLSearchParams(window.location.search);
@@ -691,7 +681,7 @@
                                 <p class="font-headline font-extrabold text-base text-gray-500">${tier.name}</p>
                                 <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">ÉVÉNEMENT TERMINÉ</p>
                             </div>
-                            <p class="font-headline font-extrabold text-base text-gray-500">${tier.price.toLocaleString("fr-FR")} FCFA</p>
+                            <p class="font-headline font-extrabold text-base text-gray-500">${tier.price === 0 ? "Gratuit" : tier.price.toLocaleString("fr-FR") + " FCFA"}</p>
                         </div>
                         `;
                       })
@@ -743,12 +733,13 @@
                 // Chantier 19.A : prix réduit éventuel
                 const discounted = computeDiscountedPrice(tier.price);
                 const hasDiscount = appliedPromo && discounted < tier.price;
+                const fmtPrice = (n) => n === 0 ? "Gratuit" : n.toLocaleString("fr-FR") + " FCFA";
                 const priceBlock = hasDiscount
                   ? `<div class="text-right">
-                       <p class="text-xs text-gray-400 line-through font-bold">${tier.price.toLocaleString("fr-FR")} FCFA</p>
-                       <p class="font-headline font-extrabold text-base text-green-600">${discounted.toLocaleString("fr-FR")} FCFA</p>
+                       <p class="text-xs text-gray-400 line-through font-bold">${fmtPrice(tier.price)}</p>
+                       <p class="font-headline font-extrabold text-base text-green-600">${fmtPrice(discounted)}</p>
                      </div>`
-                  : `<p class="font-headline font-extrabold text-base ${classesTextePrix}">${tier.price.toLocaleString("fr-FR")} FCFA</p>`;
+                  : `<p class="font-headline font-extrabold text-base ${classesTextePrix}">${fmtPrice(tier.price)}</p>`;
 
                 return `
                     <div onclick="selectTier(${index})" class="cursor-pointer border-2 rounded-[1.5rem] py-5 px-6 flex items-center gap-4 transition-all duration-200 ${classesBordure}">
@@ -801,7 +792,9 @@
           btn.disabled = false;
           btn.className =
             "w-full py-4 md:py-5 rounded-2xl bg-primary text-white font-bold text-sm transition-all hover:bg-primary-container shadow-lg shadow-primary/20 active:scale-95";
-          btn.innerHTML = `Réserver • ${finalPrice.toLocaleString("fr-FR")} FCFA`;
+          btn.innerHTML = finalPrice === 0
+            ? `<span class="material-symbols-outlined align-middle text-base">confirmation_number</span> Obtenir mon billet gratuit`
+            : `Réserver • ${finalPrice.toLocaleString("fr-FR")} FCFA`;
         }
       }
 

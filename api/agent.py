@@ -31,7 +31,7 @@ def get_agent_event(db: Session = Depends(get_db), current_user: User = Depends(
             .first()
         )
         if event:
-            return {"event_name": event.title
+            return {"event_name": event.title,
                    "event_id": event.id,}
 
     return {"event_name": "Contrôle des billets"}

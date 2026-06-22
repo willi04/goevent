@@ -226,9 +226,12 @@
                 </div>
                 <input
                   class="w-full pl-20 pr-4 py-4 bg-surface-container-high rounded-xl border-none focus:ring-2 focus:ring-primary/20 focus:bg-surface-container-lowest transition-all text-on-surface font-bold text-lg placeholder:text-outline/50"
-                  placeholder="00 00 00 00"
+                  placeholder="7X XX XX XX"
                   type="tel"
                   id="phone"
+                  inputmode="numeric"
+                  maxlength="8"
+                  oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                 />
               </div>
             </div>
@@ -260,6 +263,9 @@
                   placeholder="••••"
                   type="password"
                   id="pin"
+                  inputmode="numeric"
+                  pattern="\d{4}"
+                  oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                 />
               </div>
             </div>
@@ -280,9 +286,9 @@
             </div>
             <div class="pt-4 space-y-6">
               <button
+                id="btn-login"
                 class="w-full py-4 lush-gradient text-white font-headline font-bold rounded-full glow-shadow-primary hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center space-x-2"
-                type="button"
-                onclick="doLogin()"
+                type="submit"
               >
                 <span>Se connecter</span>
                 <span class="material-symbols-outlined text-xl"
@@ -416,17 +422,36 @@
         var pinInput = document.getElementById("pin");
         if (!phoneInput || !pinInput) return;
 
-        var phone = phoneInput.value.trim();
+        var phone = phoneInput.value.trim().replace(/[^0-9]/g, "");
         var pin = pinInput.value.trim();
 
-        if (!phone || pin.length < 4) {
-          btToast("Numéro de téléphone et PIN (4 chiffres) requis.", "error");
+        if (!phone) {
+          btToast("Numéro de téléphone requis", "error");
+          phoneInput.focus();
+          return;
+        }
+        if (phone.length !== 8) {
+          btToast("Le numéro doit comporter exactement 8 chiffres", "error");
+          phoneInput.focus();
+          return;
+        }
+        var allowedPrefixes = ["70", "72", "73", "74", "75", "76", "77"];
+        if (allowedPrefixes.indexOf(phone.substring(0, 2)) === -1) {
+          btToast("Préfixe invalide (70, 72, 73, 74, 75, 76 ou 77)", "error");
+          phoneInput.focus();
+          return;
+        }
+        if (pin.length !== 4 || !/^\d{4}$/.test(pin)) {
+          btToast("Le PIN doit comporter exactement 4 chiffres", "error");
+          pinInput.focus();
           return;
         }
 
-        var btn = document.querySelector('button[type="button"]');
+        var btn = document.getElementById("btn-login");
+        if (!btn) return;
         var originalHTML = btn.innerHTML;
         btn.innerHTML = "Connexion en cours...";
+        btn.disabled = true;
 
         try {
           var formattedPhone = phone.startsWith("+236")
@@ -448,6 +473,7 @@
         } catch (error) {
           btToast(error.message || "Erreur de connexion", "error");
           btn.innerHTML = originalHTML;
+          btn.disabled = false;
         }
       }
       // --- LOGIQUE MOT DE PASSE OUBLIÉ ---
@@ -556,13 +582,20 @@
 
           if (typeof btToast === "function")
             btToast(
-              "Code PIN modifié ! Vous pouvez vous connecter.",
+              "Code PIN modifié ! Connectez-vous avec votre nouveau code.",
               "success",
             );
 
           localStorage.removeItem("bt_reset_email");
 
           closeForgotModal();
+          
+          // Focus auto sur le champ téléphone après reset
+          setTimeout(function() {
+            var phoneInput = document.getElementById("phone");
+            if (phoneInput) phoneInput.focus();
+          }, 400);
+          
         } catch (e) {
           if (typeof btToast === "function")
             btToast(e.message || "Code invalide ou expiré.", "error");

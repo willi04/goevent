@@ -561,7 +561,11 @@
         }
       }
       
-
+      // Bottom nav mobile (composant centralisé bt-api.js)
+      if (typeof btMobileBottomNav === "function") {
+        var bnEl = document.getElementById("bottom-nav-mobile");
+        if (bnEl) bnEl.innerHTML = btMobileBottomNav("evenements"); // ← clé adaptée par page
+      }
       // ==========================================
       // 3. LOGIQUE D'AFFICHAGE DU PRIX ET MODE DE PAIEMENT
       // ==========================================

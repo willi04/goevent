@@ -596,8 +596,12 @@
 
       // 1. Navbar et Menu Mobile
       if (typeof btNavbar === "function") {
-        var bnEl = document.getElementById("bottom-nav-mobile");
         document.getElementById("navbar").innerHTML = btNavbar("accueil");
+      }
+      // Bottom nav mobile (composant centralisé bt-api.js)
+      if (typeof btMobileBottomNav === "function") {
+        var bnEl = document.getElementById("bottom-nav-mobile");
+        if (bnEl) bnEl.innerHTML = btMobileBottomNav("accueil"); // ← clé adaptée par page
       }
 
       function toggleMobileMenu() {

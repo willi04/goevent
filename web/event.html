@@ -205,7 +205,7 @@
       </div>
     </div>
 
-    <main class="flex-1 pt-[72px] md:pt-20">
+    <main class="flex-1 pt-[72px] md:pt-20 pb-[60px] md:pb-0">
       <section
         class="relative h-[400px] flex items-center justify-center overflow-hidden"
       >
@@ -429,11 +429,14 @@
 
     <div id="footer"></div>
     <div id="footer"></div>
+    <!-- ✅ BOTTOM NAV MOBILE (md:hidden gérée dans la fonction) -->
+    <div id="bottom-nav-mobile"></div>
 
     <script src="bt-api.js"></script>
     <script>
       // 1. Initialisation de la Navbar
       if (document.getElementById("navbar") && typeof btNavbar === "function") {
+        var bnEl = document.getElementById("bottom-nav-mobile");
         document.getElementById("navbar").innerHTML = btNavbar("evenements");
       }
 

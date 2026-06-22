@@ -552,7 +552,16 @@
                    Mis en avant
                  </div>`
               : "";
-
+            
+            // Badge "Gratuit" P2 (si pas boosté et pas passé)
+            const isFree = !e.price || e.price === 0;
+            const freeBadge = (isFree && !e.is_boosted && !isPast)
+              ? `<div class="absolute top-4 right-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-lg flex items-center gap-1">
+                   <span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1">card_giftcard</span>
+                   Gratuit
+                 </div>`
+              : "";
+            
             return `
             <div class="${cardClass}" ${clickAction}>
               <div class="relative h-48 overflow-hidden shrink-0">
@@ -561,6 +570,7 @@
                   ${e.category || "Événement"}
                 </div>
                 ${boostBadge}
+                ${freeBadge}
               </div>
               <div class="p-6 flex-1 flex flex-col">
                 <div class="flex items-center gap-2 text-xs text-outline mb-2">

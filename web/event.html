@@ -247,121 +247,120 @@
       <div class="max-w-7xl mx-auto px-6 py-16">
         <div class="flex flex-col md:flex-row gap-12">
           <aside class="w-full md:w-72 flex-shrink-0 space-y-10">
-            <div>
-              <h3
-                class="text-on-primary-fixed-variant font-headline font-bold text-lg mb-6 flex items-center gap-2"
-              >
+            <details class="md:!open" open>
+              <summary class="md:hidden cursor-pointer text-on-primary-fixed-variant font-headline font-bold text-lg flex items-center gap-2 py-3">
                 <span class="material-symbols-outlined">filter_list</span>
                 Filtres
-              </h3>
-
-              <div class="mb-8">
-                <span
-                  class="text-xs font-label uppercase tracking-widest text-outline mb-4 block"
-                  >Catégories</span
-                >
-                <div class="space-y-3" id="filter-categories">
-                  <label class="flex items-center group cursor-pointer">
-                    <input
-                      value="Concert"
-                      class="cat-checkbox rounded border-outline-variant text-primary focus:ring-primary w-5 h-5 transition-all"
-                      type="checkbox"
-                    />
-                    <span
-                      class="ml-3 text-on-surface group-hover:text-primary transition-colors"
-                      >Concerts & Live</span
-                    >
-                  </label>
-                  <label class="flex items-center group cursor-pointer">
-                    <input
-                      value="Festival"
-                      class="cat-checkbox rounded border-outline-variant text-primary focus:ring-primary w-5 h-5 transition-all"
-                      type="checkbox"
-                    />
-                    <span
-                      class="ml-3 text-on-surface group-hover:text-primary transition-colors"
-                      >Festivals Culturels</span
-                    >
-                  </label>
-                  <label class="flex items-center group cursor-pointer">
-                    <input
-                      value="Theatre"
-                      class="cat-checkbox rounded border-outline-variant text-primary focus:ring-primary w-5 h-5 transition-all"
-                      type="checkbox"
-                    />
-                    <span
-                      class="ml-3 text-on-surface group-hover:text-primary transition-colors"
-                      >Théâtre & Danse</span
-                    >
-                  </label>
-                  <label class="flex items-center group cursor-pointer">
-                    <input
-                      value="Exposition"
-                      class="cat-checkbox rounded border-outline-variant text-primary focus:ring-primary w-5 h-5 transition-all"
-                      type="checkbox"
-                    />
-                    <span
-                      class="ml-3 text-on-surface group-hover:text-primary transition-colors"
-                      >Expositions</span
-                    >
-                  </label>
+              </summary>
+              <div>
+                <div class="mb-8">
+                  <span
+                    class="text-xs font-label uppercase tracking-widest text-outline mb-4 block"
+                    >Catégories</span
+                  >
+                  <div class="space-y-3" id="filter-categories">
+                    <label class="flex items-center group cursor-pointer">
+                      <input
+                        value="Concert"
+                        class="cat-checkbox rounded border-outline-variant text-primary focus:ring-primary w-5 h-5 transition-all"
+                        type="checkbox"
+                      />
+                      <span
+                        class="ml-3 text-on-surface group-hover:text-primary transition-colors"
+                        >Concerts & Live</span
+                      >
+                    </label>
+                    <label class="flex items-center group cursor-pointer">
+                      <input
+                        value="Festival"
+                        class="cat-checkbox rounded border-outline-variant text-primary focus:ring-primary w-5 h-5 transition-all"
+                        type="checkbox"
+                      />
+                      <span
+                        class="ml-3 text-on-surface group-hover:text-primary transition-colors"
+                        >Festivals Culturels</span
+                      >
+                    </label>
+                    <label class="flex items-center group cursor-pointer">
+                      <input
+                        value="Theatre"
+                        class="cat-checkbox rounded border-outline-variant text-primary focus:ring-primary w-5 h-5 transition-all"
+                        type="checkbox"
+                      />
+                      <span
+                        class="ml-3 text-on-surface group-hover:text-primary transition-colors"
+                        >Théâtre & Danse</span
+                      >
+                    </label>
+                    <label class="flex items-center group cursor-pointer">
+                      <input
+                        value="Exposition"
+                        class="cat-checkbox rounded border-outline-variant text-primary focus:ring-primary w-5 h-5 transition-all"
+                        type="checkbox"
+                      />
+                      <span
+                        class="ml-3 text-on-surface group-hover:text-primary transition-colors"
+                        >Expositions</span
+                      >
+                    </label>
+                  </div>
                 </div>
-              </div>
-
-              <div class="mb-8">
-                <span
-                  class="text-xs font-label uppercase tracking-widest text-outline mb-4 block"
-                  >Prix Max (FCFA)</span
-                >
-                <input
-                  id="price-filter"
-                  class="w-full accent-primary mb-2"
-                  max="100000"
-                  min="0"
-                  step="5000"
-                  value="100000"
-                  type="range"
-                />
-                <div
-                  class="flex justify-between text-xs text-outline font-medium"
-                >
-                  <span>0 FCFA</span>
-                  <span id="price-display">100.000 FCFA</span>
-                </div>
-              </div>
-
-              <div class="mb-8">
-                <span
-                  class="text-xs font-label uppercase tracking-widest text-outline mb-4 block"
-                  >Lieu</span
-                >
-                <select
-                  id="location-filter"
-                  class="w-full border-none bg-surface-container-high rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20"
-                >
-                  <option value="">Tous les lieux</option>
-                  <option value="Stade 20,000 places">
-                    Stade 20,000 places
-                  </option>
-                  <option value="Alliance Française">Alliance Française</option>
-                  <option value="Palais de la CEMAC">Palais de la CEMAC</option>
-                </select>
-              </div>
-              <div class="mb-8">
-                <span class="text-xs font-label uppercase tracking-widest text-outline mb-4 block">Période</span>
-                <label class="flex items-start group cursor-pointer">
+  
+                <div class="mb-8">
+                  <span
+                    class="text-xs font-label uppercase tracking-widest text-outline mb-4 block"
+                    >Prix Max (FCFA)</span
+                  >
                   <input
-                    id="include-past-filter"
-                    type="checkbox"
-                    class="rounded border-outline-variant text-primary focus:ring-primary w-5 h-5 transition-all mt-0.5"
+                    id="price-filter"
+                    class="w-full accent-primary mb-2"
+                    max="100000"
+                    min="0"
+                    step="5000"
+                    value="100000"
+                    type="range"
                   />
-                  <span class="ml-3 text-on-surface group-hover:text-primary transition-colors text-sm">
-                    Inclure les événements terminés
-                    <span class="block text-xs text-outline mt-0.5">(30 derniers jours uniquement)</span>
-                  </span>
-                </label>
+                  <div
+                    class="flex justify-between text-xs text-outline font-medium"
+                  >
+                    <span>0 FCFA</span>
+                    <span id="price-display">100.000 FCFA</span>
+                  </div>
+                </div>
+  
+                <div class="mb-8">
+                  <span
+                    class="text-xs font-label uppercase tracking-widest text-outline mb-4 block"
+                    >Lieu</span
+                  >
+                  <select
+                    id="location-filter"
+                    class="w-full border-none bg-surface-container-high rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20"
+                  >
+                    <option value="">Tous les lieux</option>
+                    <option value="Stade 20,000 places">
+                      Stade 20,000 places
+                    </option>
+                    <option value="Alliance Française">Alliance Française</option>
+                    <option value="Palais de la CEMAC">Palais de la CEMAC</option>
+                  </select>
+                </div>
+                <div class="mb-8">
+                  <span class="text-xs font-label uppercase tracking-widest text-outline mb-4 block">Période</span>
+                  <label class="flex items-start group cursor-pointer">
+                    <input
+                      id="include-past-filter"
+                      type="checkbox"
+                      class="rounded border-outline-variant text-primary focus:ring-primary w-5 h-5 transition-all mt-0.5"
+                    />
+                    <span class="ml-3 text-on-surface group-hover:text-primary transition-colors text-sm">
+                      Inclure les événements terminés
+                      <span class="block text-xs text-outline mt-0.5">(30 derniers jours uniquement)</span>
+                    </span>
+                  </label>
+                </div>
               </div>
-            </div>
+            </details>
           </aside>
 
           <div class="flex-1">
@@ -413,298 +412,9 @@
               class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
               id="events-grid-container"
             >
-              <div
-                class="group bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300"
-              >
-                <div class="relative h-48 overflow-hidden">
-                  <img
-                    class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJffm-eyWFWXKeshY2wvUuQG22Hfkn_W3oy3YeRbd7wpsVBd-lx7BoppaY-8k-2JuiAKK_2BCnI8fTGTKm5_8dKv1Z3ElM7sSDKXD4gOGRMx9cUFhs3c1Rt5FrJgwS-VV06sq4328RfaLRnz0axDPT9UHLdycS42BKTlL_bgiQ6VhVmfasfSN6zJqK1aj6x3_5yJQbNZHOC0CHanLDxg9r8nowFEcu1vdOL_d4YQbBKHjj8pNyMmMfhNrMP7HhiGHOE6QMkVcWig"
-                  />
-                  <div
-                    class="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-primary"
-                  >
-                    Concert
-                  </div>
-                  <div
-                    class="absolute top-4 right-4 bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider"
-                  >
-                    Populaire
-                  </div>
-                </div>
-                <div class="p-6">
-                  <div
-                    class="flex items-center gap-2 text-xs text-outline mb-2"
-                  >
-                    <span class="material-symbols-outlined text-sm"
-                      >calendar_today</span
-                    ><span>Sam, 15 Décembre • 20:00</span>
-                  </div>
-                  <h3
-                    class="text-lg font-headline font-bold text-on-surface mb-3 group-hover:text-primary leading-tight"
-                  >
-                    Bangui Music Festival - Edition 2024
-                  </h3>
-                  <div
-                    class="flex items-center gap-2 text-sm text-outline mb-6"
-                  >
-                    <span class="material-symbols-outlined text-sm"
-                      >location_on</span
-                    ><span>Stade de 20.000 Places</span>
-                  </div>
-                  <div class="flex items-center justify-between mt-auto">
-                    <span class="text-lg font-extrabold text-secondary"
-                      >5.000 FCFA</span
-                    >
-                    <button
-                      class="p-3 bg-primary/5 text-primary rounded-full hover:bg-primary hover:text-white transition-all"
-                    >
-                      <span class="material-symbols-outlined"
-                        >shopping_cart</span
-                      >
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <div
-                class="group bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300"
-              >
-                <div class="relative h-48 overflow-hidden">
-                  <img
-                    class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuAd3x7z9jbKe1ckZO85BfWo3H6cHv-qPODPhnk68TnriqZhFvyfH2I6mSvuJRRp3J5IjAtDTumH0vVbLOOwxTnpi3klr3q8OSGXi5W5y0BO3Kn28aa4r2BG-2XV1wGf2YJgKcJ0vjRUAcYY2AEpSodHEQnyJ07js8x6rjoo7laiKZNGCL6jdwxmuUxbZQpOq7GsWaOZ5r3-xzecGzXxD055y-pOvNF0HbSsyFAcFMSrY5i0a0of_X2VISmgy84XiNYscyBHQDWvug"
-                  />
-                  <div
-                    class="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-primary"
-                  >
-                    Live Jazz
-                  </div>
-                </div>
-                <div class="p-6">
-                  <div
-                    class="flex items-center gap-2 text-xs text-outline mb-2"
-                  >
-                    <span class="material-symbols-outlined text-sm"
-                      >calendar_today</span
-                    ><span>Ven, 21 Décembre • 19:30</span>
-                  </div>
-                  <h3
-                    class="text-lg font-headline font-bold text-on-surface mb-3 group-hover:text-primary leading-tight"
-                  >
-                    Soirée Jazz & Gastronomie Sango
-                  </h3>
-                  <div
-                    class="flex items-center gap-2 text-sm text-outline mb-6"
-                  >
-                    <span class="material-symbols-outlined text-sm"
-                      >location_on</span
-                    ><span>Alliance Française</span>
-                  </div>
-                  <div class="flex items-center justify-between mt-auto">
-                    <span class="text-lg font-extrabold text-secondary"
-                      >15.000 FCFA</span
-                    >
-                    <button
-                      class="p-3 bg-primary/5 text-primary rounded-full hover:bg-primary hover:text-white transition-all"
-                    >
-                      <span class="material-symbols-outlined"
-                        >shopping_cart</span
-                      >
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <div
-                class="group bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300"
-              >
-                <div class="relative h-48 overflow-hidden">
-                  <img
-                    class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuASzDcMEPPqQqDQZzouaL668exAME_DvAie8RggTbjXDTe3M-bwqjsbZsVs8TNDM4XfByK28eftc0YcfdcxVagkSO7VUTxb631SBneLpUa37wqRh761KPIM-2NGitjcsF1ZwsdtB0idqcHVb1NHxzNvAfp1oQVsS_0vtb2jdkoNN5pQy5xX3vqAbGLTx_VBnHzrPHAxeVLpaQxf_Gq4mGttwiGvhqEVmI9TdggXJ0tN1FFckX8JSmYXC1fw389rkQjw7PMC2JdEXA"
-                  />
-                  <div
-                    class="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-primary"
-                  >
-                    Culture
-                  </div>
-                </div>
-                <div class="p-6">
-                  <div
-                    class="flex items-center gap-2 text-xs text-outline mb-2"
-                  >
-                    <span class="material-symbols-outlined text-sm"
-                      >calendar_today</span
-                    ><span>Dim, 23 Décembre • 14:00</span>
-                  </div>
-                  <h3
-                    class="text-lg font-headline font-bold text-on-surface mb-3 group-hover:text-primary leading-tight"
-                  >
-                    Danses Traditionnelles de l'Oubangui
-                  </h3>
-                  <div
-                    class="flex items-center gap-2 text-sm text-outline mb-6"
-                  >
-                    <span class="material-symbols-outlined text-sm"
-                      >location_on</span
-                    ><span>Palais de la CEMAC</span>
-                  </div>
-                  <div class="flex items-center justify-between mt-auto">
-                    <span class="text-lg font-extrabold text-secondary"
-                      >Gratuit</span
-                    >
-                    <button
-                      class="p-3 bg-primary/5 text-primary rounded-full hover:bg-primary hover:text-white transition-all"
-                    >
-                      <span class="material-symbols-outlined"
-                        >confirmation_number</span
-                      >
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <div
-                class="group bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300"
-              >
-                <div class="relative h-48 overflow-hidden">
-                  <img
-                    class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuBIRY7P8KgjpkMX_uUGfnc5a5gyZmwBBeSGkleJ06YbuLwHCBSCiAEWYozAnimWIC93vElXJTVLbbeo10-59TTsx7NkH9Zhj7UDKxpRym6J6E6TuWAER9YL6vv7HDOlhWOvlyhZU9C1KJgnaMZLdPejuMQDS9R25_OGNAAZ_pouO9X6wBsPbKNBEBI-V_Xl7kowMBc73FLNpBWQ6Y7Upn1KdpCaYUtA9GgY1kVmZRzINZGuO0XXNuAamwcCoBCBnmTOHGq1-IprKw"
-                  />
-                  <div
-                    class="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-primary"
-                  >
-                    Rap/Hip-Hop
-                  </div>
-                </div>
-                <div class="p-6">
-                  <div
-                    class="flex items-center gap-2 text-xs text-outline mb-2"
-                  >
-                    <span class="material-symbols-outlined text-sm"
-                      >calendar_today</span
-                    ><span>Mer, 26 Décembre • 21:00</span>
-                  </div>
-                  <h3
-                    class="text-lg font-headline font-bold text-on-surface mb-3 group-hover:text-primary leading-tight"
-                  >
-                    Bangui Urban Night - Showcase
-                  </h3>
-                  <div
-                    class="flex items-center gap-2 text-sm text-outline mb-6"
-                  >
-                    <span class="material-symbols-outlined text-sm"
-                      >location_on</span
-                    ><span>Espace Culturel Linga</span>
-                  </div>
-                  <div class="flex items-center justify-between mt-auto">
-                    <span class="text-lg font-extrabold text-secondary"
-                      >2.500 FCFA</span
-                    >
-                    <button
-                      class="p-3 bg-primary/5 text-primary rounded-full hover:bg-primary hover:text-white transition-all"
-                    >
-                      <span class="material-symbols-outlined"
-                        >shopping_cart</span
-                      >
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <div
-                class="group bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300"
-              >
-                <div class="relative h-48 overflow-hidden">
-                  <img
-                    class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuBVjex8nFRrTu33L-9-4p4TYddLQ0vWomQutOYpWS1dnK-g_A4AHn7ytUVKVIZRVamMSV35CucppWjyXqcIidS8tsFmlBKiPjrgrz-c9beRi7Q9eD6gZssouShoAZ6UEfRZQSKfsPngcFchVLgEHlHaVN1-xiyuNOaHg0r8UVOKowH90yZ7kUl4vgp7osP6zQci_rrtbtndnIwCkk062udisQ5AtKfiEeeLEA6Ke9W1xYRYsh4z5tEpHZCisNaS6Cnp0C6bkLO8jA"
-                  />
-                  <div
-                    class="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-primary"
-                  >
-                    Art Expo
-                  </div>
-                </div>
-                <div class="p-6">
-                  <div
-                    class="flex items-center gap-2 text-xs text-outline mb-2"
-                  >
-                    <span class="material-symbols-outlined text-sm"
-                      >calendar_today</span
-                    ><span>Jeu, 27 Décembre • 10:00</span>
-                  </div>
-                  <h3
-                    class="text-lg font-headline font-bold text-on-surface mb-3 group-hover:text-primary leading-tight"
-                  >
-                    Couleurs de l'Oubangui: Expo Peinture
-                  </h3>
-                  <div
-                    class="flex items-center gap-2 text-sm text-outline mb-6"
-                  >
-                    <span class="material-symbols-outlined text-sm"
-                      >location_on</span
-                    ><span>Musée Boganda</span>
-                  </div>
-                  <div class="flex items-center justify-between mt-auto">
-                    <span class="text-lg font-extrabold text-secondary"
-                      >1.000 FCFA</span
-                    >
-                    <button
-                      class="p-3 bg-primary/5 text-primary rounded-full hover:bg-primary hover:text-white transition-all"
-                    >
-                      <span class="material-symbols-outlined"
-                        >shopping_cart</span
-                      >
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <div
-                class="group bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300"
-              >
-                <div class="relative h-48 overflow-hidden">
-                  <img
-                    class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuAmJ2bp69jkrAlmKe17haZPyeEd2bhHJwgKsmGPeWMv_Zbo5acZfXkAUfn_Zhs4ESUT2E6NMGtVd00x8FoELHaQb6_YIz_OxH9gsL5LLSfGDkeABvqQL6UsUzi3wBA1jWw_QRVlRroukBzJ8BQtxWlMpJelpRjYJzk9EOVwM3pkk0HqFXXO8iAeLDd6xB3h5ug02iwA5NiPX8yD4Rq0QoYpJYbbPlDZyeOcnwROMP6eLlXTGlG4WtXrXOBZL1EFUTrIBLSe_1GLnA"
-                  />
-                  <div
-                    class="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-primary"
-                  >
-                    Electro
-                  </div>
-                </div>
-                <div class="p-6">
-                  <div
-                    class="flex items-center gap-2 text-xs text-outline mb-2"
-                  >
-                    <span class="material-symbols-outlined text-sm"
-                      >calendar_today</span
-                    ><span>Lun, 31 Décembre • 22:00</span>
-                  </div>
-                  <h3
-                    class="text-lg font-headline font-bold text-on-surface mb-3 group-hover:text-primary leading-tight"
-                  >
-                    Réveillon 2025: La Grande Soirée
-                  </h3>
-                  <div
-                    class="flex items-center gap-2 text-sm text-outline mb-6"
-                  >
-                    <span class="material-symbols-outlined text-sm"
-                      >location_on</span
-                    ><span>Hôtel Ledger Plaza</span>
-                  </div>
-                  <div class="flex items-center justify-between mt-auto">
-                    <span class="text-lg font-extrabold text-secondary"
-                      >25.000 FCFA</span
-                    >
-                    <button
-                      class="p-3 bg-primary/5 text-primary rounded-full hover:bg-primary hover:text-white transition-all"
-                    >
-                      <span class="material-symbols-outlined"
-                        >shopping_cart</span
-                      >
-                    </button>
-                  </div>
-                </div>
+              <div class="col-span-full py-20 text-center">
+                <div class="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <p class="text-gray-500 font-medium">Chargement des événements...</p>
               </div>
             </div>
 
@@ -1010,7 +720,13 @@
           fetchAndRenderEvents();
         }
 
-        if (searchInput) searchInput.addEventListener("input", updateFilters);
+        let searchTimeout = null;
+        if (searchInput) {
+          searchInput.addEventListener("input", () => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(updateFilters, 400);
+          });
+        }
         catCheckboxes.forEach((cb) =>
           cb.addEventListener("change", updateFilters),
         );
@@ -1029,7 +745,11 @@
           );
           priceFilter.addEventListener("change", updateFilters);
         }
-
+        const urlParams = new URLSearchParams(window.location.search);
+        const searchFromUrl = urlParams.get("search");
+        if (searchFromUrl && searchInput) {
+          searchInput.value = searchFromUrl;
+        }
         // Chargement initial
         await fetchAndRenderEvents();
       });

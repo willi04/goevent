@@ -94,9 +94,6 @@
       }
     </style>
     <script src="auth-guard.js"></script>
-    <script>
-        requireAuth(); 
-    </script>
   </head>
   <body
     class="bg-gray-50 font-body text-on-surface antialiased pt-[72px] flex flex-col min-h-screen overflow-x-hidden"
@@ -139,7 +136,7 @@
           class="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50"
         >
           <span
-            class="font-headline #00502c font-extrabold text-lg text-gray-900"
+            class="font-headline font-extrabold text-lg text-gray-900"
             >Mon Espace</span
           >
           <button
@@ -697,7 +694,7 @@
           </div>
         </div>
 
-        <div class="w-full mt-auto pb-24 md:pb-0">
+        <div class="w-full mt-auto ">
           <div
             id="dash-footer"
             class="border-t border-gray-100 bg-white shadow-sm"
@@ -706,72 +703,13 @@
       </main>
     </div>
 
-    <nav
-      class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex justify-around items-center pt-3 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] z-50 px-1"
-      style="padding-bottom: max(12px, env(safe-area-inset-bottom))"
-    >
-      <a
-        href="index.html"
-        class="flex flex-col items-center gap-1 text-gray-400 w-14 hover:text-primary transition-colors"
-      >
-        <span class="material-symbols-outlined text-[24px]">home</span>
-        <span
-          class="text-[10px] font-medium tracking-wide truncate w-full text-center"
-          >Accueil</span
-        >
-      </a>
-
-      <a
-        href="event.html"
-        class="flex flex-col items-center gap-1 text-gray-400 w-14 hover:text-primary transition-colors"
-      >
-        <span class="material-symbols-outlined text-[24px]">stadium</span>
-        <span
-          class="text-[10px] font-medium tracking-wide truncate w-full text-center"
-          >Événements</span
-        >
-      </a>
-
-      <a
-        href="follow.html"
-        class="flex flex-col items-center gap-1 text-gray-400 w-14 hover:text-primary transition-colors"
-      >
-        <span class="material-symbols-outlined text-[24px]">favorite</span>
-        <span
-          class="text-[10px] font-medium tracking-wide truncate w-full text-center"
-          >Follow</span
-        >
-      </a>
-
-      <a
-        href="partenaire.html"
-        class="flex flex-col items-center gap-1 text-gray-400 w-14 hover:text-primary transition-colors"
-      >
-        <span class="material-symbols-outlined text-[24px]">handshake</span>
-        <span
-          class="text-[10px] font-medium tracking-wide truncate w-full text-center"
-          >Partenaire</span
-        >
-      </a>
-
-      <a
-        href="a_propos.html"
-        class="flex flex-col items-center gap-1 text-gray-400 w-14 hover:text-primary transition-colors"
-      >
-        <span class="material-symbols-outlined text-[24px]">info</span>
-        <span
-          class="text-[10px] font-medium tracking-wide truncate w-full text-center"
-          >À propos</span
-        >
-      </a>
-    </nav>
-
     <script src="bt-api.js"></script>
     <script src="pwa.js"></script>
     <script>
       let user = {};
 
       document.addEventListener("DOMContentLoaded", async () => {
+        if (typeof requireAuth === "function") requireAuth();
         const navEl = document.getElementById("navbar");
         const footEl = document.getElementById("dash-footer");
 

@@ -436,10 +436,13 @@
     <script>
       // 1. Initialisation de la Navbar
       if (document.getElementById("navbar") && typeof btNavbar === "function") {
-        var bnEl = document.getElementById("bottom-nav-mobile");
         document.getElementById("navbar").innerHTML = btNavbar("evenements");
       }
-
+      // Bottom nav mobile (composant centralisé bt-api.js)
+      if (typeof btMobileBottomNav === "function") {
+        var bnEl = document.getElementById("bottom-nav-mobile");
+        if (bnEl) bnEl.innerHTML = btMobileBottomNav("evenements"); // ← clé adaptée par page
+      }
       // 2. Gestion du menu mobile
       function toggleMobileMenu() {
         const menu = document.getElementById("mobile-menu");

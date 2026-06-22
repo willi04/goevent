@@ -25,6 +25,51 @@ from api import (
 )
 from api import staff as staff_router
 
+import os
+import sentry_sdk
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+
+# ──────────────────────────────────────────────────────────────
+# SENTRY — Monitoring erreurs + performance
+# Active uniquement si SENTRY_DSN_BACKEND est défini en env
+# ──────────────────────────────────────────────────────────────
+SENTRY_DSN = os.getenv("SENTRY_DSN_BACKEND", "").strip()
+
+def _sentry_before_send(event, hint):
+    """Filtre les données sensibles AVANT envoi à Sentry (RGPD + sécurité)."""
+    # Retire le body des requêtes auth (PIN, password, refresh token)
+    if event.get("request"):
+        url = event["request"].get("url", "")
+        if any(s in url for s in ["/auth/login", "/auth/register", "/auth/pin", "/auth/reset", "/auth/refresh"]):
+            event["request"]["data"] = "[FILTERED — auth endpoint]"
+        # Retire les cookies et headers Authorization si présents
+        if "headers" in event["request"]:
+            headers = event["request"]["headers"]
+            if isinstance(headers, dict):
+                headers.pop("Authorization", None)
+                headers.pop("Cookie", None)
+    return event
+
+if SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        environment=os.getenv("SENTRY_ENVIRONMENT", "development"),
+        release=os.getenv("SENTRY_RELEASE", "goevent-api@unknown"),
+        traces_sample_rate=0.1,
+        sample_rate=1.0,
+        integrations=[
+            FastApiIntegration(transaction_style="endpoint"),
+            SqlalchemyIntegration(),
+        ],
+        send_default_pii=False,
+        before_send=_sentry_before_send,
+    )
+    print(f"[Sentry] Activé — environment={os.getenv('SENTRY_ENVIRONMENT')}")
+else:
+    print("[Sentry] Désactivé (pas de SENTRY_DSN_BACKEND)")
+
+
 Base.metadata.create_all(bind=engine)
 
 ROLES_VALIDES = ("fan", "organizer", "agent")

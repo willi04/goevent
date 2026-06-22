@@ -4,6 +4,50 @@
 // ============================================================
 
 const BT_API ="https://api.goevent.africa";
+// ──────────────────────────────────────────────────────────────
+// SENTRY FRONTEND — Tracking erreurs JS côté browser
+// ⚠️ Remplace la DSN ci-dessous par ta vraie DSN frontend Sentry
+// ──────────────────────────────────────────────────────────────
+const SENTRY_DSN_FRONTEND = "https://9ee6e572b3037059eeb78b655a5cb0f7@o4511610783793152.ingest.de.sentry.io/4511610811449424";
+const SENTRY_ENV_FE = window.location.hostname === "goevent.africa" ? "production" : "development";
+
+(function loadSentryFE() {
+  if (!SENTRY_DSN_FRONTEND || SENTRY_DSN_FRONTEND.includes("VOTRE_DSN")) {
+    console.log("[Sentry FE] Désactivé (DSN non configurée)");
+    return;
+  }
+  const script = document.createElement("script");
+  script.src = "https://browser.sentry-cdn.com/8.40.0/bundle.tracing.min.js";
+  script.crossOrigin = "anonymous";
+  script.onload = function () {
+    Sentry.init({
+      dsn: SENTRY_DSN_FRONTEND,
+      environment: SENTRY_ENV_FE,
+      release: "goevent-fe@1.0.0",
+      tracesSampleRate: 0.1,
+      ignoreErrors: [
+        "Failed to fetch",
+        "NetworkError",
+        "Load failed",
+        "Erreur serveur",
+        "Erreur de chargement",
+      ],
+      beforeSend(event) {
+        try {
+          const user = btAuth.getUser();
+          if (user && user.id) {
+            event.user = { id: String(user.id), username: "user_" + user.id };
+            event.tags = event.tags || {};
+            event.tags.user_role = user.role || "guest";
+          }
+        } catch (e) {}
+        return event;
+      },
+    });
+    console.log("[Sentry FE] Activé — env=" + SENTRY_ENV_FE);
+  };
+  document.head.appendChild(script);
+})();
 
 // ── Auth ──────────────────────────────────────────────────────
 const btAuth = {

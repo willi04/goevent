@@ -46,9 +46,6 @@
       }
     </style>
     <script src="auth-guard.js"></script>
-    <script>
-        requireAuth(["agent"]); 
-    </script>
   </head>
   <body class="min-h-screen flex flex-col p-4">
     <header
@@ -162,6 +159,7 @@
       let html5QrCode;
 
       document.addEventListener("DOMContentLoaded", async () => {
+        if (typeof requireAuth === "function") requireAuth(["agent"]);
         const pageTitle = document.getElementById("scanner-title");
 
         // On demande au serveur le nom de l'événement actuel

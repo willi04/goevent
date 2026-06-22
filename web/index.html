@@ -889,19 +889,7 @@
           }
 
           if (emptyState) emptyState.classList.add("hidden");
-
-          // --- LOGIQUE DE SÉPARATION ---
-          //
-          // Le backend (Chantier 17) renvoie déjà les events triés :
-          //   1. Les boostés "visibles ce bucket 5 min" (max 6) en tête
-          //   2. Puis le reste trié par date d'événement croissante (Option α)
-          //
-          // Donc on consomme tel quel :
-          //   - VEDETTE : les 6 premiers (= les 6 boostés s'ils existent, sinon
-          //     complétés par les events les plus proches dans le temps)
-          //   - À VENIR : les 8 premiers (= boostés en tête + complétés par date)
-
-          const featuredEvents = allEvents.slice(0, 6);
+          
           const featuredEvents = allEvents.slice(0, 6);
           // Si peu d'events, on autorise le doublon ; sinon on skip les vedettes
           const upcomingEvents = allEvents.length > 10

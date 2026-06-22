@@ -99,7 +99,7 @@
     </script>
   </head>
   <body
-    class="bg-gray-50 font-body text-on-surface antialiased pt-[72px] flex-col min-h-screen"
+    class="bg-gray-50 font-body text-on-surface antialiased pt-[72px] flex flex-col min-h-screen overflow-x-hidden"
   >
     <div id="navbar" class="hidden md:block"></div>
 
@@ -128,7 +128,7 @@
 
     <div
       id="mobile-menu"
-      class="fixed inset-0 bg-gray-900/40 z-[100] opacity-0 transition-opacity duration-300"
+      class="fixed inset-0 bg-gray-900/40 z-[100] hidden opacity-0 transition-opacity duration-300"
     >
       <div class="absolute inset-0" onclick="toggleMobileMenu()"></div>
       <div
@@ -490,9 +490,7 @@
               </div>
               <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
                 <p class="text-sm text-gray-600">
-                  Pour payer un billet, composez
-                  <strong class="text-gray-900">#150*50#</strong> sur votre
-                  téléphone Orange Money après la réservation.
+                  Vos paiements passent par <strong class="text-gray-900">Orange Money via NGSER</strong>, notre partenaire sécurisé. Après chaque réservation, vous recevez un lien de paiement à confirmer directement sur votre téléphone. Aucun code USSD à composer.
                 </p>
               </div>
               <div id="pay-history" class="mt-4">
@@ -735,8 +733,7 @@
       </a>
 
       <a
-        href="#"
-        onclick="btShowFavorites()"
+        href="follow.html"
         class="flex flex-col items-center gap-1 text-gray-400 w-14 hover:text-primary transition-colors"
       >
         <span class="material-symbols-outlined text-[24px]">favorite</span>
@@ -1008,7 +1005,7 @@
           user.full_name = newFullName;
           user.email = newEmail;
           user.orange_money = newOrangeMoney;
-          btAuth.save(btAuth.getToken(), user);
+          btAuth.save(btAuth.getToken(), btAuth.getRefreshToken(), user);
 
           document
             .querySelectorAll(".dyn-user-name")
@@ -1156,9 +1153,9 @@
             const sourceImg = e.cover_image_url || e.image_url;
             const hasImage = sourceImg && sourceImg.trim() !== "";
             const imageUrl = hasImage
-              ? sourceImg.startsWith("http")
+              ? sourceImg.startsWith("http") || sourceImg.startsWith("data:")
                 ? sourceImg
-                : "http://127.0.0.1:8000" + sourceImg
+                : BT_API + sourceImg
               : null;
 
             return `

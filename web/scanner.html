@@ -49,7 +49,7 @@
   </head>
   <body class="min-h-screen flex flex-col p-4">
     <header
-      class="flex justify-between items-center mb-6 bg-white p-4 rounded-2xl shadow-sm border border-gray-100"
+      class="flex justify-between items-center mb-4 bg-white p-4 rounded-2xl shadow-sm border border-gray-100"
     >
       <h1
         id="scanner-title"
@@ -68,6 +68,57 @@
         <span class="hidden sm:inline">Quitter</span>
       </button>
     </header>
+
+    <!-- ════════════════════════════════════════════════════════ -->
+    <!-- BANDEAU AFFLUENCE TEMPS RÉEL (refresh auto /30s)        -->
+    <!-- ════════════════════════════════════════════════════════ -->
+    <div
+      id="scan-stats-card"
+      class="mb-6 bg-gradient-to-br from-[#00502c] to-[#006b3c] rounded-2xl p-5 shadow-lg text-white relative overflow-hidden"
+    >
+      <!-- Barre de progression de fond (effet "remplissage") -->
+      <div
+        id="stats-progress-bar"
+        class="absolute inset-y-0 left-0 bg-white/10 transition-all duration-700 ease-out"
+        style="width: 0%"
+      ></div>
+
+      <div class="relative z-10">
+        <!-- Ligne du haut : label + spinner -->
+        <div class="flex justify-between items-center mb-2">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-white/70">
+            Affluence en temps réel
+          </p>
+          <span
+            id="stat-refresh-spinner"
+            class="material-symbols-outlined text-white/60 text-base hidden"
+            >sync</span
+          >
+        </div>
+
+        <!-- Compteur principal : entered / expected + taux -->
+        <div class="flex items-end justify-between gap-3">
+          <p class="text-3xl md:text-4xl font-black leading-none tabular-nums">
+            <span id="stat-entered">—</span>
+            <span class="text-white/60 text-xl"> / </span>
+            <span id="stat-expected" class="text-white/80 text-xl">—</span>
+          </p>
+          <span
+            id="stat-rate"
+            class="text-3xl md:text-4xl font-black tabular-nums leading-none"
+            >—%</span
+          >
+        </div>
+
+        <!-- Sous-ligne : reste à entrer -->
+        <p class="text-xs text-white/70 font-bold mt-3">
+          <span id="stat-remaining" class="text-base text-white font-black tabular-nums"
+            >—</span
+          >
+          personnes restantes à entrer
+        </p>
+      </div>
+    </div>
 
     <div class="flex-1 flex flex-col items-center justify-center relative">
       <div id="reader"></div>
@@ -154,26 +205,93 @@
       const currentUser = btAuth.getUser();
       let html5QrCode;
 
+      // Variables globales : event_id courant + interval refresh
+      let currentEventId = null;
+      let statsRefreshInterval = null;
+
       document.addEventListener("DOMContentLoaded", async () => {
+        // Garde auth (déplacée ici pour éviter race condition <head>)
         if (typeof requireAuth === "function") requireAuth(["agent"]);
+
         const pageTitle = document.getElementById("scanner-title");
 
-        // On demande au serveur le nom de l'événement actuel
+        // Récupération du nom + ID de l'event courant
         try {
           const response = await btApi.get("/agent/current-event");
           if (pageTitle) {
             pageTitle.textContent = `Scanner - ${response.event_name}`;
           }
           document.title = `Scanner - ${response.event_name}`;
+          // event_id : depuis la réponse OU depuis le user en localStorage (fallback)
+          currentEventId = response.event_id || (btAuth.getUser() || {}).agent_event_id || null;
         } catch (error) {
           if (pageTitle)
             pageTitle.textContent = "Scanner - Contrôle des billets";
+          // Tentative fallback uniquement via le user en localStorage
+          currentEventId = (btAuth.getUser() || {}).agent_event_id || null;
+        }
+
+        // Lancer les stats temps réel si on a un event_id
+        if (currentEventId) {
+          loadScanStats();
+          statsRefreshInterval = setInterval(loadScanStats, 30000); // /30s
+        } else {
+          // Pas d'event_id : cacher le bandeau (pas d'erreur visible à l'agent)
+          const card = document.getElementById("scan-stats-card");
+          if (card) card.classList.add("hidden");
         }
 
         // Préparation et allumage de la caméra
         html5QrCode = new Html5Qrcode("reader");
         demarrerScanner();
       });
+
+      // ════════════════════════════════════════════════════════
+      // STATS TEMPS RÉEL — refresh /30s + après chaque scan
+      // ════════════════════════════════════════════════════════
+      async function loadScanStats() {
+        if (!currentEventId) return;
+
+        const spinner = document.getElementById("stat-refresh-spinner");
+        if (spinner) {
+          spinner.classList.remove("hidden");
+          spinner.style.animation = "spin 1s linear infinite";
+        }
+
+        try {
+          const stats = await btApi.get(`/tickets/scan/stats/${currentEventId}`);
+
+          const entered = stats.total_entered ?? 0;
+          const expected = stats.total_confirmed ?? 0;
+          const remaining = stats.total_remaining ?? 0;
+          const rate = stats.entry_rate_pct ?? 0;
+
+          const setText = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = val;
+          };
+
+          setText("stat-entered", entered.toLocaleString("fr-FR"));
+          setText("stat-expected", expected.toLocaleString("fr-FR"));
+          setText("stat-remaining", remaining.toLocaleString("fr-FR"));
+          setText("stat-rate", `${Math.round(rate)}%`);
+
+          // Barre de progression de fond
+          const progressBar = document.getElementById("stats-progress-bar");
+          if (progressBar) {
+            const pct = expected > 0 ? Math.min(100, (entered / expected) * 100) : 0;
+            progressBar.style.width = pct + "%";
+          }
+        } catch (err) {
+          console.warn("Erreur chargement stats:", err);
+          // On garde les anciennes valeurs affichées (pas de flash "—")
+        } finally {
+          if (spinner) {
+            spinner.classList.add("hidden");
+            spinner.style.animation = "";
+          }
+        }
+      }
 
       function demarrerScanner() {
         // Configuration : 10 images par seconde, zone de scan carrée
@@ -392,6 +510,8 @@
         document.getElementById("scan-result").classList.add("hidden");
         document.getElementById("scan-result").classList.remove("flex");
         html5QrCode.resume();
+        // Refresh immédiat des stats après scan (sans attendre les 30s)
+        if (typeof loadScanStats === "function") loadScanStats();
       }
       function onScanFailure(error) {
         // Cette fonction tourne en boucle tant qu'aucun QR code n'est trouvé.
@@ -408,7 +528,8 @@
           "Êtes-vous sûr de vouloir terminer définitivement ?"
         );
         if (!confirmed) return;
-
+        clearInterval(statsRefreshInterval);
+        
         const btn = document.querySelector('button[onclick="logoutAgent()"]');
         if (btn)
           btn.innerHTML =

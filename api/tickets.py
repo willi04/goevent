@@ -98,11 +98,10 @@ def my_paid_tickets(db: Session = Depends(get_db), current_user: User = Depends(
 def reserve_ticket_cash(data: CashReservation, db: Session = Depends(get_db),
                         current_user: User = Depends(get_current_user)):
     # P0 — Verrou pessimiste + check quota atomique (anti-survente)
-   event = lock_event_for_booking(db, data.event_id)
+    event = lock_event_for_booking(db, data.event_id)
 
     if event.event_date < datetime.utcnow():
         raise HTTPException(400, "Événement déjà passé")
-
     # Deadline -24h : applicable UNIQUEMENT aux events payants
     # (logistique billetterie cash à l'entrée). Events gratuits = pas de friction.
     deadline = event.event_date - timedelta(hours=24)

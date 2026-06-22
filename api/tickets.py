@@ -98,16 +98,18 @@ def my_paid_tickets(db: Session = Depends(get_db), current_user: User = Depends(
 def reserve_ticket_cash(data: CashReservation, db: Session = Depends(get_db),
                         current_user: User = Depends(get_current_user)):
     # P0 — Verrou pessimiste + check quota atomique (anti-survente)
-    event = lock_event_for_booking(db, data.event_id)
+   event = lock_event_for_booking(db, data.event_id)
 
+    if event.event_date < datetime.utcnow():
+        raise HTTPException(400, "Événement déjà passé")
+
+    # Deadline -24h : applicable UNIQUEMENT aux events payants
+    # (logistique billetterie cash à l'entrée). Events gratuits = pas de friction.
     deadline = event.event_date - timedelta(hours=24)
-    if datetime.utcnow() > deadline:
+    if event.price > 0 and datetime.utcnow() > deadline:
         raise HTTPException(400,
             "Les réservations cash ne sont plus acceptées (moins de 24h avant l'événement). "
             "Vous pouvez encore acheter via Orange Money à l'entrée.")
-    if event.event_date < datetime.utcnow():
-        raise HTTPException(400, "Événement déjà passé")
-    # NB : check seats_sold ≥ total_seats fait par lock_event_for_booking (409)
 
     nb_reservations = db.query(Ticket).filter(
         Ticket.user_id == current_user.id,

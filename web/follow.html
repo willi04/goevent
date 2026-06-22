@@ -188,7 +188,7 @@
       </div>
     </div>
 
-    <main class="flex-1 pt-[72px] md:pt-20">
+    <main class="flex-1 pt-[72px] md:pt-20 pb-[60px] md:pb-0">
       <section
         class="relative hero-gradient py-20 px-6 md:px-16 overflow-hidden"
       >
@@ -427,12 +427,15 @@
 
     <div id="footer"></div>
     <div id="footer"></div>
+    <!-- ✅ BOTTOM NAV MOBILE (md:hidden gérée dans la fonction) -->
+    <div id="bottom-nav-mobile"></div>
 
     <script src="bt-api.js"></script>
     <script src="pwa.js"></script>
     <script>
       // 1. Initialisation des menus et footers
       if (document.getElementById("navbar")) {
+        var bnEl = document.getElementById("bottom-nav-mobile");
         document.getElementById("navbar").innerHTML = btNavbar("follow");
       }
       document.getElementById("footer").innerHTML = btFooter();

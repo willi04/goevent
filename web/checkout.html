@@ -91,9 +91,6 @@
       }
     </style>
     <script src="auth-guard.js"></script>
-    <script>
-        requireAuth(); 
-    </script>
   </head>
 
   <body
@@ -204,17 +201,8 @@
             ><span class="material-symbols-outlined">info</span> À propos</a
           >
         </nav>
-        <div class="mt-4 pt-6 border-t border-gray-100 space-y-3">
-          <a
-            href="login.html"
-            class="block w-full text-center text-primary font-bold py-3.5 rounded-xl border-2 border-primary hover:bg-primary/5 transition-all"
-            >Se connecter</a
-          >
-          <a
-            href="signup.html"
-            class="block w-full text-center bg-primary text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 active:scale-95 transition-all"
-            >S'inscrire</a
-          >
+        <div id="mobile-auth-section" class="mt-4 pt-6 border-t border-gray-100 space-y-3">
+          <!-- Rempli dynamiquement par btMobileAuthSection() -->
         </div>
       </div>
     </div>
@@ -297,19 +285,14 @@
                   class="bg-primary/10 text-primary w-8 h-8 rounded-full flex items-center justify-center text-sm"
                   >2</span
                 >
-                Choisissez votre mode de paiement
+                Paiement par Orange Money
               </h2>
             
-              <!-- 🟠 Option 1 : Orange Money -->
+              <!-- 🟠 Orange Money (seul mode V1) -->
               <div
-                id="opt-orange-money"
-                onclick="selectPaymentMethod('orange_money')"
-                class="mb-4 p-4 border-2 border-orange-500 bg-orange-50 rounded-2xl flex items-center gap-4 cursor-pointer relative z-10 transition-all hover:shadow-md"
+                class="mb-6 p-4 border-2 border-orange-500 bg-orange-50 rounded-2xl flex items-center gap-4 relative z-10"
               >
-                <div
-                  id="radio-orange"
-                  class="w-4 h-4 rounded-full bg-orange-500 ring-4 ring-orange-200 shrink-0"
-                ></div>
+                <div class="w-4 h-4 rounded-full bg-orange-500 ring-4 ring-orange-200 shrink-0"></div>
                 <img
                   src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/Orange_logo.svg/1200px-Orange_logo.svg.png"
                   class="h-6 object-contain"
@@ -321,25 +304,8 @@
                 </div>
               </div>
             
-              <!-- 💵 Option 2 : Cash à l'entrée -->
-              <div
-                id="opt-cash"
-                onclick="selectPaymentMethod('cash')"
-                class="mb-6 p-4 border-2 border-gray-200 bg-gray-50 rounded-2xl flex items-center gap-4 cursor-pointer relative z-10 transition-all hover:shadow-md"
-              >
-                <div
-                  id="radio-cash"
-                  class="w-4 h-4 rounded-full bg-gray-300 shrink-0"
-                ></div>
-                <span class="material-symbols-outlined text-3xl text-green-700">payments</span>
-                <div class="flex-1">
-                  <div class="font-bold text-gray-900 text-sm">Réserver et payer cash à l'entrée</div>
-                  <div class="text-xs text-gray-500">Vous payez directement à l'organisateur le jour J</div>
-                </div>
-              </div>
-            
-              <!-- 📱 Champ téléphone (visible uniquement si Orange Money sélectionné) -->
-              <div id="orange-money-fields" class="hidden relative z-10">
+              <!-- 📱 Champ téléphone -->
+              <div id="orange-money-fields" class="relative z-10">
                 <label
                   class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2"
                   >Numéro de téléphone payeur</label
@@ -360,22 +326,17 @@
                   />
                 </div>
                 <p class="text-[11px] text-gray-400 font-medium mt-2">
-                  Vous recevrez un code USSD sur ce numéro pour valider la transaction.
+                  Le code de validation vous sera envoyé sur ce numéro.
                 </p>
               </div>
-            
-              <!-- ⚠️ Message d'avertissement (visible uniquement si Cash sélectionné) -->
-              <div id="cash-info" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-4 relative z-10">
+              
+              <!-- ⚠️ Bloc événement gratuit (caché par défaut, affiché si event.price = 0) -->
+              <div id="free-event-info" class="hidden bg-green-50 border border-green-200 rounded-xl p-4 relative z-10">
                 <div class="flex gap-3">
-                  <span class="material-symbols-outlined text-amber-600">info</span>
-                  <div class="text-sm text-amber-900">
-                    <div class="font-bold mb-1">Comment ça marche ?</div>
-                    <ul class="space-y-1 text-xs">
-                      <li>• Votre place est <strong>réservée</strong> immédiatement</li>
-                      <li>• Vous recevez un QR code de réservation</li>
-                      <li>• Présentez-le à l'entrée et payez en cash</li>
-                      <li>• Limite : 3 réservations par événement</li>
-                    </ul>
+                  <span class="material-symbols-outlined text-green-600">celebration</span>
+                  <div class="text-sm text-green-900">
+                    <div class="font-bold mb-1">Événement gratuit</div>
+                    <p class="text-xs">Aucun paiement nécessaire. Votre billet sera généré immédiatement et accessible depuis votre espace.</p>
                   </div>
                 </div>
               </div>
@@ -384,7 +345,6 @@
                 class="absolute -bottom-10 -right-10 w-40 h-40 bg-orange-500/5 rounded-full blur-2xl z-0"
               ></div>
             </div>
-
             <button
               type="button"
               onclick="validerPaiement(event)"
@@ -445,8 +405,8 @@
 
             <div class="space-y-3 mb-6 text-sm">
               <div class="flex justify-between text-gray-500 font-medium">
-                <span>Sous-total</span>
-                <span id="summary-subtotal" class="font-bold text-gray-800"
+                <span id="summary-fee-label">Frais de service</span>
+                <span id="summary-fee" class="font-bold text-gray-800"
                   >... FCFA</span
                 >
               </div>
@@ -532,11 +492,12 @@
             // ==========================================
       // 1. ÉTAT GLOBAL
       // ==========================================
-      // Par défaut sur "cash" puisque Orange Money est en attente
-      let selectedPaymentMethod = "cash"; 
+      // V1 : Orange Money par défaut (cash réservé aux events gratuits, géré en interne)
+      let selectedPaymentMethod = "orange_money"; 
       let currentEventPrice = 0; 
-      let promoCode = null;          // Chantier 19.A : code promo validé venant de event_detail
-      let promoDiscount = 0;         // Chantier 19.A : montant FCFA déduit du prix_base
+      let isFreeEvent = false;
+      let promoCode = null;          // Chantier 19.A
+      let promoDiscount = 0;         // Chantier 19.A
 
       // ==========================================
       // 2. MENU MOBILE
@@ -544,39 +505,38 @@
       function toggleMobileMenu() {
         const menu = document.getElementById("mobile-menu");
         const drawer = document.getElementById("mobile-drawer");
-        if(menu && drawer) {
-            if (menu.classList.contains("hidden")) {
-              menu.classList.remove("hidden");
-              setTimeout(() => {
-                menu.classList.remove("opacity-0");
-                drawer.classList.remove("translate-x-full");
-              }, 10);
-            } else {
-              menu.classList.add("opacity-0");
-              drawer.classList.add("translate-x-full");
-              setTimeout(() => {
-                menu.classList.add("hidden");
-              }, 300);
-            }
+        if (!menu || !drawer) return;
+
+        if (menu.classList.contains("hidden")) {
+          menu.classList.remove("hidden");
+          setTimeout(() => {
+            menu.classList.remove("opacity-0");
+            drawer.classList.remove("translate-x-full");
+          }, 10);
+        } else {
+          menu.classList.add("opacity-0");
+          drawer.classList.add("translate-x-full");
+          setTimeout(() => {
+            menu.classList.add("hidden");
+          }, 300);
         }
       }
       
       // Bottom nav mobile (composant centralisé bt-api.js)
       if (typeof btMobileBottomNav === "function") {
         var bnEl = document.getElementById("bottom-nav-mobile");
-        if (bnEl) bnEl.innerHTML = btMobileBottomNav("evenements"); // ← clé adaptée par page
+        if (bnEl) bnEl.innerHTML = btMobileBottomNav("evenements");
       }
+
       // ==========================================
-      // 3. LOGIQUE D'AFFICHAGE DU PRIX ET MODE DE PAIEMENT
+      // 3. CHANTIER 19.A — Bandeau promo + ligne récap
       // ==========================================
-      // Chantier 19.A : affichage banderole + ligne de réduction dans le récap
       function showCheckoutPromoBanner(promo) {
-          // Bandeau au-dessus du bloc paiement
           const paymentBlock = document.getElementById("payment-block");
           if (paymentBlock && !document.getElementById("checkout-promo-banner")) {
               const banner = document.createElement("div");
               banner.id = "checkout-promo-banner";
-              banner.className = "bg-green-50 border-2 border-green-200 rounded-2xl p-4 flex items-center gap-3";
+              banner.className = "bg-green-50 border-2 border-green-200 rounded-2xl p-4 flex items-center gap-3 mb-6";
               banner.innerHTML = `
                   <span class="material-symbols-outlined text-green-600 text-2xl" style="font-variation-settings: 'FILL' 1">verified</span>
                   <div class="flex-1 min-w-0">
@@ -588,7 +548,6 @@
               paymentBlock.parentNode.insertBefore(banner, paymentBlock);
           }
 
-          // Ligne dans le récap
           const summaryBlock = document.querySelector("#summary-subtotal")?.closest(".space-y-3");
           if (summaryBlock && !document.getElementById("summary-promo")) {
               const line = document.createElement("div");
@@ -601,80 +560,58 @@
           }
       }
 
-      function selectPaymentMethod(method) {
-        selectedPaymentMethod = method;
-        
-        const optOrange = document.getElementById("opt-orange-money");
-        const optCash = document.getElementById("opt-cash");
-        const radioOrange = document.getElementById("radio-orange");
-        const radioCash = document.getElementById("radio-cash");
-        const orangeFields = document.getElementById("orange-money-fields");
-        const cashInfo = document.getElementById("cash-info");
-        const btnText = document.getElementById("btn-text");
-        
-        let fraisPlateforme = 0;
-        let totalAPayer = currentEventPrice;
-
-        if (method === "orange_money") {
-          fraisPlateforme = Math.ceil(currentEventPrice * 0.04);
-          totalAPayer = currentEventPrice + fraisPlateforme;
-
-          // On vérifie que les éléments existent avant de changer leur couleur (sécurité anti-crash)
-          if(optOrange) { optOrange.classList.remove("border-gray-200", "bg-gray-50"); optOrange.classList.add("border-orange-500", "bg-orange-50"); }
-          if(radioOrange) { radioOrange.classList.add("bg-orange-500", "ring-orange-200"); radioOrange.classList.remove("bg-gray-300"); }
-          if(optCash) { optCash.classList.remove("border-green-500", "bg-green-50"); optCash.classList.add("border-gray-200", "bg-gray-50"); }
-          if(radioCash) { radioCash.classList.remove("bg-green-500", "ring-green-200"); radioCash.classList.add("bg-gray-300"); }
-          if(orangeFields) orangeFields.classList.remove("hidden");
-          if(cashInfo) cashInfo.classList.add("hidden");
-          
-          if(btnText) btnText.innerHTML = `Payer <span id="btn-price-display">${totalAPayer.toLocaleString("fr-FR")}</span> FCFA`;
-        } else {
-          // Cash : 0 Frais !
-          fraisPlateforme = 0;
-          totalAPayer = currentEventPrice;
-
-          if(optCash) { optCash.classList.remove("border-gray-200", "bg-gray-50"); optCash.classList.add("border-green-500", "bg-green-50"); }
-          if(radioCash) { radioCash.classList.add("bg-green-500", "ring-green-200"); radioCash.classList.remove("bg-gray-300"); }
-          if(optOrange) { optOrange.classList.remove("border-orange-500", "bg-orange-50"); optOrange.classList.add("border-gray-200", "bg-gray-50"); }
-          if(radioOrange) { radioOrange.classList.remove("bg-orange-500", "ring-orange-200"); radioOrange.classList.add("bg-gray-300"); }
-          if(orangeFields) orangeFields.classList.add("hidden");
-          if(cashInfo) cashInfo.classList.remove("hidden");
-          
-          if(btnText) btnText.innerHTML = `Réserver ma place`;
-        }
-
+      // ==========================================
+      // 4. CALCUL DU TOTAL
+      // ==========================================
+      function refreshTotals() {
         const sumFee = document.getElementById("summary-fee");
+        const sumFeeLabel = document.getElementById("summary-fee-label");
         const sumTot = document.getElementById("summary-total");
-        if(sumFee) sumFee.textContent = fraisPlateforme.toLocaleString("fr-FR") + " FCFA";
-        if(sumTot) sumTot.textContent = totalAPayer.toLocaleString("fr-FR") + " FCFA";
-        
-        if (typeof window.checkForm === 'function') {
-            window.checkForm();
+        const btnText = document.getElementById("btn-text");
+        const btnIcon = document.getElementById("btn-icon");
+
+        if (isFreeEvent) {
+          if (sumFee) sumFee.textContent = "0 FCFA";
+          if (sumFeeLabel) sumFeeLabel.textContent = "Frais de service";
+          if (sumTot) sumTot.textContent = "Gratuit";
+          if (btnText) btnText.innerHTML = "Obtenir mon billet gratuit";
+          if (btnIcon) btnIcon.textContent = "confirmation_number";
+          return;
         }
+
+        // Orange Money : 4% acheteur
+        const fee = Math.ceil(currentEventPrice * 0.04);
+        const total = currentEventPrice + fee;
+
+        if (sumFee) sumFee.textContent = fee.toLocaleString("fr-FR") + " FCFA";
+        if (sumFeeLabel) sumFeeLabel.textContent = "Frais de service (4%)";
+        if (sumTot) sumTot.textContent = total.toLocaleString("fr-FR") + " FCFA";
+        if (btnText) btnText.innerHTML = `Payer ${total.toLocaleString("fr-FR")} FCFA`;
+        if (btnIcon) btnIcon.textContent = "lock";
       }
 
       // ==========================================
-      // 4. VALIDATION DYNAMIQUE DU FORMULAIRE
+      // 5. VALIDATION DYNAMIQUE DU FORMULAIRE
       // ==========================================
       window.checkForm = function() {
         const nameInput = document.getElementById("buyer-name");
         const emailInput = document.getElementById("buyer-email");
         const phoneInput = document.getElementById("buyer-phone");
         const btnPay = document.getElementById("btn-pay");
-
         if (!btnPay) return;
 
         const isNameValid = nameInput ? nameInput.value.trim() !== "" : false;
         const isEmailValid = emailInput ? emailInput.value.includes("@") : false;
         let isValid = false;
 
-        if (selectedPaymentMethod === "orange_money" && phoneInput) {
-           const phoneVal = phoneInput.value.trim();
-           const isPrefixValid = phoneVal.startsWith("72") || phoneVal.startsWith("73") || phoneVal.startsWith("74");
-           isValid = isNameValid && isEmailValid && phoneVal.length === 8 && isPrefixValid;
-        } else {
-           // Si Cash : le téléphone n'est pas requis !
-           isValid = isNameValid && isEmailValid;
+        if (isFreeEvent) {
+          // Event gratuit : juste nom + email
+          isValid = isNameValid && isEmailValid;
+        } else if (phoneInput) {
+          // Orange Money : nom + email + tel valide 8 chiffres préfixe 7/72/73/74
+          const phoneVal = phoneInput.value.trim();
+          const isPrefixValid = phoneVal.startsWith("72") || phoneVal.startsWith("73") || phoneVal.startsWith("74") || phoneVal.startsWith("75") || phoneVal.startsWith("77");
+          isValid = isNameValid && isEmailValid && phoneVal.length === 8 && isPrefixValid;
         }
 
         if (isValid) {
@@ -687,35 +624,50 @@
       };
 
       // ==========================================
-      // 5. INITIALISATION AU CHARGEMENT DE LA PAGE
+      // 6. INITIALISATION
       // ==========================================
       document.addEventListener("DOMContentLoaded", async () => {
-        // A. Écouteurs pour la validation
+        // Garde d'auth (déplacée ici pour éviter la race condition <head>)
+        if (typeof requireAuth === "function") requireAuth();
+
+        // Drawer auth mobile (centralisé bt-api.js)
+        const mobileAuthEl = document.getElementById("mobile-auth-section");
+        if (mobileAuthEl && typeof btMobileAuthSection === "function") {
+          mobileAuthEl.innerHTML = btMobileAuthSection();
+        }
+
+        // Footer
+        if (typeof btFooter === "function") {
+          const footerEl = document.getElementById("footer");
+          if (footerEl) footerEl.innerHTML = btFooter();
+        }
+
+        // Écouteurs de validation
         const nameInput = document.getElementById("buyer-name");
         const emailInput = document.getElementById("buyer-email");
         const phoneInput = document.getElementById("buyer-phone");
-        
-        if(nameInput) nameInput.addEventListener("input", window.checkForm);
-        if(emailInput) emailInput.addEventListener("input", window.checkForm);
-        if(phoneInput) phoneInput.addEventListener("input", window.checkForm);
+        if (nameInput) nameInput.addEventListener("input", window.checkForm);
+        if (emailInput) emailInput.addEventListener("input", window.checkForm);
+        if (phoneInput) phoneInput.addEventListener("input", window.checkForm);
 
-        // B. Chargement du footer
-        if (typeof btFooter === "function" && document.getElementById("footer")) {
-           document.getElementById("footer").innerHTML = btFooter();
+        // Pré-remplissage depuis user connecté
+        const user = btAuth.getUser();
+        if (user) {
+          if (nameInput && !nameInput.value) nameInput.value = user.full_name || user.name || "";
+          if (emailInput && !emailInput.value) emailInput.value = user.email || "";
+          window.checkForm();
         }
 
-        // C. Récupération des données API
+        // Récupération du contexte URL
         const params = new URLSearchParams(window.location.search);
         const eventId = params.get("id");
         const tierName = params.get("tier");
-        const promoFromUrl = (params.get("promo") || "").trim().toUpperCase() || null;  // Chantier 19.A
-      
+        const promoFromUrl = (params.get("promo") || "").trim().toUpperCase() || null;
       
         if (!eventId) {
-          // Avertissement visible si tu testes sans l'ID dans l'URL
           const sumTitle = document.getElementById("summary-title");
-          if(sumTitle) sumTitle.textContent = "Erreur : ID manquant";
-          btToast("Attention : Vous devez tester avec une URL comme checkout.html?id=1", "error");
+          if (sumTitle) sumTitle.textContent = "Erreur : ID manquant";
+          btToast("URL invalide : ID événement manquant.", "error");
           return;
         }
       
@@ -723,18 +675,16 @@
           const event = await btApi.get("/events/" + eventId);
       
           const sumTitle = document.getElementById("summary-title");
-          if(sumTitle) sumTitle.textContent = event.title;
+          if (sumTitle) sumTitle.textContent = event.title;
           
           const sumImg = document.getElementById("summary-img");
-          if (sumImg && event.cover_image_url) {
-            sumImg.src = event.cover_image_url;
-          }
+          if (sumImg && event.cover_image_url) sumImg.src = event.cover_image_url;
           
           const sumTier = document.getElementById("summary-tier");
-          if(sumTier) sumTier.textContent = tierName || "Standard";
+          if (sumTier) sumTier.textContent = tierName || "Standard";
       
+          // Détermination du prix selon le tier sélectionné
           let price = event.price || 0;
-          
           if (tierName && event.ticket_tiers) {
             let tiers = event.ticket_tiers;
             if (typeof tiers === "string") {
@@ -742,76 +692,71 @@
             }
             if (Array.isArray(tiers)) {
               const selectedTier = tiers.find(t => t.name === tierName);
-              if (selectedTier && selectedTier.price) {
+              if (selectedTier && selectedTier.price !== undefined) {
                 price = parseFloat(selectedTier.price);
               }
             }
           }
-          
-          currentEventPrice = price; 
+          currentEventPrice = price;
 
-          // Chantier 19.A : si on a un code promo dans l'URL, le valider en background
+          // Chantier 19.A : promo via URL
           if (promoFromUrl && price > 0) {
-              try {
-                  const res = await btApi.post("/promo-codes/validate", {
-                      event_id: parseInt(eventId),
-                      tier_name: tierName,
-                      code: promoFromUrl,
-                  });
-                  if (res.valid) {
-                      promoCode = res.code;
-                      promoDiscount = res.discount_fcfa || 0;
-                      currentEventPrice = res.new_price || price;
-                      showCheckoutPromoBanner(res);
-                  } else {
-                      btToast(`Code ${promoFromUrl} non appliqué : ${res.message}`, "error");
-                  }
-              } catch (err) {
-                  console.warn("Validation promo échouée :", err);
+            try {
+              const res = await btApi.post("/promo-codes/validate", {
+                event_id: parseInt(eventId),
+                tier_name: tierName,
+                code: promoFromUrl,
+              });
+              if (res.valid) {
+                promoCode = res.code;
+                promoDiscount = res.discount_fcfa || 0;
+                currentEventPrice = res.new_price !== undefined ? res.new_price : price;
+                showCheckoutPromoBanner(res);
+              } else {
+                btToast(`Code ${promoFromUrl} non appliqué : ${res.message}`, "error");
               }
+            } catch (err) {
+              console.warn("Validation promo échouée :", err);
+            }
           }
 
+          // Affichage sous-total
           const sumSubtotal = document.getElementById("summary-subtotal");
-          if(sumSubtotal) sumSubtotal.textContent = currentEventPrice > 0 ? currentEventPrice.toLocaleString("fr-FR") + " FCFA" : "Gratuit";
-          
-          // --- LOGIQUE POUR ÉVÉNEMENT GRATUIT ---
-          if (currentEventPrice === 0) {
-              // 1. Cacher le bloc des moyens de paiement
-              const paymentBlock = document.getElementById("payment-block");
-              if (paymentBlock) paymentBlock.style.display = "none";
-              
-              // 2. Forcer la méthode "cash" en arrière-plan (ton backend s'occupe du reste)
-              selectedPaymentMethod = "cash";
-              
-              // 3. Modifier les textes (Total et Bouton)
-              const sumFee = document.getElementById("summary-fee");
-              const sumTot = document.getElementById("summary-total");
-              const btnText = document.getElementById("btn-text");
-              const btnIcon = document.getElementById("btn-icon");
-              
-              if(sumFee) sumFee.textContent = "0 FCFA";
-              if(sumTot) sumTot.textContent = "Gratuit"; 
-              if(btnText) btnText.innerHTML = "Obtenir mon billet gratuit";
-              if(btnIcon) btnIcon.textContent = "confirmation_number";
-              
-              // On vérifie le formulaire (Nom/Email) pour activer le bouton
-              if (typeof window.checkForm === 'function') window.checkForm();
-              
-          } else {
-              // D. Événement payant : On sélectionne le cash normalement au chargement
-              selectPaymentMethod("cash");
+          if (sumSubtotal) {
+            sumSubtotal.textContent = currentEventPrice > 0
+              ? currentEventPrice.toLocaleString("fr-FR") + " FCFA"
+              : "Gratuit";
           }
+          
+          // BRANCHE GRATUITE vs PAYANTE
+          isFreeEvent = currentEventPrice === 0;
+          if (isFreeEvent) {
+            // Cacher Orange Money fields, afficher message gratuit
+            const orangeFields = document.getElementById("orange-money-fields");
+            const freeInfo = document.getElementById("free-event-info");
+            if (orangeFields) orangeFields.classList.add("hidden");
+            if (freeInfo) freeInfo.classList.remove("hidden");
+
+            // Cacher le label "Paiement par Orange Money" → mettre "Confirmation"
+            const h2 = document.querySelector("#payment-block h2");
+            if (h2) {
+              h2.innerHTML = `<span class="bg-primary/10 text-primary w-8 h-8 rounded-full flex items-center justify-center text-sm">2</span> Confirmation`;
+            }
+          }
+          
+          refreshTotals();
+          window.checkForm();
       
         } catch (error) {
           console.error("Erreur API:", error);
           const sumTitle = document.getElementById("summary-title");
-          if(sumTitle) sumTitle.textContent = "Événement introuvable";
-          btToast("Erreur de chargement. Veuillez vérifier votre connexion au serveur.", "error");
+          if (sumTitle) sumTitle.textContent = "Événement introuvable";
+          btToast("Erreur de chargement. Vérifiez votre connexion.", "error");
         }
       });
 
       // ==========================================
-      // 6. SOUMISSION DU PAIEMENT / RÉSERVATION
+      // 7. SOUMISSION
       // ==========================================
       async function validerPaiement(event) {
         event.preventDefault();
@@ -832,52 +777,36 @@
         btn.innerHTML = '<span class="material-symbols-outlined animate-spin">sync</span> Traitement...';
         
         try {
-          if (selectedPaymentMethod === "orange_money") {
-              const payload = {
-                event_id: parseInt(eventId),
-                tier_name: tierName,
-                email: document.getElementById("buyer-email") ? document.getElementById("buyer-email").value : null
-              };
-              if (promoCode) payload.promo_code = promoCode;  // Chantier 19.A
-              
-              // Appel de la NOUVELLE route NGSER
-              const response = await btApi.post("/payment/initiate-ngser", payload);
-              
-              if (response.payment_url) {
-                  // Succès : On redirige le client vers la page de paiement sécurisée
-                  btToast("Redirection vers l'espace sécurisé Orange Money...", "info");
-                  setTimeout(() => {
-                      window.location.href = response.payment_url;
-                  }, 1500);
-              }else {
-                  btToast("Erreur lors de l'initialisation du paiement.", "error");
-                  btn.disabled = false;
-                  btn.innerHTML = originalBtnContent;
-              }
-          }else{
-            // RÉSERVATION CASH
-            const payload = {
-              event_id: parseInt(eventId),
-              tier_name: tierName,
-              email: document.getElementById("buyer-email") ? document.getElementById("buyer-email").value : null
-            };
-            if (promoCode) payload.promo_code = promoCode;  // Chantier 19.A
+          const payload = {
+            event_id: parseInt(eventId),
+            tier_name: tierName,
+            email: document.getElementById("buyer-email") ? document.getElementById("buyer-email").value : null
+          };
+          if (promoCode) payload.promo_code = promoCode;
+
+          if (isFreeEvent) {
+            // FLUX GRATUIT : reserve-cash en backend (NGSER refuse montant 0)
             const response = await btApi.post("/tickets/reserve-cash", payload);
-            const msgSuccess = currentEventPrice === 0 
-                ? "Billet gratuit généré avec succès !" 
-                : "Réservation confirmée ! À payer cash à l'entrée.";
-            btToast(msgSuccess, "success");
-            
+            btToast("Billet gratuit généré avec succès !", "success");
             sessionStorage.setItem("last_reservation", JSON.stringify({
               ticket_id: response.ticket_id,
-              amount: response.amount_to_pay,
+              amount: 0,
               event_title: response.event_title,
               instructions: response.instructions
             }));
-            
             setTimeout(() => { window.location.href = "user_dashboard.html"; }, 1500);
+          } else {
+            // FLUX PAYANT : NGSER Orange Money
+            const response = await btApi.post("/payment/initiate-ngser", payload);
+            if (response.payment_url) {
+              btToast("Redirection vers l'espace sécurisé Orange Money...", "info");
+              setTimeout(() => { window.location.href = response.payment_url; }, 1500);
+            } else {
+              btToast("Erreur lors de l'initialisation du paiement.", "error");
+              btn.disabled = false;
+              btn.innerHTML = originalBtnContent;
+            }
           }
-          
         } catch (error) {
           console.error("Erreur transaction:", error);
           btToast(error.message || "Erreur lors de la transaction", "error");
@@ -885,7 +814,6 @@
           btn.innerHTML = originalBtnContent;
         }
       }
-      document.getElementById("footer").innerHTML = btFooter();
     </script>
   </body>
 </html>

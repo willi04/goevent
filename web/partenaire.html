@@ -188,7 +188,7 @@
       </div>
     </div>
 
-    <main class="flex-1 pt-[72px] md:pt-20">
+    <main class="flex-1 pt-[72px] md:pt-20 pb-[60px] md:pb-0">
 
       <!-- ═══ HERO (inchangé) ═══ -->
       <section
@@ -882,12 +882,19 @@
 
     <div id="footer"></div>
     <div id="footer"></div>
+    <!-- ✅ BOTTOM NAV MOBILE (md:hidden gérée dans la fonction) -->
+    <div id="bottom-nav-mobile"></div>
 
     <script src="bt-api.js"></script>
     <script src="pwa.js"></script>
     <script>
       if (document.getElementById("navbar")) {
         document.getElementById("navbar").innerHTML = btNavbar("partenaire");
+      }
+      // Bottom nav mobile (composant centralisé bt-api.js)
+      if (typeof btMobileBottomNav === "function") {
+        var bnEl = document.getElementById("bottom-nav-mobile");
+        if (bnEl) bnEl.innerHTML = btMobileBottomNav(""); // ← clé adaptée par page
       }
 
       function toggleMobileMenu() {

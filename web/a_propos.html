@@ -205,7 +205,7 @@
       </div>
     </div>
 
-    <main class="flex-1 pt-[72px] md:pt-20">
+    <main class="flex-1 pt-[72px] md:pt-20 pb-[60px] md:pb-0">
       <section
         class="lush-gradient py-16 md:py-24 px-6 md:px-16 text-center relative overflow-hidden"
       >
@@ -555,12 +555,19 @@
 
     <div id="footer"></div>
     <div id="footer"></div>
+    <!-- ✅ BOTTOM NAV MOBILE (md:hidden gérée dans la fonction) -->
+    <div id="bottom-nav-mobile"></div>
 
     <script src="bt-api.js"></script>
     <script src="pwa.js"></script>
     <script>
       if (document.getElementById("navbar")) {
         document.getElementById("navbar").innerHTML = btNavbar("apropos");
+        // Bottom nav mobile (composant centralisé bt-api.js)
+        if (typeof btMobileBottomNav === "function") {
+          var bnEl = document.getElementById("bottom-nav-mobile");
+          if (bnEl) bnEl.innerHTML = btMobileBottomNav("apropos"); // ← clé adaptée par page
+        }
       }
 
       function toggleMobileMenu() {

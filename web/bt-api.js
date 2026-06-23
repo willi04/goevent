@@ -614,26 +614,14 @@ function btMobileAuthSection() {
     );
   }
 
-  var user = btAuth.getUser() || {};
-  var nom = user.full_name || user.name || user.username || "Membre GoEvent";
-  var dashUrl = btDashRoute(user.role);
-
+  // Connecté : "Mon espace" déjà dans bottom nav → on garde uniquement Déconnexion (P0 anti-redondance)
   return (
-    '<div class="bg-primary/5 p-5 rounded-3xl mb-4 border border-primary/10">' +
-    '<p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Session active</p>' +
-    '<p class="text-xl font-black text-gray-900 truncate">' + _btEscapeHtml(nom) + '</p>' +
-    '</div>' +
-    '<a href="' + dashUrl + '" class="flex items-center justify-center gap-2 w-full py-4 rounded-2xl bg-primary text-white font-black shadow-lg shadow-green-900/20 active:scale-95 transition-transform">' +
-    '<span class="material-symbols-outlined">grid_view</span>' +
-    'Accéder à mon espace' +
-    '</a>' +
-    '<button onclick="btAuth.logout()" class="mt-3 flex items-center justify-center gap-2 w-full py-4 rounded-2xl text-red-600 bg-red-50 font-bold active:scale-95 transition-all hover:bg-red-100">' +
+    '<button onclick="btAuth.logout()" class="flex items-center justify-center gap-2 w-full py-4 rounded-2xl text-red-600 bg-red-50 font-bold active:scale-95 transition-all hover:bg-red-100">' +
     '<span class="material-symbols-outlined text-sm">power_settings_new</span>' +
     'Déconnexion' +
     '</button>'
   );
 }
-
 // ── DRAWER MOBILE : SECTIONS DU BAS (Aide + Support + Inviter) ─
 // Renvoie le HTML à injecter SOUS la nav du drawer.
 // Remplace l'ancienne carte "Mon Espace" qui faisait doublon avec la bottom nav.

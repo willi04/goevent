@@ -63,10 +63,117 @@
       }
     </style>
   </head>
-  <body class="bg-surface font-body text-on-surface antialiased flex flex-col min-h-screen">
-    <div id="navbar"></div>
+ <body class="bg-surface font-body text-on-surface antialiased flex flex-col min-h-screen">
+    <!-- Header mobile (logo + hamburger) -->
+    <div
+      class="md:hidden fixed top-0 left-0 right-0 h-[72px] bg-white/95 backdrop-blur border-b border-gray-100 z-[100] flex items-center justify-between px-6"
+    >
+      
+        href="index.html"
+        class="flex items-center gap-2 hover:opacity-80 transition-opacity"
+      >
+        <img
+          src="icons/event.png"
+          alt="Logo GoEvent"
+          class="w-10 h-10 rounded-3xl object-cover shadow-sm"
+        />
+        <span
+          class="font-headline font-black text-2xl text-primary tracking-tight truncate"
+          >GoEvent</span
+        >
+      </a>
+      <button
+        onclick="toggleMobileMenu()"
+        class="p-2 -mr-2 text-gray-700 hover:text-primary transition-colors focus:outline-none"
+      >
+        <span class="material-symbols-outlined" style="font-size: 32px"
+          >menu</span
+        >
+      </button>
+    </div>
 
-    <main class="max-w-4xl mx-auto px-6 pt-[96px] md:pt-[120px] pb-16 flex-1 w-full">
+    <!-- Navbar desktop -->
+    <div id="navbar" class="hidden md:block fixed w-full top-0 z-[999]"></div>
+
+    <!-- Drawer mobile -->
+    <div
+      id="mobile-menu"
+      class="fixed inset-0 bg-gray-900/60 z-[200] hidden opacity-0 transition-opacity duration-300"
+    >
+      <div class="absolute inset-0" onclick="toggleMobileMenu()"></div>
+      <div
+        id="mobile-drawer"
+        class="absolute right-0 top-0 bottom-0 w-[50%] max-w-sm min-w-[280px] bg-white shadow-2xl transform translate-x-full transition-transform duration-[400ms] ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col p-5"
+      >
+        <div
+          class="flex justify-end items-center mb-6 border-b border-gray-100 pb-3"
+        >
+          <button
+            onclick="toggleMobileMenu()"
+            class="p-2 text-gray-400 hover:text-red-500 transition-colors"
+          >
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <nav class="space-y-1 flex-1 overflow-y-auto">
+          <a
+            href="index.html"
+            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
+            ><span class="material-symbols-outlined">home</span> Accueil</a
+          >
+          <a
+            href="event.html"
+            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
+            ><span class="material-symbols-outlined">stadium</span>
+            Événements</a
+          >
+          <a
+            href="follow.html"
+            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
+            ><span class="material-symbols-outlined">favorite</span> Follow</a
+          >
+          <a
+            href="partenaire.html"
+            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
+            ><span class="material-symbols-outlined">handshake</span>
+            Partenaires</a
+          >
+          <a
+            href="a_propos.html"
+            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
+            ><span class="material-symbols-outlined">info</span> À propos</a
+          >
+          <a
+            href="centre_aide.html"
+            class="flex items-center gap-3 p-4 bg-primary/10 rounded-2xl text-primary font-bold"
+            ><span class="material-symbols-outlined">help</span> Centre d'aide</a
+          >
+        </nav>
+
+        <!-- Sections drawer (Aide+ déjà sur cette page, on garde Support + Inviter) -->
+        <div id="mobile-drawer-sections" class="mt-4 pt-4 border-t border-gray-100"></div>
+
+        <!-- Section auth -->
+        <div
+          id="mobile-auth-section"
+          class="mt-2 pt-4 border-t border-gray-100 space-y-3"
+        >
+          <a
+            href="login.html"
+            class="block w-full text-center text-primary font-bold py-3.5 rounded-xl border-2 border-primary hover:bg-primary/5 transition-all"
+            >Se connecter</a
+          >
+          <a
+            href="signup.html"
+            class="block w-full text-center bg-primary text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 active:scale-95 transition-all"
+            >S'inscrire</a
+          >
+        </div>
+      </div>
+    </div>
+
+    <main class="max-w-4xl mx-auto px-6 pt-[96px] md:pt-[120px] pb-[80px] md:pb-16 flex-1 w-full">
       <!-- HERO -->
       <div class="text-center mb-10">
         <div class="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
@@ -483,12 +590,52 @@
 
     <div id="footer"></div>
 
+   <!-- ✅ BOTTOM NAV MOBILE -->
+    <div id="bottom-nav-mobile"></div>
+   
     <script src="bt-api.js"></script>
     <script src="pwa.js"></script>
     <script>
       // Injection navbar/footer
       document.getElementById("navbar").innerHTML = btNavbar();
       document.getElementById("footer").innerHTML = btFooter();
+
+      // Bottom nav mobile (composant centralisé bt-api.js)
+      if (typeof btMobileBottomNav === "function") {
+        var bnEl = document.getElementById("bottom-nav-mobile");
+        if (bnEl) bnEl.innerHTML = btMobileBottomNav("");
+      }
+
+      // Sections drawer (Aide + Support WhatsApp + Inviter un ami)
+      if (typeof btMobileDrawerSections === "function") {
+        var drawerSecEl = document.getElementById("mobile-drawer-sections");
+        if (drawerSecEl) drawerSecEl.innerHTML = btMobileDrawerSections();
+      }
+
+      // Render section auth selon état connecté
+      if (typeof btMobileAuthSection === "function") {
+        var authSecEl = document.getElementById("mobile-auth-section");
+        if (authSecEl) authSecEl.innerHTML = btMobileAuthSection();
+      }
+
+      // Toggle drawer mobile
+      function toggleMobileMenu() {
+        const menu = document.getElementById("mobile-menu");
+        const drawer = document.getElementById("mobile-drawer");
+        if (menu.classList.contains("hidden")) {
+          menu.classList.remove("hidden");
+          setTimeout(() => {
+            menu.classList.remove("opacity-0");
+            drawer.classList.remove("translate-x-full");
+          }, 10);
+        } else {
+          menu.classList.add("opacity-0");
+          drawer.classList.add("translate-x-full");
+          setTimeout(() => {
+            menu.classList.add("hidden");
+          }, 300);
+        }
+      }
 
       // ── Toggle FAQ ─────────────────────────────
       function toggleFaq(button) {

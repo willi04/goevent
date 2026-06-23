@@ -114,68 +114,78 @@
     class="bg-surface font-body text-on-surface antialiased overflow-x-hidden"
   >
     <main class="min-h-screen flex flex-col md:flex-row">
+      <!-- ═══ PANNEAU GAUCHE : HERO IMMERSIF ═══ -->
       <section
-        class="w-full md:w-1/2 md:min-h-screen h-[300px] md:h-auto lush-gradient flex flex-col md:justify-between p-8 md:p-16 relative overflow-hidden"
+        class="relative w-full md:w-1/2 min-h-[300px] md:min-h-screen flex flex-col justify-between p-8 md:p-16 overflow-hidden"
       >
-        <div
-          class="absolute inset-0 opacity-10 pointer-events-none"
-          style="
-            background-image: url(&quot;https://lh3.googleusercontent.com/aida-public/AB6AXuBSKVMAAbDD7sSH23aOm8RMZDl5k2ifRdp0LmMwbNdF6k8tabA-2qNlVk3V0CSyDAevWd2TprQrhWAOwb7Z5_zS7dc-U5Pi2rGquVj4XgXS0uo-_09vbcEQN7xceGPzNLoorPvpnpJp6lPI1icpqWCm2lSRT1KLApkk4DKL9bu__x7oRXS7Ijfq0vBA499S6R81nClT27jFaAJLTobaRnzUo_ik0G12WSMmQU4BkLj0VtFrvkWoXTAASXdZPFyrnAgqBcrsVJH23g&quot;);
-          "
-        ></div>
+        <!-- Image de fond + overlay sombre -->
+        <div class="absolute inset-0 z-0">
+          <img
+            class="w-full h-full object-cover"
+            alt="Soirée culturelle à Bangui"
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuAEVjqwRoX7auYEvNEEEOUeYVTdHs0su3-XQljGYS7mqJnz5F8vYBYg_sB-ho1pcVKABfPec_HiusUiU6Z3uMXHMV4ZSwRs7fntsMBrV0oWV5NqjAih6KA7HICEysTpXNBq-gyUFDCweG80P4iChdsgHuo_UC8BS45GTOn_PaSxDxZVvasyTMYsFzu8HDcMeJKP76OgbBothVZ-BBlD25nQw36w2zG1inN2ukOQON-ylghiXM-Wx6OZwcwxCFoxY7j2Fki7H3yGRw"
+          />
+          <div
+            class="absolute inset-0 bg-gradient-to-br from-primary via-primary-container/90 to-primary/80 mix-blend-multiply"
+          ></div>
+        </div>
+
+        <!-- Logo cliquable + hook -->
         <div class="relative z-10">
-          <a href="index.html" class="flex items-center space-x-3 hover:opacity-90 transition-opacity">
+          
+            href="index.html"
+            class="flex items-center gap-2 mb-12 hover:opacity-90 transition-opacity w-fit"
+          >
             <img
               src="icons/event.png"
               alt="Logo"
-              class="w-12 h-12 rounded-xl border-2 border-white/50 shadow-lg object-cover"
+              class="w-10 h-10 rounded-3xl shadow-sm"
             />
             <span
-              class="text-3xl md:text-2xl font-headline font-extrabold tracking-tight text-surface-container-lowest"
+              class="text-2xl font-bold tracking-tight text-white font-headline"
               >GoEvent</span
             >
           </a>
 
-          <div class="mt-24 space-y-6 hidden md:block">
-            <h1
-              class="text-6xl font-headline font-extrabold text-white leading-tight"
-            >
-              Vivez la culture <br />
-              <span class="text-primary-fixed">sans frontières.</span>
-            </h1>
-            <p
-              class="text-primary-fixed text-xl max-w-md opacity-90 leading-relaxed"
-            >
-              Accédez aux événements les plus exclusifs de la République
-              Centrafricaine en quelques clics.
-            </p>
-          </div>
+          <h1
+            class="text-4xl md:text-5xl lg:text-6xl font-extrabold font-headline text-white leading-tight tracking-tighter"
+          >
+            Vos plus belles soirées <br />
+            <span class="text-primary-fixed">commencent ici.</span>
+          </h1>
+          <p
+            class="hidden md:block mt-6 text-primary-fixed text-lg max-w-md opacity-90 leading-relaxed"
+          >
+            Connectez-vous pour retrouver vos billets, événements suivis et
+            l'agenda culturel de Bangui.
+          </p>
         </div>
 
-        <div class="relative z-10 mt-auto hidden md:block">
-          <div class="grid grid-cols-2 gap-8">
+        <!-- Trust badges (desktop seulement) -->
+        <div class="relative z-10 mt-auto pt-8 hidden md:block">
+          <div class="grid grid-cols-2 gap-4">
             <div
-              class="flex items-center space-x-4 bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/10"
+              class="flex items-center space-x-3 bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/10"
             >
               <span
-                class="material-symbols-outlined text-secondary-fixed text-3xl"
+                class="material-symbols-outlined text-secondary-fixed text-2xl"
                 >verified_user</span
               >
               <div>
                 <p class="text-white font-bold text-sm">Paiement Sécurisé</p>
-                <p class="text-primary-fixed text-xs">Certifié Orange Money</p>
+                <p class="text-primary-fixed text-xs">via Orange Money</p>
               </div>
             </div>
             <div
-              class="flex items-center space-x-4 bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/10"
+              class="flex items-center space-x-3 bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/10"
             >
               <span
-                class="material-symbols-outlined text-secondary-fixed text-3xl"
+                class="material-symbols-outlined text-secondary-fixed text-2xl"
                 >local_activity</span
               >
               <div>
                 <p class="text-white font-bold text-sm">Billets Instantanés</p>
-                <p class="text-primary-fixed text-xs">QR Code par SMS/Email</p>
+                <p class="text-primary-fixed text-xs">QR Code par Email</p>
               </div>
             </div>
           </div>
@@ -185,13 +195,13 @@
      <section
         class="w-full md:w-1/2 bg-surface flex items-center justify-center p-8 md:p-24 relative"
       >
-        <!-- Bouton retour accueil (visible sur mobile + desktop) -->
+        <!-- Bouton retour accueil (angle droit, désencombre "Connexion") -->
         <a
           href="index.html"
-          class="absolute top-6 left-6 flex items-center gap-1.5 text-on-surface-variant hover:text-primary font-bold text-sm transition-colors group"
+          class="md:hidden absolute top-6 right-6 flex items-center gap-1.5 text-on-surface-variant hover:text-primary font-bold text-xs transition-colors group bg-white/80 backdrop-blur px-3 py-2 rounded-full shadow-sm"
+          aria-label="Retour à l'accueil"
         >
-          <span class="material-symbols-outlined text-lg group-hover:-translate-x-0.5 transition-transform">arrow_back</span>
-          <span class="hidden sm:inline">Retour à l'accueil</span>
+          <span class="material-symbols-outlined text-base">close</span>
         </a>
 
         <div class="w-full max-w-md space-y-10">

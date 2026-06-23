@@ -95,9 +95,6 @@
       }
     </style>
     <script src="auth-guard.js"></script>
-    <script>
-        requireAuth(["organizer"]); // adapte selon la page
-    </script>
   </head>
   <body
     class="bg-gray-50 font-body text-on-surface antialiased pt-[72px] flex flex-col min-h-screen"
@@ -134,14 +131,11 @@
       <div class="absolute inset-0" onclick="toggleMobileMenu()"></div>
       <div
         id="mobile-drawer"
-        class="absolute right-0 top-0 bottom-0 w-[85%] max-w-sm bg-white shadow-2xl transform translate-x-full transition-transform duration-300 flex flex-col"
+        class="absolute right-0 top-0 bottom-0 w-[50%] max-w-sm min-w-[280px] bg-white shadow-2xl transform translate-x-full transition-transform duration-[400ms] ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col"
       >
         <div
-          class="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50"
+          class="p-5 border-b border-gray-100 flex justify-end items-center"
         >
-          <span class="font-headline font-extrabold text-lg text-gray-900"
-            >Mon Espace</span
-          >
           <button
             onclick="toggleMobileMenu()"
             class="p-2 text-gray-500 hover:text-red-500 rounded-full hover:bg-red-50 transition-colors"
@@ -285,12 +279,16 @@
           </a>
         </nav>
 
-        <div class="p-6 border-t border-gray-100">
+        <!-- Sections drawer (Aide + Support WhatsApp + Inviter un ami) -->
+        <div id="mobile-drawer-sections" class="px-4 pt-4 border-t border-gray-100"></div>
+
+        <!-- Bouton déconnexion -->
+        <div class="p-4 pt-3 border-t border-gray-100">
           <button
             onclick="logout()"
-            class="w-full flex items-center justify-center gap-2 p-4 rounded-2xl bg-red-50 text-red-600 font-bold hover:bg-red-100 transition-colors"
+            class="w-full flex items-center justify-center gap-2 p-3.5 rounded-2xl bg-red-50 text-red-600 font-bold text-sm hover:bg-red-100 transition-colors"
           >
-            <span class="material-symbols-outlined" style="font-size: 20px"
+            <span class="material-symbols-outlined" style="font-size: 18px"
               >logout</span
             >
             Se déconnecter
@@ -1640,71 +1638,14 @@
 
         <div
           id="dash-footer"
-          class="mt-auto w-full border-t border-gray-100 bg-white"
+          class="mt-auto w-full border-t border-gray-100 bg-white pb-[72px] md:pb-0"
         ></div>
       </main>
     </div>
 
-    <nav
-      class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex justify-around items-center pt-3 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] z-50 px-1"
-      style="padding-bottom: max(12px, env(safe-area-inset-bottom))"
-    >
-      <a
-        href="index.html"
-        class="flex flex-col items-center gap-1 text-gray-400 w-14 hover:text-primary transition-colors"
-      >
-        <span class="material-symbols-outlined text-[24px]">home</span>
-        <span
-          class="text-[10px] font-medium tracking-wide truncate w-full text-center"
-          >Accueil</span
-        >
-      </a>
-
-      <a
-        href="event.html"
-        class="flex flex-col items-center gap-1 text-gray-400 w-14 hover:text-primary transition-colors"
-      >
-        <span class="material-symbols-outlined text-[24px]">stadium</span>
-        <span
-          class="text-[10px] font-medium tracking-wide truncate w-full text-center"
-          >Événements</span
-        >
-      </a>
-
-      <a
-        href="follow.html"
-        class="flex flex-col items-center gap-1 text-gray-400 w-14 hover:text-primary transition-colors"
-      >
-        <span class="material-symbols-outlined text-[24px]">favorite</span>
-        <span
-          class="text-[10px] font-medium tracking-wide truncate w-full text-center"
-          >Follow</span
-        >
-      </a>
-
-      <a
-        href="partenaire.html"
-        class="flex flex-col items-center gap-1 text-gray-400 w-14 hover:text-primary transition-colors"
-      >
-        <span class="material-symbols-outlined text-[24px]">handshake</span>
-        <span
-          class="text-[10px] font-medium tracking-wide truncate w-full text-center"
-          >Partenaire</span
-        >
-      </a>
-
-      <a
-        href="a_propos.html"
-        class="flex flex-col items-center gap-1 text-gray-400 w-14 hover:text-primary transition-colors"
-      >
-        <span class="material-symbols-outlined text-[24px]">info</span>
-        <span
-          class="text-[10px] font-medium tracking-wide truncate w-full text-center"
-          >À propos</span
-        >
-      </a>
-    </nav>
-
+    <!-- ✅ BOTTOM NAV MOBILE (md:hidden gérée dans la fonction) -->
+    <div id="bottom-nav-mobile"></div>
+    
     <script src="bt-api.js"></script>
     <script src="pwa.js"></script>
     <script>
@@ -1712,6 +1653,9 @@
       let user = {};
 
       document.addEventListener("DOMContentLoaded", async () => {
+        // Garde auth (déplacée ici pour éviter race condition <head>)
+        if (typeof requireAuth === "function") requireAuth(["organizer"]);
+        
         const nav = document.getElementById("navbar");
         const footEl = document.getElementById("dash-footer");
 
@@ -1721,6 +1665,18 @@
         if (footEl && typeof btFooter === "function")
           footEl.innerHTML = btFooter();
 
+        // Bottom nav mobile (composant centralisé bt-api.js)
+        if (typeof btMobileBottomNav === "function") {
+          const bnEl = document.getElementById("bottom-nav-mobile");
+          if (bnEl) bnEl.innerHTML = btMobileBottomNav("compte");
+        }
+
+        // Sections drawer (Aide + Support WhatsApp + Inviter un ami)
+        if (typeof btMobileDrawerSections === "function") {
+          const drawerSectionsEl = document.getElementById("mobile-drawer-sections");
+          if (drawerSectionsEl) drawerSectionsEl.innerHTML = btMobileDrawerSections();
+        }
+        
         if (!btAuth.isLogged()) {
           window.location.href = "login.html";
           return;

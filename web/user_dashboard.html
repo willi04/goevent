@@ -242,12 +242,16 @@
           </a>
         </nav>
 
-        <div class="p-6 border-t border-gray-100">
+        <!-- Sections drawer (Aide + Support + Inviter) -->
+        <div id="mobile-drawer-sections" class="px-4 pt-4 border-t border-gray-100"></div>
+
+        <!-- Bouton déconnexion -->
+        <div class="p-4 pt-3 border-t border-gray-100">
           <button
             onclick="btAuth.logout()"
-            class="w-full flex items-center justify-center gap-2 p-4 rounded-2xl bg-red-50 text-red-600 font-bold hover:bg-red-100 transition-colors"
+            class="w-full flex items-center justify-center gap-2 p-3.5 rounded-2xl bg-red-50 text-red-600 font-bold text-sm hover:bg-red-100 transition-colors"
           >
-            <span class="material-symbols-outlined" style="font-size: 20px"
+            <span class="material-symbols-outlined" style="font-size: 18px"
               >logout</span
             >
             Se déconnecter
@@ -694,7 +698,7 @@
           </div>
         </div>
 
-        <div class="w-full mt-auto ">
+        <div class="w-full mt-auto pb-[72px] md:pb-0">
           <div
             id="dash-footer"
             class="border-t border-gray-100 bg-white shadow-sm"
@@ -702,7 +706,10 @@
         </div>
       </main>
     </div>
-
+    
+    <!-- ✅ BOTTOM NAV MOBILE (md:hidden gérée dans la fonction) -->
+    <div id="bottom-nav-mobile"></div>
+    
     <script src="bt-api.js"></script>
     <script src="pwa.js"></script>
     <script>
@@ -722,7 +729,17 @@
           window.location.href = "login.html";
           return;
         }
-
+        // Sections drawer (Aide + Support WhatsApp + Inviter)
+        var drawerSectionsEl = document.getElementById("mobile-drawer-sections");
+        if (drawerSectionsEl && typeof btMobileDrawerSections === "function") {
+          drawerSectionsEl.innerHTML = btMobileDrawerSections();
+        }
+        // Bottom nav mobile (composant centralisé bt-api.js)
+        if (typeof btMobileBottomNav === "function") {
+          var bnEl = document.getElementById("bottom-nav-mobile");
+          if (bnEl) bnEl.innerHTML = btMobileBottomNav("compte");
+        }
+        
         user = btAuth.getUser() || {};
 
         const personalName = user.full_name || user.name || "Fan";

@@ -169,7 +169,9 @@
             ><span class="material-symbols-outlined">info</span> À propos</a
           >
         </nav>
-
+        <!-- Sections drawer (Aide + Support WhatsApp + Inviter un ami) -->
+        <div id="mobile-drawer-sections" class="mt-4 pt-4 border-t border-gray-100"></div>
+        
         <div
           id="mobile-auth-section"
           class="mt-4 pt-6 border-t border-gray-100 space-y-3"
@@ -304,7 +306,11 @@
         var bnEl = document.getElementById("bottom-nav-mobile");
         if (bnEl) bnEl.innerHTML = btMobileBottomNav("follow"); // ← clé adaptée par page
       }
-      
+      // Sections drawer (Aide + Support WhatsApp + Inviter un ami)
+      if (typeof btMobileDrawerSections === "function") {
+        var drawerSecEl = document.getElementById("mobile-drawer-sections");
+        if (drawerSecEl) drawerSecEl.innerHTML = btMobileDrawerSections();
+      }
       document.getElementById("footer").innerHTML = btFooter();
 
       function toggleMobileMenu() {

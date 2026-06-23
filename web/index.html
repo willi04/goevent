@@ -314,9 +314,13 @@
           >
         </nav>
 
+        <!-- Sections drawer (Aide + Support WhatsApp + Inviter un ami) -->
+        <div id="mobile-drawer-sections" class="mt-4 pt-4 border-t border-gray-100"></div>
+
+        <!-- Section auth -->
         <div
           id="mobile-auth-section"
-          class="mt-4 pt-6 border-t border-gray-100 space-y-3"
+          class="mt-2 pt-4 border-t border-gray-100 space-y-3"
         >
           <a
             href="login.html"
@@ -603,7 +607,12 @@
         var bnEl = document.getElementById("bottom-nav-mobile");
         if (bnEl) bnEl.innerHTML = btMobileBottomNav("accueil"); // ← clé adaptée par page
       }
-
+      // Sections drawer (Aide + Support WhatsApp + Inviter un ami)
+      if (typeof btMobileDrawerSections === "function") {
+        var drawerSecEl = document.getElementById("mobile-drawer-sections");
+        if (drawerSecEl) drawerSecEl.innerHTML = btMobileDrawerSections();
+      }
+      
       function toggleMobileMenu() {
         const menu = document.getElementById("mobile-menu");
         const drawer = document.getElementById("mobile-drawer");

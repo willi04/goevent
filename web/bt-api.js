@@ -529,11 +529,12 @@ function btMobileBottomNav(activePage) {
   var user = btAuth.getUser();
   var isLogged = btAuth.isLogged();
 
-  // 3 onglets fixes + 1 contextualisé (auth)
+  // 3 onglets fixes orientés business : Accueil, Events, Partenaires (recrutement orgas/annonceurs)
+  // + 1 contextualisé selon état auth
   var tabs = [
-    { key: "accueil",    href: "index.html",  icon: "home",     label: "Accueil" },
-    { key: "evenements", href: "event.html",  icon: "stadium",  label: "Events" },
-    { key: "follow",     href: "follow.html", icon: "favorite", label: "Follow" },
+    { key: "accueil",     href: "index.html",      icon: "home",      label: "Accueil" },
+    { key: "evenements",  href: "event.html",      icon: "stadium",   label: "Events" },
+    { key: "partenaire",  href: "partenaire.html", icon: "handshake", label: "Partenaires" },
   ];
 
   if (isLogged) {
@@ -623,6 +624,38 @@ function btMobileAuthSection() {
     '<span class="material-symbols-outlined text-sm">power_settings_new</span>' +
     'Déconnexion' +
     '</button>'
+  );
+}
+
+// ── DRAWER MOBILE : SECTIONS DU BAS (Aide + Support + Inviter) ─
+// Renvoie le HTML à injecter SOUS la nav du drawer.
+// Remplace l'ancienne carte "Mon Espace" qui faisait doublon avec la bottom nav.
+function btMobileDrawerSections() {
+  var supportPhone = "23672259398"; // À remplacer par ton numéro WhatsApp réel
+  var inviteText = encodeURIComponent(
+    "Salut ! Je viens de découvrir GoEvent, la plateforme de billetterie en RCA. " +
+    "Tu peux acheter tes billets en ligne via Orange Money. " +
+    "Découvre : https://goevent.africa"
+  );
+
+  return (
+    '<div class="space-y-1">' +
+    // Aide & FAQ
+    '<a href="centre_aide.html" class="flex items-center gap-3 p-3.5 rounded-2xl text-gray-700 font-semibold hover:bg-primary/5 hover:text-primary transition-all text-sm">' +
+    '<span class="material-symbols-outlined text-base text-gray-500">help</span>' +
+    'Aide & FAQ' +
+    '</a>' +
+    // Support WhatsApp
+    '<a href="https://wa.me/' + supportPhone + '" target="_blank" rel="noopener" class="flex items-center gap-3 p-3.5 rounded-2xl text-gray-700 font-semibold hover:bg-green-50 hover:text-green-700 transition-all text-sm">' +
+    '<span class="material-symbols-outlined text-base text-green-600">chat</span>' +
+    'Support WhatsApp' +
+    '</a>' +
+    // Inviter un ami
+    '<a href="https://wa.me/?text=' + inviteText + '" target="_blank" rel="noopener" class="flex items-center gap-3 p-3.5 rounded-2xl text-gray-700 font-semibold hover:bg-primary/5 hover:text-primary transition-all text-sm">' +
+    '<span class="material-symbols-outlined text-base text-gray-500">person_add</span>' +
+    'Inviter un ami' +
+    '</a>' +
+    '</div>'
   );
 }
 

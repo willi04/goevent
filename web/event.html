@@ -187,9 +187,13 @@
             ><span class="material-symbols-outlined">info</span> À propos</a
           >
         </nav>
+        <!-- Sections drawer (Aide + Support WhatsApp + Inviter un ami) -->
+        <div id="mobile-drawer-sections" class="mt-4 pt-4 border-t border-gray-100"></div>
+
+        <!-- Section auth -->
         <div
           id="mobile-auth-section"
-          class="mt-4 pt-6 border-t border-gray-100 space-y-3"
+          class="mt-2 pt-4 border-t border-gray-100 space-y-3"
         >
           <a
             href="login.html"
@@ -442,6 +446,11 @@
       if (typeof btMobileBottomNav === "function") {
         var bnEl = document.getElementById("bottom-nav-mobile");
         if (bnEl) bnEl.innerHTML = btMobileBottomNav("evenements"); // ← clé adaptée par page
+      }
+      // Sections drawer (Aide + Support WhatsApp + Inviter un ami)
+      if (typeof btMobileDrawerSections === "function") {
+        var drawerSecEl = document.getElementById("mobile-drawer-sections");
+        if (drawerSecEl) drawerSecEl.innerHTML = btMobileDrawerSections();
       }
       // 2. Gestion du menu mobile
       function toggleMobileMenu() {

@@ -297,6 +297,13 @@ function btInitials(name) {
 (function () {
   var s = document.createElement("style");
   s.textContent = [
+    ":root{--om-primary:#FF7900;--om-dark:#E66A00;--om-light:#FFF3E6;}",
+    ".bg-om-primary{background-color:var(--om-primary)!important}",
+    ".bg-om-light{background-color:var(--om-light)!important}",
+    ".text-om-primary{color:var(--om-primary)!important}",
+    ".text-om-dark{color:var(--om-dark)!important}",
+    ".border-om-primary{border-color:var(--om-primary)!important}",
+    ".ring-om-primary{--tw-ring-color:var(--om-primary)!important}",
     "@keyframes btIn{from{transform:translateY(16px) scale(.95);opacity:0}to{transform:none;opacity:1}}",
     ".bt-loading{opacity:.6!important;pointer-events:none!important;cursor:not-allowed!important}",
     // Modal overlay

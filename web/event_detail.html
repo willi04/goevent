@@ -853,14 +853,6 @@
           // On récupère l'ID de l'événement actuel pour ne pas l'afficher en double
           const currentId = currentEvent?.id;
           if (!currentId) return; // l'event principal n'est pas encore chargé, on laisse tomber
-          
-          const now = new Date();
-          const filtered = events
-            .filter((e) => {
-              if (e.id === currentId) return false;
-              if (!e.event_date) return true;
-              return new Date(e.event_date) >= now;
-            })
 
           // On filtre l'événement actuel et on garde maximum 3 événements
           const now = new Date();

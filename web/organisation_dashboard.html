@@ -2404,15 +2404,24 @@
             document.getElementById("ev-location") ||
             document.getElementById("event-location-input");
 
+          // APRÈS
+          const rawDate = dateInput ? dateInput.value : "";
+          if (!rawDate) {
+            btToast("Veuillez choisir une date pour l'événement", "error");
+            if (btn) { btn.innerHTML = origText; btn.classList.remove("opacity-70", "cursor-not-allowed"); }
+            return;
+          }
+          const eventDateISO = new Date(rawDate).toISOString();
+          
           const payload = {
             title: titleInput ? titleInput.value.trim() : "",
-            category: catInput ? catInput.value : "Événement",
-            event_date: dateInput ? dateInput.value : "",
+            category: catInput ? catInput.value : "Concert",
+            event_date: eventDateISO,
             location: locInput ? locInput.value.trim() : "",
             cover_image_url:
-              typeof uploadedImageBase64 !== "undefined"
+              typeof uploadedImageBase64 !== "undefined" && uploadedImageBase64
                 ? uploadedImageBase64
-                : "",
+                : null,
             total_seats: totalSeats,
             price: basePrice,
             ticket_tiers: categories,

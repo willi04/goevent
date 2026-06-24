@@ -560,6 +560,8 @@
           }
           
           renderTiers();
+          // On déclenche la fonction pour qu'elle s'exécute au chargement de la page
+          loadOtherEvents();
 
           // Chantier 19.A : validation auto si ?promo=CODE dans l'URL
           if (!isPast && promoFromUrl) {
@@ -849,12 +851,32 @@
           }
 
           // On récupère l'ID de l'événement actuel pour ne pas l'afficher en double
-          const currentId = new URLSearchParams(window.location.search).get(
-            "id",
-          );
+          const currentId = currentEvent?.id;
+          if (!currentId) return; // l'event principal n'est pas encore chargé, on laisse tomber
+          
+          const now = new Date();
+          const filtered = events
+            .filter((e) => {
+              if (e.id === currentId) return false;
+              if (!e.event_date) return true;
+              return new Date(e.event_date) >= now;
+            })
 
           // On filtre l'événement actuel et on garde maximum 3 événements
-          const filtered = events.filter((e) => e.id != currentId).slice(0, 3);
+          const now = new Date();
+          const filtered = events
+            .filter((e) => {
+              if (e.id == currentId) return false;
+              if (!e.event_date) return true; // pas de date → on garde par défaut
+              return new Date(e.event_date) >= now;
+            })
+            .sort((a, b) => {
+              // Prochains d'abord
+              if (!a.event_date) return 1;
+              if (!b.event_date) return -1;
+              return new Date(a.event_date) - new Date(b.event_date);
+            })
+            .slice(0, 3);
 
           if (filtered.length === 0) {
             grid.innerHTML =
@@ -866,9 +888,6 @@
           grid.innerHTML = filtered
             .map((e) => {
               const d = new Date(e.event_date);
-              const now = new Date();
-              const isPast = d < now; // Détection si l'événement suggéré est passé
-
               const dateStr = !isNaN(d)
                 ? d.toLocaleDateString("fr-FR", {
                     day: "numeric",
@@ -876,22 +895,15 @@
                     year: "numeric",
                   })
                 : "Bientôt";
-                
+              
               const priceStr =
                 e.price && e.price > 0
                   ? e.price.toLocaleString("fr-FR") + " FCFA"
                   : "Gratuit";
+              
               const imgUrl =
                 e.cover_image_url ||
                 "https://via.placeholder.com/400x300?text=GoEvent";
-
-              // Style si passé : opacité réduite et badge "TERMINE"
-              const cardOpacity = isPast ? "opacity-75 grayscale-[20%]" : "";
-              const badgeHtml = isPast 
-                ? `<span class="bg-primary text-white px-3 py-1 rounded-lg text-[10px] font-black tracking-widest flex items-center gap-1">
-                     <span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1">history</span> TERMINE
-                   </span>`
-                : `<span class="text-primary font-black text-base">${priceStr}</span>`;
 
               return `
             <div onclick="window.location.href='event_detail.html?id=${e.id}'" class="bg-white rounded-[2rem] p-3 shadow-sm border border-gray-100 hover:shadow-xl hover:border-primary/30 transition-all duration-300 cursor-pointer group flex flex-col ${cardOpacity}">
@@ -920,9 +932,6 @@
           console.error("Erreur lors du chargement des suggestions :", error);
         }
       }
-
-      // On déclenche la fonction pour qu'elle s'exécute au chargement de la page
-      loadOtherEvents();
 
       const mainImage = document.getElementById("e-image");
       const lightbox = document.getElementById("image-lightbox");

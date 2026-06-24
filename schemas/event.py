@@ -1,7 +1,6 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
-from pydantic import BaseModel, Field, validator
-
+from pydantic import BaseModel, Field, field_validator
 
 class EventCreate(BaseModel):
     title: str = Field(..., min_length=3, max_length=200)
@@ -11,24 +10,34 @@ class EventCreate(BaseModel):
     event_date: datetime
     price: float = Field(..., ge=0, le=1000000)
     total_seats: int = Field(..., ge=1, le=100000)
-    cover_image_url: Optional[str] = Field(None, max_length=2048)
+    cover_image_url: Optional[str] = None  # base64 ou URL — pas de max_length
     ticket_tiers: Optional[list] = []
 
-    @validator("event_date")
+    @field_validator("event_date")
+    @classmethod
     def validate_date(cls, v):
-        if v < datetime.utcnow():
+        now = datetime.now(timezone.utc)
+        # Normalise si naive datetime reçue du frontend
+        if v.tzinfo is None:
+            v = v.replace(tzinfo=timezone.utc)
+        if v < now:
             raise ValueError("L'événement ne peut pas être dans le passé")
-        if v > datetime.utcnow() + timedelta(days=730):
+        if v > now + timedelta(days=730):
             raise ValueError("La date est trop lointaine (max 2 ans)")
         return v
 
-    @validator("cover_image_url")
+    @field_validator("cover_image_url")
+    @classmethod
     def validate_image_url(cls, v):
-        if v and not v.startswith(("https://", "http://")):
-            raise ValueError("L'URL doit commencer par http:// ou https://")
+        if v is None:
+            return v
+        # Accepte base64 data URI ou URL http(s)
+        if not (v.startswith(("https://", "http://", "data:image/"))):
+            raise ValueError("Format image invalide")
         return v
 
-    @validator("description")
+    @field_validator("description")
+    @classmethod
     def sanitize_description(cls, v):
         from bleach import clean
         return clean(
@@ -37,15 +46,3 @@ class EventCreate(BaseModel):
             attributes={"a": ["href"]},
             strip=True,
         )
-
-
-class EventUpdate(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    location: Optional[str] = None
-    category: Optional[str] = None
-    event_date: Optional[datetime] = None
-    price: Optional[float] = None
-    total_seats: Optional[int] = None
-    cover_image_url: Optional[str] = None
-    is_active: Optional[bool] = None

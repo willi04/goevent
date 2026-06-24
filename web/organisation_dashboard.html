@@ -2365,7 +2365,7 @@
         try {
           let categories = [];
           let totalSeats = 0;
-          let basePrice = 0;
+          let basePrice = null;
 
           // 2. Récupération sécurisée des billets
           const tierRows = document.querySelectorAll(
@@ -2384,9 +2384,10 @@
               if (name && !isNaN(price) && !isNaN(seats)) {
                 categories.push({ name, price, seats });
                 totalSeats += seats;
-                if (basePrice === 0 || price < basePrice) basePrice = price;
+                if (basePrice === null || price < basePrice) basePrice = price;
               }
             });
+            if (basePrice === null) basePrice = 0;  // aucune tier valide
           }
 
           // 3. Récupération sécurisée des champs de base

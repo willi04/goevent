@@ -64,13 +64,12 @@ def _check_tier_exists(event: Event, tier_name: str) -> None:
 
 
 def _build_share_link(promo: PromoCode, db: Session) -> Optional[str]:
-    """Construit le lien partageable si event_id renseigné.
-
-    Note : le champ Event.slug n'est pas encore en BD (TECH_CORE P2).
-    On fallback sur ?id= dès maintenant — fonctionnel et stable.
-    """
+    """Construit le lien partageable si event_id renseigné."""
     if not promo.event_id:
         return None
+    event = db.query(Event.slug).filter(Event.id == promo.event_id).first()
+    if event and getattr(event, "slug", None):
+        return f"https://goevent.africa/e/{event.slug}?promo={promo.code}"
     return f"https://goevent.africa/event_detail.html?id={promo.event_id}&promo={promo.code}"
 
 

@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 from pydantic import BaseModel, Field, field_validator
 
+
 class EventCreate(BaseModel):
     title: str = Field(..., min_length=3, max_length=200)
     description: str = Field("", max_length=5000)
@@ -17,7 +18,6 @@ class EventCreate(BaseModel):
     @classmethod
     def validate_date(cls, v):
         now = datetime.now(timezone.utc)
-        # Normalise si naive datetime reçue du frontend
         if v.tzinfo is None:
             v = v.replace(tzinfo=timezone.utc)
         if v < now:
@@ -31,8 +31,7 @@ class EventCreate(BaseModel):
     def validate_image_url(cls, v):
         if v is None:
             return v
-        # Accepte base64 data URI ou URL http(s)
-        if not (v.startswith(("https://", "http://", "data:image/"))):
+        if not v.startswith(("https://", "http://", "data:image/")):
             raise ValueError("Format image invalide")
         return v
 
@@ -46,3 +45,15 @@ class EventCreate(BaseModel):
             attributes={"a": ["href"]},
             strip=True,
         )
+
+
+class EventUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    location: Optional[str] = None
+    category: Optional[str] = None
+    event_date: Optional[datetime] = None
+    price: Optional[float] = None
+    total_seats: Optional[int] = None
+    cover_image_url: Optional[str] = None
+    is_active: Optional[bool] = None

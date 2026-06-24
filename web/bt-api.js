@@ -134,8 +134,57 @@ async function btFetch(path, opts) {
     return {};
   });
 
-  if (!res.ok) throw new Error(data.detail || "Erreur serveur");
+  if (!res.ok) throw new Error(_btFormatApiError(data, res.status));
   return data;
+}
+
+// Normalise les erreurs FastAPI (string, array Pydantic 422, objet, ou rien)
+function _btFormatApiError(data, status) {
+  if (!data) return "Erreur " + status;
+  var d = data.detail;
+  if (typeof d === "string") return d;
+  if (Array.isArray(d)) {
+    // Format Pydantic v2 : [{loc:["body","event_date"], msg:"...", type:"..."}, ...]
+    return d.map(function (e) {
+      var loc = Array.isArray(e.loc) ? e.loc[e.loc.length - 1] : null;
+      var label = _btFieldLabel(loc) || loc || "champ";
+      return label + " : " + (e.msg || "invalide");
+    }).join(" • ");
+  }
+  if (d && typeof d === "object") {
+    return d.message || JSON.stringify(d);
+  }
+  return "Erreur " + status;
+}
+
+// Traduit les noms de champs techniques en libellés humains
+function _btFieldLabel(field) {
+  var map = {
+    "title": "Titre",
+    "description": "Description",
+    "location": "Lieu",
+    "category": "Catégorie",
+    "event_date": "Date de l'événement",
+    "price": "Prix",
+    "total_seats": "Nombre de places",
+    "cover_image_url": "Affiche",
+    "ticket_tiers": "Catégories de billets",
+    "phone_number": "Téléphone",
+    "pin_code": "Code PIN",
+    "email": "Email",
+    "full_name": "Nom complet",
+    "org_name": "Nom de l'organisation",
+    "orange_money": "Numéro Orange Money",
+    "amount": "Montant",
+    "event_id": "Événement",
+    "code": "Code",
+    "discount_type": "Type de réduction",
+    "discount_value": "Valeur de la réduction",
+    "old_pin": "Ancien PIN",
+    "new_pin": "Nouveau PIN",
+    "refresh_token": "Session"
+  };
+  return map[field] || null;
 }
 
 var btApi = {

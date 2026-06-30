@@ -71,6 +71,8 @@ else:
 
 
 Base.metadata.create_all(bind=engine)
+from core.migrations import run_migrations
+run_migrations()
 
 ROLES_VALIDES = ("fan", "organizer", "agent")
 

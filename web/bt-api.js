@@ -206,8 +206,9 @@ var btApi = {
 };
 
 // ── Toast Stitch style ────────────────────────────────────────
-function btToast(msg, type) {
+function btToast(msg, type, duration ) {
   type = type || "success";
+  duration = duration || 4000;
   document.querySelectorAll(".bt-toast").forEach(function (t) {
     t.remove();
   });
@@ -252,10 +253,10 @@ function btToast(msg, type) {
   setTimeout(function () {
     el.style.opacity = "0";
     el.style.transition = "opacity .3s";
-  }, 3700);
+  }, duration - 300);
   setTimeout(function () {
     el.remove();
-  }, 4000);
+  }, duration);
 }
 
 // ── Formatters ────────────────────────────────────────────────

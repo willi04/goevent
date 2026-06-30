@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 from utils.locks import lock_event_for_release
 from utils.promo import confirm_promo_usage, release_promo_usage
 from models.ticket import Ticket
-from models.payment import Payment
+from models.payment import Payment, PayoutRequest
 from models.promotion import BoostOrder, FbAdPackage
 
 
@@ -30,9 +30,11 @@ def process_ngser_response(
     Logique unifiée. Idempotent. Dispatch par préfixe order_id.
     Codes NGSER : "1"=SUCCESS, "0"/"2"/"4"/"5"/"6"=FAIL, "3"=PENDING.
     """
-    if not order_id:
+     if not order_id:
         return {"action": "no_order_id"}
 
+    if order_id.startswith("WD"):
+        return _process_payout(db, order_id, code, transaction_amount)
     if order_id.startswith("BST-"):
         return _process_boost(db, order_id, code, transaction_amount)
     if order_id.startswith("FBP-"):
@@ -40,6 +42,55 @@ def process_ngser_response(
 
     return _process_ticket(db, order_id, code, transaction_amount)
 
+
+def _process_payout(db, order_id, code, transaction_amount=None):
+    """
+    Retrait organisateur (B2C). Idempotent (skip si déjà 'paye').
+    Sur montant incohérent : ne touche PAS au statut (ni paye ni en_attente) —
+    c'est de l'argent sortant, un écart suspect doit être investigué par un humain,
+    pas tranché automatiquement dans un sens ou l'autre.
+    """
+    try:
+        payout_id = int(str(order_id).split("-")[0].replace("WD", ""))
+    except (TypeError, ValueError):
+        return {"action": "invalid_order_id", "order_id": order_id}
+
+    payout = (
+        db.query(PayoutRequest)
+        .filter(PayoutRequest.id == payout_id)
+        .with_for_update()
+        .first()
+    )
+    if not payout:
+        return {"action": "no_payout", "payout_id": payout_id}
+
+    if payout.status == "paye":
+        return {"action": "skipped", "payout_id": payout.id, "current_status": payout.status}
+
+    if code == "1":
+        if transaction_amount is not None:
+            try:
+                recu = float(transaction_amount)
+                attendu = float(payout.amount)
+                if abs(recu - attendu) > 1:
+                    print(f"🚨 process_ngser PAYOUT : montant incohérent {order_id} reçu={recu} attendu={attendu}.")
+                    return {"action": "rejected_amount", "payout_id": payout.id,
+                            "received": recu, "expected": attendu}
+            except (TypeError, ValueError):
+                return {"action": "rejected_amount", "payout_id": payout.id, "reason": "unreadable"}
+
+        payout.status = "paye"
+        db.commit()
+        print(f"✅💸 process_ngser PAYOUT : retrait {payout.id} validé.")
+        return {"action": "validated", "payout_id": payout.id}
+
+    if code in ("0", "2", "4", "5", "6"):
+        payout.status = "en_attente"
+        db.commit()
+        print(f"❌ process_ngser PAYOUT : échec retrait {payout.id} (code={code}) → remis en attente.")
+        return {"action": "failed", "payout_id": payout.id, "code": code}
+
+    return {"action": "pending", "payout_id": payout.id, "code": code}
 
 def _process_ticket(db, order_id, code, transaction_amount=None):
     ticket = (

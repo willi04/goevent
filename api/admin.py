@@ -217,7 +217,12 @@ async def validate_payout(payout_id: int, db: Session = Depends(get_db),
     if payout.status != "en_attente":
         raise HTTPException(status_code=400, detail=f"Statut non traitable : {payout.status}")
 
+    # Génération de l'order_id AVANT la transition de statut pour persister les
+    # deux atomiquement (invariant : status=en_cours ⇒ payment_ref non-null,
+    # indispensable au filet cron reconcile).
+    withdrawal_id = f"WD{payout.id}-{uuid.uuid4().hex[:10].upper()}"
     payout.status = "en_cours"
+    payout.payment_ref = withdrawal_id
     db.commit()
 
     orga = db.query(User).filter(User.id == payout.organizer_id).first()
@@ -226,8 +231,6 @@ async def validate_payout(payout_id: int, db: Session = Depends(get_db),
         payout.status = "en_attente"
         db.commit()
         raise HTTPException(status_code=400, detail="Numéro de réception introuvable pour cet organisateur.")
-
-    withdrawal_id = f"WD{payout.id}-{uuid.uuid4().hex[:10].upper()}"
 
     try:
         status_code, response_data, raw_text = await create_withdrawal_session(

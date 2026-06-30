@@ -934,28 +934,25 @@
           grid.appendChild(btnContainer);
 
           // --- AFFICHAGE DU CARROUSEL VEDETTE (Sponsors) ---
+          // Layout horizontal scroll (.netflix-card) TOUJOURS, peu importe le nombre
+          // (85% mobile / 50% sm / 33% lg via CSS, donc déjà responsive iso-comportement).
+          // Flèches + auto-scroll réservés à >3 events (sinon gênant/inutile à 1-2 cards).
           if (carouselTrack && category === "" && featuredEvents.length > 0) {
-            if (featuredEvents.length > 3) {
-              carouselTrack.innerHTML = `
-                      <div id="netflix-wrapper" class="relative group w-full">
-                          <button onclick="scrollNetflix(-1)" class="absolute left-0 top-0 bottom-0 z-20 bg-black/40 hover:bg-black/70 text-white w-10 md:w-14 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all rounded-l-2xl">
-                              <span class="material-symbols-outlined text-3xl">chevron_left</span>
-                          </button>
-                          <div id="netflix-track-inner" class="netflix-track-inner px-6 md:px-0">
-                              ${featuredEvents.map((event) => renderNetflixCard(event)).join("")}
-                          </div>
-                          <button onclick="scrollNetflix(1)" class="absolute right-0 top-0 bottom-0 z-20 bg-black/40 hover:bg-black/70 text-white w-10 md:w-14 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all rounded-r-2xl">
-                              <span class="material-symbols-outlined text-3xl">chevron_right</span>
-                          </button>
-                      </div>
-                  `;
-              startAutoCarousel();
-            } else {
-              carouselTrack.innerHTML = `
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-                        ${featuredEvents.map((event) => renderNetflixCard(event, false)).join("")}
-                    </div>`;
-            }
+            const showArrows = featuredEvents.length > 3;
+            carouselTrack.innerHTML = `
+                    <div id="netflix-wrapper" class="relative group w-full">
+                        ${showArrows ? `<button onclick="scrollNetflix(-1)" class="absolute left-0 top-0 bottom-0 z-20 bg-black/40 hover:bg-black/70 text-white w-10 md:w-14 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all rounded-l-2xl">
+                            <span class="material-symbols-outlined text-3xl">chevron_left</span>
+                        </button>` : ""}
+                        <div id="netflix-track-inner" class="netflix-track-inner px-6 md:px-0">
+                            ${featuredEvents.map((event) => renderNetflixCard(event)).join("")}
+                        </div>
+                        ${showArrows ? `<button onclick="scrollNetflix(1)" class="absolute right-0 top-0 bottom-0 z-20 bg-black/40 hover:bg-black/70 text-white w-10 md:w-14 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all rounded-r-2xl">
+                            <span class="material-symbols-outlined text-3xl">chevron_right</span>
+                        </button>` : ""}
+                    </div>
+                `;
+            if (showArrows) startAutoCarousel();
           }
         } catch (error) {
           console.error("Erreur:", error);

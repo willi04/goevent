@@ -46,7 +46,14 @@ def register(request: Request, data: UserRegister, db: Session = Depends(get_db)
         raise HTTPException(400, "Le PIN doit être 4 chiffres")
     if db.query(User).filter(User.phone_number == data.phone_number).first():
         raise HTTPException(400, "Ce numéro est déjà utilisé")
-
+    # Anti-collision email (cohérent avec index unique LOWER(email), Chantier 27).
+    # Sans ce check, l'IntegrityError du commit() remontait brute -> 500 mal formé
+    # -> "Failed to fetch" côté navigateur au lieu d'un message clair.
+    if data.email:
+        from sqlalchemy import func
+        if db.query(User).filter(func.lower(User.email) == data.email.lower()).first():
+            raise HTTPException(400, "Cet email existe déjà, choisissez-en un autre")
+            
     user = User(
         phone_number=data.phone_number,
         full_name=data.full_name,

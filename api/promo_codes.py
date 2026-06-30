@@ -27,6 +27,7 @@ from schemas.promo import (
     PromoValidateIn, PromoValidateOut, GeneratedCodeOut,
 )
 from utils.promo import find_active_promo, compute_discount
+from utils.slugs import event_id_to_slug
 
 router = APIRouter(tags=["promo_codes"])
 
@@ -64,12 +65,20 @@ def _check_tier_exists(event: Event, tier_name: str) -> None:
 
 
 def _build_share_link(promo: PromoCode, db: Session) -> Optional[str]:
-    """Construit le lien partageable si event_id renseigné."""
+    """Construit le lien partageable si event_id renseigné.
+
+    Le slug est DÉRIVÉ de l'event_id via hashids (utils/slugs.py) — il n'y a
+    aucune colonne `slug` en BD (référence fantôme corrigée). L'URL courte
+    /e/{slug} est résolue côté frontend via slug_to_event_id.
+    """
     if not promo.event_id:
         return None
-    event = db.query(Event.slug).filter(Event.id == promo.event_id).first()
-    if event and getattr(event, "slug", None):
-        return f"https://goevent.africa/e/{event.slug}?promo={promo.code}"
+    try:
+        slug = event_id_to_slug(promo.event_id)
+        if slug:
+            return f"https://goevent.africa/e/{slug}?promo={promo.code}"
+    except Exception:
+        pass
     return f"https://goevent.africa/event_detail.html?id={promo.event_id}&promo={promo.code}"
 
 

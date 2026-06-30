@@ -30,9 +30,9 @@ def process_ngser_response(
     Logique unifiée. Idempotent. Dispatch par préfixe order_id.
     Codes NGSER : "1"=SUCCESS, "0"/"2"/"4"/"5"/"6"=FAIL, "3"=PENDING.
     """
-     if not order_id:
+    if not order_id:
         return {"action": "no_order_id"}
-
+    
     if order_id.startswith("WD"):
         return _process_payout(db, order_id, code, transaction_amount)
     if order_id.startswith("BST-"):

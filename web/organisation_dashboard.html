@@ -1698,7 +1698,18 @@
         const welcomeEl = document.getElementById("welcome-msg");
         if (welcomeEl)
           welcomeEl.textContent = `Bonjour, ${userName.split(" ")[0]} 👋`;
-
+        
+        // TEMP : annonce Orange Money pré-lancement (clés NGSER prod en attente, cf TECH_Core ROADMAP S0).
+        // Retirer ce bloc dès la bascule prod NGSER effectuée.
+        if (!sessionStorage.getItem("bt_om_notice_seen")) {
+          btToast(
+            "Le paiement Orange Money arrive très bientôt sur GoEvent. En attendant, publie tes événements gratuits dès maintenant pour construire ton audience. Bonne visite !",
+            "info",
+            12000
+          );
+          sessionStorage.setItem("bt_om_notice_seen", "1");
+        }
+        
         const inputFullName = document.getElementById("set-fullname");
         const inputPhone = document.getElementById("set-phone");
         const inputOrgName = document.getElementById("set-orgname");

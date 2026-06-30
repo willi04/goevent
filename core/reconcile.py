@@ -150,6 +150,42 @@ async def reconcile_pending_payments(db: Session) -> dict:
             print(f"❌ Réconciliation FB pack #{pack.id} : {e}")
             summary["errors"] += 1
 
+    # ─── 4. Retraits B2C en cours (Chantier sécu webhook NGSER) ─────
+    # Filtre payment_ref IS NOT NULL : les payouts historiques (avant la
+    # migration ajoutant payment_ref) sont volontairement ignorés — admin
+    # manuel uniquement pour cette population résiduelle.
+    from models.payment import PayoutRequest
+    summary["payouts_processed"] = 0
+    pending_payouts = (
+        db.query(PayoutRequest)
+        .filter(
+            PayoutRequest.status == "en_cours",
+            PayoutRequest.payment_ref.isnot(None),
+            PayoutRequest.created_at <= floor_recent,
+            PayoutRequest.created_at >= floor_old,
+        )
+        .limit(100)
+        .all()
+    )
+
+    for payout in pending_payouts:
+        try:
+            http_code, data = await check_payment_status(payout.payment_ref)
+            code = str(data.get("code", ""))
+            inner = data.get("data") or {}
+            transaction_amount = inner.get("transaction_amount")
+
+            process_ngser_response(
+                db=db,
+                order_id=payout.payment_ref,
+                code=code,
+                transaction_amount=transaction_amount,
+            )
+            summary["payouts_processed"] += 1
+        except Exception as e:
+            print(f"❌ Réconciliation payout #{payout.id} : {e}")
+            summary["errors"] += 1
+            
     print(f"🔄 Réconciliation terminée : {summary}")
     return summary
 

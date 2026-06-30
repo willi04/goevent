@@ -13,11 +13,11 @@ from utils.locks import lock_event_for_booking, lock_event_for_release
 from utils.promo import lock_promo_for_use, compute_discount, release_promo_usage
 from core.database import get_db
 from core.security import get_current_user
-from core.ngser import create_payment_session
+from core.ngser import create_payment_session, check_payment_status
 from models.event import Event
 from models.ticket import Ticket
 from models.user import User
-from models.payment import Payment, PayoutRequest
+from models.payment import Payment
 from models.promo import PromoUsage
 from schemas.payment import PaymentConfirm
 
@@ -169,13 +169,15 @@ def _libere_place_init_echouee(db: Session, ticket_id: int, event_id: int):
         print(f"⚠️ Erreur libération place après échec init NGSER : {e}")
         db.rollback()
 
-# ── WEBHOOK NGSER (Instant Payment Notification) ────────────────
 @router.post("/payment/ngser-webhook")
 async def ngser_webhook(request: Request, db: Session = Depends(get_db)):
     """
-    Notification post-paiement appelée par NGSER.
-    Gère les achats de billets (EVT...) et les retraits organisateur (WD...).
-    status_id : 1 = succès, 0 = échec, 2 = échec montant insuffisant (doc p.12).
+    Notification post-paiement appelée par NGSER (sert uniquement de trigger).
+    Le payload entrant n'est jamais une source de vérité : order_id est extrait,
+    puis check_payment_status() interroge NGSER activement pour le vrai statut.
+    Gère les achats de billets (EVT...), retraits organisateur (WD...),
+    boosts (BST-...) et packs FB Ads (FBP-...) via process_ngser_response.
+    Codes NGSER : "1"=succès, "0"/"2"/"4"/"5"/"6"=échec, "3"=en attente.
     """
     try:
         # 1. Parsing défensif du payload (JSON / form / query)
@@ -193,106 +195,38 @@ async def ngser_webhook(request: Request, db: Session = Depends(get_db)):
         print("🔔 [WEBHOOK NGSER PAYLOAD] :", payload)
 
         order_id = payload.get("order_id")
-        status_id = payload.get("status_id")
-        transaction_amount = payload.get("transaction_amount")
-
         if not order_id:
             return {"status": "error", "message": "Aucun order_id reçu"}
 
+        # ─────────────────────────────────────────────────────────
+        # SÉCURITÉ : cette route est publique et sans authentification.
+        # status_id/transaction_amount du payload entrant NE SONT JAMAIS UNE SOURCE
+        # DE VÉRITÉ — n'importe qui peut POST ici en se faisant passer pour NGSER.
+        # order_id sert uniquement de pointeur ; le vrai statut est vérifié activement
+        # auprès de NGSER (même mécanisme que le cron, cf core/reconcile.py).
+        # process_ngser_response dispatche lui-même selon le préfixe order_id
+        # (WD = retrait, BST-/FBP- = régie pub, sinon = ticket).
+        # ─────────────────────────────────────────────────────────
+        from core.payment_processing import process_ngser_response
+
         try:
-            status_id = int(status_id)
-        except (TypeError, ValueError):
-            status_id = None
+            http_code, status_data = await check_payment_status(order_id)
+        except Exception as e:
+            print(f"❌ Webhook : erreur check_payment_status({order_id}) : {e}")
+            return {"status": "error", "message": "Vérification NGSER indisponible"}
 
-        # ─────────────────────────────────────────────────────────
-        # SCÉNARIO 1 : RETRAIT ORGANISATEUR (WD...)
-        # ─────────────────────────────────────────────────────────
-        if str(order_id).startswith("WD"):
-            try:
-                payout_id = int(str(order_id).split("-")[0].replace("WD", ""))
-                payout = (
-                    db.query(PayoutRequest)
-                    .filter(PayoutRequest.id == payout_id)
-                    .with_for_update()
-                    .first()
-                )
-                if payout and payout.status not in ("paye",):
-                    if status_id == 1:
-                        payout.status = "paye"
-                        db.commit()
-                        print(f"✅💸 Webhook : Retrait B2C {payout_id} validé.")
-                    else:
-                        # Échec : on relâche le verrou logique pour permettre un réessai admin.
-                        payout.status = "en_attente"
-                        db.commit()
-                        print(f"❌ Webhook : Échec retrait {payout_id} (status_id={status_id}) → remis en attente.")
-            except Exception as e:
-                print(f"❌ Erreur lecture webhook retrait : {e}")
-            return {"status": "success"}
-        # ─────────────────────────────────────────────────────────
-        # SCÉNARIO 2 : ACHAT DE BILLET (EVT...)
-        # ─────────────────────────────────────────────────────────
-        ticket = db.query(Ticket).filter(Ticket.payment_ref == order_id).first()
-        payment_record = db.query(Payment).filter(Payment.transaction_id == order_id).first()
+        verified_code = str(status_data.get("code", ""))
+        verified_inner = status_data.get("data") or {}
+        verified_amount = verified_inner.get("transaction_amount")
 
-        # Idempotence : ticket doit exister et être en attente OM
-        if not ticket:
-            print(f"⚠️ Webhook : aucun ticket pour order_id={order_id}")
-            return {"status": "success"}
-
-        if ticket.payment_status != "en_attente_om":
-            print(f"ℹ️ Webhook : ticket {ticket.id} déjà traité (statut={ticket.payment_status}), ignoré.")
-            return {"status": "success"}
-
-        # 3. SUCCÈS (status_id == 1)
-        if status_id == 1:
-            # 3a. Vérification du montant (reco NGSER doc p.17)
-            if transaction_amount is not None and payment_record is not None:
-                try:
-                    recu = float(transaction_amount)
-                    attendu = float(payment_record.amount)
-                    if abs(recu - attendu) > 1:
-                        ticket.payment_status = "echec_paiement"
-                        if payment_record:
-                            payment_record.status = "failed"
-                        # Libération : la place avait été pré-réservée à l'initiate
-                        ev = lock_event_for_release(db, ticket.event_id)
-                        if ev:
-                            ev.seats_sold = max(0, ev.seats_sold - 1)
-                        db.commit()
-                        print(f"🚨 Webhook : MONTANT INCOHÉRENT order={order_id} "
-                              f"reçu={recu} attendu={attendu} → REJETÉ + place libérée.")
-                        return {"status": "error", "message": "Montant incohérent"}
-                except (TypeError, ValueError):
-                    ticket.payment_status = "echec_paiement"
-                    if payment_record:
-                        payment_record.status = "failed"
-                    ev = lock_event_for_release(db, ticket.event_id)
-                    if ev:
-                        ev.seats_sold = max(0, ev.seats_sold - 1)
-                    db.commit()
-                    print(f"⚠️ Webhook : transaction_amount illisible ({transaction_amount}) → place libérée.")
-                    return {"status": "error", "message": "Montant illisible"}
-
-            # 3b. Montant OK → validation. PAS d'incrément seats_sold (déjà fait à l'initiate)
-            ticket.payment_status = "paye"
-            if payment_record:
-                payment_record.status = "completed"
-            db.commit()
-            print(f"✅🎫 Webhook : Billet {ticket.id} validé (place déjà comptée).")
-            return {"status": "success"}
-
-        # 4. ÉCHEC (status_id 0, 2, ou autre) → libération de la place pré-réservée
-        else:
-            ticket.payment_status = "echec_paiement"
-            if payment_record:
-                payment_record.status = "failed"
-            ev = lock_event_for_release(db, ticket.event_id)
-            if ev:
-                ev.seats_sold = max(0, ev.seats_sold - 1)
-            db.commit()
-            print(f"❌ Webhook : Paiement échoué order={order_id} (status_id={status_id}) → place libérée.")
-            return {"status": "success"}
+        result = process_ngser_response(
+            db=db,
+            order_id=order_id,
+            code=verified_code,
+            transaction_amount=verified_amount,
+        )
+        print(f"🔔 Webhook : {order_id} → {result}")
+        return {"status": "success", "action": result.get("action")}
 
     except Exception as e:
         print(f"❌ Erreur critique Webhook : {str(e)}")

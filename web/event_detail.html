@@ -309,7 +309,31 @@
                 <div class="h-20 bg-gray-100 rounded-2xl"></div>
               </div>
             </div>
-
+            <!-- Chantier 19.A : saisie manuelle code promo (fan qui reçoit le code sans lien) -->
+            <div id="promo-input-wrap" class="mb-6">
+              <label for="promo-code-input" class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-2 block">Vous avez un code promo ?</label>
+              <div class="flex gap-2">
+                <input
+                  id="promo-code-input"
+                  type="text"
+                  autocomplete="off"
+                  autocapitalize="characters"
+                  spellcheck="false"
+                  maxlength="20"
+                  placeholder="Ex: NOEL2026"
+                  class="flex-1 px-4 py-3 rounded-2xl border-2 border-gray-200 focus:border-primary focus:ring-0 outline-none font-mono text-sm uppercase transition-colors"
+                />
+                <button
+                  id="promo-apply-btn"
+                  type="button"
+                  onclick="applyManualPromo()"
+                  class="px-5 py-3 rounded-2xl bg-gray-900 text-white font-bold text-sm hover:bg-primary transition-colors active:scale-95"
+                >
+                  Appliquer
+                </button>
+              </div>
+            </div>
+            
             <button
               id="btn-reserve"
               onclick="proceedToCheckout()"
@@ -394,6 +418,17 @@
 
       // 2. Chargement de la page
       document.addEventListener("DOMContentLoaded", async () => {
+        // Touche Entrée dans l'input code promo → déclenche Appliquer (UX clavier).
+        const promoInput = document.getElementById("promo-code-input");
+        if (promoInput) {
+          promoInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              applyManualPromo();
+            }
+          });
+        }
+        
         if (
           document.getElementById("navbar") &&
           typeof btNavbar === "function"
@@ -577,7 +612,40 @@
       // ════════════════════════════════════════════════════════
 
       async function tryApplyPromoFromUrl() {
-          if (!currentEvent || !promoFromUrl) return;
+          // Wrapper rétrocompat : applique le code lu depuis ?promo= (variable globale).
+          if (!promoFromUrl) return;
+          await applyPromoCode(promoFromUrl);
+      }
+      
+      // Saisie manuelle déclenchée par le bouton "Appliquer" ou la touche Entrée.
+      async function applyManualPromo() {
+          const input = document.getElementById("promo-code-input");
+          if (!input) return;
+          const code = (input.value || "").trim().toUpperCase();
+          if (!code) {
+              btToast("Saisissez un code promo", "error");
+              input.focus();
+              return;
+          }
+          if (code.length < 3) {
+              btToast("Le code doit comporter au moins 3 caractères", "error");
+              input.focus();
+              return;
+          }
+          // L'action manuelle écrase toute promo URL précédente (dernier choix utilisateur gagne).
+          promoFromUrl = null;
+          await applyPromoCode(code);
+      }
+      
+      // Cœur partagé URL + manuel : validation backend + bandeau + refresh prix.
+      async function applyPromoCode(code) {
+          if (!currentEvent || !code) return;
+          const btn = document.getElementById("promo-apply-btn");
+          const origBtn = btn ? btn.innerHTML : null;
+          if (btn) {
+              btn.disabled = true;
+              btn.innerHTML = '<span class="material-symbols-outlined animate-spin text-sm">sync</span>';
+          }
           try {
               const tierName = (selectedTierIndex !== null && availableTiers[selectedTierIndex])
                 ? availableTiers[selectedTierIndex].name
@@ -585,20 +653,29 @@
               const res = await btApi.post("/promo-codes/validate", {
                   event_id: currentEvent.id,
                   tier_name: tierName,
-                  code: promoFromUrl,
+                  code: code,
               });
               if (res.valid) {
                   appliedPromo = res;
                   showPromoBanner(res, true);
-                  renderTiers(); // refresh prix
+                  renderTiers();
               } else {
+                  appliedPromo = null;
                   showPromoBanner(res, false);
+                  renderTiers();
               }
           } catch (err) {
-              showPromoBanner({ code: promoFromUrl, message: err.message || "Code invalide" }, false);
+              appliedPromo = null;
+              showPromoBanner({ code: code, message: err.message || "Code invalide" }, false);
+              renderTiers();
+          } finally {
+              if (btn && origBtn !== null) {
+                  btn.disabled = false;
+                  btn.innerHTML = origBtn;
+              }
           }
       }
-
+      
       function showPromoBanner(promo, isValid) {
           // Supprime un bandeau existant
           const existing = document.getElementById("promo-banner");
@@ -644,6 +721,12 @@
           promoFromUrl = null;
           const b = document.getElementById("promo-banner");
           if (b) b.remove();
+          // Reset l'input pour permettre une nouvelle saisie sans rechargement de page.
+          const input = document.getElementById("promo-code-input");
+          if (input) {
+              input.value = "";
+              input.focus();
+          }
           renderTiers();
       }
 

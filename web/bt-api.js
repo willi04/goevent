@@ -691,39 +691,10 @@ function btModal(contentHtml) {
   return ov;
 }
 
-// ── DRAWER MOBILE : SECTION AUTH (à placer en TÊTE du drawer, pas en bas) ──
-// Pattern Airbnb : carte compacte cliquable si connecté, CTAs auth sinon.
-// Anti-doublon : "Mon Espace" est déjà dans la bottom nav → pas de CTA
-// redondant ici, la carte entière EST le raccourci vers le dashboard.
+// Remplacé par btMobileDrawerHeader (fusion carte user + close en tête du drawer).
+// Conservé vide pour rétro-compatibilité avec les pages qui l'appellent encore.
 function btMobileAuthSection() {
-  if (!btAuth.isLogged()) {
-    return (
-      '<div class="space-y-2.5 mb-4 pb-4 border-b border-gray-100">' +
-        '<a href="signup.html" class="block w-full text-center bg-primary text-white font-bold text-sm py-3 rounded-2xl shadow-md shadow-primary/20 active:scale-95 transition-all">S\'inscrire gratuitement</a>' +
-        '<a href="login.html" class="block w-full text-center text-primary font-semibold text-sm py-3 rounded-2xl border border-primary/40 hover:bg-primary/5 transition-all">Se connecter</a>' +
-      '</div>'
-    );
-  }
-
-  var user = btAuth.getUser() || {};
-  var name = _btEscapeHtml(user.full_name || user.name || user.username || "Membre GoEvent");
-  var email = _btEscapeHtml(user.email || user.phone_number || "");
-  var initial = (name.trim().charAt(0) || "?").toUpperCase();
-  var dashUrl = (typeof btDashRoute === "function") ? btDashRoute(user.role) : "user_dashboard.html";
-
-  return (
-    '<div class="mb-4 pb-4 border-b border-gray-100">' +
-      // Carte utilisateur cliquable (pattern Airbnb) — remplace CTA "Accéder à mon espace"
-      '<a href="' + dashUrl + '" class="flex items-center gap-3 p-3 rounded-2xl hover:bg-gray-50 active:scale-[0.98] transition-all">' +
-        '<div class="w-11 h-11 rounded-full bg-primary text-white flex items-center justify-center font-bold text-base shrink-0">' + initial + '</div>' +
-        '<div class="flex-1 min-w-0">' +
-          '<p class="font-bold text-sm text-gray-900 truncate">' + name + '</p>' +
-          (email ? '<p class="text-[11px] text-gray-500 truncate">' + email + '</p>' : '') +
-        '</div>' +
-        '<span class="material-symbols-outlined text-gray-400 text-lg">chevron_right</span>' +
-      '</a>' +
-    '</div>'
-  );
+  return "";
 }
 
 // ── DRAWER MOBILE : SECTIONS DU BAS (Aide + Support + Inviter) ─

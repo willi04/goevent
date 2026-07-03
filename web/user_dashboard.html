@@ -130,39 +130,26 @@
       <div class="absolute inset-0" onclick="toggleMobileMenu()"></div>
       <div
         id="mobile-drawer"
-        class="absolute right-0 top-0 bottom-0 w-[85%] max-w-sm bg-white shadow-2xl transform translate-x-full transition-transform duration-300 flex flex-col"
+        class="absolute right-0 top-0 bottom-0 w-[50%] max-w-sm min-w-[280px] bg-white shadow-2xl transform translate-x-full transition-transform duration-300 flex flex-col"
       >
-        <div
-          class="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50"
-        >
-          <span
-            class="font-headline font-extrabold text-lg text-gray-900"
-            >Mon Espace</span
-          >
-          <button
-            onclick="toggleMobileMenu()"
-            class="p-2 text-gray-500 hover:text-red-500 rounded-full hover:bg-red-50 transition-colors"
-          >
-            <span class="material-symbols-outlined">close</span>
-          </button>
-        </div>
-
-        <div class="p-6 border-gray-100 flex items-center gap-4">
+        <div class="p-4 border-b border-gray-100 flex items-center gap-3">
           <div
             id="mo-avatar"
-            class="w-12 h-12 rounded-full lush-gradient text-white flex items-center justify-center font-bold text-lg shadow-inner shrink-0"
+            class="w-11 h-11 rounded-full lush-gradient text-white flex items-center justify-center font-bold text-base shadow-inner shrink-0"
           ></div>
           <div class="flex-1 min-w-0">
             <p
               id="mo-name"
-              class="font-extrabold text-base text-gray-900 font-headline tracking-tight truncate dyn-user-name"
+              class="font-bold text-sm text-gray-900 truncate dyn-user-name"
             ></p>
-            <p
-              class="text-[11px] text-gray-500 font-bold uppercase tracking-widest mt-0.5 truncate"
-            >
-              Fan
-            </p>
+            <p class="text-[11px] text-gray-500 truncate">Fan</p>
           </div>
+          <button
+            onclick="toggleMobileMenu()"
+            class="p-2 text-gray-500 hover:text-red-500 rounded-full hover:bg-red-50 transition-colors shrink-0"
+          >
+            <span class="material-symbols-outlined">close</span>
+          </button>
         </div>
 
         <nav class="p-4 flex-1 overflow-y-auto space-y-2">

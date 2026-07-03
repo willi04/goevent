@@ -60,6 +60,15 @@ MIGRATIONS = [
         "CREATE INDEX IF NOT EXISTS ix_payout_requests_payment_ref "
         "ON payout_requests (payment_ref)",
     ),
+    (
+        "payout_requests.processed_at",
+        "ALTER TABLE payout_requests ADD COLUMN IF NOT EXISTS processed_at TIMESTAMP",
+    ),
+    (
+        "payout_requests.processed_at (index)",
+        "CREATE INDEX IF NOT EXISTS ix_payout_requests_processed_at "
+        "ON payout_requests (processed_at)",
+    ),
 ]
 
 

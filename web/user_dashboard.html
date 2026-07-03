@@ -96,20 +96,20 @@
     <script src="auth-guard.js"></script>
   </head>
   <body
-    class="bg-gray-50 font-body text-on-surface antialiased pt-[72px] flex flex-col min-h-screen overflow-x-hidden"
+    class="bg-gray-50 font-body text-on-surface antialiased pt-14 md:pt-20 flex flex-col min-h-screen overflow-x-hidden"
   >
     <div id="navbar" class="hidden md:block"></div>
 
     <div
-      class="md:hidden fixed top-0 left-0 right-0 h-[72px] bg-white/95 backdrop-blur border-b border-gray-100 z-40 flex items-center justify-between px-5 shadow-sm"
+      class="md:hidden fixed top-0 left-0 right-0 h-14 bg-white/95 backdrop-blur border-b border-gray-100 z-40 flex items-center justify-between px-4 shadow-sm"
     >
       <a href="index.html" class="flex items-center gap-2 transition-opacity"
         ><img
           src="icons/event.png"
           alt="Logo"
-          class="w-10 h-10 rounded-3xl shadow-sm"
+          class="w-8 h-8 rounded-2xl shadow-sm"
         /><span
-          class="text-2xl font-bold tracking-tight bg-gradient-to-r from-emerald-900 to-emerald-700 bg-clip-text text-transparent font-headline"
+          class="text-xl font-bold tracking-tight bg-gradient-to-r from-emerald-900 to-emerald-700 bg-clip-text text-transparent font-headline"
           >GoEvent</span
         ></a
       >
@@ -166,79 +166,43 @@
         </div>
 
         <nav class="p-4 flex-1 overflow-y-auto space-y-2">
-          <a
-            href="#"
-            id="mo-link-dash-drawer"
-            onclick="
-              showSection('dash');
-              toggleMobileMenu();
-            "
-            class="mo-link-drawer active flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all"
+          <!-- CTA action primaire fan : découvrir de nouveaux événements -->
+          
+            href="index.html"
+            class="w-full flex items-center justify-center gap-2 p-4 rounded-2xl bg-primary text-white font-bold text-[15px] shadow-lg active:scale-95 transition-transform mb-2"
           >
+            <span class="material-symbols-outlined">explore</span>
+            Découvrir des événements
+          </a>
+        
+          <!-- ── Bloc Mes accès ── -->
+          <p class="text-[11px] font-bold uppercase tracking-widest text-gray-400 px-2 pt-3 pb-1">Mes accès</p>
+          <a href="#" id="mo-link-dash-drawer" onclick="showSection('dash'); toggleMobileMenu();" class="mo-link-drawer active flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all">
             <span class="material-symbols-outlined opacity-70">dashboard</span>
             Tableau de bord
           </a>
-          <a
-            href="#"
-            id="mo-link-tickets-drawer"
-            onclick="
-              showSection('tickets');
-              chargerMesBillets();
-              toggleMobileMenu();
-            "
-            class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all"
-          >
-            <span class="material-symbols-outlined opacity-70"
-              >confirmation_number</span
-            >
+          <a href="#" id="mo-link-tickets-drawer" onclick="showSection('tickets'); chargerMesBillets(); toggleMobileMenu();" class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all">
+            <span class="material-symbols-outlined opacity-70">confirmation_number</span>
             Mes Billets
           </a>
-          <a
-            href="#"
-            id="mo-link-favorites-drawer"
-            onclick="
-              btShowFavorites();
-              toggleMobileMenu();
-            "
-            class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all"
-          >
+          <a href="#" id="mo-link-favorites-drawer" onclick="btShowFavorites(); toggleMobileMenu();" class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all">
             <span class="material-symbols-outlined opacity-70">favorite</span>
             Favoris
           </a>
-          <a
-            href="#"
-            id="mo-link-payment-drawer"
-            onclick="
-              showSection('payment');
-              toggleMobileMenu();
-            "
-            class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all"
-          >
+          <a href="#" id="mo-link-payment-drawer" onclick="showSection('payment'); toggleMobileMenu();" class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all">
             <span class="material-symbols-outlined opacity-70">payments</span>
             Paiements
           </a>
-          <a
-            href="#"
-            id="mo-link-settings-drawer"
-            onclick="
-              showSection('settings');
-              toggleMobileMenu();
-            "
-            class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all"
-          >
+        
+          <!-- ── Bloc Configuration ── -->
+          <p class="text-[11px] font-bold uppercase tracking-widest text-gray-400 px-2 pt-4 pb-1 border-t border-gray-100 mt-3">Configuration</p>
+          <a href="#" id="mo-link-settings-drawer" onclick="showSection('settings'); toggleMobileMenu();" class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all">
             <span class="material-symbols-outlined opacity-70">settings</span>
             Paramètres
           </a>
-          <a
-            href="#"
-            onclick="
-              btShowFeedback();
-              toggleMobileMenu();
-            "
-            class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all"
-          >
-            <span class="material-symbols-outlined opacity-70">star</span> Noter
-            l'app
+          <a href="#" onclick="btShowFeedback(); toggleMobileMenu();" class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all">
+            <span class="material-symbols-outlined opacity-70">star</span>
+            Noter l'app
           </a>
         </nav>
 

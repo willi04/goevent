@@ -26,3 +26,4 @@ class PayoutRequest(Base):
     status       = Column(String, default="en_attente")
     created_at   = Column(DateTime, default=datetime.utcnow)
     payment_ref  = Column(String, nullable=True, index=True)
+    processed_at = Column(DateTime, nullable=True, index=True)

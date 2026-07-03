@@ -133,34 +133,29 @@
         id="mobile-drawer"
         class="absolute right-0 top-0 bottom-0 w-[50%] max-w-sm min-w-[280px] bg-white shadow-2xl transform translate-x-full transition-transform duration-[400ms] ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col"
       >
-        <div
-          class="p-5 border-b border-gray-100 flex justify-end items-center"
-        >
-          <button
-            onclick="toggleMobileMenu()"
-            class="p-2 text-gray-500 hover:text-red-500 rounded-full hover:bg-red-50 transition-colors"
-          >
-            <span class="material-symbols-outlined">close</span>
-          </button>
-        </div>
-
-        <div class="p-6 border-b border-gray-100 flex items-center gap-4">
+       <div class="p-4 border-b border-gray-100 flex items-center gap-3">
           <div
             id="mo-avatar"
-            class="w-12 h-12 rounded-full lush-gradient text-white flex items-center justify-center font-bold text-lg shadow-inner shrink-0"
+            class="w-11 h-11 rounded-full lush-gradient text-white flex items-center justify-center font-bold text-base shadow-inner shrink-0"
           ></div>
           <div class="flex-1 min-w-0">
             <p
               id="mo-name"
-              class="font-extrabold text-base text-gray-900 font-headline tracking-tight truncate dyn-user-name"
+              class="font-bold text-sm text-gray-900 truncate dyn-user-name"
             ></p>
             <p
               id="mo-org"
-              class="text-[11px] text-gray-500 font-bold uppercase tracking-widest mt-0.5 truncate dyn-org-name"
+              class="text-[11px] text-gray-500 truncate dyn-org-name"
             >
               Organisation
             </p>
           </div>
+          <button
+            onclick="toggleMobileMenu()"
+            class="p-2 text-gray-500 hover:text-red-500 rounded-full hover:bg-red-50 transition-colors shrink-0"
+          >
+            <span class="material-symbols-outlined">close</span>
+          </button>
         </div>
 
         <nav class="p-4 flex-1 overflow-y-auto space-y-2">
@@ -222,19 +217,6 @@
 
         <!-- Sections drawer (Aide + Support WhatsApp + Inviter un ami) -->
         <div id="mobile-drawer-sections" class="px-4 pt-4 border-t border-gray-100"></div>
-
-        <!-- Bouton déconnexion -->
-        <div class="p-4 pt-3 border-t border-gray-100">
-          <button
-            onclick="logout()"
-            class="w-full flex items-center justify-center gap-2 p-3.5 rounded-2xl bg-red-50 text-red-600 font-bold text-sm hover:bg-red-100 transition-colors"
-          >
-            <span class="material-symbols-outlined" style="font-size: 18px"
-              >logout</span
-            >
-            Se déconnecter
-          </button>
-        </div>
       </div>
     </div>
 

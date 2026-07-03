@@ -156,13 +156,17 @@ async def reconcile_pending_payments(db: Session) -> dict:
     # manuel uniquement pour cette population résiduelle.
     from models.payment import PayoutRequest
     summary["payouts_processed"] = 0
+    # Filtre temporel sur processed_at (date validation admin) et NON created_at
+    # (date demande orga). Cf commentaire migrations.py : sinon un retrait
+    # validé >24h après création n'est jamais rattrapé.
     pending_payouts = (
         db.query(PayoutRequest)
         .filter(
             PayoutRequest.status == "en_cours",
             PayoutRequest.payment_ref.isnot(None),
-            PayoutRequest.created_at <= floor_recent,
-            PayoutRequest.created_at >= floor_old,
+            PayoutRequest.processed_at.isnot(None),
+            PayoutRequest.processed_at <= floor_recent,
+            PayoutRequest.processed_at >= floor_old,
         )
         .limit(100)
         .all()

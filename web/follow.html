@@ -443,10 +443,6 @@
             btToast(error.message || "Erreur", "error");
         }
       }
-
-      // 7. Lancement automatique au démarrage
-      document.addEventListener("DOMContentLoaded", () => {
-        if (typeof renderMobileAuth === "function") renderMobileAuth();
         loadOrganizers();
 
         // BONUS : Permettre de chercher en appuyant sur la touche "Entrée"

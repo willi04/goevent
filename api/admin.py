@@ -223,6 +223,7 @@ async def validate_payout(payout_id: int, db: Session = Depends(get_db),
     withdrawal_id = f"WD{payout.id}-{uuid.uuid4().hex[:10].upper()}"
     payout.status = "en_cours"
     payout.payment_ref = withdrawal_id
+    payout.processed_at = datetime.utcnow()
     db.commit()
 
     orga = db.query(User).filter(User.id == payout.organizer_id).first()

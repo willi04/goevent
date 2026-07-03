@@ -444,7 +444,6 @@ function btNavbar(activePage) {
 }
 
 // ── FOOTER — Design Stitch ────────────────────────────────────
-// ── FOOTER — Design Stitch ────────────────────────────────────
 function btFooter() {
   return (
     '<footer class="bg-neutral-100 mt-12">' +
@@ -517,7 +516,6 @@ function btFooter() {
   );
 }
 
-// ── Carte événement (style Stitch exact) ──────────────────────
 // ── Carte événement (style Stitch exact) ──────────────────────
 function btEventCard(e) {
   var pct = e.total_seats > 0 ? Math.round((1 - e.seats_available / e.total_seats) * 100) : 0;
@@ -640,6 +638,45 @@ function btMobileBottomNav(activePage) {
     '<nav class="md:hidden fixed bottom-0 left-0 right-0 z-[90] bg-white/95 backdrop-blur border-t border-gray-100 flex items-stretch h-[60px]" style="padding-bottom:env(safe-area-inset-bottom)">' +
     tabsHtml +
     "</nav>"
+  );
+}
+// ── DRAWER MOBILE : HEADER (carte user connecté ou mini logo guest) ──
+// Remplace l'ancien titre "Menu" (redondant : cliquer sur hamburger implique menu).
+// Optimisation : récupère 60-80px verticaux pour la nav.
+function btMobileDrawerHeader() {
+  var closeBtn =
+    '<button onclick="toggleMobileMenu()" class="p-2 text-gray-500 hover:text-red-500 rounded-full hover:bg-red-50 transition-colors shrink-0">' +
+      '<span class="material-symbols-outlined">close</span>' +
+    '</button>';
+
+  if (!btAuth.isLogged()) {
+    // Guest : mini logo GoEvent + tagline court
+    return (
+      '<img src="icons/event.png" alt="GoEvent" class="w-9 h-9 rounded-xl shadow-sm shrink-0" />' +
+      '<div class="flex-1 min-w-0">' +
+        '<p class="font-black text-sm bg-gradient-to-r from-emerald-900 to-emerald-700 bg-clip-text text-transparent font-headline">GoEvent</p>' +
+        '<p class="text-[11px] text-gray-500 truncate">Billetterie mobile RCA</p>' +
+      '</div>' +
+      closeBtn
+    );
+  }
+
+  // Connecté : carte cliquable → dashboard
+  var user = btAuth.getUser() || {};
+  var name = _btEscapeHtml(user.full_name || user.name || "Membre GoEvent");
+  var email = _btEscapeHtml(user.email || user.phone_number || "");
+  var initial = (name.trim().charAt(0) || "?").toUpperCase();
+  var dashUrl = (typeof btDashRoute === "function") ? btDashRoute(user.role) : "user_dashboard.html";
+
+  return (
+    '<a href="' + dashUrl + '" class="flex items-center gap-3 flex-1 min-w-0 rounded-xl -m-1 p-1 hover:bg-gray-50 active:scale-[0.98] transition-all">' +
+      '<div class="w-11 h-11 rounded-full bg-primary text-white flex items-center justify-center font-bold text-base shrink-0">' + initial + '</div>' +
+      '<div class="flex-1 min-w-0">' +
+        '<p class="font-bold text-sm text-gray-900 truncate">' + name + '</p>' +
+        (email ? '<p class="text-[11px] text-gray-500 truncate">' + email + '</p>' : '') +
+      '</div>' +
+    '</a>' +
+    closeBtn
   );
 }
 // ── Modal générique ───────────────────────────────────────────

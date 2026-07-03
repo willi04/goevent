@@ -654,53 +654,77 @@ function btModal(contentHtml) {
   return ov;
 }
 
-// ── DRAWER AUTH MOBILE — Centralisé pour cohérence visuelle ───
-// Retourne le HTML à injecter dans le drawer (selon état auth)
+// ── DRAWER MOBILE : SECTION AUTH (à placer en TÊTE du drawer, pas en bas) ──
+// Pattern Airbnb : carte compacte cliquable si connecté, CTAs auth sinon.
+// Anti-doublon : "Mon Espace" est déjà dans la bottom nav → pas de CTA
+// redondant ici, la carte entière EST le raccourci vers le dashboard.
 function btMobileAuthSection() {
   if (!btAuth.isLogged()) {
     return (
-      '<a href="login.html" class="block w-full text-center text-primary font-bold py-3.5 rounded-xl border-2 border-primary hover:bg-primary/5 transition-all">Se connecter</a>' +
-      '<a href="signup.html" class="block w-full text-center bg-primary text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 active:scale-95 transition-all">S\'inscrire</a>'
+      '<div class="space-y-2.5 mb-4 pb-4 border-b border-gray-100">' +
+        '<a href="signup.html" class="block w-full text-center bg-primary text-white font-bold text-sm py-3 rounded-2xl shadow-md shadow-primary/20 active:scale-95 transition-all">S\'inscrire gratuitement</a>' +
+        '<a href="login.html" class="block w-full text-center text-primary font-semibold text-sm py-3 rounded-2xl border border-primary/40 hover:bg-primary/5 transition-all">Se connecter</a>' +
+      '</div>'
     );
   }
 
-  // Connecté : "Mon espace" déjà dans bottom nav → on garde uniquement Déconnexion (P0 anti-redondance)
+  var user = btAuth.getUser() || {};
+  var name = _btEscapeHtml(user.full_name || user.name || user.username || "Membre GoEvent");
+  var email = _btEscapeHtml(user.email || user.phone_number || "");
+  var initial = (name.trim().charAt(0) || "?").toUpperCase();
+  var dashUrl = (typeof btDashRoute === "function") ? btDashRoute(user.role) : "user_dashboard.html";
+
   return (
-    '<button onclick="btAuth.logout()" class="flex items-center justify-center gap-2 w-full py-4 rounded-2xl text-red-600 bg-red-50 font-bold active:scale-95 transition-all hover:bg-red-100">' +
-    '<span class="material-symbols-outlined text-sm">power_settings_new</span>' +
-    'Déconnexion' +
-    '</button>'
+    '<div class="mb-4 pb-4 border-b border-gray-100">' +
+      // Carte utilisateur cliquable (pattern Airbnb) — remplace CTA "Accéder à mon espace"
+      '<a href="' + dashUrl + '" class="flex items-center gap-3 p-3 rounded-2xl hover:bg-gray-50 active:scale-[0.98] transition-all">' +
+        '<div class="w-11 h-11 rounded-full bg-primary text-white flex items-center justify-center font-bold text-base shrink-0">' + initial + '</div>' +
+        '<div class="flex-1 min-w-0">' +
+          '<p class="font-bold text-sm text-gray-900 truncate">' + name + '</p>' +
+          (email ? '<p class="text-[11px] text-gray-500 truncate">' + email + '</p>' : '') +
+        '</div>' +
+        '<span class="material-symbols-outlined text-gray-400 text-lg">chevron_right</span>' +
+      '</a>' +
+    '</div>'
   );
 }
+
 // ── DRAWER MOBILE : SECTIONS DU BAS (Aide + Support + Inviter) ─
-// Renvoie le HTML à injecter SOUS la nav du drawer.
-// Remplace l'ancienne carte "Mon Espace" qui faisait doublon avec la bottom nav.
 function btMobileDrawerSections() {
-  var supportPhone = "23672259398"; // À remplacer par ton numéro WhatsApp réel
+  var supportPhone = "23672259398";
   var inviteText = encodeURIComponent(
     "Salut ! Je viens de découvrir GoEvent, la plateforme de billetterie en RCA. " +
     "Tu peux acheter tes billets en ligne via Orange Money. " +
     "Découvre : https://goevent.africa"
   );
 
+  var logoutBlock = "";
+  if (btAuth.isLogged()) {
+    logoutBlock =
+      '<div class="mt-3 pt-3 border-t border-gray-100">' +
+        '<button onclick="btAuth.logout(); window.location.reload();" class="flex items-center justify-center gap-2 w-full py-3 rounded-2xl text-red-600 bg-red-50 font-bold text-sm active:scale-95 transition-all hover:bg-red-100">' +
+          '<span class="material-symbols-outlined text-base">power_settings_new</span>' +
+          'Déconnexion' +
+        '</button>' +
+      '</div>';
+  }
+
   return (
     '<div class="space-y-1">' +
-    // Aide & FAQ
-    '<a href="centre_aide.html" class="flex items-center gap-3 p-3.5 rounded-2xl text-gray-700 font-semibold hover:bg-primary/5 hover:text-primary transition-all text-sm">' +
-    '<span class="material-symbols-outlined text-base text-gray-500">help</span>' +
-    'Aide & FAQ' +
-    '</a>' +
-    // Support WhatsApp
-    '<a href="https://wa.me/' + supportPhone + '" target="_blank" rel="noopener" class="flex items-center gap-3 p-3.5 rounded-2xl text-gray-700 font-semibold hover:bg-green-50 hover:text-green-700 transition-all text-sm">' +
-    '<span class="material-symbols-outlined text-base text-green-600">chat</span>' +
-    'Support WhatsApp' +
-    '</a>' +
-    // Inviter un ami
-    '<a href="https://wa.me/?text=' + inviteText + '" target="_blank" rel="noopener" class="flex items-center gap-3 p-3.5 rounded-2xl text-gray-700 font-semibold hover:bg-primary/5 hover:text-primary transition-all text-sm">' +
-    '<span class="material-symbols-outlined text-base text-gray-500">person_add</span>' +
-    'Inviter un ami' +
-    '</a>' +
-    '</div>'
+      '<a href="centre_aide.html" class="flex items-center gap-3 p-3 rounded-2xl text-gray-700 font-semibold hover:bg-primary/5 hover:text-primary transition-all text-sm">' +
+        '<span class="material-symbols-outlined text-base text-gray-500">help</span>' +
+        'Aide & FAQ' +
+      '</a>' +
+      '<a href="https://wa.me/' + supportPhone + '" target="_blank" rel="noopener" class="flex items-center gap-3 p-3 rounded-2xl text-gray-700 font-semibold hover:bg-green-50 hover:text-green-700 transition-all text-sm">' +
+        '<span class="material-symbols-outlined text-base text-green-600">chat</span>' +
+        'Support WhatsApp' +
+      '</a>' +
+      '<a href="https://wa.me/?text=' + inviteText + '" target="_blank" rel="noopener" class="flex items-center gap-3 p-3 rounded-2xl text-gray-700 font-semibold hover:bg-primary/5 hover:text-primary transition-all text-sm">' +
+        '<span class="material-symbols-outlined text-base text-gray-500">person_add</span>' +
+        'Inviter un ami' +
+      '</a>' +
+    '</div>' +
+    logoutBlock
   );
 }
 

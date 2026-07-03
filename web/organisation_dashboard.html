@@ -97,7 +97,7 @@
     <script src="auth-guard.js"></script>
   </head>
   <body
-    class="bg-gray-50 font-body text-on-surface antialiased pt-[72px] flex flex-col min-h-screen"
+    class="bg-gray-50 font-body text-on-surface antialiased pt-14 md:pt-20 flex flex-col min-h-screen"
   >
     <div id="navbar" class="hidden md:block"></div>
 
@@ -164,116 +164,57 @@
         </div>
 
         <nav class="p-4 flex-1 overflow-y-auto space-y-2">
-          <a
-            href="#"
-            id="mo-link-dash-drawer"
-            onclick="
-              showSection('dash');
-              toggleMobileMenu();
-            "
-            class="mo-link-drawer active flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all"
+          <!-- CTA action primaire : créer un événement -->
+          <button
+            onclick="showSection('create'); toggleMobileMenu();"
+            class="w-full flex items-center justify-center gap-2 p-4 rounded-2xl bg-primary text-white font-bold text-[15px] shadow-lg active:scale-95 transition-transform mb-2"
           >
+            <span class="material-symbols-outlined">add_circle</span>
+            Créer un événement
+          </button>
+        
+          <!-- ── Bloc Principal ── -->
+          <p class="text-[11px] font-bold uppercase tracking-widest text-gray-400 px-2 pt-3 pb-1">Principal</p>
+          <a href="#" id="mo-link-dash-drawer" onclick="showSection('dash'); toggleMobileMenu();" class="mo-link-drawer active flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all">
             <span class="material-symbols-outlined opacity-70">dashboard</span>
             Vue d'ensemble
           </a>
-          <a
-            href="#"
-            id="mo-link-events-drawer"
-            onclick="
-              showSection('events');
-              toggleMobileMenu();
-            "
-            class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all"
-          >
+          <a href="#" id="mo-link-events-drawer" onclick="showSection('events'); toggleMobileMenu();" class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all">
             <span class="material-symbols-outlined opacity-70">stadium</span>
             Mes événements
           </a>
-          <a
-            href="#"
-            id="mo-link-create-drawer"
-            onclick="
-              showSection('create');
-              toggleMobileMenu();
-            "
-            class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all"
-          >
-            <span class="material-symbols-outlined opacity-70">add_circle</span>
-            Créer un événement
-          </a>
-          <a href="#" id="mo-link-finance-drawer" onclick="showSection('finance'); toggleMobileMenu();" class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all">
-            <span class="material-symbols-outlined opacity-70">account_balance_wallet</span>
-            Finances & Retraits
-          </a>
-          <a
-            href="#"
-            id="mo-link-followers-drawer"
-            onclick="
-              showSection('followers');
-              toggleMobileMenu();
-            "
-            class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all"
-          >
-            <span class="material-symbols-outlined opacity-70">groups</span>
-            Abonnés
-          </a>
-          <a
-            href="#"
-            id="mo-link-cash-drawer"
-            onclick="
-              showSection('cash-reservations');
-              toggleMobileMenu();
-            "
-            class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all"
-          >
+          <a href="#" id="mo-link-cash-drawer" onclick="showSection('cash-reservations'); toggleMobileMenu();" class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all">
             <span class="material-symbols-outlined opacity-70">payments</span>
             Réservations Cash
             <span id="mo-badge-cash-count" class="hidden ml-auto bg-orange-500 text-white text-xs font-bold rounded-full px-2 py-0.5">0</span>
           </a>
-          <a
-            href="#"
-            id="mo-link-team-drawer"
-            onclick="
-              showSection('team');
-              toggleMobileMenu();
-            "
-            class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all"
-          >
-            <span class="material-symbols-outlined opacity-70">badge</span> Mon
-            Équipe
+        
+          <!-- ── Bloc Business ── -->
+          <p class="text-[11px] font-bold uppercase tracking-widest text-gray-400 px-2 pt-4 pb-1 border-t border-gray-100 mt-3">Business</p>
+          <a href="#" id="mo-link-finance-drawer" onclick="showSection('finance'); toggleMobileMenu();" class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all">
+            <span class="material-symbols-outlined opacity-70">account_balance_wallet</span>
+            Finances & Retraits
           </a>
-          <a
-          href="#"
-            id="mo-link-promotion-drawer"
-            onclick="
-              showSection('promotion');
-              toggleMobileMenu();
-            "
-            class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all"
-          >
+          <a href="#" id="mo-link-promotion-drawer" onclick="showSection('promotion'); toggleMobileMenu();" class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all">
             <span class="material-symbols-outlined opacity-70">rocket_launch</span>
             Promotion
           </a>
-          <a
-            href="#"
-            id="mo-link-audience-drawer"
-            onclick="
-              showSection('audience');
-              toggleMobileMenu();
-            "
-            class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all"
-          >
+          <a href="#" id="mo-link-followers-drawer" onclick="showSection('followers'); toggleMobileMenu();" class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all">
+            <span class="material-symbols-outlined opacity-70">groups</span>
+            Abonnés
+          </a>
+          <a href="#" id="mo-link-audience-drawer" onclick="showSection('audience'); toggleMobileMenu();" class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all">
             <span class="material-symbols-outlined opacity-70">groups_2</span>
             Audience
           </a>
-          <a
-            href="#"
-            id="mo-link-settings-drawer"
-            onclick="
-              showSection('settings');
-              toggleMobileMenu();
-            "
-            class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all"
-          >
+        
+          <!-- ── Bloc Configuration ── -->
+          <p class="text-[11px] font-bold uppercase tracking-widest text-gray-400 px-2 pt-4 pb-1 border-t border-gray-100 mt-3">Configuration</p>
+          <a href="#" id="mo-link-team-drawer" onclick="showSection('team'); toggleMobileMenu();" class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all">
+            <span class="material-symbols-outlined opacity-70">badge</span>
+            Mon Équipe
+          </a>
+          <a href="#" id="mo-link-settings-drawer" onclick="showSection('settings'); toggleMobileMenu();" class="mo-link-drawer flex items-center gap-3.5 p-4 rounded-2xl text-[15px] font-semibold text-gray-600 hover:bg-gray-50 transition-all">
             <span class="material-symbols-outlined opacity-70">settings</span>
             Paramètres
           </a>

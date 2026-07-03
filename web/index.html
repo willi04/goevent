@@ -606,6 +606,10 @@
         var bnEl = document.getElementById("bottom-nav-mobile");
         if (bnEl) bnEl.innerHTML = btMobileBottomNav("accueil"); // ← clé adaptée par page
       }
+      if (typeof btMobileAuthSection === "function") {
+        var authEl = document.getElementById("mobile-auth-section");
+        if (authEl) authEl.innerHTML = btMobileAuthSection();
+      }
       // Sections drawer (Aide + Support WhatsApp + Inviter un ami)
       if (typeof btMobileDrawerSections === "function") {
         var drawerSecEl = document.getElementById("mobile-drawer-sections");

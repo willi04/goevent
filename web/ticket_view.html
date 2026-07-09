@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon Billet — GoEvent</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = { theme: { extend: { colors: { primary: '#00502c' } } } };
+    </script>
+    <script src="bt-api.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
+    <div id="ticket-container" class="max-w-md w-full">
+        <div class="bg-white rounded-3xl shadow-xl p-8 text-center">
+            <p class="text-gray-500 font-medium">Chargement de votre billet...</p>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+        const qrHash = new URLSearchParams(window.location.search).get("qr_hash");
+        const container = document.getElementById("ticket-container");
+
+        if (!qrHash) {
+            container.innerHTML = `
+                <div class="bg-white rounded-3xl shadow-xl p-8 text-center">
+                    <p class="text-red-600 font-bold text-lg">Lien invalide</p>
+                    <p class="text-sm text-gray-500 mt-2">Aucun identifiant de billet fourni.</p>
+                    <a href="index.html" class="inline-block mt-6 text-primary font-bold">← Retour à l'accueil</a>
+                </div>`;
+            return;
+        }
+
+        try {
+            const t = await btApi.get(`/ticket/view?qr_hash=${encodeURIComponent(qrHash)}`);
+            const dateStr = t.event_date
+                ? new Date(t.event_date).toLocaleDateString("fr-FR", {
+                    day: "numeric", month: "long", year: "numeric",
+                    hour: "2-digit", minute: "2-digit"
+                  })
+                : "";
+            const statutBadge = t.is_used
+                ? '<span class="inline-block px-4 py-1.5 rounded-full bg-red-100 text-red-700 text-xs font-bold uppercase tracking-widest">Déjà utilisé</span>'
+                : '<span class="inline-block px-4 py-1.5 rounded-full bg-green-100 text-green-700 text-xs font-bold uppercase tracking-widest">✓ Valide</span>';
+
+            container.innerHTML = `
+                <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
+                    <div class="bg-gradient-to-br from-emerald-900 to-emerald-700 text-white p-6 text-center">
+                        <p class="text-[10px] font-bold uppercase tracking-widest opacity-70">GoEvent</p>
+                        <h1 class="text-2xl font-black mt-2 leading-tight">${_escapeHtml(t.event_title || "Billet")}</h1>
+                        <p class="text-sm mt-2 opacity-90">📍 ${_escapeHtml(t.event_location || "")}</p>
+                        <p class="text-sm mt-1 font-semibold">${dateStr}</p>
+                    </div>
+                    <div class="p-6 text-center">
+                        <div class="mb-4">${statutBadge}</div>
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(t.qr_hash)}"
+                             alt="QR Code" class="mx-auto rounded-2xl border-4 border-gray-50 w-64 h-64" />
+                        <p class="text-[10px] text-gray-400 mt-3 tracking-widest">ID: ${t.qr_hash.substring(0, 8).toUpperCase()}</p>
+                        <div class="mt-6 p-3 bg-yellow-50 border-l-4 border-yellow-500 text-left rounded-r-lg">
+                            <p class="text-xs font-bold text-yellow-900">⚠️ Faites une capture d'écran</p>
+                            <p class="text-[11px] text-yellow-800 mt-1">Gardez ce QR accessible même sans connexion.</p>
+                        </div>
+                        <a href="index.html" class="inline-block mt-6 text-sm text-gray-500 hover:text-primary">← Retour à l'accueil</a>
+                    </div>
+                </div>`;
+        } catch (err) {
+            const isNotFound = err.message && err.message.includes("introuvable");
+            const isPending = err.message && err.message.includes("pas encore validé");
+            const title = isNotFound ? "Billet introuvable"
+                        : isPending ? "Billet en attente"
+                        : "Erreur de chargement";
+            const detail = isNotFound ? "Ce lien est peut-être expiré ou invalide."
+                         : isPending ? "Votre paiement est en cours de validation. Réessayez dans quelques minutes."
+                         : "Impossible de charger le billet.";
+            container.innerHTML = `
+                <div class="bg-white rounded-3xl shadow-xl p-8 text-center">
+                    <p class="text-red-600 font-bold text-lg">${title}</p>
+                    <p class="text-sm text-gray-500 mt-2">${detail}</p>
+                    <a href="index.html" class="inline-block mt-6 text-primary font-bold">← Retour à l'accueil</a>
+                </div>`;
+        }
+    });
+
+    function _escapeHtml(s) {
+        if (!s) return "";
+        return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+    </script>
+</body>
+</html>

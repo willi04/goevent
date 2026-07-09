@@ -8,6 +8,10 @@ from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from fastapi import BackgroundTasks
+from core.email import envoyer_billet_email
+from fastapi import Request
+from core.limiter import limiter
 
 from utils.locks import lock_event_for_booking, lock_event_for_release
 from utils.promo import (
@@ -95,7 +99,9 @@ def my_paid_tickets(db: Session = Depends(get_db), current_user: User = Depends(
 
 # ── RÉSERVATION CASH ────────────────────────────────────────────
 @router.post("/tickets/reserve-cash")
-def reserve_ticket_cash(data: CashReservation, db: Session = Depends(get_db),
+def reserve_ticket_cash(data: CashReservation,
+                        background_tasks: BackgroundTasks,
+                        db: Session = Depends(get_db),
                         current_user: User = Depends(get_current_user)):
     # P0 — Verrou pessimiste + check quota atomique (anti-survente)
     event = lock_event_for_booking(db, data.event_id)
@@ -185,7 +191,19 @@ def reserve_ticket_cash(data: CashReservation, db: Session = Depends(get_db),
 
     log_security_event(db, "cash_reservation", None, current_user.id,
                        f"Réservation cash événement {event.id}, montant {prix_base}")
-
+    # ── Email confirmation billet (BackgroundTasks : ne bloque pas la réponse) ──
+    # Couvre les 3 cas de reserve-cash : gratuit → "paye", cash → "reservation_cash",
+    # confirmation admin future → "paye_cash". Le fan reçoit un email dans les 3 cas.
+    if current_user.email:
+        background_tasks.add_task(
+            envoyer_billet_email,
+            email_client=current_user.email,
+            nom_client=current_user.full_name or "Client",
+            ticket=new_ticket,
+            event=event,
+            amount=int(prix_base),
+        )
+        
     return {
         "success": True,
         "message": "Réservation confirmée. À payer en cash à l'entrée.",
@@ -453,4 +471,33 @@ def scan_stats(event_id: int, db: Session = Depends(get_db),
         "personnes_entrees": total_entered,
         "personnes_restantes": total_remaining,
         "taux_entree": f"{taux:.1f}%",
+    }
+
+# ── ROUTE PUBLIQUE : consultation billet sans authentification ──
+# Lien de secours pour fan qui a perdu accès à son compte (perte téléphone,
+# oubli PIN, achat pour un tiers). qr_hash est un UUID v4 128 bits, non-devinable
+# en pratique — rate limit 30/min pour éviter énumération brute-force résiduelle.
+@router.get("/ticket/view")
+@limiter.limit("30/minute")
+def view_ticket_public(request: Request, qr_hash: str, db: Session = Depends(get_db)):
+    """
+    Retourne les infos d'un billet à partir de son qr_hash, sans auth.
+    Utilisée par ticket_view.html (lien magique dans l'email confirmation).
+    """
+    ticket = db.query(Ticket).filter(Ticket.qr_hash == qr_hash).first()
+    if not ticket:
+        raise HTTPException(404, "Billet introuvable")
+
+    if ticket.payment_status not in ("paye", "paye_cash"):
+        raise HTTPException(409, "Ce billet n'est pas encore validé")
+
+    event = db.query(Event).filter(Event.id == ticket.event_id).first()
+
+    return {
+        "qr_hash": ticket.qr_hash,
+        "event_title": event.title if event else None,
+        "event_date": event.event_date.isoformat() if event and event.event_date else None,
+        "event_location": event.location if event else None,
+        "is_used": ticket.is_used,
+        "used_at": ticket.used_at.isoformat() if ticket.used_at else None,
     }

@@ -14,6 +14,7 @@ from datetime import datetime
 from core.database import get_db
 from core.security import get_current_user, log_security_event
 from core.ngser import create_withdrawal_session
+from core.limiter import limiter
 from models.event import Event
 from models.ticket import Ticket
 from models.user import User, SecurityLog
@@ -109,7 +110,8 @@ def admin_list_users(db: Session = Depends(get_db),
 
 
 @router.put("/admin/users/{user_id}")
-def admin_update_user(user_id: int, data: dict, db: Session = Depends(get_db),
+@limiter.limit("30/minute")
+def admin_update_user(request: Request, user_id: int, data: dict, db: Session = Depends(get_db),
                       current_user: User = Depends(get_current_admin)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -136,7 +138,8 @@ def admin_list_events(db: Session = Depends(get_db),
 
 
 @router.put("/admin/events/{event_id}")
-def admin_update_event(event_id: int, data: dict, db: Session = Depends(get_db),
+@limiter.limit("30/minute")
+def admin_update_event(request: Request, event_id: int, data: dict, db: Session = Depends(get_db),
                        current_user: User = Depends(get_current_admin)):
     event = db.query(Event).filter(Event.id == event_id).first()
     if not event:
@@ -158,7 +161,8 @@ def admin_list_partners(db: Session = Depends(get_db),
     } for p in partners]
 
 @router.put("/admin/partners/{partner_id}")
-def admin_update_partner(partner_id: int, data: dict, db: Session = Depends(get_db),
+@limiter.limit("30/minute")
+def admin_update_partner(request: Request, partner_id: int, data: dict, db: Session = Depends(get_db),
                          current_user: User = Depends(require_staff_function("commercial"))):
     partner = db.query(PartnerRequest).filter(PartnerRequest.id == partner_id).first()
     if not partner:
@@ -196,7 +200,8 @@ async def get_all_payouts(db: Session = Depends(get_db),
     return result
 
 @router.post("/admin/payouts/{payout_id}/validate")
-async def validate_payout(payout_id: int, db: Session = Depends(get_db),
+@limiter.limit("10/minute")
+async def validate_payout(request: Request, payout_id: int, db: Session = Depends(get_db),
                           current_user: User = Depends(get_current_admin)):
     # 🔒 SORTIE D'ARGENT : RÉSERVÉ ADMIN STRICT.
     # Même un commercial ne valide PAS les payouts. Politique : un seul humain
@@ -286,6 +291,7 @@ def get_admin_cancellations(db: Session = Depends(get_db), current_user: User = 
 
 
 @router.post("/admin/cancellations/{request_id}/approve")
+@limiter.limit("20/minute")
 def approve_cancellation(request_id: int, request: Request, db: Session = Depends(get_db),
                          current_user: User = Depends(get_current_admin)):
     """
@@ -509,7 +515,9 @@ def list_refunds(
 
 
 @router.post("/admin/refunds/{refund_id}/mark-paid")
+@limiter.limit("20/minute")
 def mark_refund_paid(
+    request: Request,
     refund_id: int,
     data: dict,
     request: Request,

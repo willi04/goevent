@@ -103,9 +103,73 @@
       }
     </style>
   </head>
-  <body>
-    <div id="navbar"></div>
+  <body class="pt-14 md:pt-0 pb-24 md:pb-0">
+    <div id="navbar" class="hidden md:block shrink-0 z-40"></div>
+    <!-- ============ HEADER MOBILE + DRAWER (composants centralisés bt-api.js) ============ -->
+    <header
+      class="md:hidden fixed top-0 left-0 right-0 h-14 bg-white/95 backdrop-blur border-b border-gray-100 z-40 flex items-center justify-between px-4 shadow-sm"
+    >
+      <a href="index.html" class="flex items-center gap-2 transition-opacity"
+        ><img
+          src="icons/event.png"
+          alt="Logo"
+          class="w-8 h-8 rounded-2xl shadow-sm"
+        /><span
+          class="text-xl font-bold tracking-tight bg-gradient-to-r from-emerald-900 to-emerald-700 bg-clip-text text-transparent font-headline"
+          >GoEvent</span
+        ></a
+      >
+      <button
+        onclick="toggleMobileMenu()"
+        class="p-2 text-gray-500 hover:text-primary rounded-full hover:bg-gray-50 transition-colors"
+      >
+        <span class="material-symbols-outlined" style="font-size: 32px">menu</span>
+      </button>
+    </header>
 
+    <!-- Drawer mobile -->
+    <div id="mobile-menu" class="md:hidden fixed inset-0 z-50 hidden opacity-0 transition-opacity duration-300">
+      <div class="absolute inset-0" onclick="toggleMobileMenu()"></div>
+      <div
+        id="mobile-drawer"
+        class="absolute right-0 top-0 bottom-0 w-[50%] max-w-sm min-w-[280px] bg-white shadow-2xl transform translate-x-full transition-transform duration-[400ms] ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col p-5"
+      >
+        <!-- Header drawer : carte user (connecté) OU mini logo GoEvent (guest) -->
+        <div id="mobile-drawer-header" class="p-4 border-b border-gray-100 flex items-center gap-3">
+          <!-- Peuplé par btMobileDrawerHeader() dans DOMContentLoaded -->
+        </div>
+        <!-- CTAs auth guest : injectés uniquement si non connecté -->
+        <div id="mobile-drawer-auth-cta" class="px-4 pt-4"></div>
+
+        <nav class="space-y-1 flex-1 overflow-y-auto mt-2">
+          <a href="index.html" class="flex items-center gap-3 p-3 rounded-2xl text-gray-700 font-semibold hover:bg-primary/5 hover:text-primary transition-all text-sm">
+            <span class="material-symbols-outlined text-base text-gray-500">home</span>
+            Accueil
+          </a>
+          <a href="event.html" class="flex items-center gap-3 p-3 rounded-2xl text-gray-700 font-semibold hover:bg-primary/5 hover:text-primary transition-all text-sm">
+            <span class="material-symbols-outlined text-base text-gray-500">event</span>
+            Événements
+          </a>
+          <a href="follow.html" class="flex items-center gap-3 p-3 rounded-2xl text-gray-700 font-semibold hover:bg-primary/5 hover:text-primary transition-all text-sm">
+            <span class="material-symbols-outlined text-base text-gray-500">favorite</span>
+            Follow
+          </a>
+          <a href="partenaire.html" class="flex items-center gap-3 p-3 rounded-2xl text-gray-700 font-semibold hover:bg-primary/5 hover:text-primary transition-all text-sm">
+            <span class="material-symbols-outlined text-base text-gray-500">handshake</span>
+            Partenaires
+          </a>
+          <a href="a_propos.html" class="flex items-center gap-3 p-3 rounded-2xl text-gray-700 font-semibold hover:bg-primary/5 hover:text-primary transition-all text-sm">
+            <span class="material-symbols-outlined text-base text-gray-500">info</span>
+            À propos
+          </a>
+        </nav>
+
+        <div id="mobile-drawer-sections" class="mt-4 pt-4 border-t border-gray-100"></div>
+      </div>
+    </div>
+
+    <!-- Bottom nav mobile (composant centralisé bt-api.js) -->
+    <div id="bottom-nav-mobile"></div>
     <main class="pt-28 pb-16 px-4 md:px-8 max-w-4xl mx-auto">
       <!-- Hero -->
       <div class="text-center mb-12">
@@ -392,8 +456,50 @@
 
     <script src="bt-api.js"></script>
     <script>
-      document.getElementById("navbar").innerHTML = btNavbar("");
-      document.getElementById("footer").innerHTML = btFooter();
+      // Composants desktop
+      if (document.getElementById("navbar")) {
+        document.getElementById("navbar").innerHTML = btNavbar("");
+      }
+      if (document.getElementById("footer")) {
+        document.getElementById("footer").innerHTML = btFooter();
+      }
+
+      // Composants mobiles centralisés (bt-api.js)
+      if (typeof btMobileDrawerHeader === "function") {
+        var hdrEl = document.getElementById("mobile-drawer-header");
+        if (hdrEl) hdrEl.innerHTML = btMobileDrawerHeader();
+      }
+      if (typeof btMobileAuthSection === "function") {
+        var ctaEl = document.getElementById("mobile-drawer-auth-cta");
+        if (ctaEl) ctaEl.innerHTML = btMobileAuthSection();
+      }
+      if (typeof btMobileDrawerSections === "function") {
+        var drawerSecEl = document.getElementById("mobile-drawer-sections");
+        if (drawerSecEl) drawerSecEl.innerHTML = btMobileDrawerSections();
+      }
+      if (typeof btMobileBottomNav === "function") {
+        var bnEl = document.getElementById("bottom-nav-mobile");
+        if (bnEl) bnEl.innerHTML = btMobileBottomNav("");
+      }
+
+      // Toggle drawer mobile
+      function toggleMobileMenu() {
+        const menu = document.getElementById("mobile-menu");
+        const drawer = document.getElementById("mobile-drawer");
+        if (menu.classList.contains("hidden")) {
+          menu.classList.remove("hidden");
+          setTimeout(() => {
+            menu.classList.remove("opacity-0");
+            drawer.classList.remove("translate-x-full");
+          }, 10);
+        } else {
+          menu.classList.add("opacity-0");
+          drawer.classList.add("translate-x-full");
+          setTimeout(() => {
+            menu.classList.add("hidden");
+          }, 300);
+        }
+      }
     </script>
   </body>
 </html>

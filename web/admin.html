@@ -1614,7 +1614,7 @@
               (e) => `
           <tr>
             <td>
-              <p class="font-bold text-gray-900 max-w-[180px] truncate">${e.title}</p>
+              <p class="font-bold text-gray-900 max-w-[180px] truncate">${_btEscapeHtml(e.title)}</p>
               <p class="text-[11px] text-gray-400">${e.category}</p>
             </td>
             <td><span class="text-xs">${e.organizer || "—"}</span></td>
@@ -2438,7 +2438,7 @@
           try {
               const list = await btApi.get("/admin/ads/contracts");
               const sel = document.getElementById("sl-contract");
-              sel.innerHTML = '<option value="">Sélectionner un contrat...</option>' + list.map(c => `<option value="${c.id}">${c.sponsor_name} — ${(c.amount_fcfa||0).toLocaleString("fr-FR")} F</option>`).join("");
+              sel.innerHTML = '<option value="">Sélectionner un contrat...</option>' + list.map(c => `<option value="${c.id}">${_btEscapeHtml(c.sponsor_name)} — ${(c.amount_fcfa||0).toLocaleString("fr-FR")} F</option>`).join("");
               return list;
           } catch (e) { return []; }
       }

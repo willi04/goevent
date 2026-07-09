@@ -443,16 +443,15 @@
             btToast(error.message || "Erreur", "error");
         }
       }
-        loadOrganizers();
+      loadOrganizers();
 
-        // BONUS : Permettre de chercher en appuyant sur la touche "Entrée"
-        const searchInput = document.getElementById("artist-search");
-        if (searchInput) {
-          searchInput.addEventListener("keypress", (e) => {
-            if (e.key === "Enter") applyFilters();
-          });
-        }
-      });
+      // BONUS : Permettre de chercher en appuyant sur la touche "Entrée"
+      const searchInput = document.getElementById("artist-search");
+      if (searchInput) {
+        searchInput.addEventListener("keypress", (e) => {
+          if (e.key === "Enter") applyFilters();
+        });
+      }
     </script>
   </body>
 </html>

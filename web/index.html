@@ -953,7 +953,7 @@
                     ${freeBadge}
                 </div>
                 <div class="px-2 flex flex-col flex-grow">
-                    <h3 class="font-headline font-extrabold text-gray-900 text-lg line-clamp-2 mb-2 leading-tight group-hover:text-primary transition-colors">${event.title}</h3>
+                    <h3 class="font-headline font-extrabold text-gray-900 text-lg line-clamp-2 mb-2 leading-tight group-hover:text-primary transition-colors">${_btEscapeHtml(event.title)}</h3>
                     <p class="text-xs text-gray-500 flex items-center gap-1.5 mb-4 font-medium mt-auto">
                         <span class="material-symbols-outlined text-[15px]">calendar_today</span> ${dateStr}
                     </p>
@@ -1005,7 +1005,7 @@
                     ${freeBadgeNetflix}
                     
                     <div class="absolute bottom-4 left-4 right-4">
-                        <h3 class="text-white font-extrabold text-base md:text-lg line-clamp-1 leading-tight">${event.title}</h3>
+                        <h3 class="text-white font-extrabold text-base md:text-lg line-clamp-1 leading-tight">${_btEscapeHtml(event.title)}</h3>
                         <p class="text-primary-fixed font-bold text-[10px] uppercase mt-1">
                             ${vraieCategorie} • ${dateStr}
                         </p>

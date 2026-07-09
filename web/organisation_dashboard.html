@@ -2170,7 +2170,7 @@
                 .map(e => `
                       <div class="bg-gray-50/50 rounded-2xl p-3 sm:p-4 flex items-center justify-between border border-gray-100 hover:border-gray-200 transition-colors">
                           <div class="min-w-0 pr-2 sm:pr-4">
-                              <p class="font-bold text-[13px] sm:text-[15px] text-gray-900 truncate">${e.title}</p>
+                              <p class="font-bold text-[13px] sm:text-[15px] text-gray-900 truncate">${_btEscapeHtml(e.title)}</p>
                               <p class="text-[11px] sm:text-[13px] font-medium text-gray-500 mt-0.5 truncate">${new Date(e.event_date).toLocaleDateString("fr-FR", { weekday: "short", year: "numeric", month: "short", day: "numeric" })}</p>
                           </div>
                           <div class="flex-shrink-0 bg-white px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl border border-gray-100 shadow-sm text-right">
@@ -2208,9 +2208,9 @@
                       </div>
                       <div class="p-5 md:p-6 flex-1 flex flex-col justify-between">
                           <div>
-                              <h3 class="font-extrabold font-headline text-base md:text-lg text-gray-900 line-clamp-1 group-hover:text-primary transition-colors duration-300">${e.title}</h3>
+                              <h3 class="font-extrabold font-headline text-base md:text-lg text-gray-900 line-clamp-1 group-hover:text-primary transition-colors duration-300">${_btEscapeHtml(e.title)}</h3>
                               <p class="text-[12px] md:text-[13px] font-medium text-gray-500 flex items-center gap-1.5 mt-2 mb-4">
-                                  <span class="material-symbols-outlined text-primary text-[16px]">location_on</span> ${e.location}
+                                  <span class="material-symbols-outlined text-primary text-[16px]">location_on</span> ${_btEscapeHtml(e.location)}
                               </p>
                           </div>
                           <div class="pt-4 border-t border-gray-100 flex justify-between items-center mb-4">
@@ -2223,7 +2223,7 @@
                                   <p class="font-black text-lg md:text-xl text-green-700">${(e.cagnotte || 0).toLocaleString("fr-FR")} F</p>
                               </div>
                           </div>
-                          <button onclick="ouvrirGestionEvenement(${e.id || 0}, '${e.title.replace(/'/g, "\\'")}', ${e.cagnotte || 0})" class="w-full bg-gray-50 text-gray-700 group-hover:bg-primary group-hover:text-white px-4 py-3 rounded-xl font-bold text-[13px] transition-all duration-300 active:scale-95">
+                          <button data-event-id="${e.id || 0}" data-event-title="${_btEscapeHtml(e.title)}" data-event-cagnotte="${e.cagnotte || 0}" onclick="ouvrirGestionEvenement(this.dataset.eventId, this.dataset.eventTitle, this.dataset.eventCagnotte)" class="w-full bg-gray-50 text-gray-700 group-hover:bg-primary group-hover:text-white px-4 py-3 rounded-xl font-bold text-[13px] transition-all duration-300 active:scale-95">
                               Gérer l'événement
                           </button>
                       </div>
@@ -2424,7 +2424,7 @@
             select.innerHTML =
               '<option value="">Sélectionnez un événement...</option>' +
               stats.events
-                .map((e) => `<option value="${e.id}">${e.title}</option>`)
+                .map((e) => `<option value="${e.id}">${_btEscapeHtml(e.title)}</option>`)
                 .join("");
           } else {
             select.innerHTML =
@@ -3078,7 +3078,7 @@
         const optionsHtml = futureEvents.length === 0
           ? '<option value="">Aucun événement à venir</option>'
           : '<option value="">Sélectionnez un événement...</option>' +
-            futureEvents.map(e => `<option value="${e.id}">${e.title}</option>`).join("");
+            futureEvents.map(e => `<option value="${e.id}">${_btEscapeHtml(e.title)}</option>`).join("");
 
         const boostSel = document.getElementById("boost-event-select");
         const fbpackSel = document.getElementById("fbpack-event-select");
@@ -3503,7 +3503,7 @@
         const eventOptions = futureEvents.length === 0
           ? '<option value="">Aucun événement à venir</option>'
           : '<option value="">— Sélectionner un événement —</option>' +
-            futureEvents.map(e => `<option value="${e.id}" data-tiers='${JSON.stringify(e.ticket_tiers || []).replace(/'/g, "&#39;")}'>${e.title}</option>`).join("");
+            futureEvents.map(e => `<option value="${e.id}" data-tiers='${JSON.stringify(e.ticket_tiers || []).replace(/'/g, "&#39;")}'>${_btEscapeHtml(e.title)}</option>`).join("");
 
         btModal(`
           <h3>🎟️ Nouveau code promo</h3>

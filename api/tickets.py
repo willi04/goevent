@@ -31,7 +31,10 @@ router = APIRouter()
 
 # ── ACHAT SIMPLE (réservation en attente de paiement) ───────────
 @router.post("/tickets/buy")
-def buy_ticket(data: BuyTicket, db: Session = Depends(get_db),
+@limiter.limit("20/minute")
+def buy_ticket(
+                request: Request, 
+                data: BuyTicket, db: Session = Depends(get_db),
                current_user: User = Depends(get_current_user)):
     event = db.query(Event).filter(Event.id == data.event_id, Event.is_active == True).first()
     if not event:
@@ -99,7 +102,9 @@ def my_paid_tickets(db: Session = Depends(get_db), current_user: User = Depends(
 
 # ── RÉSERVATION CASH ────────────────────────────────────────────
 @router.post("/tickets/reserve-cash")
-def reserve_ticket_cash(data: CashReservation,
+@limiter.limit("20/minute")
+def reserve_ticket_cash(request: Request,
+                        data: CashReservation,
                         background_tasks: BackgroundTasks,
                         db: Session = Depends(get_db),
                         current_user: User = Depends(get_current_user)):
@@ -222,7 +227,8 @@ def reserve_ticket_cash(data: CashReservation,
 
 
 @router.post("/tickets/{ticket_id}/confirm-cash-payment")
-def confirm_cash_payment(ticket_id: int, db: Session = Depends(get_db),
+@limiter.limit("30/minute")
+def confirm_cash_payment(request: Request, ticket_id: int, db: Session = Depends(get_db),
                          current_user: User = Depends(get_current_user)):
     if current_user.role not in ("organizer", "organisation", "agent"):
         raise HTTPException(403, "Accès réservé aux organisateurs et agents")

@@ -18,6 +18,8 @@ from utils.promo import confirm_promo_usage, release_promo_usage
 from models.ticket import Ticket
 from models.payment import Payment, PayoutRequest
 from models.promotion import BoostOrder, FbAdPackage
+from models.user import User
+from models.event import Event
 
 
 def process_ngser_response(
@@ -140,6 +142,28 @@ def _process_ticket(db, order_id, code, transaction_amount=None):
         confirm_promo_usage(db, ticket.id)
         db.commit()
         print(f"✅ process_ngser : billet {ticket.id} validé ({order_id}).")
+
+        # ── Email confirmation billet (best-effort, non-bloquant) ──
+        # SMTP synchrone ici car _process_ticket est appelée par webhook+cron,
+        # sans BackgroundTasks disponible. Ajoute ~2s au traitement serveur
+        # sans impact utilisateur (webhook NGSER n'attend pas notre email).
+        # Migration vers queue asynchrone en P2 quand volume >100 tickets/jour.
+        try:
+            from core.email import envoyer_billet_email
+            user = db.query(User).filter(User.id == ticket.user_id).first()
+            event = db.query(Event).filter(Event.id == ticket.event_id).first()
+            if user and user.email and event:
+                amount = payment_record.amount if payment_record else 0
+                envoyer_billet_email(
+                    email_client=user.email,
+                    nom_client=user.full_name or "Client",
+                    ticket=ticket,
+                    event=event,
+                    amount=int(amount),
+                )
+        except Exception as e:
+            print(f"⚠️ Envoi email billet échoué (non bloquant) : {e}")
+
         return {"action": "validated", "ticket_id": ticket.id}
 
     if code in ("0", "2", "4", "5", "6"):

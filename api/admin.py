@@ -517,7 +517,6 @@ def list_refunds(
 @router.post("/admin/refunds/{refund_id}/mark-paid")
 @limiter.limit("20/minute")
 def mark_refund_paid(
-    request: Request,
     refund_id: int,
     data: dict,
     request: Request,

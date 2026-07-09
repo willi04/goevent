@@ -380,7 +380,8 @@ def get_my_cash_reservations(db: Session = Depends(get_db),
 
 # ── SCAN & VALIDATION D'ENTRÉE ──────────────────────────────────
 @router.post("/scan")
-def valider_billet(data: ScanTicket, db: Session = Depends(get_db),
+@limiter.limit("120/minute")
+def valider_billet(request: Request, data: ScanTicket, db: Session = Depends(get_db),
                    current_user: User = Depends(get_current_user)):
     if current_user.role not in ("agent", "organizer", "organisation"):
         raise HTTPException(status_code=403, detail="Accès refusé. Réservé aux contrôleurs.")

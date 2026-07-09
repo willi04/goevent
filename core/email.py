@@ -22,7 +22,9 @@ def envoyer_billet_email(email_client, nom_client, ticket, event, amount):
     msg["Subject"] = f"🎟️ Confirmation & Billet : {event.title}"
 
     qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={ticket.qr_hash}"
+    lien_magique = f"https://goevent.africa/ticket_view.html?qr_hash={ticket.qr_hash}"
     label_prix = "🎟️ ENTRÉE GRATUITE" if amount <= 0 else f"💰 Montant : {amount} FCFA"
+    id_court = ticket.qr_hash[:8].upper() if ticket.qr_hash else ""
 
     html_body = f"""
     <html>
@@ -39,7 +41,11 @@ def envoyer_billet_email(email_client, nom_client, ticket, event, amount):
 
             <p style="color: #00502c; font-weight: bold; margin-bottom: 15px;">Voici votre QR Code d'accès :</p>
             <img src="{qr_url}" alt="QR Code Billet" style="width: 200px; height: 200px; border-radius: 10px; border: 4px solid #f9f9f9;">
-            <p style="color: #aaa; font-size: 10px; margin-top: 10px; letter-spacing: 1px;">ID: {ticket.qr_hash}</p>
+            <p style="color: #aaa; font-size: 10px; margin-top: 10px; letter-spacing: 1px;">ID: {id_court}</p>
+
+            <p style="color: #666; font-size: 12px; margin-top: 25px; margin-bottom: 8px;">Accès à votre billet à tout moment :</p>
+            <a href="{lien_magique}" style="display: inline-block; background: #00502c; color: white; text-decoration: none; padding: 12px 28px; border-radius: 12px; font-weight: bold; font-size: 13px;">🎫 Voir mon billet</a>
+            <p style="color: #aaa; font-size: 10px; margin-top: 15px;">Conservez cet email — il est votre preuve de billet.</p>
 
             <div style="background-color: #fff4f4; border-left: 4px solid #ba1a1a; padding: 10px; margin-top: 25px; text-align: left;">
                 <p style="color: #ba1a1a; font-size: 12px; margin: 0; font-weight: bold;">⚠️ IMPORTANT POUR LE JOUR-J</p>

@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from fastapi import Header
 from core.config import settings
 from core.reconcile import reconcile_pending_payments
+from core.limiter import limiter
 
 from utils.locks import lock_event_for_booking, lock_event_for_release
 from utils.promo import lock_promo_for_use, compute_discount, release_promo_usage
@@ -26,7 +27,9 @@ router = APIRouter()
 
 # ── INITIATION DU PAIEMENT (vrai flux NGSER) ────────────────────
 @router.post("/payment/initiate-ngser")
+@limiter.limit("15/minute")
 async def initiate_ngser_payment(
+    request: Request,
     data: PaymentConfirm,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -170,6 +173,7 @@ def _libere_place_init_echouee(db: Session, ticket_id: int, event_id: int):
         db.rollback()
 
 @router.post("/payment/ngser-webhook")
+@limiter.limit("60/minute")
 async def ngser_webhook(request: Request, db: Session = Depends(get_db)):
     """
     Notification post-paiement appelée par NGSER (sert uniquement de trigger).
@@ -235,7 +239,9 @@ async def ngser_webhook(request: Request, db: Session = Depends(get_db)):
 
 # ── RÉCONCILIATION (cron externe, protégé par secret) ───────────
 @router.post("/admin/reconcile")
+@limiter.limit("20/minute")
 async def trigger_reconcile(
+    request: Request,
     x_reconcile_secret: str = Header(None),
     db: Session = Depends(get_db),
 ):

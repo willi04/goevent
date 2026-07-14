@@ -926,19 +926,27 @@
             : "Gratuit";
         const cat = event.category || "Événement";
         // Chantier 17 : badge "Mis en avant" si event boosté ET visible ce bucket
-        const boostBadge = event.is_boosted
+        const boostBadge = (event.is_boosted && !event.is_sold_out)
           ? `<div class="absolute top-3 right-3 bg-gradient-to-r from-orange-500 to-red-500 text-white px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-lg flex items-center gap-1">
                <span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1">local_fire_department</span>
                Mis en avant
              </div>`
           : "";
 
-        // Badge "GRATUIT" si event sans prix (P2 events gratuits)
+       // Badge "GRATUIT" si event sans prix (P2 events gratuits)
         const isFree = !event.price || event.price === 0;
-        const freeBadge = (isFree && !event.is_boosted)
+        const freeBadge = (isFree && !event.is_boosted && !event.is_sold_out)
           ? `<div class="absolute top-3 right-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-lg flex items-center gap-1">
                <span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1">card_giftcard</span>
                Gratuit
+             </div>`
+          : "";
+
+        // Badge "COMPLET" (override boost + gratuit : rien à mettre en avant si sold-out)
+        const soldOutBadge = event.is_sold_out
+          ? `<div class="absolute top-3 right-3 bg-gray-900/90 backdrop-blur text-white px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-lg flex items-center gap-1">
+               <span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1">block</span>
+               Complet
              </div>`
           : "";
         
@@ -951,6 +959,7 @@
                     </div>
                     ${boostBadge}
                     ${freeBadge}
+                    ${soldOutBadge}
                 </div>
                 <div class="px-2 flex flex-col flex-grow">
                     <h3 class="font-headline font-extrabold text-gray-900 text-lg line-clamp-2 mb-2 leading-tight group-hover:text-primary transition-colors">${_btEscapeHtml(event.title)}</h3>
@@ -977,21 +986,27 @@
         const vraieCategorie = event.category ? event.category : "Événement";
 
         // Badge "Mis en avant" UNIQUEMENT si event boosté (Chantier 17).
-        // L'ancien badge "Sponsorisé" générique a été retiré car factuellement faux :
-        // tous les events du carrousel ne sont pas des pubs payantes.
-        const boostBadge = event.is_boosted
+        const boostBadge = (event.is_boosted && !event.is_sold_out)
           ? `<div class="absolute top-3 right-3 bg-gradient-to-r from-orange-500 to-red-500 text-white text-[9px] font-black uppercase px-2 py-1 rounded shadow-md flex items-center gap-1">
                <span class="material-symbols-outlined text-[11px]" style="font-variation-settings: 'FILL' 1">local_fire_department</span>
                Mis en avant
              </div>`
           : "";
 
-         // Badge "Gratuit" P2 (si pas boosté pour éviter cumul visuel)
+         // Badge "Gratuit" P2 (si pas boosté et pas complet pour éviter cumul visuel)
         const isFree = !event.price || event.price === 0;
-        const freeBadgeNetflix = (isFree && !event.is_boosted)
+        const freeBadgeNetflix = (isFree && !event.is_boosted && !event.is_sold_out)
           ? `<div class="absolute top-3 right-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-[9px] font-black uppercase px-2 py-1 rounded shadow-md flex items-center gap-1">
                <span class="material-symbols-outlined text-[11px]" style="font-variation-settings: 'FILL' 1">card_giftcard</span>
                Gratuit
+             </div>`
+          : "";
+
+        // Badge "COMPLET" override (Chantier UX pré-lancement : informer avant clic)
+        const soldOutBadgeNetflix = event.is_sold_out
+          ? `<div class="absolute top-3 right-3 bg-gray-900/90 backdrop-blur text-white text-[9px] font-black uppercase px-2 py-1 rounded shadow-md flex items-center gap-1">
+               <span class="material-symbols-outlined text-[11px]" style="font-variation-settings: 'FILL' 1">block</span>
+               Complet
              </div>`
           : "";
        
@@ -1003,7 +1018,7 @@
                     
                     ${boostBadge}
                     ${freeBadgeNetflix}
-                    
+                    ${soldOutBadgeNetflix}
                     <div class="absolute bottom-4 left-4 right-4">
                         <h3 class="text-white font-extrabold text-base md:text-lg line-clamp-1 leading-tight">${_btEscapeHtml(event.title)}</h3>
                         <p class="text-primary-fixed font-bold text-[10px] uppercase mt-1">

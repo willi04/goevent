@@ -969,8 +969,8 @@
 
           renderTickets(statsData.tickets || []);
 
-          // 2. Événements recommandés (Le correctif est ici)
-          const response = await btApi.get("/events");
+          // Demande explicite : futurs uniquement, limite large pour pouvoir prioriser boostés
+          const response = await btApi.get("/events?upcoming_only=true&limit=30");
 
           // On force 'events' à être un tableau, même si l'API l'enveloppe dans un objet
           const eventsList = Array.isArray(response)
@@ -1033,9 +1033,17 @@
           return;
         }
 
-        const randomSelection = [...events]
-          .sort(() => 0.5 - Math.random())
-          .slice(0, 4);
+       // Priorisation : boostés d'abord (aléatoire entre eux), puis events ordinaires
+        // en complément aléatoire si <4 boostés. Total max 4 cartes.
+        // (Chantier 17 : is_boosted exposé par /events avec calcul bulk backend)
+        const shuffle = (arr) => arr.map(v => [Math.random(), v])
+                                     .sort((a, b) => a[0] - b[0])
+                                     .map(x => x[1]);
+
+        const boosted = shuffle(events.filter(e => e.is_boosted));
+        const rest = shuffle(events.filter(e => !e.is_boosted));
+
+        const randomSelection = [...boosted, ...rest].slice(0, 4);
 
         recGrid.innerHTML = randomSelection
           .map((e) => {
@@ -1074,9 +1082,11 @@
 
             <div class="p-6 flex-1 flex flex-col justify-between bg-white z-30 relative">
                 <div>
-                    <p class="text-[10px] font-bold text-primary uppercase tracking-[0.2em] mb-2 opacity-60">Recommandé</p>
+                     ${e.is_boosted 
+                      ? '<p class="text-[10px] font-bold text-orange-600 uppercase tracking-[0.2em] mb-2 flex items-center gap-1"><span class="material-symbols-outlined text-[12px]" style="font-variation-settings: \'FILL\' 1">local_fire_department</span>Vedette</p>'
+                      : '<p class="text-[10px] font-bold text-primary uppercase tracking-[0.2em] mb-2 opacity-60">Recommandé</p>'}
                     <p class="font-black text-lg text-gray-900 line-clamp-2 leading-tight group-hover:text-primary transition-colors">
-                        ${e.title}
+                        ${_btEscapeHtml(e.title)}
                     </p>
                 </div>
 
@@ -1085,7 +1095,7 @@
                         <div class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-primary/10 transition-colors shrink-0">
                             <span class="material-symbols-outlined text-[18px] text-primary">location_on</span>
                         </div>
-                        <p class="text-xs text-gray-500 font-semibold truncate">${e.location || "Bangui"}</p>
+                        <p class="text-xs text-gray-500 font-semibold truncate">${_btEscapeHtml(e.location || "Bangui")}</p>
                     </div>
                     
                     <div class="flex items-center justify-between pt-2 border-t border-gray-50">

@@ -559,13 +559,20 @@
           }
 
           // 3. Filtrage pour ne garder que les billets en stock
-          availableTiers = rawTiers.filter((tier) => {
-            const placesRestantes =
-              tier.seats_available !== undefined
-                ? tier.seats_available
-                : tier.seats;
-            return placesRestantes === undefined || placesRestantes > 0;
-          });
+          // is_sold_out global (seats_sold >= total_seats) prime sur les compteurs
+          // JSONB des tiers : si l'event est physiquement complet, aucun tier ne
+          // peut être vendu, peu importe l'état du JSONB (source unique de vérité BD).
+          if (currentEvent.is_sold_out) {
+            availableTiers = [];
+          } else {
+            availableTiers = rawTiers.filter((tier) => {
+              const placesRestantes =
+                tier.seats_available !== undefined
+                  ? tier.seats_available
+                  : tier.seats;
+              return placesRestantes === undefined || placesRestantes > 0;
+            });
+          }
 
           // --- LOGIQUE FOMO (Urgence) ---
           // On calcule le pourcentage restant (sécurité pour éviter division par zéro)

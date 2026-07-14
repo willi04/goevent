@@ -917,8 +917,8 @@
         if (!grid) return;
 
         try {
-          // On demande la liste des événements à ton API Python
-          const response = await btApi.get("/events");
+          // Demande explicite : futurs uniquement, limite large pour pouvoir shuffler
+          const response = await btApi.get("/events?upcoming_only=true&limit=30");
 
           let events = [];
           if (Array.isArray(response)) {

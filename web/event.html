@@ -499,28 +499,41 @@
                 : `onclick="window.location.href='event_detail.html?id=${e.id}'"`;
 
             // MODIFICATION ICI : Le badge "TERMINÉ" est maintenant en vert GoEvent
+           // Badge "TERMINÉ" en vert GoEvent, panier normal sinon, "Complet" grisé si sold-out
             const btnHtml = isPast 
                 ? `<div class="px-4 py-2 bg-primary text-white rounded-full font-black text-[15px] uppercase tracking-widest flex items-center gap-1 shadow-sm">
                      <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1">history</span> TERMINE
+                   </div>`
+                : e.is_sold_out
+                ? `<div class="px-4 py-2 bg-gray-200 text-gray-500 rounded-full font-black text-[12px] uppercase tracking-widest flex items-center gap-1 shadow-sm">
+                     <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1">block</span> Complet
                    </div>`
                 : `<button onclick="event.stopPropagation(); window.location.href='event_detail.html?id=${e.id}'" class="p-3 bg-primary/5 text-primary rounded-full hover:bg-primary hover:text-white transition-all shadow-sm active:scale-95">
                     <span class="material-symbols-outlined">shopping_cart</span>
                   </button>`;
 
             // Badge "Mis en avant" pour les events boostés (Chantier 17)
-            const boostBadge = (e.is_boosted && !isPast)
+            const boostBadge = (e.is_boosted && !isPast && !e.is_sold_out)
               ? `<div class="absolute top-4 right-4 bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-lg flex items-center gap-1">
                    <span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1">local_fire_department</span>
                    Mis en avant
                  </div>`
               : "";
             
-            // Badge "Gratuit" P2 (si pas boosté et pas passé)
+            // Badge "Gratuit" P2 (si pas boosté, pas passé, pas complet)
             const isFree = !e.price || e.price === 0;
-            const freeBadge = (isFree && !e.is_boosted && !isPast)
+            const freeBadge = (isFree && !e.is_boosted && !isPast && !e.is_sold_out)
               ? `<div class="absolute top-4 right-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-lg flex items-center gap-1">
                    <span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1">card_giftcard</span>
                    Gratuit
+                 </div>`
+              : "";
+
+            // Badge "COMPLET" (override boost + gratuit + bouton panier ; event reste cliquable)
+            const soldOutBadge = (e.is_sold_out && !isPast)
+              ? `<div class="absolute top-4 right-4 bg-gray-900/90 backdrop-blur text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-lg flex items-center gap-1">
+                   <span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1">block</span>
+                   Complet
                  </div>`
               : "";
             
@@ -533,6 +546,7 @@
                 </div>
                 ${boostBadge}
                 ${freeBadge}
+                ${soldOutBadge}
               </div>
               <div class="p-6 flex-1 flex flex-col">
                 <div class="flex items-center gap-2 text-xs text-outline mb-2">

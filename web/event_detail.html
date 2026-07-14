@@ -931,21 +931,26 @@
           const currentId = currentEvent?.id;
           if (!currentId) return; // l'event principal n'est pas encore chargé, on laisse tomber
 
-          // On filtre l'événement actuel et on garde maximum 3 événements
+          // Filtre : exclure event courant + garder événements futurs uniquement
           const now = new Date();
-          const filtered = events
-            .filter((e) => {
-              if (e.id == currentId) return false;
-              if (!e.event_date) return true; // pas de date → on garde par défaut
-              return new Date(e.event_date) >= now;
-            })
-            .sort((a, b) => {
-              // Prochains d'abord
-              if (!a.event_date) return 1;
-              if (!b.event_date) return -1;
-              return new Date(a.event_date) - new Date(b.event_date);
-            })
-            .slice(0, 3);
+          const available = events.filter((e) => {
+            if (e.id == currentId) return false;
+            if (!e.event_date) return true;
+            return new Date(e.event_date) >= now;
+          });
+
+          // Séparation boostés / non-boostés (Chantier 17 : is_boosted exposé
+          // par _event_dict quand appelé via /events avec calcul bulk).
+          const shuffle = (arr) => arr.map(v => [Math.random(), v])
+                                       .sort((a, b) => a[0] - b[0])
+                                       .map(x => x[1]);
+
+          const boosted = shuffle(available.filter(e => e.is_boosted));
+          const rest = shuffle(available.filter(e => !e.is_boosted));
+
+          // Boostés d'abord (aléatoire entre eux), puis événements ordinaires
+          // en complément aléatoire si <3 boostés. Total max 3 cartes.
+          const filtered = [...boosted, ...rest].slice(0, 3);
 
           if (filtered.length === 0) {
             grid.innerHTML =
@@ -975,7 +980,7 @@
                 "https://via.placeholder.com/400x300?text=GoEvent";
 
               return `
-            <div onclick="window.location.href='event_detail.html?id=${e.id}'" class="bg-white rounded-[2rem] p-3 shadow-sm border border-gray-100 hover:shadow-xl hover:border-primary/30 transition-all duration-300 cursor-pointer group flex flex-col ${cardOpacity}">
+            <div onclick="window.location.href='event_detail.html?id=${e.id}'" class="bg-white rounded-[2rem] p-3 shadow-sm border border-gray-100 hover:shadow-xl hover:border-primary/30 transition-all duration-300 cursor-pointer group flex flex-col">
                 <div class="relative h-48 rounded-2xl overflow-hidden mb-4 shrink-0">
                     <img src="${imgUrl}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                     <div class="absolute top-3 left-3 bg-white/95 backdrop-blur px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-primary shadow-sm">
@@ -990,7 +995,9 @@
                             <span class="material-symbols-outlined text-[14px]">calendar_today</span>
                             ${dateStr}
                         </span>
-                        ${badgeHtml}
+                        ${e.is_boosted 
+                          ? '<span class="text-[10px] font-black px-2 py-1 rounded-full bg-orange-100 text-orange-700 uppercase tracking-wider">🔥 Vedette</span>' 
+                          : `<span class="text-xs font-black text-primary">${priceStr}</span>`}
                     </div>
                 </div>
             </div>

@@ -978,31 +978,39 @@
               const imgUrl =
                 e.cover_image_url ||
                 "https://via.placeholder.com/400x300?text=GoEvent";
+              
+              const soldOutBadge = e.is_sold_out
+                ? `<span class="absolute top-3 right-3 bg-gray-900/90 backdrop-blur text-white px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-wider shadow-md flex items-center gap-1">
+                     <span class="material-symbols-outlined text-[11px]" style="font-variation-settings: 'FILL' 1">block</span>
+                     Complet
+                   </span>`
+                : "";
 
               return `
-            <div onclick="window.location.href='event_detail.html?id=${e.id}'" class="bg-white rounded-[2rem] p-3 shadow-sm border border-gray-100 hover:shadow-xl hover:border-primary/30 transition-all duration-300 cursor-pointer group flex flex-col">
-                <div class="relative h-48 rounded-2xl overflow-hidden mb-4 shrink-0">
-                    <img src="${imgUrl}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-                    <div class="absolute top-3 left-3 bg-white/95 backdrop-blur px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-primary shadow-sm">
-                        ${e.category || "Événement"}
-                    </div>
-                </div>
-                <div class="px-2 pb-2 flex flex-col flex-1">
-                    <h4 class="font-headline font-extrabold text-gray-900 text-lg line-clamp-2 mb-2 leading-tight">${_btEscapeHtml(e.title)}</h4>
-                    
-                    <div class="mt-auto pt-4 border-t border-gray-50 flex justify-between items-center">
-                        <span class="text-xs font-bold text-outline flex items-center gap-1.5">
-                            <span class="material-symbols-outlined text-[14px]">calendar_today</span>
-                            ${dateStr}
-                        </span>
-                        ${e.is_boosted 
-                          ? '<span class="text-[10px] font-black px-2 py-1 rounded-full bg-orange-100 text-orange-700 uppercase tracking-wider">🔥 Vedette</span>' 
-                          : `<span class="text-xs font-black text-primary">${priceStr}</span>`}
-                    </div>
-                </div>
-            </div>
-            `;
-            })
+                  <div onclick="window.location.href='event_detail.html?id=${e.id}'" class="bg-white rounded-[2rem] p-3 shadow-sm border border-gray-100 hover:shadow-xl hover:border-primary/30 transition-all duration-300 cursor-pointer group flex flex-col">
+                      <div class="relative h-48 rounded-2xl overflow-hidden mb-4 shrink-0">
+                          <img src="${imgUrl}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                          <div class="absolute top-3 left-3 bg-white/95 backdrop-blur px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-primary shadow-sm">
+                              ${e.category || "Événement"}
+                          </div>
+                          ${soldOutBadge}
+                      </div>
+                      <div class="px-2 pb-2 flex flex-col flex-1">
+                          <h4 class="font-headline font-extrabold text-gray-900 text-lg line-clamp-2 mb-2 leading-tight">${_btEscapeHtml(e.title)}</h4>
+                          
+                          <div class="mt-auto pt-4 border-t border-gray-50 flex justify-between items-center">
+                              <span class="text-xs font-bold text-outline flex items-center gap-1.5">
+                                  <span class="material-symbols-outlined text-[14px]">calendar_today</span>
+                                  ${dateStr}
+                              </span>
+                              ${(e.is_boosted && !e.is_sold_out)
+                                ? '<span class="text-[10px] font-black px-2 py-1 rounded-full bg-orange-100 text-orange-700 uppercase tracking-wider">🔥 Vedette</span>' 
+                                : `<span class="text-xs font-black text-primary">${priceStr}</span>`}
+                          </div>
+                      </div>
+                  </div>
+                  `;
+                  })
             .join("");
         } catch (error) {
           console.error("Erreur lors du chargement des suggestions :", error);

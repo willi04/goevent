@@ -2193,10 +2193,11 @@
             } else {
               allEventsList.innerHTML = [...stats.events]
                 .sort((a, b) => {
-                  // Prochain → lointain. Events sans date à la fin.
+                  // Plus récent (event_date proche/future) → plus ancien.
+                  // Events sans date à la fin.
                   if (!a.event_date) return 1;
                   if (!b.event_date) return -1;
-                  return new Date(a.event_date) - new Date(b.event_date);
+                  return new Date(b.event_date) - new Date(a.event_date);
                 })
                 .map(e => `
                   <div class="bg-white rounded-[24px] md:rounded-[32px] overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col group cursor-pointer">

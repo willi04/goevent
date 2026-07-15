@@ -3683,7 +3683,8 @@
         try {
           await btApi.post("/organizer/promo-codes", payload);
           btToast("Code promo créé !", "success");
-          document.querySelector(".bt-overlay:last-child").remove();
+          const overlay = document.querySelector(".bt-overlay:last-child");
+          if (overlay) overlay.remove();
           loadPromoCodes();
         } catch (err) {
           btToast(err.message || "Erreur création", "error");

@@ -116,8 +116,18 @@ def organizer_stats(db: Session = Depends(get_db), current_user: User = Depends(
         ).filter(Ticket.event_id == e.id, Payment.status == "completed").scalar() or 0.0
         total_cagnotte_globale += cagnotte_event
 
+    # Tri par event_date DESC (plus proche/futur d'abord, passés à la fin).
+    # Cohérent avec le tri appliqué côté front dans organisation_dashboard.html
+    # section "Mes événements" — évite un tri côté client sur données partielles.
+    # Pas de limite : l'orga doit voir tous ses events (liste complète + select
+    # de la modal code promo qui utilise stats.events).
+    sorted_events = sorted(
+        events,
+        key=lambda ev: ev.event_date or datetime.min,
+        reverse=True,
+    )
     events_data = []
-    for e in events[:10]:
+    for e in sorted_events:
         cagnotte_event = db.query(func.sum(Payment.organizer_amount)).join(
             Ticket, Payment.ticket_id == Ticket.id
         ).filter(Ticket.event_id == e.id, Payment.status == "completed").scalar() or 0.0

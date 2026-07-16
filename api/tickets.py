@@ -78,6 +78,7 @@ def my_tickets(db: Session = Depends(get_db), current_user: User = Depends(get_c
         "price": t.cash_amount if t.cash_amount else (t.event.price if t.event else 0),
         "is_used": t.is_used,
         "purchased_at": t.purchased_at,
+        "failure_reason": t.failure_reason,
     } for t in tickets]
 
 

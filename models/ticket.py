@@ -26,3 +26,8 @@ class Ticket(Base):
     owner          = relationship("User", back_populates="tickets", foreign_keys=[user_id])
     event          = relationship("Event", back_populates="tickets")
     cash_collector = relationship("User", foreign_keys=[cash_collected_by])
+    failure_reason = Column(String(50), nullable=True)
+    # Renseigné quand payment_status passe à echec_paiement :
+    # - "insufficient_balance" : NGSER code 2 (solde OM insuffisant)
+    # - "cancelled" : NGSER cancellation=true (annulé par le fan)
+    # - "rejected" : NGSER code 0/4/5/6 (autres échecs)

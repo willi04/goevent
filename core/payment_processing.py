@@ -166,10 +166,17 @@ def _process_ticket(db, order_id, code, transaction_amount=None):
 
         return {"action": "validated", "ticket_id": ticket.id}
 
-    if code in ("0", "2", "4", "5", "6"):
+   if code in ("0", "2", "4", "5", "6"):
         ticket.payment_status = "echec_paiement"
         if payment_record:
             payment_record.status = "failed"
+        # Distinction du motif pour message UX contextuel côté fan.
+        if code == "2":
+            ticket.failure_reason = "insufficient_balance"
+        elif code == "0":
+            ticket.failure_reason = "cancelled"
+        else:
+            ticket.failure_reason = "rejected"
         ev = lock_event_for_release(db, ticket.event_id)
         if ev:
             ev.seats_sold = max(0, ev.seats_sold - 1)

@@ -1120,12 +1120,25 @@
         try {
           const billets = await btApi.get("/tickets/my");
       
-          if (!billets.length) {
-            container.innerHTML = `<div class="bg-white p-8 rounded-2xl text-center border border-gray-100 shadow-sm"><p class="font-bold text-gray-500">Aucun billet trouvé.</p></div>`;
+          // Filtrer les billets non-actionnables (échec paiement, expiration).
+          // Un fan ne peut rien faire d'un ticket en echec_paiement/expire_*/
+          // reservation_cash expirée : polluer sa liste = créer de la confusion.
+          // Les statuts échoués restent en BD (audit + réconciliation) mais ne
+          // sont plus affichés côté fan.
+          const billetsActifs = billets.filter((b) => {
+            const status = (b.payment_status || "").toLowerCase();
+            return status === "paye"
+                || status === "paye_cash"
+                || status === "reservation_cash"
+                || status === "en_attente_om";  // Paiement en cours = à voir
+          });
+
+          if (!billetsActifs.length) {
+            container.innerHTML = `<div class="bg-white p-8 rounded-2xl text-center border border-gray-100 shadow-sm"><p class="font-bold text-gray-500">Aucun billet actif.</p></div>`;
             return;
           }
-      
-          container.innerHTML = billets
+
+          container.innerHTML = billetsActifs
             .map((b) => {
               // 🔧 Reconnaître tous les statuts qui doivent afficher un QR
               const isPaidOnline = b.payment_status === "paye";

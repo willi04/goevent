@@ -19,16 +19,7 @@ function requireAuth(allowedRoles = null, redirectTo = "login.html") {
         _redirectWithMessage(redirectTo, "Connectez-vous pour accéder à cette page.");
         return false;
     }
-
-    // 2. Token expiré (vérification côté client)
-    if (_isTokenExpired(token)) {
-        localStorage.removeItem("bt_token");
-        localStorage.removeItem("bt_user");
-        _redirectWithMessage(redirectTo, "Votre session a expiré. Reconnectez-vous.");
-        return false;
-    }
-
-    // 3. Rôle non autorisé → accueil
+    // 2. Rôle non autorisé → accueil
     if (allowedRoles && !allowedRoles.includes(user.role)) {
         _redirectWithMessage("index.html", "Accès refusé — vous n'avez pas les droits nécessaires.");
         return false;

@@ -69,6 +69,10 @@ MIGRATIONS = [
         "CREATE INDEX IF NOT EXISTS ix_payout_requests_processed_at "
         "ON payout_requests (processed_at)",
     ),
+   (
+        "tickets.failure_reason",
+        "ALTER TABLE tickets ADD COLUMN IF NOT EXISTS failure_reason VARCHAR(50)",
+    ),
 ]
 
 

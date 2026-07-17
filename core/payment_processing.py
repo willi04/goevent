@@ -120,7 +120,7 @@ def _process_ticket(db, order_id, code, transaction_amount=None):
                     ev = lock_event_for_release(db, ticket.event_id)
                     if ev:
                         ev.seats_sold = max(0, ev.seats_sold - 1)
-                    release_promo_usage(db, ticket.id)  # Chantier 19.A
+                    release_promo_usage(db, ticket.id)
                     db.commit()
                     print(f"🚨 process_ngser : montant incohérent {order_id} reçu={recu} attendu={attendu}.")
                     return {"action": "rejected_amount", "received": recu, "expected": attendu}
@@ -131,23 +131,17 @@ def _process_ticket(db, order_id, code, transaction_amount=None):
                 ev = lock_event_for_release(db, ticket.event_id)
                 if ev:
                     ev.seats_sold = max(0, ev.seats_sold - 1)
-                release_promo_usage(db, ticket.id)  # Chantier 19.A
+                release_promo_usage(db, ticket.id)
                 db.commit()
                 return {"action": "rejected_amount", "reason": "unreadable"}
 
         ticket.payment_status = "paye"
         if payment_record:
             payment_record.status = "completed"
-        # Confirmation promo (Chantier 19.A)
         confirm_promo_usage(db, ticket.id)
         db.commit()
         print(f"✅ process_ngser : billet {ticket.id} validé ({order_id}).")
 
-        # ── Email confirmation billet (best-effort, non-bloquant) ──
-        # SMTP synchrone ici car _process_ticket est appelée par webhook+cron,
-        # sans BackgroundTasks disponible. Ajoute ~2s au traitement serveur
-        # sans impact utilisateur (webhook NGSER n'attend pas notre email).
-        # Migration vers queue asynchrone en P2 quand volume >100 tickets/jour.
         try:
             from core.email import envoyer_billet_email
             user = db.query(User).filter(User.id == ticket.user_id).first()
@@ -166,11 +160,10 @@ def _process_ticket(db, order_id, code, transaction_amount=None):
 
         return {"action": "validated", "ticket_id": ticket.id}
 
-   if code in ("0", "2", "4", "5", "6"):
+    if code in ("0", "2", "4", "5", "6"):
         ticket.payment_status = "echec_paiement"
         if payment_record:
             payment_record.status = "failed"
-        # Distinction du motif pour message UX contextuel côté fan.
         if code == "2":
             ticket.failure_reason = "insufficient_balance"
         elif code == "0":
@@ -180,13 +173,12 @@ def _process_ticket(db, order_id, code, transaction_amount=None):
         ev = lock_event_for_release(db, ticket.event_id)
         if ev:
             ev.seats_sold = max(0, ev.seats_sold - 1)
-        release_promo_usage(db, ticket.id)  # Chantier 19.A
+        release_promo_usage(db, ticket.id)
         db.commit()
         print(f"❌ process_ngser : paiement échoué {order_id} (code={code}).")
         return {"action": "failed", "code": code}
 
     return {"action": "pending", "code": code}
-
 
 def _process_boost(db, order_id, code, transaction_amount=None):
     boost = (

@@ -24,10 +24,9 @@ class StaffCreate(BaseModel):
         return v
 
     @field_validator("pin_code")
-    @classmethod
-    def validate_pin(cls, v):
-        if not re.match(r"^\d{4}$", v):
-            raise ValueError("Le code PIN doit contenir exactement 4 chiffres")
+    def pin_must_be_6_digits(cls, v):
+        if not re.match(r"^\d{6}$", v):
+            raise ValueError("Le code PIN doit contenir exactement 6 chiffres")
         return v
 
     @field_validator("staff_function")

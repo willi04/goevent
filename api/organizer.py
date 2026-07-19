@@ -183,8 +183,8 @@ def create_agent(agent: AgentCreate, db: Session = Depends(get_db),
                  current_user: User = Depends(get_current_user)):
     if current_user.role not in ("organizer", "organisation"):
         raise HTTPException(403, "Accès réservé aux organisateurs")
-    if len(agent.pin_code) != 4 or not agent.pin_code.isdigit():
-        raise HTTPException(400, "Le PIN doit être 4 chiffres")
+    if len(agent.pin_code) != 6 or not agent.pin_code.isdigit():
+        raise HTTPException(400, "Le PIN doit être 6 chiffres")
 
     event = db.query(Event).filter(
         Event.id == agent.event_id, Event.organizer_id == current_user.id

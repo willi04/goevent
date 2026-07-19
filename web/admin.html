@@ -1074,7 +1074,7 @@
                 <p class="text-[10px] text-gray-400 mt-1">Pourcentage sur les revenus générés. Laisser vide si non applicable.</p>
               </div>
               <div id="staff-pin-wrapper">
-                <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">PIN initial (4 chiffres)</label>
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">PIN initial (6 chiffres)</label>
                 <input id="staff-pin" type="password" maxlength="6" class="input-field" placeholder="XXXXXX" />
                 <p class="text-[10px] text-gray-400 mt-1">L'employé devra le changer à sa première connexion.</p>
               </div>
@@ -2037,7 +2037,7 @@
                   // Création (POST)
                   const pin = document.getElementById("staff-pin").value.trim();
                   if (!phone.match(/^\+236\d{8}$/)) { errEl.textContent = "Téléphone au format +236XXXXXXXX"; btn.disabled = false; btn.textContent = origText; return; }
-                  if (!pin.match(/^\d{4}$/)) { errEl.textContent = "PIN = 4 chiffres"; btn.disabled = false; btn.textContent = origText; return; }
+                  if (!pin.match(/^\d{6}$/)) { errEl.textContent = "PIN = 6 chiffres"; btn.disabled = false; btn.textContent = origText; return; }
                   const body = {
                       full_name: name,
                       phone_number: phone,

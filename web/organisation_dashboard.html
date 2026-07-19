@@ -810,9 +810,9 @@
                       <input
                         type="password"
                         id="ag-pin"
-                        maxlength="4"
+                        maxlength="6"
                         class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none transition-all tracking-widest text-center"
-                        placeholder="••••"
+                        placeholder="••••••"
                         required
                       />
                     </div>
@@ -1428,8 +1428,8 @@
                       <input
                         type="password"
                         id="set-pin"
-                        placeholder="••••"
-                        maxlength="4"
+                        placeholder="••••••"
+                        maxlength="6"
                         class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-center text-lg font-bold tracking-widest"
                       />
                     </div>
@@ -2097,11 +2097,11 @@
           const btn = document.getElementById("btn-save-pin");
           const newPin = document.getElementById("set-pin").value.trim();
       
-          if (newPin.length !== 4 || !/^\d{4}$/.test(newPin)) return;
+          if (newPin.length !== 6 || !/^\d{6}$/.test(newPin)) return;
       
           const oldPin = prompt("Pour des raisons de sécurité, saisissez votre PIN actuel :");
           if (oldPin === null) return;
-          if (oldPin.length !== 4 || !/^\d{4}$/.test(oldPin)) {
+          if (oldPin.length !== 6 || !/^\d{6}$/.test(oldPin)) {
               if (typeof btToast === "function") btToast("Ancien PIN invalide", "error");
               return;
           }

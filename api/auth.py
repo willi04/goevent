@@ -228,25 +228,27 @@ def change_pin(data: PinChange, db: Session = Depends(get_db),
 @router.post("/auth/forgot-password")
 @limiter.limit("3/hour")
 def forgot_password(request: Request, data: dict, db: Session = Depends(get_db)):
-    email = data.get("email")
-    user = db.query(User).filter(User.email == email).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="Cet email n'existe pas")
+    from sqlalchemy import func
+    email = (data.get("email") or "").strip().lower()
+    user = db.query(User).filter(func.lower(User.email) == email).first()
 
-    code = "".join(random.choices(string.ascii_uppercase, k=6))
+    # Anti-énumération : même réponse que le compte existe ou non.
+    # Le code n'est généré/envoyé que si le compte existe, sans le divulguer.
+    if user:
+        code = "".join(random.choices(string.ascii_uppercase, k=6))
+        db.query(PasswordReset).filter(PasswordReset.email == email).delete()
+        new_reset = PasswordReset(email=email, code=code)
+        db.add(new_reset)
+        db.commit()
+        envoyer_mail_code(email, code)
 
-    db.query(PasswordReset).filter(PasswordReset.email == email).delete()
-    new_reset = PasswordReset(email=email, code=code)
-    db.add(new_reset)
-    db.commit()
-
-    envoyer_mail_code(email, code)
-    return {"status": "success", "message": "Code envoyé par email"}
-
+    return {"status": "success", "message": "Si un compte existe, un code a été envoyé par email"}
 
 @router.post("/auth/reset-password")
-def reset_password(data: dict, db: Session = Depends(get_db)):
-    email = data.get("email")
+@limiter.limit("10/hour")
+def reset_password(request: Request, data: dict, db: Session = Depends(get_db)):
+    from sqlalchemy import func
+    email = (data.get("email") or "").strip().lower()
     code = data.get("code", "").upper()
     new_pin = data.get("new_password")
 
@@ -266,7 +268,9 @@ def reset_password(data: dict, db: Session = Depends(get_db)):
     if not new_pin or len(new_pin) != 6 or not new_pin.isdigit():
         raise HTTPException(status_code=400, detail="Le nouveau PIN doit contenir exactement 6 chiffres")
 
-    user = db.query(User).filter(User.email == email).first()
+    user = db.query(User).filter(func.lower(User.email) == email).first()
+    if not user:
+        raise HTTPException(status_code=400, detail="Code incorrect ou expiré")
     user.pin_hash = hash_pin(new_pin)
 
     db.delete(reset_entry)

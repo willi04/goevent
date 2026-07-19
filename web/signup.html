@@ -270,9 +270,9 @@
                   <input
                     class="w-full pl-12 pr-4 py-4 bg-surface-container-high rounded-xl border-none focus:ring-0 focus:bg-surface-container-lowest transition-all duration-300 placeholder:text-outline/60 tracking-[0.5em]"
                     id="pin"
-                    maxlength="4"
+                    maxlength="6"
                     name="pin"
-                    pattern="\d{4}"
+                    pattern="\d{6}"
                     placeholder="••••"
                     required=""
                     type="password"
@@ -504,8 +504,8 @@
           btToast("Le nom doit comporter au moins 2 caractères.", "error");
           return;
         }
-        if (pin.length !== 4 || !/^\d{4}$/.test(pin)) {
-          btToast("Le PIN doit comporter exactement 4 chiffres.", "error");
+        if (pin.length !== 6 || !/^\d{6}$/.test(pin)) {
+          btToast("Le PIN doit comporter exactement 6 chiffres.", "error");
           return;
         }
         var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

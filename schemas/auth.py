@@ -82,3 +82,9 @@ class AgentCreate(BaseModel):
     phone_number: str
     pin_code: str
     event_id: int
+
+    @validator("pin_code")
+    def pin_must_be_6_digits(cls, v):
+        if not re.match(r"^\d{6}$", v):
+            raise ValueError("Le code PIN doit contenir exactement 6 chiffres")
+        return v

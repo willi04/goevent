@@ -1704,7 +1704,7 @@
         const btn = document.getElementById("btn-save-pin");
         const pin = document.getElementById("set-pin");
         if (!btn || !pin) return;
-        btn.disabled = pin.value.trim().length !== 4;
+        btn.disabled = !/^\d{6}$/.test(pin.value.trim());
       }
 
       function toggleMobileMenu() {

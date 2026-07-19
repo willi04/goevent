@@ -927,8 +927,8 @@ function btShowSettings() {
   };
   document.getElementById("s-pin").onclick = async function () {
     var n = document.getElementById("s-new").value;
-    if (n.length < 4) {
-      btToast("Le PIN doit comporter au moins 4 chiffres", "error");
+    if (!/^\d{6}$/.test(n)) {
+      btToast("Le PIN doit comporter exactement 6 chiffres", "error");
       return;
     }
     if (n !== document.getElementById("s-conf").value) {

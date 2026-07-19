@@ -217,8 +217,8 @@ def change_pin(data: PinChange, db: Session = Depends(get_db),
                current_user: User = Depends(get_current_user)):
     if not verify_pin(data.old_pin, current_user.pin_hash):
         raise HTTPException(400, "Ancien PIN incorrect")
-    if len(data.new_pin) != 4 or not data.new_pin.isdigit():
-        raise HTTPException(400, "Le nouveau PIN doit être 4 chiffres")
+    if len(data.new_pin) != 6 or not data.new_pin.isdigit():
+        raise HTTPException(400, "Le nouveau PIN doit être 6 chiffres")
     current_user.pin_hash = hash_pin(data.new_pin)
     db.commit()
     return {"message": "PIN modifié avec succès"}

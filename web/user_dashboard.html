@@ -510,11 +510,28 @@
                     <div>
                       <label
                         class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1"
+                        >PIN actuel</label
+                      >
+                      <input
+                        type="password"
+                        id="current-pin"
+                        inputmode="numeric"
+                        autocomplete="off"
+                        placeholder="••••••"
+                        maxlength="6"
+                        class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all tracking-widest text-center text-lg font-bold"
+                      />
+                    </div>
+                    <div>
+                      <label
+                        class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1"
                         >Nouveau Code PIN</label
                       >
                       <input
                         type="password"
                         id="set-pin"
+                        inputmode="numeric"
+                        autocomplete="off"
                         placeholder="••••••"
                         maxlength="6"
                         class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all tracking-widest text-center text-lg font-bold"
@@ -720,7 +737,9 @@
         if (inputOrange)
           inputOrange.addEventListener("input", validateSettingsForm);
         if (inputPin) inputPin.addEventListener("input", validatePinForm);
-
+        const inputCurrentPin = document.getElementById("current-pin");
+        if (inputCurrentPin)
+          inputCurrentPin.addEventListener("input", validatePinForm);
         validateSettingsForm();
         validatePinForm();
 
@@ -777,10 +796,13 @@
       }
 
       function validatePinForm() {
-        const btn = document.getElementById("btn-save-pin");
+        const btn = document.getElementById("save-pin-btn");
+        const cur = document.getElementById("current-pin");
         const pin = document.getElementById("set-pin");
-        if (!btn || !pin) return;
-        btn.disabled = pin.value.trim().length !== 4;
+        if (!btn || !pin || !cur) return;
+        const curOk = /^\d{6}$/.test(cur.value.trim());
+        const newOk = /^\d{6}$/.test(pin.value.trim());
+        btn.disabled = !(curOk && newOk);
       }
 
       function showSection(id) {
@@ -918,31 +940,40 @@
         }
       }
 
-      async function updatePin() {
-          const btn = document.getElementById("btn-save-pin");
-          const newPin = document.getElementById("set-pin").value.trim();
-      
-          if (newPin.length !== 6 || !/^\d{6}$/.test(newPin)) return;
-      
-          // Demander l'ancien PIN
-          const oldPin = prompt("Pour des raisons de sécurité, saisissez votre PIN actuel :");
-          if (oldPin === null) return;  // Annulé
-          if (oldPin.length !== 6 || !/^\d{6}$/.test(oldPin)) {
-              btToast("Ancien PIN invalide (4 chiffres requis)", "error");
+     async function updatePin() {
+          const btn = document.getElementById("save-pin-btn");
+          const curEl = document.getElementById("current-pin");
+          const newEl = document.getElementById("set-pin");
+          if (!btn || !curEl || !newEl) return;
+
+          const oldPin = curEl.value.trim();
+          const newPin = newEl.value.trim();
+
+          if (!/^\d{6}$/.test(oldPin)) {
+              btToast("PIN actuel invalide (6 chiffres requis)", "error");
               return;
           }
-      
+          if (!/^\d{6}$/.test(newPin)) {
+              btToast("Nouveau PIN invalide (6 chiffres requis)", "error");
+              return;
+          }
+          if (oldPin === newPin) {
+              btToast("Le nouveau PIN doit être différent de l'actuel", "error");
+              return;
+          }
+
+          const origText = btn.innerHTML;
           btn.disabled = true;
           btn.innerHTML = "Mise à jour...";
           try {
               await btApi.put("/auth/pin", { old_pin: oldPin, new_pin: newPin });
-              if (typeof btToast === "function")
-                  btToast("Code PIN modifié avec succès !", "success");
-              document.getElementById("set-pin").value = "";
-              validatePinForm();
+              btToast("Code PIN modifié avec succès !", "success");
+              curEl.value = "";
+              newEl.value = "";
           } catch (e) {
-              if (typeof btToast === "function")
-                  btToast(e.message || "Erreur lors de la modification du PIN", "error");
+              btToast(e.message || "Erreur lors de la modification du PIN", "error");
+          } finally {
+              btn.innerHTML = origText;
               validatePinForm();
           }
       }

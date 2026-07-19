@@ -263,8 +263,8 @@ def reset_password(data: dict, db: Session = Depends(get_db)):
         db.commit()
         raise HTTPException(status_code=400, detail="Code expiré (validité 15min)")
 
-    if not new_pin or len(new_pin) != 4 or not new_pin.isdigit():
-        raise HTTPException(status_code=400, detail="Le nouveau PIN doit contenir exactement 4 chiffres")
+    if not new_pin or len(new_pin) != 6 or not new_pin.isdigit():
+        raise HTTPException(status_code=400, detail="Le nouveau PIN doit contenir exactement 6 chiffres")
 
     user = db.query(User).filter(User.email == email).first()
     user.pin_hash = hash_pin(new_pin)

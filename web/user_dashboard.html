@@ -515,8 +515,8 @@
                       <input
                         type="password"
                         id="set-pin"
-                        placeholder="••••"
-                        maxlength="4"
+                        placeholder="••••••"
+                        maxlength="6"
                         class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all tracking-widest text-center text-lg font-bold"
                       />
                     </div>
@@ -922,12 +922,12 @@
           const btn = document.getElementById("btn-save-pin");
           const newPin = document.getElementById("set-pin").value.trim();
       
-          if (newPin.length !== 4 || !/^\d{4}$/.test(newPin)) return;
+          if (newPin.length !== 6 || !/^\d{6}$/.test(newPin)) return;
       
           // Demander l'ancien PIN
           const oldPin = prompt("Pour des raisons de sécurité, saisissez votre PIN actuel :");
           if (oldPin === null) return;  // Annulé
-          if (oldPin.length !== 4 || !/^\d{4}$/.test(oldPin)) {
+          if (oldPin.length !== 6 || !/^\d{6}$/.test(oldPin)) {
               btToast("Ancien PIN invalide (4 chiffres requis)", "error");
               return;
           }

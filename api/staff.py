@@ -270,7 +270,7 @@ def reset_staff_pin(
     admin: User = Depends(get_current_admin),
 ):
     """
-    Génère un nouveau PIN aléatoire à 4 chiffres pour un staff
+    Génère un nouveau PIN aléatoire à 6 chiffres pour un staff
     (utile si l'employé a oublié son PIN).
     Le PIN est retourné UNE seule fois — l'admin doit le transmettre
     à l'employé qui devra le changer immédiatement à la connexion.
@@ -280,7 +280,7 @@ def reset_staff_pin(
         raise HTTPException(404, "Employé staff introuvable")
     
     # Génération PIN 4 chiffres aléatoires
-    new_pin = "".join(random.choices(string.digits, k=4))
+    new_pin = "".join(random.choices(string.digits, k=6))
     staff.pin_hash = hash_pin(new_pin)
     staff.failed_login_attempts = 0
     staff.locked_until = None

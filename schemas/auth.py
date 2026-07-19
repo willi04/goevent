@@ -36,9 +36,9 @@ class UserRegister(BaseModel):
         return v
 
     @validator("pin_code")
-    def validate_pin(cls, v):
-        if not re.match(r"^\d{4}$", v):
-            raise ValueError("Le code PIN doit contenir exactement 4 chiffres")
+    def pin_must_be_6_digits(cls, v):
+        if not re.match(r"^\d{6}$", v):
+            raise ValueError("Le code PIN doit contenir exactement 6 chiffres")
         return v
 
     @validator("full_name")
@@ -69,6 +69,12 @@ class UserUpdate(BaseModel):
 class PinChange(BaseModel):
     old_pin: str
     new_pin: str
+    
+    @validator("new_pin")
+    def new_pin_must_be_6_digits(cls, v):
+        if not re.match(r"^\d{6}$", v):
+            raise ValueError("Le nouveau code PIN doit contenir exactement 6 chiffres")
+        return v
 
 
 class AgentCreate(BaseModel):

@@ -38,12 +38,10 @@ def register(request: Request, data: UserRegister, db: Session = Depends(get_db)
     # Inscription publique : seulement fan/organizer/agent autorisés.
     # admin/staff sont créés via routes admin dédiées (Commit 8.4).
     # partner est réservé pour usage futur, non inscriptible publiquement.
-    ROLES_INSCRIPTIBLES = ("fan", "organizer", "agent")
+    ROLES_INSCRIPTIBLES = ("fan", "organizer")
     if data.role not in ROLES_INSCRIPTIBLES:
         raise HTTPException(400, f"Rôle invalide pour inscription publique. Valeurs : {ROLES_INSCRIPTIBLES}")
 
-    if len(data.pin_code) != 4 or not data.pin_code.isdigit():
-        raise HTTPException(400, "Le PIN doit être 4 chiffres")
     if db.query(User).filter(User.phone_number == data.phone_number).first():
         raise HTTPException(400, "Ce numéro est déjà utilisé")
     # Anti-collision email (cohérent avec index unique LOWER(email), Chantier 27).

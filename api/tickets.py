@@ -253,7 +253,7 @@ def confirm_cash_payment(request: Request, ticket_id: int, db: Session = Depends
         if event.organizer_id != current_user.id:
             raise HTTPException(403, "Cet événement n'est pas le vôtre")
     elif current_user.role == "agent":
-        if current_user.agent_event_id and current_user.agent_event_id != event.id:
+        if current_user.agent_event_id != event.id:
             raise HTTPException(403, "Vous n'êtes pas assigné à cet événement")
         org_name_required = event.organizer_user.org_name or event.organizer_user.full_name
         if current_user.org_name != org_name_required:
@@ -392,9 +392,9 @@ def valider_billet(request: Request, data: ScanTicket, db: Session = Depends(get
         raise HTTPException(status_code=404, detail="Billet introuvable (Faux billet ou QR mal lu).")
 
     if current_user.role == "agent":
-        if current_user.agent_event_id and current_user.agent_event_id != ticket.event_id:
-            raise HTTPException(status_code=403, detail="Vous n'êtes pas assigné à cet événement !")
-
+        if current_user.agent_event_id and current_user.agent_event_id != event.id:
+            raise HTTPException(403, "Vous n'êtes pas assigné à cet événement")
+            
     if ticket.is_used:
         date_used = ticket.used_at.strftime("%H:%M:%S") if ticket.used_at else "?"
         raise HTTPException(status_code=400, detail=f"Alerte : Billet DÉJÀ UTILISÉ à {date_used} !")
@@ -445,7 +445,7 @@ def scan_stats(event_id: int, db: Session = Depends(get_db),
         if event.organizer_id != current_user.id:
             raise HTTPException(403, "Cet événement n'est pas le vôtre")
     elif current_user.role == "agent":
-        if current_user.agent_event_id and current_user.agent_event_id != event.id:
+        if current_user.agent_event_id != event.id:
             raise HTTPException(403, "Vous n'êtes pas assigné à cet événement")
         org_name_required = event.organizer_user.org_name or event.organizer_user.full_name
         if current_user.org_name != org_name_required:

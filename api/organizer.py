@@ -5,11 +5,12 @@ statistiques de ventes, demande d'annulation d'événement, gestion des agents.
 """
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from core.database import get_db
+from core.limiter import limiter
 from core.security import get_current_user, log_security_event, hash_pin
 from models.event import Event
 from models.ticket import Ticket
@@ -25,22 +26,28 @@ router = APIRouter()
 
 # ── DEMANDE DE RETRAIT ──────────────────────────────────────────
 @router.post("/organizer/payout-request")
-async def create_payout_request(data: dict, db: Session = Depends(get_db),
+@limiter.limit("10/hour")
+async def create_payout_request(request: Request, data: dict, db: Session = Depends(get_db),
                                 user: User = Depends(get_current_user)):
     if user.role not in ("organizer", "organisation"):
         raise HTTPException(status_code=403, detail="Accès réservé aux organisateurs")
 
     event_id = data.get("event_id")
-    amount = data.get("amount")
     phone_number = data.get("phone_number")
 
-    if not event_id or not amount or amount <= 0:
+    try:
+        amount = float(data.get("amount"))
+    except (TypeError, ValueError):
+        raise HTTPException(400, "Montant invalide")
+    if not event_id or amount <= 0:
         raise HTTPException(400, "Données invalides")
 
     if phone_number:
         user.orange_money = phone_number
 
-    event = db.query(Event).filter(Event.id == event_id, Event.organizer_id == user.id).first()
+    event = db.query(Event).filter(
+        Event.id == event_id, Event.organizer_id == user.id
+    ).with_for_update().first()
     if not event:
         raise HTTPException(404, "Événement introuvable")
 
@@ -50,7 +57,7 @@ async def create_payout_request(data: dict, db: Session = Depends(get_db),
 
     existing_requests = db.query(PayoutRequest).filter(
         PayoutRequest.event_id == event_id,
-        PayoutRequest.status.in_(["en_attente", "paye"]),
+       PayoutRequest.status.in_(["en_attente", "en_cours", "paye"]),
     ).all()
 
     deja_demande = sum(r.amount for r in existing_requests)

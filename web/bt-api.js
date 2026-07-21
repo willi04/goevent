@@ -1117,7 +1117,7 @@ function _btFileToBase64(file) {
  */
 function btSimulatorPromo(variant) {
   // Adapte si tu passes en sous-domaine (ex. "https://simulateur.goevent.africa")
-  var SIMULATOR_URL = "/simulateur";
+  var SIMULATOR_URL = "https://goevent.africa/simulateur/";
   variant = variant || "dashboard";
 
   if (variant === "landing") {

@@ -1589,7 +1589,11 @@
         if (nav && typeof btNavbar === "function") nav.innerHTML = btNavbar();
         if (footEl && typeof btFooter === "function")
           footEl.innerHTML = btFooter();
-
+        // Promo simulateur (composant centralisé bt-api.js)
+        if (typeof btSimulatorPromo === "function") {
+          const spEl = document.getElementById("simulator-promo");
+          if (spEl) spEl.innerHTML = btSimulatorPromo("dashboard");
+        }
         // Bottom nav mobile (composant centralisé bt-api.js)
         if (typeof btMobileBottomNav === "function") {
           const bnEl = document.getElementById("bottom-nav-mobile");

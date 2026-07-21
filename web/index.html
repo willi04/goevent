@@ -530,6 +530,8 @@
               class="bg-secondary-container text-on-secondary-container px-10 py-5 rounded-full font-black font-headline text-lg shadow-2xl hover:scale-105 active:scale-95 transition-all inline-block w-full md:w-auto"
               >Créer un événement</a
             >
+            <!-- Promo simulateur (composant centralisé bt-api.js) -->
+            <div id="simulator-promo" class="mt-6 md:mt-8"></div>
           </div>
           <div class="w-full max-w-md hidden lg:block">
             <div
@@ -580,6 +582,11 @@
       if (typeof btMobileAuthSection === "function") {
         var ctaEl = document.getElementById("mobile-drawer-auth-cta");
         if (ctaEl) ctaEl.innerHTML = btMobileAuthSection();
+      }
+      // Promo simulateur (composant centralisé bt-api.js)
+      if (typeof btSimulatorPromo === "function") {
+        var spLandEl = document.getElementById("simulator-promo-landing");
+        if (spLandEl) spLandEl.innerHTML = btSimulatorPromo("landing");
       }
       // Bottom nav mobile (composant centralisé bt-api.js)
       if (typeof btMobileBottomNav === "function") {

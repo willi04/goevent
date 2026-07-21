@@ -1110,4 +1110,45 @@ function _btFileToBase64(file) {
   });
 }
 
+/**
+ * Promo simulateur de rentabilité (aimant vers /simulateur).
+ * variant : "dashboard" (carte pleine largeur) | "landing" (lien secondaire hero).
+ * Statique, aucune donnée orga → pas d'échappement requis.
+ */
+function btSimulatorPromo(variant) {
+  // Adapte si tu passes en sous-domaine (ex. "https://simulateur.goevent.africa")
+  var SIMULATOR_URL = "/simulateur";
+  variant = variant || "dashboard";
+
+  if (variant === "landing") {
+    return (
+      '<a href="' + SIMULATOR_URL + '" target="_blank" rel="noopener" ' +
+      'class="inline-flex items-center gap-2 mt-5 text-white/90 hover:text-white font-bold font-headline underline underline-offset-4 decoration-secondary-container decoration-2 transition-colors">' +
+        '<span class="material-symbols-outlined text-xl">calculate</span>' +
+        "Pas sûr de ta rentabilité ? Simule ton événement d'abord" +
+      "</a>"
+    );
+  }
+
+  return (
+    '<div class="relative overflow-hidden rounded-3xl p-6 md:p-7 text-white lush-gradient shadow-lg shadow-primary/20">' +
+      '<div class="absolute -right-8 -top-8 w-40 h-40 bg-white/10 rounded-full"></div>' +
+      '<div class="absolute right-16 top-12 w-24 h-24 bg-white/5 rounded-full"></div>' +
+      '<div class="relative z-10 flex flex-col sm:flex-row sm:items-center gap-5">' +
+        '<div class="shrink-0 w-14 h-14 rounded-2xl bg-white/15 flex items-center justify-center">' +
+          '<span class="material-symbols-outlined text-3xl">calculate</span>' +
+        "</div>" +
+        '<div class="flex-1 min-w-0">' +
+          '<h3 class="font-headline font-extrabold text-lg md:text-xl leading-tight">Ton prochain événement sera-t-il rentable ?</h3>' +
+          '<p class="text-white/80 text-sm mt-1.5 max-w-xl">Simule tes coûts, tes billets et ton remplissage en 2 minutes. Découvre ton seuil de rentabilité avant de te lancer.</p>' +
+        "</div>" +
+        '<a href="' + SIMULATOR_URL + '" target="_blank" rel="noopener" ' +
+          'class="shrink-0 inline-flex items-center justify-center gap-2 bg-white text-primary font-bold text-[15px] px-6 py-3.5 rounded-2xl shadow-sm hover:shadow-md active:scale-95 transition-all">' +
+          '<span class="material-symbols-outlined">open_in_new</span>Ouvrir le simulateur' +
+        "</a>" +
+      "</div>" +
+    "</div>"
+  );
+}
+
 console.log("[BT] bt-api.js v4 — Design Stitch");

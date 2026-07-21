@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulateur GoEvent — rentabilité de ton événement</title>
+<meta name="description" content="Ton événement est-il viable ? Simule tes coûts, tes billets et ton remplissage. Conseils personnalisés. Par GoEvent.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="https://goevent.africa" target="_blank" rel="noopener">
+    <span class="logo">
+      <img class="logo-img" src="event.png" alt="GoEvent" onerror="this.parentNode.classList.add('mark');this.remove();">
+      <svg class="logo-bolt" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></svg>
+    </span>
+    <span class="brand-txt"><b>Simulateur <span class="g">GoEvent</span></b><small class="tagline">Calcule la rentabilité de ton événement</small></span>
+  </a>
+  <nav class="topnav">
+    <a href="#history" class="nav-link" id="histLink">Historique</a>
+    <a href="https://goevent.africa" target="_blank" rel="noopener" class="nav-cta">goevent.africa <span aria-hidden="true">↗</span></a>
+  </nav>
+</header>
+
+<div class="wrap">
+
+  <header class="hero reveal">
+    <p class="eyebrow">Simulateur · organisateurs</p>
+    <h1>Ton événement est-il viable&nbsp;?</h1>
+    <p class="lede">Décris ton projet, simule tes coûts et tes billets, et vois en direct s'il est rentable — avec des conseils taillés pour lui.</p>
+    <p class="fanline">Plutôt fan qu'organisateur&nbsp;? <a href="https://goevent.africa/events.html" target="_blank" rel="noopener">Découvre les événements →</a></p>
+  </header>
+
+  <div class="layout">
+
+    <!-- ============ FORM (compact) ============ -->
+    <div class="col-form">
+      <div class="project reveal">
+        <div class="prow">
+          <label><span class="k">Nom du projet</span><input id="pName" type="text" placeholder="ex : Festival Bangui 2026"></label>
+          <label><span class="k">Type d'événement</span>
+            <select id="pType">
+              <option value="Concert">Concert</option>
+              <option value="Cérémonie">Cérémonie / mariage</option>
+              <option value="Gala">Gala / dîner</option>
+              <option value="Conférence">Conférence</option>
+              <option value="Soirée">Soirée / club</option>
+              <option value="Spectacle">Spectacle</option>
+              <option value="Autre">Autre</option>
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <section class="reveal">
+        <div class="sec-h"><h2>Coûts fixes</h2><span class="num" id="fixedTotalTag"></span></div>
+        <p class="sec-note">Ce que tu paies que tu vendes 10 ou 500 billets.</p>
+        <div class="row fixed head"><span>Poste</span><span>Montant</span><span></span></div>
+        <div id="fixedRows"></div>
+        <button class="add" id="addFixed">+ Ajouter un coût</button>
+        <div class="inline2" style="margin-top:14px">
+          <label class="field"><span class="k">Marge imprévus (%)</span><input id="contingency" inputmode="decimal" placeholder="ex : 10"></label>
+          <label class="field"><span class="k">Boost GoEvent</span>
+            <select id="boost"><option value="0">Aucun</option><option value="10000">10 000 FCFA</option><option value="35000">35 000 FCFA</option><option value="130000">130 000 FCFA</option></select></label>
+        </div>
+      </section>
+
+      <section class="reveal">
+        <div class="sec-h"><h2>Coût par participant</h2><span class="num">optionnel</span></div>
+        <p class="sec-note">Ce qui coûte à chaque présent : boisson, repas, bracelet…</p>
+        <label class="field"><span class="k">Coût par participant (FCFA)</span><input id="varCost" inputmode="numeric" placeholder="ex : 1 000 — vide si aucun"></label>
+      </section>
+
+      <section class="reveal">
+        <div class="sec-h"><h2>Paliers de billets</h2><span class="num" id="billNum">quota = places</span></div>
+        <p class="sec-note" id="billNote">Un palier par type de billet. Le quota = nombre de places de ce type.</p>
+        <div class="row tier head"><span>Palier</span><span>Prix</span><span>Quota</span><span></span></div>
+        <div id="tierRows"></div>
+        <button class="add" id="addTier">+ Ajouter un palier</button>
+      </section>
+
+      <section class="reveal">
+        <div class="sec-h"><h2>Scénarios de remplissage</h2><span class="num">%</span></div>
+        <p class="sec-note">Trois hypothèses. Ajuste-les à ta réalité.</p>
+        <div class="inline3">
+          <label class="field"><span class="k">Pessimiste</span><input id="sPess" inputmode="numeric" value="40"></label>
+          <label class="field"><span class="k">Réaliste</span><input id="sReal" inputmode="numeric" value="65"></label>
+          <label class="field"><span class="k">Optimiste</span><input id="sOpti" inputmode="numeric" value="90"></label>
+        </div>
+      </section>
+
+      <section class="reveal">
+        <label class="switch" for="freeToggle">
+          <input type="checkbox" id="freeToggle"><span class="track"></span>
+          <span class="lab"><b>Événement gratuit</b><span>0 commission. Pas une perte — un investissement d'audience.</span></span>
+        </label>
+        <div class="free-params hidden" id="freeParams">
+          <p class="sec-note" style="margin-bottom:12px">Un gratuit se rembourse plus tard, quand tu reconvertis tes présents en billets payants.</p>
+          <div class="inline2">
+            <label class="field"><span class="k">Reconversion espérée (%)</span><input id="convPct" inputmode="numeric" placeholder="ex : 15"></label>
+            <label class="field"><span class="k">Panier d'un futur billet</span><input id="futureBasket" inputmode="numeric" placeholder="ex : 5 000"></label>
+          </div>
+        </div>
+      </section>
+
+      <button class="calc-btn" id="calcBtn">Calculer la rentabilité</button>
+    </div><!-- /col-form -->
+
+    <!-- ============ RESULTS (star) ============ -->
+    <div class="col-side">
+      <div class="result" id="result">
+        <div class="result-top">
+          <div><p class="result-title">Résultat</p><p class="result-sub" id="resultSub">—</p></div>
+          <div class="result-actions">
+            <button id="saveBtn" class="chip-btn" title="Enregistrer au projet">Enregistrer</button>
+            <button id="copyBtn" class="chip-btn" title="Copier le récapitulatif">Copier</button>
+          </div>
+        </div>
+
+        <div class="verdict-banner neutral" id="verdictBanner">
+          <span class="v-emoji" id="vEmoji">🧮</span>
+          <p class="verdict neutral" id="verdict">Prêt à simuler&nbsp;?<small>Remplis les coûts et les billets à gauche : ton résultat apparaît ici en direct.</small></p>
+        </div>
+
+        <div id="richResult" style="display:none">
+          <div id="gaugeBlock">
+            <p class="blk-label">Jauge de remplissage</p>
+            <div class="gauge" id="gauge">
+              <div class="gauge-track"><div class="gauge-red" id="gRed"></div><div class="gauge-green" id="gGreen"></div></div>
+              <div class="seuil" id="gSeuil"></div>
+            </div>
+            <div class="gauge-scale"><span>0%</span><span id="gSeuilBottom" class="seuil-b">Seuil : —</span><span>salle pleine</span></div>
+          </div>
+
+          <div id="scenBlock">
+            <p class="blk-label">Résultat net par scénario</p>
+            <div class="scen-row" id="scenRow"></div>
+          </div>
+
+          <p class="blk-label">Chiffres clés</p>
+          <div class="keyfigs" id="keyFigs"></div>
+        </div>
+      </div>
+
+      <div class="insight advice" id="adviceCard" style="display:none">
+        <h3>Conseils sur ton projet</h3>
+        <ul id="adviceBody"></ul>
+      </div>
+
+      <div class="insight" id="sensCard" style="display:none">
+        <h3>Effet d'un ajustement de prix <span class="h3-sub">+500 FCFA / billet</span></h3>
+        <div id="sensBody"></div>
+        <p class="hint" style="margin-top:10px">Impact sur ton net au scénario réaliste, à remplissage constant.</p>
+      </div>
+
+      <div class="insight" id="boostCard" style="display:none">
+        <h3>Ton Boost se rembourse-t-il ?</h3>
+        <p class="boost-msg" id="boostBody"></p>
+      </div>
+    </div><!-- /col-side -->
+  </div><!-- /layout -->
+
+  <div class="insight history-card reveal" id="history">
+    <h3>Historique des projets</h3>
+    <div id="histBody"><p class="hist-empty">Aucun projet enregistré. Simule, puis « Enregistrer ».</p></div>
+  </div>
+
+  <div class="cta reveal">
+    <a href="https://goevent.africa/signup.html" target="_blank" rel="noopener"><span class="dot"></span>Crée ton événement sur GoEvent</a>
+    <p>Billetterie, paiement mobile et suivi en temps réel — goevent.africa</p>
+  </div>
+
+</div>
+
+<footer class="site-footer">
+  <div class="foot-inner">
+    <div class="foot-brand">
+      <span class="foot-logo">
+        <img class="logo-img" src="event.png" alt="GoEvent" onerror="this.parentNode.classList.add('mark');this.remove();">
+        <svg class="logo-bolt" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></svg>
+      </span>
+      <div><b>GoEvent</b><p>La billetterie des événements en Afrique francophone.</p></div>
+    </div>
+    <nav class="foot-cols">
+      <div class="foot-col">
+        <h4>Pour les fans</h4>
+        <a href="https://goevent.africa/event.html">Découvrir les événements</a>
+        <a href="https://goevent.africa">Accueil</a>
+      </div>
+      <div class="foot-col">
+        <h4>Pour les organisateurs</h4>
+        <a href="https://goevent.africa/signup.html">Créer un compte</a>
+        <a href="https://goevent.africa">Gérer mes événements</a>
+      </div>
+      <div class="foot-col">
+        <h4>GoEvent</h4>
+        <a href="https://goevent.africa/cgu.html">Conditions d'utilisation</a>
+        <a href="https://goevent.africa/Confidentialite.html">Confidentialité</a>
+      </div>
+    </nav>
+  </div>
+  <div class="foot-bottom">
+    <span>© 2026 GoEvent — Simulateur de rentabilité</span>
+    <span>goevent.africa</span>
+  </div>
+</footer>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1123,10 +1123,45 @@ function btSimulatorPromo(variant) {
   if (variant === "landing") {
     return (
       '<a href="' + SIMULATOR_URL + '" target="_blank" rel="noopener" ' +
-      'class="inline-flex items-center gap-2 mt-5 text-white/90 hover:text-white font-bold font-headline underline underline-offset-4 decoration-secondary-container decoration-2 transition-colors">' +
-        '<span class="material-symbols-outlined text-xl">calculate</span>' +
-        "Pas sûr de ta rentabilité ? Simule ton événement d'abord" +
-      "</a>"
+        'class="group relative mt-6 flex items-center gap-4 w-full md:w-auto ' +
+        'rounded-2xl p-4 pr-5 bg-white/10 backdrop-blur-xl border border-white/15 ' +
+        'hover:bg-white/15 hover:border-secondary-container/60 transition-all duration-300 ' +
+        'shadow-lg overflow-hidden">' +
+
+        // halo lumineux qui balaie au survol
+        '<span class="pointer-events-none absolute inset-0 -translate-x-full ' +
+        'group-hover:translate-x-full transition-transform duration-700 ease-out ' +
+        'bg-gradient-to-r from-transparent via-white/15 to-transparent"></span>' +
+
+        // pastille icône
+        '<span class="relative shrink-0 w-12 h-12 rounded-xl bg-secondary-container ' +
+        'text-on-secondary-container flex items-center justify-center shadow-md ' +
+        'group-hover:scale-105 transition-transform">' +
+          '<span class="material-symbols-outlined">calculate</span>' +
+        '</span>' +
+
+        // textes
+        '<span class="relative flex-1 min-w-0 text-left">' +
+          '<span class="flex items-center gap-2">' +
+            '<span class="text-white font-headline font-extrabold text-[15px] leading-tight">' +
+              'Simule ta rentabilité' +
+            '</span>' +
+            '<span class="text-[9px] font-black tracking-wider uppercase px-1.5 py-0.5 rounded-full ' +
+            'bg-secondary-container/20 text-secondary-container border border-secondary-container/30">' +
+              'Gratuit · 2 min' +
+            '</span>' +
+          '</span>' +
+          '<span class="block text-white/70 text-[12.5px] mt-0.5 truncate">' +
+            'Avant de te lancer, vois si ton événement est rentable' +
+          '</span>' +
+        '</span>' +
+
+        // flèche
+        '<span class="relative shrink-0 material-symbols-outlined text-white/80 ' +
+        'group-hover:text-secondary-container group-hover:translate-x-1 transition-all">' +
+          'arrow_forward' +
+        '</span>' +
+      '</a>'
     );
   }
 

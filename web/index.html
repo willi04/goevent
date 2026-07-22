@@ -583,11 +583,6 @@
         var ctaEl = document.getElementById("mobile-drawer-auth-cta");
         if (ctaEl) ctaEl.innerHTML = btMobileAuthSection();
       }
-      // Promo simulateur (composant centralisé bt-api.js)
-      if (typeof btSimulatorPromo === "function") {
-        var spLandEl = document.getElementById("simulator-promo-landing");
-        if (spLandEl) spLandEl.innerHTML = btSimulatorPromo("landing");
-      }
       // Bottom nav mobile (composant centralisé bt-api.js)
       if (typeof btMobileBottomNav === "function") {
         var bnEl = document.getElementById("bottom-nav-mobile");

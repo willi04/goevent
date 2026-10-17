@@ -378,7 +378,7 @@
                           ${org.initials || "GO"}
                       </div>
                       
-                      <h3 class="font-black font-headline text-sm md:text-xl text-gray-900 mb-1 leading-tight line-clamp-1">${org.name}</h3>
+                      <h3 class="font-black font-headline text-sm md:text-xl text-gray-900 mb-1 leading-tight line-clamp-1">${_btEscapeHtml(org.name)}</h3>
                       <p class="text-[9px] md:text-[10px] text-gray-400 uppercase tracking-widest font-bold mb-4 md:mb-6">${org.type}</p>
                       
                       <div class="flex gap-2 md:gap-3 mb-4 md:mb-8 mt-auto">

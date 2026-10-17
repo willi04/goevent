@@ -24,6 +24,22 @@ from utils.serializers import _event_dict
 router = APIRouter()
 
 
+def _cagnotte_retirable(db: Session, event_id: int) -> float:
+    """
+    Somme reversable par GoEvent à l'orga = encaissements ÉLECTRONIQUES uniquement.
+    Le cash (paye_cash) est physiquement dans la poche de l'orga/agent : l'inclure
+    ici = GoEvent reverse par OM de l'argent qu'il n'a jamais reçu (double paiement).
+    """
+    from sqlalchemy import or_
+    return db.query(func.sum(Payment.organizer_amount)).join(
+        Ticket, Payment.ticket_id == Ticket.id
+    ).filter(
+        Ticket.event_id == event_id,
+        Payment.status == "completed",
+        or_(Ticket.payment_method.is_(None), Ticket.payment_method.notin_(("cash", "gratuit"))),
+    ).scalar() or 0.0
+
+
 # ── DEMANDE DE RETRAIT ──────────────────────────────────────────
 @router.post("/organizer/payout-request")
 @limiter.limit("10/hour")
@@ -43,7 +59,15 @@ async def create_payout_request(request: Request, data: dict, db: Session = Depe
         raise HTTPException(400, "Données invalides")
 
     if phone_number:
-        user.orange_money = phone_number
+        import re
+        phone_number = str(phone_number).strip()
+        if not re.match(r"^\+236\d{8}$", phone_number):
+            raise HTTPException(400, "Numéro Orange Money invalide (format +236XXXXXXXX)")
+        if phone_number != user.orange_money:
+            # Numéro de destination des fonds : action sensible, tracée.
+            log_security_event(db, "payout_phone_changed", request, user.id,
+                               f"orange_money {user.orange_money} -> {phone_number}")
+            user.orange_money = phone_number
 
     event = db.query(Event).filter(
         Event.id == event_id, Event.organizer_id == user.id
@@ -51,9 +75,7 @@ async def create_payout_request(request: Request, data: dict, db: Session = Depe
     if not event:
         raise HTTPException(404, "Événement introuvable")
 
-    cagnotte_reelle = db.query(func.sum(Payment.organizer_amount)).join(
-        Ticket, Payment.ticket_id == Ticket.id
-    ).filter(Ticket.event_id == event.id, Payment.status == "completed").scalar() or 0.0
+    cagnotte_reelle = _cagnotte_retirable(db, event.id)
 
     existing_requests = db.query(PayoutRequest).filter(
         PayoutRequest.event_id == event_id,
@@ -116,12 +138,8 @@ def organizer_stats(db: Session = Depends(get_db), current_user: User = Depends(
     total_sold = sum(e.seats_sold for e in events)
     active_events = [e for e in events if e.is_active and e.event_date >= datetime.utcnow()]
 
-    total_cagnotte_globale = 0.0
-    for e in events:
-        cagnotte_event = db.query(func.sum(Payment.organizer_amount)).join(
-            Ticket, Payment.ticket_id == Ticket.id
-        ).filter(Ticket.event_id == e.id, Payment.status == "completed").scalar() or 0.0
-        total_cagnotte_globale += cagnotte_event
+    cagnottes = {e.id: _cagnotte_retirable(db, e.id) for e in events}
+    total_cagnotte_globale = sum(cagnottes.values())
 
     # Tri par event_date DESC (plus proche/futur d'abord, passés à la fin).
     # Cohérent avec le tri appliqué côté front dans organisation_dashboard.html
@@ -135,9 +153,7 @@ def organizer_stats(db: Session = Depends(get_db), current_user: User = Depends(
     )
     events_data = []
     for e in sorted_events:
-        cagnotte_event = db.query(func.sum(Payment.organizer_amount)).join(
-            Ticket, Payment.ticket_id == Ticket.id
-        ).filter(Ticket.event_id == e.id, Payment.status == "completed").scalar() or 0.0
+        cagnotte_event = cagnottes[e.id]
 
         events_data.append({
             **_event_dict(e),
@@ -258,15 +274,26 @@ def create_agent(agent: AgentCreate, db: Session = Depends(get_db),
     return {"message": "Agent créé avec succès", "reactivated": False}
 
 
+def _my_agents_query(db: Session, organizer: User):
+    """
+    Agents de l'orga = agents assignés à un event DONT IL EST PROPRIÉTAIRE.
+    Ancien critère org_name : éditable via PUT /auth/me → n'importe qui
+    pouvait lister (téléphones) ou supprimer les agents d'un concurrent.
+    """
+    my_event_ids = db.query(Event.id).filter(Event.organizer_id == organizer.id)
+    return db.query(User).filter(
+        User.role == "agent",
+        User.agent_event_id.in_(my_event_ids),
+    )
+
+
 @router.get("/organizer/agents")
 def get_agents(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if current_user.role not in ("organizer", "organisation"):
+        raise HTTPException(403, "Accès réservé aux organisateurs")
     agents = (
-        db.query(User)
-        .filter(
-            User.role == "agent",
-            User.org_name == (current_user.org_name or current_user.full_name),
-            User.is_active == True,
-        )
+        _my_agents_query(db, current_user)
+        .filter(User.is_active == True)
         .order_by(User.created_at.desc())
         .all()
     )
@@ -289,14 +316,23 @@ def get_agents(db: Session = Depends(get_db), current_user: User = Depends(get_c
 @router.delete("/organizer/agents/{agent_id}")
 def delete_agent(agent_id: int, db: Session = Depends(get_db),
                  current_user: User = Depends(get_current_user)):
-    agent = db.query(User).filter(
-        User.id == agent_id,
-        User.role == "agent",
-        User.org_name == (current_user.org_name or current_user.full_name),
-    ).first()
+    if current_user.role not in ("organizer", "organisation"):
+        raise HTTPException(403, "Accès réservé aux organisateurs")
+    agent = _my_agents_query(db, current_user).filter(User.id == agent_id).first()
     if not agent:
         raise HTTPException(404, "Agent introuvable")
 
-    db.delete(agent)
+    # Historique cash → désactivation (FK tickets.cash_collected_by sans ondelete :
+    # le DELETE levait une IntegrityError 500). Même règle que /agent/delete-account.
+    has_cash_history = db.query(Ticket.id).filter(
+        Ticket.cash_collected_by == agent.id
+    ).first() is not None
+    if has_cash_history:
+        agent.is_active = False
+        agent.agent_event_id = None
+    else:
+        db.delete(agent)
     db.commit()
+    log_security_event(db, "agent_removed", None, current_user.id,
+                       f"Agent {agent_id} retiré ({'désactivé' if has_cash_history else 'supprimé'})")
     return {"message": "Agent supprimé avec succès"}

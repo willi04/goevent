@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from fastapi import Header
 from core.config import settings
-from core.reconcile import reconcile_pending_payments
+from core.reconcile import reconcile_pending_payments, expire_old_orphans
 from core.limiter import limiter
 
 from utils.locks import lock_event_for_booking, lock_event_for_release
@@ -254,5 +254,8 @@ async def trigger_reconcile(
         raise HTTPException(status_code=403, detail="Accès refusé")
 
     summary = await reconcile_pending_payments(db)
+    # expire_old_orphans n'était appelé NULLE PART : tout checkout OM abandonné
+    # >24h gardait sa place pré-réservée À VIE (seats_sold jamais décrémenté).
+    summary["orphans"] = await expire_old_orphans(db)
     print(f"🔄 Réconciliation terminée : {summary}")
     return {"status": "success", "summary": summary}

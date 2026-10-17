@@ -295,13 +295,32 @@ def confirm_cash_payment(request: Request, ticket_id: int, db: Session = Depends
     }
 
 
+def _can_operate_event(user: User, event: Event) -> bool:
+    """
+    Contrôle d'accès opérationnel jour J (scan, lecture billet).
+    organizer : propriétaire de l'event. agent : assigné à CET event
+    (agent_event_id n'est posé que par l'orga propriétaire, cf create_agent).
+    org_name n'est PAS un critère : champ éditable via PUT /auth/me.
+    """
+    if event is None:
+        return False
+    if user.role in ("organizer", "organisation"):
+        return event.organizer_id == user.id
+    if user.role == "agent":
+        return user.agent_event_id is not None and user.agent_event_id == event.id
+    return False
+
+
 @router.get("/tickets/{ticket_id}/info")
 def get_ticket_info(ticket_id: int, db: Session = Depends(get_db),
                     current_user: User = Depends(get_current_user)):
     if current_user.role not in ("organizer", "organisation", "agent"):
         raise HTTPException(403, "Accès refusé")
     ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
-    if not ticket:
+    # 404 identique si billet d'un autre event : pas d'oracle d'existence.
+    # Sans ce check, n'importe quel orga (signup public) lisait le qr_hash
+    # de TOUS les billets de la plateforme par énumération d'id.
+    if not ticket or not _can_operate_event(current_user, ticket.event):
         raise HTTPException(404, "Ticket introuvable")
     return {
         "id": ticket.id,
@@ -387,14 +406,24 @@ def valider_billet(request: Request, data: ScanTicket, db: Session = Depends(get
     if current_user.role not in ("agent", "organizer", "organisation"):
         raise HTTPException(status_code=403, detail="Accès refusé. Réservé aux contrôleurs.")
 
-    ticket = db.query(Ticket).filter(Ticket.qr_hash == data.qr_data).first()
+    # Verrou ligne : 2 agents qui scannent le même QR simultanément →
+    # un seul passe, l'autre voit "DÉJÀ UTILISÉ".
+    ticket = (
+        db.query(Ticket)
+        .filter(Ticket.qr_hash == data.qr_data)
+        .with_for_update()
+        .first()
+    )
     if not ticket:
         raise HTTPException(status_code=404, detail="Billet introuvable (Faux billet ou QR mal lu).")
 
-    if current_user.role == "agent":
-        if current_user.agent_event_id and current_user.agent_event_id != event.id:
-            raise HTTPException(403, "Vous n'êtes pas assigné à cet événement")
-            
+    # Fix NameError `event` (agents → 500 systématique depuis juin) +
+    # scoping orga : avant, tout orga pouvait "brûler" les billets de n'importe quel event.
+    if not _can_operate_event(current_user, ticket.event):
+        log_security_event(db, "scan_forbidden", request, current_user.id,
+                           f"Scan refusé ticket {ticket.id} (event {ticket.event_id})")
+        raise HTTPException(403, "Ce billet appartient à un autre événement.")
+
     if ticket.is_used:
         date_used = ticket.used_at.strftime("%H:%M:%S") if ticket.used_at else "?"
         raise HTTPException(status_code=400, detail=f"Alerte : Billet DÉJÀ UTILISÉ à {date_used} !")

@@ -226,7 +226,12 @@ fenêtre temporelle précise :
   encore en attente côté opérateur) et coûteux en volume d'appels.
 - **Plus jeune que 24 heures** (`MAX_AGE_HOURS`) : au-delà, le paiement
   est considéré comme abandonné et sera traité par la fonction
-  `expire_old_orphans` qui libère les places.
+  `expire_old_orphans`, appelée en fin de `POST /admin/reconcile`
+  (avant oct. 2026 elle n'était appelée nulle part : places perdues à vie).
+  Elle fait un **dernier `check_payment_status`** avant de libérer :
+  code `1` → billet validé (paiement tardif), code `""` ou erreur réseau
+  → ticket laissé intact (pas de libération sans preuve), autres codes
+  (y compris `3`) → `expire_abandonne` + place libérée. Lots de 100.
 
 Pour chaque ticket dans la fenêtre, le cron appelle
 `check_payment_status(payment_ref)` puis `process_ngser_response`. Le
@@ -265,10 +270,11 @@ paiement et appelle `POST /tickets/{ticket_id}/confirm-cash-payment`
 qui passe le statut à `paye_cash`, renseigne `cash_collected_by`,
 `cash_collected_at`, `cash_amount`.
 
-Si la réservation n'est pas confirmée dans les 24 heures suivant sa
-création (par exemple parce que le fan ne s'est jamais présenté), la
-fonction `expire_old_orphans` du cron passe le ticket à
-`expire_cash` et libère la place via `lock_event_for_release`.
+⚠️ **Non implémenté** : aucune expiration automatique des réservations
+cash (`reservation_expires_at` est posé mais jamais lu). Une réservation
+jamais honorée garde sa place jusqu'à l'événement. Décision produit
+attendue (cf. TECH_Core P1) : la deadline est-elle « réserver avant
+J-1 » ou « payer avant J-1 » ?
 
 ## Flux 3 : Événement gratuit
 
@@ -302,8 +308,13 @@ L'organisateur veut récupérer les fonds accumulés sur ses ventes.
 ### Phase 1 : demande par l'organisateur
 
 `POST /organizer/payout-request` crée un `PayoutRequest` avec
-`status = "en_attente"`, `amount` calculé à partir des ventes non
-encore retirées de l'événement. À ce stade, aucun appel NGSER.
+`status = "en_attente"`, `amount` plafonné par la **cagnotte retirable**
+(`_cagnotte_retirable`) : somme des `Payment.organizer_amount` complétés
+**hors cash et gratuit**. Le cash est déjà dans la poche de l'orga ;
+l'inclure revenait à le lui reverser une 2e fois par OM. À ce stade,
+aucun appel NGSER. Un changement de `phone_number` (numéro de
+destination des fonds) est validé `+236XXXXXXXX` et tracé
+(`payout_phone_changed`).
 
 ### Phase 2 : validation par un administrateur
 
@@ -323,9 +334,14 @@ Le backend (`api/admin.py::validate_payout`) :
    `user.orange_money`, soit `user.phone_number` en fallback).
 4. Appelle NGSER `create_withdrawal_session(withdrawal_id, amount,
    phone)` qui déclenche le transfert sortant.
-5. En cas d'échec côté NGSER : revient à `status = "en_attente"`
-   pour permettre relance manuelle, mais garde `payment_ref` en base
-   (sera écrasé au prochain essai).
+5. Issue de l'appel :
+   - HTTP 4xx (refus explicite, aucun argent sorti) → `en_attente`,
+     relance admin possible (`payout_rejected`).
+   - Timeout / erreur réseau / 5xx / réponse illisible → **reste
+     `en_cours`** (`payout_ambiguous`). Le cron tranchera via
+     `check_payment_status`. Remettre `en_attente` permettait un 2e clic
+     admin = nouveau `WD…` = **double virement**.
+   - Succès → `paye` (`payout_paid`).
 
 ### Phase 3 : confirmation par webhook ou cron
 
@@ -339,7 +355,11 @@ est similaire :
   du statut n'est faite dans ce cas — un écart de montant sur un
   retrait est un signal suspect qui doit rester tracé plutôt qu'être
   résolu automatiquement dans un sens ou l'autre.
-- `code ∈ {"0","2","4","5","6"}` → `payout.status = "en_attente"`.
+- `code ∈ {"0","2"}` (rejet / solde insuffisant) → `payout.status = "en_attente"`.
+- `code ∈ {"4","5","6"}` (inexistant / timeout / inconnu) → **reste
+  `en_cours`**, action `ambiguous`, investigation humaine. Au-delà de
+  24 h après `processed_at` le cron ne le réinterroge plus : un
+  `en_cours` ancien est une alerte admin, pas un état normal.
 - `code == "3"` → aucun changement.
 
 ## Flux 5 : Achat de régie publicitaire
@@ -373,7 +393,7 @@ qui le protège.
 | Webhook perdu (billet) | Cron 5min sur tickets en `en_attente_om` | `core/reconcile.py` |
 | Webhook perdu (retrait) | Cron 5min sur payouts en `en_cours` avec `payment_ref` non-nul | `core/reconcile.py` |
 | Cron non exécuté | GitHub Actions cron `*/5 * * * *`, secret `RECONCILE_SECRET` en double vérification | `.github/workflows/`, `api/payments.py::admin_reconcile` |
-| Ticket réservation orpheline (fan disparu) | `expire_old_orphans` libère la place après 24h | `core/reconcile.py` |
+| Checkout OM abandonné >24h | `expire_old_orphans` (check final NGSER puis libération), appelé par `/admin/reconcile` | `core/reconcile.py` |
 | Incohérence entre montant demandé et payé | Vérification `abs(recu - attendu) > 1` FCFA, rejet | `core/payment_processing.py` |
 | Contournement deadline via promo gratuite | Contrôle sur `event.price` brut, pas sur prix après promo | `api/payments.py` |
 | Décrémentation multiple d'une même place | Idempotence par statut : skip si déjà traité | `core/payment_processing.py` |

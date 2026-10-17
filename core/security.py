@@ -92,9 +92,11 @@ class SessionManager:
         self.db = db
 
     def get_client_ip(self, request: Request) -> str:
-        if request.headers.get("x-forwarded-for"):
-            return request.headers.get("x-forwarded-for").split(",")[0].strip()
-        return request.client.host
+        # Même source que le rate limiter (slowapi get_remote_address).
+        # L'ancien XFF[0] est fourni par le CLIENT (falsifiable à volonté).
+        # L'IP réelle derrière Render exige uvicorn --proxy-headers
+        # --forwarded-allow-ips='*' (cf docs/07-OPERATIONS.md).
+        return request.client.host if request.client else None
 
     def verify_session(self, user_id: int, request: Request) -> bool:
         """
@@ -173,6 +175,10 @@ def get_optional_user(
         return None
     try:
         payload = jwt.decode(credentials.credentials, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        return db.query(User).filter(User.id == int(payload["sub"])).first()
-    except JWTError:
+        # Refusait pas les refresh tokens (7j) ni les comptes désactivés.
+        if payload.get("type") != "access":
+            return None
+        user = db.query(User).filter(User.id == int(payload["sub"])).first()
+        return user if (user and user.is_active) else None
+    except (JWTError, KeyError, ValueError):
         return None

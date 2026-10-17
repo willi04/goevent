@@ -1615,9 +1615,9 @@
           <tr>
             <td>
               <p class="font-bold text-gray-900 max-w-[180px] truncate">${_btEscapeHtml(e.title)}</p>
-              <p class="text-[11px] text-gray-400">${e.category}</p>
+              <p class="text-[11px] text-gray-400">${_btEscapeHtml(e.category)}</p>
             </td>
-            <td><span class="text-xs">${e.organizer || "—"}</span></td>
+            <td><span class="text-xs">${_btEscapeHtml(e.organizer) || "—"}</span></td>
             <td><span class="text-xs">${e.event_date ? new Date(e.event_date).toLocaleDateString("fr-FR") : "—"}</span></td>
             <td>
               <span class="text-xs font-bold">${e.seats_sold}/${e.total_seats}</span>
@@ -1699,14 +1699,14 @@
           <td>
             <div class="flex items-center gap-3">
               <div class="w-8 h-8 rounded-full bg-green-50 text-green-700 flex items-center justify-center text-xs font-black flex-shrink-0">
-                ${(u.name || u.phone || "U").slice(0, 2).toUpperCase()}
+                ${_btEscapeHtml((u.name || u.phone || "U").slice(0, 2).toUpperCase())}
               </div>
-              <span class="font-bold text-gray-900 text-sm">${u.name || "—"}</span>
+              <span class="font-bold text-gray-900 text-sm">${_btEscapeHtml(u.name) || "—"}</span>
             </div>
           </td>
-          <td><span class="text-xs font-mono">${u.phone || "—"}</span></td>
+          <td><span class="text-xs font-mono">${_btEscapeHtml(u.phone) || "—"}</span></td>
           <td>${roleBadge(u.role)}</td>
-          <td><span class="text-xs text-gray-500">${u.email || "—"}</span></td>
+          <td><span class="text-xs text-gray-500">${_btEscapeHtml(u.email) || "—"}</span></td>
           <td><span class="text-xs text-gray-400">${u.created_at ? new Date(u.created_at).toLocaleDateString("fr-FR") : "—"}</span></td>
           <td>
             <button onclick="toggleUser(${u.id}, ${u.is_active})" class="action-btn ${u.is_active ? "btn-danger" : "btn-success"} text-xs">
@@ -1754,7 +1754,9 @@
           
           // On sépare en deux groupes
           const payoutsPending = allPayouts.filter(p => p.status === "en_attente");
-          const payoutsHistory = allPayouts.filter(p => p.status === "paye");
+          // en_cours = virement envoyé, issue en attente de confirmation NGSER
+          // (réponse ambiguë/timeout). Visible dans l'historique, NE PAS relancer.
+          const payoutsHistory = allPayouts.filter(p => p.status === "paye" || p.status === "en_cours");
 
           // 1. Mise à jour des "En attente"
           document.getElementById("payouts-badge").textContent = payoutsPending.length;
@@ -1767,14 +1769,14 @@
                 (p) => `
             <div class="card p-5 flex justify-between items-center gap-4">
               <div>
-                <p class="font-black text-gray-900">${p.org_name || "Organisateur"}</p>
+                <p class="font-black text-gray-900">${_btEscapeHtml(p.org_name) || "Organisateur"}</p>
                 <div class="flex items-center gap-2 mt-1">
                   <span class="text-sm font-bold text-green-700">${(p.amount || 0).toLocaleString()} FCFA</span>
                   <span class="text-[10px] text-gray-400 uppercase font-bold">Événement #${p.event_id}</span>
                 </div>
-                <p class="text-xs text-gray-400 mt-1">Orange Money : ${p.phone_number || "Non renseigné"}</p>
+                <p class="text-xs text-gray-400 mt-1">Orange Money : ${_btEscapeHtml(p.phone_number) || "Non renseigné"}</p>
               </div>
-              <button onclick="validerRetrait(${p.id}, ${p.amount}, '${p.phone_number || ""}')"
+              <button onclick="validerRetrait(${Number(p.id)}, ${Number(p.amount) || 0}, ${_btEscapeHtml(JSON.stringify(p.phone_number || ""))})"
                       class="action-btn btn-primary text-xs flex-shrink-0">
                 Valider le paiement
               </button>
@@ -1793,11 +1795,13 @@
                 (p) => `
             <tr>
               <td><span class="text-xs text-gray-400">${new Date(p.created_at).toLocaleDateString("fr-FR")}</span></td>
-              <td><span class="font-bold text-gray-900 text-sm">${p.org_name || "Organisateur"}</span></td>
+              <td><span class="font-bold text-gray-900 text-sm">${_btEscapeHtml(p.org_name) || "Organisateur"}</span></td>
               <td><span class="text-xs font-bold text-gray-500">Événement #${p.event_id}</span></td>
               <td><span class="text-sm font-bold text-gray-500">${(p.amount || 0).toLocaleString()} FCFA</span></td>
-              <td><span class="text-xs font-mono text-gray-500">${p.phone_number || "—"}</span></td>
-              <td><span class="badge badge-green flex items-center gap-1 w-max"><span class="material-symbols-outlined text-[12px]">check_circle</span> Payé</span></td>
+              <td><span class="text-xs font-mono text-gray-500">${_btEscapeHtml(p.phone_number) || "—"}</span></td>
+              <td>${p.status === "en_cours"
+                ? '<span class="badge flex items-center gap-1 w-max" style="background:#fef3c7;color:#92400e" title="Vérification NGSER automatique (cron). Ne pas relancer."><span class="material-symbols-outlined text-[12px]">hourglass_top</span> En cours</span>'
+                : '<span class="badge badge-green flex items-center gap-1 w-max"><span class="material-symbols-outlined text-[12px]">check_circle</span> Payé</span>'}</td>
             </tr>
           `
               ).join("");
@@ -1835,8 +1839,9 @@
           loadFinance(); // Rafraîchit la liste
           
         } catch (e) {
-          // 4. En cas d'erreur (fonds insuffisants, faux numéro)
+          // 4. En cas d'erreur (fonds insuffisants, faux numéro, réponse ambiguë)
           btToast(e.message || "Erreur lors du transfert", "error");
+          loadFinance(); // le statut a pu passer en_cours côté serveur
         }
       }
 
@@ -1865,18 +1870,18 @@
           <div class="card p-5">
             <div class="flex justify-between items-start gap-4 mb-3">
               <div>
-                <p class="font-black text-gray-900">${p.company_name}</p>
-                <p class="text-xs text-gray-500 mt-1">${p.partnership_type}</p>
+                <p class="font-black text-gray-900">${_btEscapeHtml(p.company_name)}</p>
+                <p class="text-xs text-gray-500 mt-1">${_btEscapeHtml(p.partnership_type)}</p>
               </div>
               ${statusBadge(p.status)}
             </div>
-            <p class="text-sm text-gray-600 mb-3 leading-relaxed">${p.message}</p>
+            <p class="text-sm text-gray-600 mb-3 leading-relaxed">${_btEscapeHtml(p.message)}</p>
             <div class="flex flex-wrap items-center gap-3">
               <span class="text-xs text-gray-400 flex items-center gap-1">
-                <span class="material-symbols-outlined text-sm">email</span>${p.email}
+                <span class="material-symbols-outlined text-sm">email</span>${_btEscapeHtml(p.email)}
               </span>
               <span class="text-xs text-gray-400 flex items-center gap-1">
-                <span class="material-symbols-outlined text-sm">phone</span>${p.phone}
+                <span class="material-symbols-outlined text-sm">phone</span>${_btEscapeHtml(p.phone)}
               </span>
               ${
                 p.status === "nouveau"
@@ -1936,21 +1941,21 @@
                       <td>
                           <div class="flex items-center gap-3">
                               <div class="w-8 h-8 rounded-full bg-green-50 text-green-700 flex items-center justify-center text-xs font-black flex-shrink-0">
-                                  ${(s.full_name || "U").slice(0, 2).toUpperCase()}
+                                  ${_btEscapeHtml((s.full_name || "U").slice(0, 2).toUpperCase())}
                               </div>
-                              <span class="font-bold text-gray-900 text-sm">${s.full_name}</span>
+                              <span class="font-bold text-gray-900 text-sm">${_btEscapeHtml(s.full_name)}</span>
                           </div>
                       </td>
-                      <td><span class="text-xs font-mono">${s.phone_number}</span></td>
+                      <td><span class="text-xs font-mono">${_btEscapeHtml(s.phone_number)}</span></td>
                       <td>${labelFn(s.staff_function)}</td>
                       <td><span class="text-xs font-bold">${s.commission_rate !== null && s.commission_rate !== undefined ? Math.round(s.commission_rate * 100) + ' %' : '—'}</span></td>
-                      <td><span class="text-xs text-gray-500">${s.email || "—"}</span></td>
+                      <td><span class="text-xs text-gray-500">${_btEscapeHtml(s.email) || "—"}</span></td>
                       <td><span class="text-xs text-gray-400">${new Date(s.created_at).toLocaleDateString("fr-FR")}</span></td>
                       <td><span class="badge ${s.is_active ? 'badge-green' : 'badge-gray'}">${s.is_active ? 'Actif' : 'Désactivé'}</span></td>
                       <td>
                           <div class="flex gap-2 flex-wrap">
                               <button onclick="openStaffModal(${s.id})" class="action-btn text-xs" style="background:#f3f4f6;color:#374151">Modifier</button>
-                              <button onclick="resetStaffPin(${s.id}, '${s.full_name.replace(/'/g, "\\'")}', '${s.phone_number}')" class="action-btn text-xs" style="background:#fef3c7;color:#854d0e">Reset PIN</button>
+                              <button onclick="resetStaffPin(${Number(s.id)}, ${_btEscapeHtml(JSON.stringify(s.full_name || ""))}, ${_btEscapeHtml(JSON.stringify(s.phone_number || ""))})" class="action-btn text-xs" style="background:#fef3c7;color:#854d0e">Reset PIN</button>
                               ${s.is_active ? `<button onclick="toggleStaff(${s.id}, true)" class="action-btn btn-danger text-xs">Désactiver</button>` : `<button onclick="toggleStaff(${s.id}, false)" class="action-btn btn-success text-xs">Réactiver</button>`}
                           </div>
                       </td>
@@ -2179,12 +2184,12 @@
       
           tbody.innerHTML = list.map(c => `
               <tr>
-                  <td><span class="font-bold text-gray-900 text-sm">${c.sponsor_name}</span></td>
+                  <td><span class="font-bold text-gray-900 text-sm">${_btEscapeHtml(c.sponsor_name)}</span></td>
                   <td>
                       <div class="text-xs text-gray-500">
-                          ${c.sponsor_contact ? `<div>${c.sponsor_contact}</div>` : ''}
-                          ${c.sponsor_phone ? `<div class="font-mono">${c.sponsor_phone}</div>` : ''}
-                          ${c.sponsor_email ? `<div>${c.sponsor_email}</div>` : ''}
+                          ${c.sponsor_contact ? `<div>${_btEscapeHtml(c.sponsor_contact)}</div>` : ''}
+                          ${c.sponsor_phone ? `<div class="font-mono">${_btEscapeHtml(c.sponsor_phone)}</div>` : ''}
+                          ${c.sponsor_email ? `<div>${_btEscapeHtml(c.sponsor_email)}</div>` : ''}
                       </div>
                   </td>
                   <td><span class="text-xs text-gray-500">${fmtDate(c.start_date)}<br>→ ${fmtDate(c.end_date)}</span></td>
@@ -2407,13 +2412,13 @@
           grid.innerHTML = list.map(s => `
               <div class="card overflow-hidden flex flex-col">
                   <div class="relative h-32 bg-gray-100">
-                      ${s.image_url ? `<img src="${s.image_url}" class="w-full h-full object-cover" />` : '<div class="w-full h-full flex items-center justify-center text-gray-300"><span class="material-symbols-outlined text-4xl">image</span></div>'}
+                      ${s.image_url ? `<img src="${_btEscapeHtml(s.image_url)}" class="w-full h-full object-cover" />` : '<div class="w-full h-full flex items-center justify-center text-gray-300"><span class="material-symbols-outlined text-4xl">image</span></div>'}
                       ${isLive(s) ? '<div class="absolute top-2 left-2 bg-green-500 text-white text-[10px] font-black px-2 py-1 rounded-full flex items-center gap-1"><span class="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>EN DIFFUSION</div>' : ''}
                       <div class="absolute top-2 right-2 ${s.type === 'system' ? 'bg-amber-500' : 'bg-blue-500'} text-white text-[10px] font-black px-2 py-1 rounded-full uppercase">${s.type === 'system' ? 'Système' : 'Pub'}</div>
                   </div>
                   <div class="p-4 flex-1 flex flex-col">
-                      <h3 class="font-black text-sm text-gray-900 mb-1 line-clamp-2">${s.title}</h3>
-                      ${s.sponsor_name ? `<p class="text-[10px] text-gray-500 mb-2">${s.sponsor_name}</p>` : '<p class="text-[10px] text-gray-400 mb-2">—</p>'}
+                      <h3 class="font-black text-sm text-gray-900 mb-1 line-clamp-2">${_btEscapeHtml(s.title)}</h3>
+                      ${s.sponsor_name ? `<p class="text-[10px] text-gray-500 mb-2">${_btEscapeHtml(s.sponsor_name)}</p>` : '<p class="text-[10px] text-gray-400 mb-2">—</p>'}
                       <div class="text-[10px] text-gray-500 mb-3">
                           <div>${fmt(s.starts_at)} → ${fmt(s.ends_at)}</div>
                           <div>Position : ${s.position}</div>
@@ -2609,14 +2614,14 @@
       }
       
       function renderSlidePreview(s) {
-          const cta = (s.cta_text && s.cta_link) ? `<a href="javascript:void(0)" style="display:inline-flex;align-items:center;gap:8px;margin-top:24px;padding:12px 28px;background:#9df6b9;color:#00210f;border-radius:9999px;font-weight:700;font-size:16px;text-decoration:none">${s.cta_text} →</a>` : "";
-          const sub = s.subtitle ? `<p style="font-size:18px;color:rgba(255,255,255,0.9);max-width:600px;margin-top:8px">${s.subtitle}</p>` : "";
+          const cta = (s.cta_text && s.cta_link) ? `<a href="javascript:void(0)" style="display:inline-flex;align-items:center;gap:8px;margin-top:24px;padding:12px 28px;background:#9df6b9;color:#00210f;border-radius:9999px;font-weight:700;font-size:16px;text-decoration:none">${_btEscapeHtml(s.cta_text)} →</a>` : "";
+          const sub = s.subtitle ? `<p style="font-size:18px;color:rgba(255,255,255,0.9);max-width:600px;margin-top:8px">${_btEscapeHtml(s.subtitle)}</p>` : "";
           document.getElementById("slide-preview-content").innerHTML = `
-              ${s.image_url ? `<img src="${s.image_url}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.5)" />` : '<div style="position:absolute;inset:0;background:#03361e"></div>'}
+              ${s.image_url ? `<img src="${_btEscapeHtml(s.image_url)}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.5)" />` : '<div style="position:absolute;inset:0;background:#03361e"></div>'}
               <div style="position:absolute;inset:0;background:linear-gradient(to top,#f9f9f9,transparent,transparent);opacity:0.9"></div>
               <div style="position:absolute;inset:0;display:flex;align-items:center;padding:64px;z-index:10">
                   <div style="max-width:900px">
-                      <h1 style="font-size:56px;font-weight:800;color:white;line-height:1.1;font-family:'Plus Jakarta Sans',sans-serif">${s.title}</h1>
+                      <h1 style="font-size:56px;font-weight:800;color:white;line-height:1.1;font-family:'Plus Jakarta Sans',sans-serif">${_btEscapeHtml(s.title)}</h1>
                       ${sub}
                       ${cta}
                   </div>
@@ -2648,9 +2653,9 @@
           <div class="card p-5 border-l-4 ${c.status === "traite" ? "border-green-500" : "border-red-500"}">
             <div class="flex justify-between items-start gap-4 mb-3">
               <div>
-                <p class="font-black text-gray-900">${c.event_title}</p>
+                <p class="font-black text-gray-900">${_btEscapeHtml(c.event_title)}</p>
                 <p class="text-xs font-bold text-gray-500 mt-1 flex items-center gap-1">
-                  <span class="material-symbols-outlined text-[14px]">storefront</span> ${c.organizer_name}
+                  <span class="material-symbols-outlined text-[14px]">storefront</span> ${_btEscapeHtml(c.organizer_name)}
                 </p>
               </div>
               <span class="badge ${c.status === "traite" ? "badge-green" : "badge-red"}">
@@ -2659,7 +2664,7 @@
             </div>
             <div class="bg-red-50 p-4 rounded-xl mb-3 border border-red-100">
                 <p class="text-[10px] font-bold text-red-600 uppercase tracking-widest mb-2">Raison détaillée (Min 100 caractères) :</p>
-                <p class="text-sm text-gray-800 italic leading-relaxed">"${c.reason}"</p>
+                <p class="text-sm text-gray-800 italic leading-relaxed">"${_btEscapeHtml(c.reason)}"</p>
             </div>
             ${
               c.status !== "traite"

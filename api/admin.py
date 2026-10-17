@@ -257,20 +257,37 @@ async def validate_payout(request: Request, payout_id: int, db: Session = Depend
         elif status_code == 200 and response_data.get("status_id") == 1:
             payout.status = "paye"
             db.commit()
+            log_security_event(db, "payout_paid", request, current_user.id,
+                               f"Payout {payout.id} {payout.amount} FCFA -> {phone_number} ({withdrawal_id})")
             return {"status": "success", "message": f"Retrait de {payout.amount} FCFA effectué"}
-        else:
+        elif 400 <= status_code < 500:
+            # Refus EXPLICITE de NGSER (requête rejetée) : aucun argent n'est parti,
+            # on peut remettre en file pour une nouvelle tentative admin.
             payout.status = "en_attente"
             db.commit()
+            log_security_event(db, "payout_rejected", request, current_user.id,
+                               f"Payout {payout.id} rejeté NGSER HTTP {status_code} ({withdrawal_id})")
             error_msg = response_data.get("description", f"Erreur NGSER (Code HTTP {status_code})")
             raise HTTPException(status_code=400, detail=f"Échec : {error_msg}")
+        else:
+            # 5xx / 200 sans statut lisible : issue INCONNUE. On reste en_cours
+            # (payment_ref persisté) → le cron reconcile tranchera via check_payment_status.
+            log_security_event(db, "payout_ambiguous", request, current_user.id,
+                               f"Payout {payout.id} réponse ambiguë HTTP {status_code} ({withdrawal_id})")
+            raise HTTPException(status_code=502,
+                detail="Réponse NGSER ambiguë : retrait laissé EN COURS, vérification automatique sous 15-30 min. Ne pas relancer.")
 
     except HTTPException:
         raise
     except Exception as e:
-        payout.status = "en_attente"
-        db.commit()
+        # Timeout / coupure réseau APRÈS envoi possible de la requête : NGSER a
+        # peut-être exécuté le virement. Remettre en_attente permettait un 2e clic
+        # admin = nouveau WD order_id = DOUBLE VIREMENT. On reste en_cours.
         print(f"❌ Erreur Interne Retrait : {str(e)}")
-        raise HTTPException(status_code=503, detail="Le service de transfert est temporairement indisponible.")
+        log_security_event(db, "payout_ambiguous", request, current_user.id,
+                           f"Payout {payout.id} exception réseau ({withdrawal_id}) : {e}"[:500])
+        raise HTTPException(status_code=503,
+            detail="Service de transfert injoignable : retrait laissé EN COURS, vérification automatique. Ne pas relancer.")
 
 
 # ── ANNULATIONS ─────────────────────────────────────────────────

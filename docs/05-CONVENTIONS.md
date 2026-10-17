@@ -114,6 +114,22 @@ def route_name(
     # 6. Retour Pydantic
 ```
 
+### Propriété des ressources (scoping)
+
+Le rôle ne suffit pas : **tout le monde peut s'inscrire `organizer`**.
+Chaque route qui touche une ressource d'un événement vérifie la
+propriété via une clé non éditable par l'utilisateur :
+
+- Billet / scan / lecture QR : `_can_operate_event(user, ticket.event)`
+  (`api/tickets.py`) — orga propriétaire (`event.organizer_id`) ou agent
+  assigné (`agent_event_id`).
+- Agents d'un orga : `_my_agents_query` (`api/organizer.py`) — agents
+  dont `agent_event_id` ∈ events de l'orga.
+- **Jamais `org_name`** comme critère d'autorisation : modifiable
+  librement via `PUT /auth/me`.
+- Ressource d'un autre propriétaire → 404 (pas 403) quand l'id est
+  énumérable, pour ne pas servir d'oracle d'existence.
+
 ### Vérifications d'accès
 
 Les vérifications de rôle sont **exclusivement** portées par les

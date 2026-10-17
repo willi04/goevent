@@ -197,7 +197,10 @@ def update_event(
     ).first()
     if not event:
         raise HTTPException(404, "Événement introuvable ou non autorisé")
-    for k, v in data.model_dump(exclude_none=True).items():
+    changes = data.model_dump(exclude_none=True)
+    if "total_seats" in changes and changes["total_seats"] < (event.seats_sold or 0):
+        raise HTTPException(409, f"Impossible : {event.seats_sold} places déjà vendues/réservées.")
+    for k, v in changes.items():
         setattr(event, k, v)
     db.commit()
     return {"message": "Événement mis à jour"}

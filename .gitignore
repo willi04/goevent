@@ -1,0 +1,26 @@
+# ── Secrets : JAMAIS versionnés (repo public) ──────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ── Python ─────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+
+# ── Données / exports ──────────────────────────────────────────
+*.sql.gz
+*.dump
+*.csv
+exports/
+
+# ── Éditeurs / OS ──────────────────────────────────────────────
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

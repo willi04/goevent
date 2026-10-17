@@ -1153,14 +1153,13 @@
       
           // Filtrer les billets non-actionnables (échec paiement, expiration).
           // Un fan ne peut rien faire d'un ticket en echec_paiement/expire_*/
-          // reservation_cash expirée : polluer sa liste = créer de la confusion.
+          // (la réservation cash a été supprimée en oct. 2026).
           // Les statuts échoués restent en BD (audit + réconciliation) mais ne
           // sont plus affichés côté fan.
           const billetsActifs = billets.filter((b) => {
             const status = (b.payment_status || "").toLowerCase();
             return status === "paye"
                 || status === "paye_cash"
-                || status === "reservation_cash"
                 || status === "en_attente_om";  // Paiement en cours = à voir
           });
 
@@ -1174,8 +1173,7 @@
               // 🔧 Reconnaître tous les statuts qui doivent afficher un QR
               const isPaidOnline = b.payment_status === "paye";
               const isPaidCash = b.payment_status === "paye_cash";
-              const isReservedCash = b.payment_status === "reservation_cash";
-              const showQrCode = isPaidOnline || isPaidCash || isReservedCash;
+              const showQrCode = isPaidOnline || isPaidCash;
       
               const qrUrl = showQrCode
                 ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${b.qr_hash}`
@@ -1195,21 +1193,6 @@
                 badgeClass = "bg-green-100 text-green-700";
                 badgeText = "Payé Cash";
                 qrCaption = "Cash encaissé. Présentez ce code à l'entrée";
-              } else if (isReservedCash) {
-                badgeClass = "bg-orange-100 text-orange-700";
-                badgeText = "Réservation Cash";
-                qrCaption = `À payer cash : ${b.price.toLocaleString("fr-FR")} FCFA à l'entrée`;
-                qrHeader = `
-                  <div class="bg-orange-50 border-2 border-orange-300 rounded-2xl p-4 mb-4">
-                    <div class="flex items-start gap-3">
-                      <span class="material-symbols-outlined text-orange-600 text-2xl">payments</span>
-                      <div>
-                        <p class="font-bold text-orange-900 text-sm">À payer en cash à l'entrée</p>
-                        <p class="text-xs text-orange-700 mt-1">Présentez ce QR code à l'agent. Il vous demandera ${b.price.toLocaleString("fr-FR")} FCFA en cash.</p>
-                      </div>
-                    </div>
-                  </div>
-                `;
               }
       
               return `

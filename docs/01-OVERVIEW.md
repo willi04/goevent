@@ -18,7 +18,7 @@ tableau de bord, et déclenchent des retraits de leurs fonds vers leur compte
 Orange Money.
 
 **Les fans** parcourent les événements disponibles, réservent leurs billets
-en payant via Orange Money ou en cash à l'entrée, reçoivent un QR code, et
+en payant via Orange Money (billets gratuits sans paiement), reçoivent un QR code, et
 gèrent leurs réservations depuis leur espace personnel.
 
 **Les agents de scan** (employés temporaires de l'organisateur) valident

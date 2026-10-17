@@ -241,65 +241,49 @@ décrit dans `02-ARCHITECTURE.md`.
 
 ### Cas particulier : promo qui ramène le prix à zéro
 
-NGSER ne peut pas traiter une transaction de montant nul. Si un code
-promo valide ramène le prix d'un billet à zéro, `initiate_ngser_payment`
-rejette avec 409 en invitant le fan à choisir le paiement cash. La
-réservation cash à zéro passe par `POST /tickets/reserve-cash` qui
-détecte le prix nul et crée directement un ticket en statut `paye`
-avec méthode `gratuit`.
+NGSER ne peut pas traiter une transaction de montant nul. `checkout.html`
+valide le code promo avant l'achat : si le prix final est nul, il appelle
+directement `POST /tickets/reserve-free` (flux 3). Si un client appelle
+quand même `initiate-ngser` avec ce code, la route répond 400.
 
-Cette garde est appliquée sur le prix brut de l'événement pour éviter
-un contournement du contrôle de deadline : un événement payant à J-24h
-reste bloqué même si un code promo local le rendrait gratuit.
+## Flux 2 : Réservation cash — SUPPRIMÉ (oct. 2026)
 
-## Flux 2 : Réservation cash à l'entrée
+Le paiement en espèces à l'entrée n'existe plus : tout billet payant
+passe par Orange Money. Supprimés : `POST /tickets/{id}/confirm-cash-payment`,
+`DELETE /tickets/{id}/cancel-reservation`, `GET /organizer/cash-reservations`,
+`GET /tickets/{id}/info`, `POST /tickets/buy` (legacy USSD manuel), la
+branche « à encaisser » de `/scan`, la section « Réservations Cash » du
+dashboard orga et l'écran d'encaissement du scanner.
 
-Le fan a choisi « Payer en espèces à l'entrée ». Aucun appel à NGSER.
+Pourquoi : le cash ne rapportait aucune commission (`platform_fee = 0`),
+bloquait des places sans engagement (aucune expiration implémentée,
+accaparement possible à 3 réservations par compte) et gonflait la
+cagnotte retirable.
 
-Le frontend appelle `POST /tickets/reserve-cash`. Le backend :
+Les données historiques restent lisibles : les statuts `paye_cash`
+(encaissés) sont toujours valides au scan et comptés dans les stats ;
+les `reservation_cash` en cours sont annulés par
+`scripts/2026-10_suppression_reservations_cash.sql` (statut
+`annule_cash_supprime`, places et usages promo libérés).
 
-1. Verrouille l'événement, vérifie disponibilité.
-2. Applique un code promo éventuel comme en flux 1.
-3. Crée le `Ticket` avec `payment_status = "reservation_cash"`,
-   `payment_method = "cash"`, `reservation_expires_at = now + 24h`.
-4. Incrémente `seats_sold` de 1.
-5. Retourne les détails du ticket au fan (avec QR code).
+## Flux 3 : Billet gratuit
 
-Le jour de l'événement, l'organisateur ou un agent encaisse le
-paiement et appelle `POST /tickets/{ticket_id}/confirm-cash-payment`
-qui passe le statut à `paye_cash`, renseigne `cash_collected_by`,
-`cash_collected_at`, `cash_amount`.
+Événement à `price = 0`, ou billet payant ramené à 0 par un code promo.
+Aucun appel à NGSER.
 
-⚠️ **Non implémenté** : aucune expiration automatique des réservations
-cash (`reservation_expires_at` est posé mais jamais lu). Une réservation
-jamais honorée garde sa place jusqu'à l'événement. Décision produit
-attendue (cf. TECH_Core P1) : la deadline est-elle « réserver avant
-J-1 » ou « payer avant J-1 » ?
+Le frontend appelle `POST /tickets/reserve-free` (`/tickets/reserve-cash`
+reste un alias, pour les PWA encore en cache). Le backend :
 
-## Flux 3 : Événement gratuit
+1. Verrouille l'événement, vérifie disponibilité et date.
+2. Limite à 3 billets par compte et par événement (anti-accaparement).
+3. Applique le code promo éventuel ; si le prix final est > 0 → 400
+   « réglez-le par Orange Money ». Aucun billet payant ne sort de cette route.
+4. Crée le `Ticket` en `payment_status = "paye"`, `payment_method = "gratuit"`,
+   `payment_ref = "FREE-XXXXXXXX"`, usage promo directement `confirmed`.
+5. Incrémente `seats_sold` de 1 sous verrou.
 
-L'événement a `price = 0` et pas de tier payant. Aucun appel à NGSER.
-
-Le frontend appelle `POST /tickets/reserve-cash` (même route que le
-cash, à ne pas confondre — la sémantique interne diverge). Le backend
-détecte le prix nul et :
-
-1. Verrouille l'événement, vérifie disponibilité.
-2. Crée le `Ticket` directement en `payment_status = "paye"`,
-   `payment_method = "gratuit"`, `payment_ref = "FREE-XXXXXXXX"` (UUID
-   court).
-3. Incrémente `seats_sold` de 1.
-4. Retourne le ticket au fan.
-
-Pas de phase de confirmation, pas de cron. Le ticket est valable
-immédiatement pour l'entrée.
-
-⚠️ **Invariant** : la deadline de réservation habituelle (bloquée à
-J-24h pour éviter les fraudes de dernière minute) est relâchée pour
-les événements gratuits, mais uniquement sur la base du `event.price`
-brut. Un événement à `price = 5000` avec un code promo qui le rend
-gratuit reste soumis à la deadline. Cette garde est essentielle pour
-éviter le contournement du contrôle par manipulation de codes promo.
+Pas de phase de confirmation, pas de cron, pas de deadline : le ticket
+est valable immédiatement pour l'entrée.
 
 ## Flux 4 : Retrait organisateur
 

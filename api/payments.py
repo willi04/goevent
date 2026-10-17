@@ -72,12 +72,12 @@ async def initiate_ngser_payment(
         discount_fcfa = compute_discount(promo_obj, prix_base)
         prix_base = max(0.0, prix_base - discount_fcfa)
 
-        # Si la promo rend le prix=0, on refuse côté OM : NGSER ne sait pas traiter un montant 0.
-        # Le fan doit basculer sur le flux cash (qui acceptera la promo et générera un billet gratuit).
+        # Promo -100 % : NGSER refuse un montant 0 → billet délivré par
+        # POST /tickets/reserve-free (checkout.html bascule déjà dessus).
         if prix_base <= 0:
             raise HTTPException(
                 400,
-                "Le code promo rend ce billet gratuit. Choisissez le paiement cash à l'entrée."
+                "Le code promo rend ce billet gratuit : rechargez la page pour l'obtenir directement."
             )
 
     frais_acheteur = prix_base * 0.04

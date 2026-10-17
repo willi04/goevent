@@ -1,13 +1,13 @@
 # GoEvent Africa
 
-Plateforme de billetterie en ligne conçue pour la République centrafricaine : création d’événements, vente de billets payés par Orange Money ou en cash, billets à QR code et contrôle d’accès le jour J.
+Plateforme de billetterie en ligne conçue pour la République centrafricaine : création d’événements, vente de billets payés par Orange Money, billets à QR code et contrôle d’accès le jour J.
 
 **Statut : bêta, en pré-production.** La plateforme est déployée sur [goevent.africa](https://goevent.africa) et testée par un panel restreint d’utilisateurs. Les paiements Orange Money passent par l’environnement de **test** de l’agrégateur NGSER ; le passage en production dépend de la réception des clés d’API réelles et d’une recette complète des scénarios critiques.
 
 ## Fonctionnalités
 
 - **Organisateurs** : création et publication d’événements, catégories de billets, codes promo, tableau de bord des ventes, demandes de retrait vers Orange Money.
-- **Acheteurs** : catalogue d’événements, achat par Orange Money ou réservation payable en cash, billet à QR code, espace « Mes billets ».
+- **Acheteurs** : catalogue d’événements, achat par Orange Money (ou billet gratuit), billet à QR code, espace « Mes billets ».
 - **Agents de scan** : validation des billets à l’entrée depuis une interface mobile.
 - **Back-office** : modération, régie publicitaire (mise en avant d’événements), support.
 
@@ -36,7 +36,7 @@ docs/         documentation technique détaillée
 
 - **Fiabilité des paiements.** Un webhook NGSER ne fait que déclencher une vérification : le statut réel d’un paiement est toujours relu auprès de NGSER. Une **réconciliation automatique** (GitHub Actions, toutes les 5 minutes) reprend les paiements restés en attente et expire ceux qui sont orphelins depuis 24 heures.
 - **Pas de survente.** Les places vendues et l’usage des codes promo sont modifiés sous verrou PostgreSQL (`SELECT … FOR UPDATE`), pour éviter les conflits entre acheteurs simultanés.
-- **Sécurité.** Jetons JWT de courte durée, mots de passe hachés (bcrypt), double authentification, limitation du débit des requêtes, nettoyage des saisies, en-têtes de sécurité, contrôle d’accès par rôle centralisé.
+- **Sécurité.** Jetons JWT de courte durée, codes PIN hachés (bcrypt), limitation du débit des requêtes, nettoyage des saisies, en-têtes de sécurité, contrôle d’accès par rôle centralisé.
 - **Configuration validée au démarrage.** Si une variable critique manque, l’API refuse de démarrer plutôt que d’échouer au premier paiement.
 
 ## Documentation

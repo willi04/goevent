@@ -139,10 +139,12 @@ Colonnes essentielles :
   NGSER, `FREE-XXXXXXXX` pour un événement gratuit, vide pour du cash).
 - `payment_method` : `"om"` (Orange Money), `"cash"`, `"gratuit"`.
 - `is_used` et `used_at` : marqués lors du scan à l'entrée.
-- `reservation_expires_at` : pour les réservations cash, deadline de
+- `reservation_expires_at` : **legacy** (flux cash supprimé oct. 2026, plus écrit). Pour les réservations cash, deadline de
   confirmation par l'organisateur avant purge automatique.
 - `cash_collected_by`, `cash_collected_at`, `cash_amount` : traçabilité
-  du paiement cash à l'entrée par un agent ou l'organisateur.
+  du paiement cash à l'entrée par un agent ou l'organisateur. **Legacy** :
+  plus alimentés depuis la suppression du flux cash (oct. 2026) ;
+  `reservation_cash` → `annule_cash_supprime` via `scripts/`.
 
 **Cycle de vie de `payment_status`** :
 

@@ -51,6 +51,8 @@ async def reconcile_pending_payments(db: Session) -> dict:
             Ticket.purchased_at <= floor_recent,
             Ticket.purchased_at >= floor_old,
         )
+        .order_by(Ticket.purchased_at.asc())
+        .limit(200)
         .all()
     )
 
@@ -63,21 +65,22 @@ async def reconcile_pending_payments(db: Session) -> dict:
 
         try:
             http_code, data = await check_payment_status(order_id)
+            code = str(data.get("code", ""))
+            inner = data.get("data") or {}
+            transaction_amount = inner.get("transaction_amount")
+
+            result = process_ngser_response(
+                db=db,
+                order_id=order_id,
+                code=code,
+                transaction_amount=transaction_amount,
+            )
         except Exception as e:
-            print(f"❌ Réconciliation ticket : erreur check {order_id} : {e}")
+            # Une erreur DB sur 1 billet ne doit pas avorter tout le cron.
+            db.rollback()
+            print(f"❌ Réconciliation ticket : erreur {order_id} : {e}")
             summary["errors"] += 1
             continue
-
-        code = str(data.get("code", ""))
-        inner = data.get("data") or {}
-        transaction_amount = inner.get("transaction_amount")
-
-        result = process_ngser_response(
-            db=db,
-            order_id=order_id,
-            code=code,
-            transaction_amount=transaction_amount,
-        )
 
         action = result.get("action")
         if action == "validated":
@@ -212,17 +215,46 @@ async def expire_old_orphans(db: Session, hours: int = 24) -> dict:
     summary = {"expired": 0, "boosts_expired": 0, "fbpacks_expired": 0, "errors": 0}
 
     # ─── 1. Tickets orphelins ───────────────────────────────────────
+    from core.payment_processing import process_ngser_response
+
     orphan_tickets = (
         db.query(Ticket)
         .filter(
             Ticket.payment_status == "en_attente_om",
             Ticket.purchased_at < floor,
         )
+        .order_by(Ticket.purchased_at.asc())
+        .limit(100)
         .all()
     )
 
     for ticket in orphan_tickets:
+        # Dernier check NGSER AVANT libération : un fan débité dont le webhook
+        # ET les 24h de reconcile ont raté ne doit pas perdre son billet.
         try:
+            _, data = await check_payment_status(ticket.payment_ref)
+            last_code = str(data.get("code", ""))
+        except Exception as e:
+            print(f"⚠️ Orphelin #{ticket.id} : NGSER injoignable, report ({e})")
+            continue
+        if last_code == "1":
+            inner = data.get("data") or {}
+            process_ngser_response(db, ticket.payment_ref, "1", inner.get("transaction_amount"))
+            summary["late_validated"] = summary.get("late_validated", 0) + 1
+            continue
+        if last_code == "":
+            # Auth NGSER KO / réponse illisible : on ne tranche pas sans preuve.
+            continue
+        try:
+            ticket = (
+                db.query(Ticket)
+                .filter(Ticket.id == ticket.id, Ticket.payment_status == "en_attente_om")
+                .with_for_update()
+                .first()
+            )
+            if not ticket:
+                db.rollback()
+                continue
             payment_record = (
                 db.query(Payment)
                 .filter(Payment.transaction_id == ticket.payment_ref)

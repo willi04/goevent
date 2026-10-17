@@ -73,6 +73,40 @@ MIGRATIONS = [
         "tickets.failure_reason",
         "ALTER TABLE tickets ADD COLUMN IF NOT EXISTS failure_reason VARCHAR(50)",
     ),
+    # ──────────────────────────────────────────────────────────
+    # Audit oct. 2026 — index chemins chauds (aucun n'existait) :
+    # - tickets.payment_ref : lookup FOR UPDATE webhook + reconcile
+    # - tickets(event_id, payment_status) : stats scan, cagnotte, listes orga
+    # - tickets.user_id : /tickets/my, limite 3 réservations
+    # - payments.transaction_id / ticket_id : _process_ticket, cagnotte
+    # - security_logs(user_id, created_at) : lu à CHAQUE requête authentifiée
+    #   (SessionManager.verify_session) → seq scan croissant sans cet index.
+    # ──────────────────────────────────────────────────────────
+    (
+        "tickets.payment_ref (index)",
+        "CREATE INDEX IF NOT EXISTS ix_tickets_payment_ref ON tickets (payment_ref)",
+    ),
+    (
+        "tickets(event_id, payment_status) (index)",
+        "CREATE INDEX IF NOT EXISTS ix_tickets_event_status ON tickets (event_id, payment_status)",
+    ),
+    (
+        "tickets.user_id (index)",
+        "CREATE INDEX IF NOT EXISTS ix_tickets_user_id ON tickets (user_id)",
+    ),
+    (
+        "payments.transaction_id (index)",
+        "CREATE INDEX IF NOT EXISTS ix_payments_transaction_id ON payments (transaction_id)",
+    ),
+    (
+        "payments.ticket_id (index)",
+        "CREATE INDEX IF NOT EXISTS ix_payments_ticket_id ON payments (ticket_id)",
+    ),
+    (
+        "security_logs(user_id, created_at) (index)",
+        "CREATE INDEX IF NOT EXISTS ix_security_logs_user_created "
+        "ON security_logs (user_id, created_at DESC)",
+    ),
 ]
 
 
@@ -84,15 +118,26 @@ def run_migrations() -> dict:
     """
     summary = {"ok": 0, "failed": 0}
 
-    with engine.begin() as conn:
-        for label, stmt in MIGRATIONS:
-            try:
+    # 1 transaction PAR migration. Avant : une seule transaction pour toute la
+    # liste → en PostgreSQL, un échec met la transaction en état "aborted",
+    # toutes les suivantes échouent et le COMMIT final devient un ROLLBACK
+    # silencieux (y compris des migrations loguées "OK"). Règle 4 violée.
+    #
+    # lock_timeout : ADD COLUMN IF NOT EXISTS prend un ACCESS EXCLUSIVE lock
+    # MÊME si la colonne existe. Au deploy Render, l'ancienne instance peut
+    # tenir une transaction ouverte (cron reconcile) → l'ALTER attend sans fin,
+    # et toutes les requêtes sur la table s'empilent derrière = outage + boot
+    # bloqué. 5s max puis échec non bloquant, retenté au boot suivant.
+    for label, stmt in MIGRATIONS:
+        try:
+            with engine.begin() as conn:
+                conn.execute(text("SET LOCAL lock_timeout = '5s'"))
                 conn.execute(text(stmt))
-                summary["ok"] += 1
-                print(f"[Migration] OK — {label}")
-            except Exception as e:
-                summary["failed"] += 1
-                print(f"[Migration] ⚠️  Échec non bloquant — {label} : {e}")
+            summary["ok"] += 1
+            print(f"[Migration] OK — {label}")
+        except Exception as e:
+            summary["failed"] += 1
+            print(f"[Migration] ⚠️  Échec non bloquant — {label} : {e}")
 
     print(f"[Migration] Terminé : {summary}")
     return summary

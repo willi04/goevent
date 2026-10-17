@@ -694,7 +694,7 @@
                   <div class="flex-1 min-w-0">
                       <p class="text-xs font-black uppercase tracking-widest text-green-700">Code appliqué</p>
                       <p class="text-sm font-bold text-green-900 truncate">
-                          <span class="font-mono">${promo.code}</span> — ${promo.message}
+                          <span class="font-mono">${_btEscapeHtml(promo.code)}</span> — ${_btEscapeHtml(promo.message)}
                       </p>
                   </div>
                   <button onclick="clearPromo()" class="text-green-600 hover:text-green-800 p-1" title="Retirer le code">
@@ -707,7 +707,7 @@
                   <div class="flex-1 min-w-0">
                       <p class="text-xs font-black uppercase tracking-widest text-orange-700">Code non appliqué</p>
                       <p class="text-sm font-bold text-orange-900 truncate">
-                          <span class="font-mono">${promo.code}</span> — ${promo.message}
+                          <span class="font-mono">${_btEscapeHtml(promo.code)}</span> — ${_btEscapeHtml(promo.message)}
                       </p>
                   </div>
                   <button onclick="document.getElementById('promo-banner').remove()" class="text-orange-600 hover:text-orange-800 p-1">
@@ -772,7 +772,7 @@
                                 <span class="material-symbols-outlined text-gray-400 text-2xl" style="font-variation-settings: 'FILL' 1;">local_activity</span>
                             </div>
                             <div class="flex-1">
-                                <p class="font-headline font-extrabold text-base text-gray-500">${tier.name}</p>
+                                <p class="font-headline font-extrabold text-base text-gray-500">${_btEscapeHtml(tier.name)}</p>
                                 <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">ÉVÉNEMENT TERMINÉ</p>
                             </div>
                             <p class="font-headline font-extrabold text-base text-gray-500">${tier.price === 0 ? "Gratuit" : tier.price.toLocaleString("fr-FR") + " FCFA"}</p>
@@ -841,7 +841,7 @@
                             <span class="material-symbols-outlined text-primary text-2xl" style="font-variation-settings: 'FILL' 1;">local_activity</span>
                         </div>
                         <div class="flex-1">
-                            <p class="font-headline font-extrabold text-base ${classesTexteTitre}">${tier.name}</p>
+                            <p class="font-headline font-extrabold text-base ${classesTexteTitre}">${_btEscapeHtml(tier.name)}</p>
                             <p class="text-[10px] ${classesTexteAcces} font-bold uppercase tracking-wider">ACCÈS GARANTI</p>
                         </div>
                         ${priceBlock}

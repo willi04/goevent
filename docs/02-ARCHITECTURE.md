@@ -107,7 +107,7 @@ les entrées, appellent des fonctions de `core/` ou `utils/`, et retournent.
 |---|---|
 | `auth.py` | Inscription, connexion, refresh token, gestion du profil et du PIN |
 | `events.py` | CRUD événements, recherche, catégories |
-| `tickets.py` | Achat cash, réservation, scan, statistiques d'affluence |
+| `tickets.py` | Billet gratuit, scan, statistiques d'affluence |
 | `payments.py` | Initiation paiement NGSER, webhook, déclenchement réconciliation |
 | `organizer.py` | Demandes de retrait, statistiques, gestion des agents |
 | `admin.py` | Validation retraits, gestion utilisateurs/events, logs sécurité |
@@ -197,14 +197,10 @@ et le mode de paiement.
   vérifie activement le statut auprès de NGSER avant de valider le
   ticket. Voir `04-PAYMENT_FLOW.md`.
 
-- **Paiement cash à l'entrée** : `POST /tickets/reserve-cash` crée
-  directement le ticket en statut `reservation_cash`. Le ticket sera
-  marqué payé par l'organisateur ou un agent à l'entrée de l'événement
-  via `POST /tickets/{ticket_id}/confirm-cash-payment`.
-
-- **Événement gratuit** : `POST /tickets/reserve-cash` est également
-  utilisé, mais le statut final est directement `paye` (méthode
-  `gratuit`, référence `FREE-XXXXXXXX`). Aucun appel NGSER.
+- **Billet gratuit** (event gratuit ou promo -100 %) : `POST /tickets/reserve-free`
+  crée directement le ticket en `paye` (méthode `gratuit`, référence
+  `FREE-XXXXXXXX`). Aucun appel NGSER. Refuse tout billet dont le prix
+  final est > 0. Le paiement cash à l'entrée est supprimé (oct. 2026).
 
 ### Flux 3 : Retrait organisateur
 

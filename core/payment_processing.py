@@ -34,15 +34,23 @@ def process_ngser_response(
     """
     if not order_id:
         return {"action": "no_order_id"}
-    
-    if order_id.startswith("WD"):
-        return _process_payout(db, order_id, code, transaction_amount)
-    if order_id.startswith("BST-"):
-        return _process_boost(db, order_id, code, transaction_amount)
-    if order_id.startswith("FBP-"):
-        return _process_fbpack(db, order_id, code, transaction_amount)
 
-    return _process_ticket(db, order_id, code, transaction_amount)
+    try:
+        if order_id.startswith("WD"):
+            return _process_payout(db, order_id, code, transaction_amount)
+        if order_id.startswith("BST-"):
+            return _process_boost(db, order_id, code, transaction_amount)
+        if order_id.startswith("FBP-"):
+            return _process_fbpack(db, order_id, code, transaction_amount)
+        return _process_ticket(db, order_id, code, transaction_amount)
+    finally:
+        # Les branches pending/skipped/ambiguous retournent SANS commit alors
+        # qu'elles ont pris un SELECT ... FOR UPDATE. Dans la boucle reconcile
+        # (async, plusieurs appels NGSER de 15s), ces verrous restaient tenus
+        # jusqu'à la fin du cron → webhook du même billet bloqué. Toute mutation
+        # légitime a déjà été commitée par la branche : rollback = libération seule.
+        if db.in_transaction():
+            db.rollback()
 
 
 def _process_payout(db, order_id, code, transaction_amount=None):
@@ -86,11 +94,19 @@ def _process_payout(db, order_id, code, transaction_amount=None):
         print(f"✅💸 process_ngser PAYOUT : retrait {payout.id} validé.")
         return {"action": "validated", "payout_id": payout.id}
 
-    if code in ("0", "2", "4", "5", "6"):
+    if code in ("0", "2"):
+        # Échec EXPLICITE (rejeté / solde insuffisant) : aucun argent sorti.
         payout.status = "en_attente"
         db.commit()
         print(f"❌ process_ngser PAYOUT : échec retrait {payout.id} (code={code}) → remis en attente.")
         return {"action": "failed", "payout_id": payout.id, "code": code}
+
+    if code in ("4", "5", "6"):
+        # NOT EXIST / TIMEOUT / INCONNU : issue indéterminée côté argent SORTANT.
+        # Remettre en_attente ouvrait la porte à un 2e virement (nouveau WD order_id).
+        # On laisse en_cours : investigation humaine (cf. docstring).
+        print(f"🚨 process_ngser PAYOUT : statut ambigu retrait {payout.id} (code={code}) → reste en_cours, vérif manuelle.")
+        return {"action": "ambiguous", "payout_id": payout.id, "code": code}
 
     return {"action": "pending", "payout_id": payout.id, "code": code}
 

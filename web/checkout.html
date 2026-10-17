@@ -780,8 +780,8 @@
           if (promoCode) payload.promo_code = promoCode;
 
           if (isFreeEvent) {
-            // FLUX GRATUIT : reserve-cash en backend (NGSER refuse montant 0)
-            const response = await btApi.post("/tickets/reserve-cash", payload);
+            // FLUX GRATUIT : billet 0 FCFA (NGSER refuse montant 0) — event gratuit ou promo -100 %
+            const response = await btApi.post("/tickets/reserve-free", payload);
             btToast("Billet gratuit généré avec succès !", "success");
             sessionStorage.setItem("last_reservation", JSON.stringify({
               ticket_id: response.ticket_id,

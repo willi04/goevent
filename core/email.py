@@ -59,7 +59,7 @@ def envoyer_billet_email(email_client, nom_client, ticket, event, amount):
     msg.attach(MIMEText(html_body, "html"))
 
     try:
-        server = smtplib.SMTP("smtp.gmail.com", 587)
+        server = smtplib.SMTP("smtp.gmail.com", 587, timeout=10)
         server.starttls()
         server.login(settings.SENDER_EMAIL, settings.SENDER_PASSWORD)
         server.send_message(msg)
@@ -102,7 +102,7 @@ def envoyer_mail_code(email_client, code_secret):
     msg.attach(MIMEText(html_body, "html"))
 
     try:
-        server = smtplib.SMTP("smtp.gmail.com", 587)
+        server = smtplib.SMTP("smtp.gmail.com", 587, timeout=10)
         server.starttls()
         server.login(settings.SENDER_EMAIL, settings.SENDER_PASSWORD)
         server.send_message(msg)
@@ -183,7 +183,7 @@ def envoyer_mail_annulation(email_client, nom_client, event_title, amount, is_re
     msg.attach(MIMEText(html_body, "html"))
 
     try:
-        server = smtplib.SMTP("smtp.gmail.com", 587)
+        server = smtplib.SMTP("smtp.gmail.com", 587, timeout=10)
         server.starttls()
         server.login(settings.SENDER_EMAIL, settings.SENDER_PASSWORD)
         server.send_message(msg)

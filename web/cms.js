@@ -306,15 +306,48 @@
     if (b.kind === "cards") return renderCards(b);
     return null;
   }
-  function renderHouse(house, narrow) {
-    var box = h("div", "rounded-3xl border-2 border-dashed border-gray-300 bg-white/60 p-6 text-center " + (narrow ? "" : "md:p-8"));
-    box.appendChild(h("span", "material-symbols-outlined text-3xl text-[#00502c]", "campaign"));
-    box.appendChild(h("p", "font-extrabold text-gray-900 mt-2 " + (narrow ? "text-base" : "text-lg"), house.title));
-    if (house.text) box.appendChild(h("p", "text-sm text-gray-500 mt-1", house.text));
-    var a = h("a", "inline-block mt-4 px-5 py-2.5 rounded-full bg-[#00502c] text-white text-sm font-bold", house.cta);
-    a.setAttribute("href", house.url || "partenaire.html");
-    box.appendChild(a);
+  // ── Aperçu interne des emplacements (équipe uniquement) ──────────
+  // Lien du back-office : page.html?emplacements=1 (mémorisé pour la session,
+  // ?emplacements=0 pour quitter). Ne s'active que pour un compte admin/staff ;
+  // le public ne voit jamais d'emplacement vide. Pas de compteur en aperçu.
+  function previewOn() {
+    try {
+      var m = /[?&]emplacements=([01])/.exec(location.search);
+      if (m) { if (m[1] === "1") sessionStorage.setItem("goevent_zone_preview", "1"); else sessionStorage.removeItem("goevent_zone_preview"); }
+      if (sessionStorage.getItem("goevent_zone_preview") !== "1") return false;
+      var u = JSON.parse(localStorage.getItem("bt_user") || "null");
+      return !!u && (u.role === "admin" || u.role === "staff");
+    } catch (e) { return false; }
+  }
+  var PREVIEW = previewOn();
+  var PV_STYLE = "border:2px dashed #f59e0b;border-radius:24px;background:rgba(254,243,199,.55);color:#92400e;" +
+    "padding:18px;text-align:center;font:600 13px/1.4 Manrope,system-ui,sans-serif";
+  function previewTag(label, key, state) {
+    var t = h("div", "", "");
+    t.setAttribute("style", "display:inline-block;background:#f59e0b;color:#fff;font:800 11px/1.3 Manrope,system-ui,sans-serif;" +
+      "padding:4px 10px;border-radius:999px;margin-bottom:6px");
+    t.textContent = "Emplacement · " + (label || key) + (state ? " · " + state : "");
+    return t;
+  }
+  function previewBox(label, key, text, narrow) {
+    var box = h("div", "");
+    box.setAttribute("style", PV_STYLE + ";min-height:" + (narrow ? "160px" : "120px") +
+      ";display:flex;flex-direction:column;align-items:center;justify-content:center");
+    box.appendChild(previewTag(label, key, "libre"));
+    box.appendChild(h("div", "", text));
     return box;
+  }
+  function previewBar() {
+    var bar = h("div", "");
+    bar.setAttribute("style", "position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:9999;background:#111827;color:#fff;" +
+      "font:600 13px/1.3 Manrope,system-ui,sans-serif;padding:10px 16px;border-radius:999px;box-shadow:0 10px 30px rgba(0,0,0,.3);" +
+      "display:flex;gap:12px;align-items:center;max-width:calc(100vw - 32px)");
+    bar.appendChild(h("span", "", "Aperçu des emplacements (visible par l'équipe uniquement)"));
+    var q = h("a", "", "Quitter");
+    q.setAttribute("href", location.pathname + "?emplacements=0");
+    q.setAttribute("style", "color:#fecb00;font-weight:800");
+    bar.appendChild(q);
+    document.body.appendChild(bar);
   }
   function infeedCard(b) {
     // Avec image : carte blanche façon fiche événement. Sans image : carte pleine à la couleur du thème.
@@ -355,24 +388,33 @@
     var narrow = el.getAttribute("data-zone-layout") === "narrow";
     var blocks = z.blocks || [];
     if (!blocks.length) {
-      if (z.empty === "static") return;                 // contenu HTML d'origine conservé
+      if (z.empty === "static") {                       // contenu HTML d'origine conservé
+        if (PREVIEW) {
+          el.setAttribute("style", "outline:2px dashed #f59e0b;outline-offset:-2px;position:relative");
+          var tag = previewTag(z.label, key, "libre : section d'origine affichée");
+          tag.style.cssText += ";position:absolute;top:8px;left:8px;z-index:5";
+          el.appendChild(tag);
+        }
+        return;
+      }
       el.innerHTML = "";
-      if (z.empty === "house" && zonesData.house) {
-        var hw = h("div", el.getAttribute("data-zone-pad") || "");
-        hw.appendChild(renderHouse(zonesData.house, narrow));
-        el.appendChild(hw);
+      if (PREVIEW) {
+        var pw = h("div", el.getAttribute("data-zone-pad") || "");
+        pw.appendChild(previewBox(z.label, key, "Rien n'est affiché au public tant qu'aucun bloc n'est en ligne.", narrow));
+        el.appendChild(pw);
         el.classList.remove("hidden");
       }
-      else el.classList.add("hidden");
+      else el.classList.add("hidden");                  // vide = rien au public
       return;
     }
     if (z.mode === "rotate") blocks = [blocks[Math.floor(Math.random() * blocks.length)]];
     el.innerHTML = "";
     var wrap = h("div", "space-y-6 " + (el.getAttribute("data-zone-pad") || ""));
     blocks.forEach(function (b) { var n = renderBlock(b, narrow); if (n) wrap.appendChild(n); });
+    if (PREVIEW) wrap.insertBefore(previewTag(z.label, key, blocks.length + " bloc(s)"), wrap.firstChild);
     el.appendChild(wrap);
     el.classList.remove("hidden");
-    markSeen(blocks.map(function (b) { return b.id; }));
+    if (!PREVIEW) markSeen(blocks.map(function (b) { return b.id; }));
   }
   // Grilles d'événements : insère les cartes sponsorisées toutes les N cartes.
   // À rappeler après chaque rendu de la grille (filtres, pagination).
@@ -382,9 +424,18 @@
     var z = zonesData.zones[key];
     var old = container.querySelectorAll("[data-zone-card]");
     for (var i = 0; i < old.length; i++) old[i].parentNode.removeChild(old[i]);
-    if (!z || !z.blocks || !z.blocks.length) return;
+    if (!z) return;
     var every = z.every || 6, cards = [], shown = [];
     for (i = 0; i < container.children.length; i++) cards.push(container.children[i]);
+    if (!z.blocks || !z.blocks.length) {
+      if (!PREVIEW) return;                             // vide = rien au public
+      for (i = every; i <= cards.length; i += every) {
+        var ph = previewBox(z.label, key, "Carte sponsorisée insérée ici (toutes les " + every + " cartes).", true);
+        ph.setAttribute("data-zone-card", "");
+        cards[i - 1].parentNode.insertBefore(ph, cards[i - 1].nextSibling);
+      }
+      return;
+    }
     var start = Math.floor(Math.random() * z.blocks.length), k = 0;
     for (i = every; i <= cards.length; i += every) {
       var b = z.blocks[(start + k++) % z.blocks.length];
@@ -393,7 +444,7 @@
       cards[i - 1].parentNode.insertBefore(node, cards[i - 1].nextSibling);
       shown.push(b.id);
     }
-    markSeen(shown);
+    if (!PREVIEW) markSeen(shown);
   }
   function zones() {
     var els = document.querySelectorAll("[data-zone]"), infeeds = document.querySelectorAll("[data-zone-infeed]");
@@ -426,6 +477,7 @@
     legalPage();
     faq();
     zones();
+    if (PREVIEW && document.querySelector("[data-zone], [data-zone-infeed]")) previewBar();
     if (document.querySelector("[data-price]")) btPricing();
     // Composants rendus plus tard (drawer, encarts simulateur…)
     if (typeof MutationObserver !== "undefined") {

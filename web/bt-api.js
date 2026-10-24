@@ -443,6 +443,15 @@ function btNavbar(activePage) {
   );
 }
 
+// Lien social du footer : masqué si la valeur CMS est vide (cms.js retire .hidden)
+function _btFooterSocial(key, prefix, label) {
+  return (
+    '<a href="#" target="_blank" rel="noopener" class="hidden px-3 py-1.5 rounded-full bg-white text-primary text-xs font-bold ' +
+    'border border-neutral-200 hover:border-primary transition-colors" data-cms-href="' + key + '" ' +
+    (prefix ? 'data-cms-href-prefix="' + prefix + '" ' : "") + "data-cms-hide-empty>" + label + "</a>"
+  );
+}
+
 // ── FOOTER — Design Stitch ────────────────────────────────────
 function btFooter() {
   return (
@@ -455,11 +464,16 @@ function btFooter() {
     '<img src="icons/event.png" alt="Logo" class="w-10 h-10 rounded-3xl shadow-sm" />' +
     '<span class="text-2xl font-bold tracking-tight bg-gradient-to-r from-emerald-900 to-emerald-700 bg-clip-text text-transparent font-headline">GoEvent</span>' +
     "</a>" +
-    '<p class="text-neutral-500 text-sm leading-relaxed mb-6 font-body max-w-sm">La première plateforme de billetterie en ligne en République Centrafricaine. Soutenons ensemble nos artistes.</p>' +
-    '<div class="flex gap-3">' +
-    '<a href="#" class="text-primary hover:opacity-100 opacity-70 transition-opacity"><span class="material-symbols-outlined">social_leaderboard</span></a>' +
-    '<a href="#" class="text-primary hover:opacity-100 opacity-70 transition-opacity"><span class="material-symbols-outlined">alternate_email</span></a>' +
-    '<a href="#" class="text-primary hover:opacity-100 opacity-70 transition-opacity"><span class="material-symbols-outlined">phone_android</span></a>' +
+    '<p class="text-neutral-500 text-sm leading-relaxed mb-6 font-body max-w-sm" data-cms="global.footer.tagline">La première plateforme de billetterie en ligne en République Centrafricaine. Soutenons ensemble nos artistes.</p>' +
+    // Réseaux sociaux / contact : liens pilotés par le back-office (Contenu du site → Éléments communs),
+    // masqués tant qu'aucune valeur n'est renseignée (data-cms-hide-empty, cf. cms.js).
+    '<div class="flex flex-wrap gap-2">' +
+    _btFooterSocial("global.social.facebook", "", "Facebook") +
+    _btFooterSocial("global.social.instagram", "", "Instagram") +
+    _btFooterSocial("global.social.tiktok", "", "TikTok") +
+    _btFooterSocial("global.social.linkedin", "", "LinkedIn") +
+    _btFooterSocial("global.contact.whatsapp", "https://wa.me/", "WhatsApp") +
+    _btFooterSocial("global.contact.email", "mailto:", "Email") +
     "</div>" +
     "</div>" +
     // Navigation
@@ -502,15 +516,15 @@ function btFooter() {
     '<div class="bg-neutral-200 p-4 rounded-xl">' +
     '<div class="flex items-center gap-2 text-emerald-900 mb-1">' +
     '<span class="material-symbols-outlined text-sm" style="font-variation-settings:\'FILL\' 1">payments</span>' +
-    '<span class="text-xs font-black font-headline uppercase">Orange Money</span>' +
+    '<span class="text-xs font-black font-headline uppercase" data-cms="global.footer.payment_title">Orange Money</span>' +
     "</div>" +
-    '<p class="text-[11px] text-neutral-500">Payez en toute sécurité avec votre compte Orange Money local.</p>' +
+    '<p class="text-[11px] text-neutral-500" data-cms="global.footer.payment_text">Payez en toute sécurité avec votre compte Orange Money local.</p>' +
     "</div>" +
     "</div>" +
     "</div>" + // Fin de la grille
     // Copyright
     '<div class="border-t border-neutral-200 py-8 px-8 md:px-16 text-center">' +
-    '<p class="text-neutral-400 text-xs font-headline font-bold uppercase tracking-widest">© 2026 GoEvent | Tous Droits Réservés.</p>' +
+    '<p class="text-neutral-400 text-xs font-headline font-bold uppercase tracking-widest" data-cms="global.footer.copyright">© 2026 GoEvent | Tous Droits Réservés.</p>' +
     "</div>" +
     "</footer>"
   );
@@ -723,7 +737,7 @@ function btMobileDrawerSections() {
         '<span class="material-symbols-outlined text-base text-gray-500">help</span>' +
         'Aide & FAQ' +
       '</a>' +
-      '<a href="https://wa.me/' + supportPhone + '" target="_blank" rel="noopener" class="flex items-center gap-3 p-3 rounded-2xl text-gray-700 font-semibold hover:bg-green-50 hover:text-green-700 transition-all text-sm">' +
+      '<a href="https://wa.me/' + supportPhone + '" target="_blank" rel="noopener" data-cms-href="global.contact.whatsapp" data-cms-href-prefix="https://wa.me/" class="flex items-center gap-3 p-3 rounded-2xl text-gray-700 font-semibold hover:bg-green-50 hover:text-green-700 transition-all text-sm">' +
         '<span class="material-symbols-outlined text-base text-green-600">chat</span>' +
         'Support WhatsApp' +
       '</a>' +
@@ -1117,12 +1131,12 @@ function _btFileToBase64(file) {
  */
 function btSimulatorPromo(variant) {
   // Adapte si tu passes en sous-domaine (ex. "https://simulateur.goevent.africa")
-  var SIMULATOR_URL = "https://goevent.africa/simulateur/";
+  var SIMULATOR_URL = "https://goevent.africa/simulateur/";  // surchargeable : global.simulateur.url
   variant = variant || "dashboard";
 
   if (variant === "landing") {
     return (
-      '<a href="' + SIMULATOR_URL + '" target="_blank" rel="noopener" ' +
+      '<a href="' + SIMULATOR_URL + '" target="_blank" rel="noopener" data-cms-href="global.simulateur.url" ' +
         'class="group relative mt-6 flex items-center gap-3 sm:gap-4 w-full max-w-full ' +
         'rounded-2xl p-3.5 sm:p-4 pr-4 sm:pr-5 bg-white/10 backdrop-blur-xl border border-white/15 ' +
         'hover:bg-white/15 hover:border-secondary-container/60 transition-all duration-300 ' +
@@ -1141,16 +1155,16 @@ function btSimulatorPromo(variant) {
         '<span class="relative flex-1 min-w-0 text-left">' +
           '<span class="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">' +
             '<span class="text-white font-headline font-extrabold text-[14px] sm:text-[15px] leading-tight">' +
-              'Simule ta rentabilité' +
+              '<span data-cms="global.simulateur.landing_title">Simule ta rentabilité</span>' +
             '</span>' +
             '<span class="shrink-0 whitespace-nowrap text-[9px] font-black tracking-wider uppercase ' +
             'px-1.5 py-0.5 rounded-full bg-secondary-container/20 text-secondary-container ' +
             'border border-secondary-container/30">' +
-              'Gratuit · 2 min' +
+              '<span data-cms="global.simulateur.landing_badge">Gratuit · 2 min</span>' +
             '</span>' +
           '</span>' +
           '<span class="block text-white/70 text-[12px] sm:text-[12.5px] mt-0.5 leading-snug">' +
-            'Avant de te lancer, vois si ton événement est rentable' +
+            '<span data-cms="global.simulateur.landing_text">Avant de te lancer, vois si ton événement est rentable</span>' +
           '</span>' +
         '</span>' +
 
@@ -1171,12 +1185,12 @@ function btSimulatorPromo(variant) {
           '<span class="material-symbols-outlined text-3xl">calculate</span>' +
         "</div>" +
         '<div class="flex-1 min-w-0">' +
-          '<h3 class="font-headline font-extrabold text-lg md:text-xl leading-tight">Ton prochain événement sera-t-il rentable ?</h3>' +
-          '<p class="text-white/80 text-sm mt-1.5 max-w-xl">Simule tes coûts, tes billets et ton remplissage en 2 minutes. Découvre ton seuil de rentabilité avant de te lancer.</p>' +
+          '<h3 class="font-headline font-extrabold text-lg md:text-xl leading-tight" data-cms="global.simulateur.dash_title">Ton prochain événement sera-t-il rentable ?</h3>' +
+          '<p class="text-white/80 text-sm mt-1.5 max-w-xl" data-cms="global.simulateur.dash_text">Simule tes coûts, tes billets et ton remplissage en 2 minutes. Découvre ton seuil de rentabilité avant de te lancer.</p>' +
         "</div>" +
-        '<a href="' + SIMULATOR_URL + '" target="_blank" rel="noopener" ' +
+        '<a href="' + SIMULATOR_URL + '" target="_blank" rel="noopener" data-cms-href="global.simulateur.url" ' +
           'class="shrink-0 inline-flex items-center justify-center gap-2 bg-white text-primary font-bold text-[15px] px-6 py-3.5 rounded-2xl shadow-sm hover:shadow-md active:scale-95 transition-all">' +
-          '<span class="material-symbols-outlined">open_in_new</span>Ouvrir le simulateur' +
+          '<span class="material-symbols-outlined">open_in_new</span><span data-cms="global.simulateur.dash_cta">Ouvrir le simulateur</span>' +
         "</a>" +
       "</div>" +
     "</div>"

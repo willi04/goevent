@@ -1,7 +1,8 @@
 """
 Chantier 17 : Routes Régie publicitaire forfaitaire.
-- Boost organisateur (forfait 10k/35k/130k)
-- Pack Facebook Ads (min 35k + 30% marge)
+- Boost organisateur (forfaits 7 / 30 / 90 jours)
+- Pack Facebook Ads (budget minimum + marge GoEvent)
+Tarifs : core/pricing.get_pricing() (réglés dans le back-office, défauts core/config.py).
 """
 
 import uuid
@@ -18,7 +19,7 @@ from core.database import get_db
 from core.security import get_current_user, log_security_event
 from core.permissions import require_staff_function, get_current_admin_or_staff
 from core.ngser import create_payment_session
-from core.config import BOOST_PACKAGES, FB_PACK_MIN_BUDGET, FB_PACK_MARGIN_RATE
+from core.pricing import get_pricing  # tarifs en vigueur (back-office), défauts dans core/config.py
 
 from models.user import User
 from models.event import Event
@@ -96,10 +97,11 @@ async def initiate_boost(
     if _event_has_active_boost(db, data.event_id):
         raise HTTPException(409, "Cet événement a déjà un boost actif. Attendez son expiration.")
 
-    # Package
-    pkg = BOOST_PACKAGES.get(data.package_code)
-    if not pkg:
+    # Package : tarif en vigueur relu en base (fresh) = exactement le prix affiché
+    pkg_cfg = get_pricing(db, fresh=True)["boost"].get(data.package_code)
+    if not pkg_cfg:
         raise HTTPException(400, "Package invalide")
+    pkg = {"duration_days": pkg_cfg["days"], "amount_fcfa": pkg_cfg["amount"]}
 
     # Génération order_id avec préfixe BST-
     order_id = f"BST-{uuid.uuid4().hex[:16].upper()}"
@@ -209,12 +211,13 @@ async def request_fb_package(
 
     event = _check_event_ownership(db, data.event_id, current_user)
 
-    # Garde minimum (déjà validé Pydantic mais double-sécurité)
-    if data.budget_fb_fcfa < FB_PACK_MIN_BUDGET:
-        raise HTTPException(400, f"Budget Facebook minimum : {FB_PACK_MIN_BUDGET} FCFA")
+    # Minimum et marge en vigueur (back-office → Tarifs)
+    fb_cfg = get_pricing(db, fresh=True)["fb_pack"]
+    if data.budget_fb_fcfa < fb_cfg["min_budget"]:
+        raise HTTPException(400, f"Budget Facebook minimum : {fb_cfg['min_budget']:,} FCFA".replace(",", " "))
 
     # Calcul marge + total
-    margin = int(round(data.budget_fb_fcfa * FB_PACK_MARGIN_RATE))
+    margin = int(round(data.budget_fb_fcfa * fb_cfg["margin_pct"] / 100))
     total = data.budget_fb_fcfa + margin
 
     # Order ID + UTM unique

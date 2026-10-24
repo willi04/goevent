@@ -58,7 +58,7 @@ class BoostOrderOut(BaseModel):
 class FbPackRequestIn(BaseModel):
     """Payload : l'orga demande un Pack FB."""
     event_id: int
-    budget_fb_fcfa: int = Field(..., ge=35_000, le=10_000_000)
+    budget_fb_fcfa: int = Field(..., ge=1, le=10_000_000)  # minimum en vigueur vérifié dans la route (tarifs back-office)
     phone: str = Field(..., min_length=8, max_length=20)
     age_range: Optional[str] = Field(None, max_length=20)
     zone: Optional[str] = Field(None, max_length=100)

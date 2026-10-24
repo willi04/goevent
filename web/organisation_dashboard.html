@@ -825,7 +825,7 @@
                 </p>
                 <div class="flex items-center justify-between border-t border-gray-100 pt-4">
                   <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Dès</span>
-                  <span class="font-black text-2xl text-primary">10 000 FCFA</span>
+                  <span class="font-black text-2xl text-primary" data-price="boost.7d">10 000 FCFA</span>
                 </div>
               </button>
 
@@ -845,7 +845,7 @@
                 </p>
                 <div class="flex items-center justify-between border-t border-gray-100 pt-4">
                   <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Dès</span>
-                  <span class="font-black text-2xl text-blue-600">35 000 FCFA</span>
+                  <span class="font-black text-2xl text-blue-600" data-price="fb_pack.min_budget">35 000 FCFA</span>
                 </div>
               </button>
 
@@ -928,19 +928,19 @@
                   <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <button type="button" onclick="selectBoostPackage('7d')" class="boost-pkg-card border-2 border-gray-200 rounded-2xl p-4 hover:border-primary transition-all text-left" data-pkg="7d">
                       <div class="text-xs font-bold text-gray-400 uppercase tracking-widest">7 jours</div>
-                      <div class="text-2xl font-black text-gray-900 mt-2">10 000 <span class="text-sm font-bold text-gray-500">FCFA</span></div>
-                      <div class="text-[11px] text-gray-400 mt-1">≈ 1 428 / jour</div>
+                      <div class="text-2xl font-black text-gray-900 mt-2"><span data-price="boost.7d" data-price-format="number">10 000</span> <span class="text-sm font-bold text-gray-500">FCFA</span></div>
+                      <div class="text-[11px] text-gray-400 mt-1" data-boost-perday="7d">≈ 1 428 / jour</div>
                     </button>
                     <button type="button" onclick="selectBoostPackage('30d')" class="boost-pkg-card border-2 border-gray-200 rounded-2xl p-4 hover:border-primary transition-all text-left relative" data-pkg="30d">
                       <span class="absolute -top-2 right-3 bg-secondary-container text-on-secondary-container text-[10px] font-black px-2 py-0.5 rounded-full">POPULAIRE</span>
                       <div class="text-xs font-bold text-gray-400 uppercase tracking-widest">30 jours</div>
-                      <div class="text-2xl font-black text-gray-900 mt-2">35 000 <span class="text-sm font-bold text-gray-500">FCFA</span></div>
-                      <div class="text-[11px] text-green-600 font-bold mt-1">≈ 1 166 / jour (-18%)</div>
+                      <div class="text-2xl font-black text-gray-900 mt-2"><span data-price="boost.30d" data-price-format="number">35 000</span> <span class="text-sm font-bold text-gray-500">FCFA</span></div>
+                      <div class="text-[11px] text-gray-400 mt-1" data-boost-perday="30d">≈ 1 166 / jour (-18%)</div>
                     </button>
                     <button type="button" onclick="selectBoostPackage('90d')" class="boost-pkg-card border-2 border-gray-200 rounded-2xl p-4 hover:border-primary transition-all text-left" data-pkg="90d">
                       <div class="text-xs font-bold text-gray-400 uppercase tracking-widest">90 jours</div>
-                      <div class="text-2xl font-black text-gray-900 mt-2">130 000 <span class="text-sm font-bold text-gray-500">FCFA</span></div>
-                      <div class="text-[11px] text-gray-400 mt-1">≈ 1 444 / jour</div>
+                      <div class="text-2xl font-black text-gray-900 mt-2"><span data-price="boost.90d" data-price-format="number">130 000</span> <span class="text-sm font-bold text-gray-500">FCFA</span></div>
+                      <div class="text-[11px] text-gray-400 mt-1" data-boost-perday="90d">≈ 1 444 / jour</div>
                     </button>
                   </div>
                 </div>
@@ -994,7 +994,7 @@
                   Notre Community Manager crée la pub, cible l'audience et gère la campagne Facebook pour votre événement.
                 </p>
                 <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-6 text-xs text-amber-800 font-medium">
-                  <strong>Minimum :</strong> 35 000 FCFA de budget Facebook. <strong>Marge GoEvent :</strong> 30% (transparente).
+                  <strong>Minimum :</strong> <span data-price="fb_pack.min_budget">35 000 FCFA</span> de budget Facebook. <strong>Marge GoEvent :</strong> <span data-price="fb_pack.margin_pct" data-price-format="pct">30%</span> (transparente).
                 </div>
 
                 <!-- Sélection event -->
@@ -1031,7 +1031,7 @@
                       <span class="font-bold" id="fbpack-budget-display">— FCFA</span>
                     </div>
                     <div class="flex justify-between text-gray-700">
-                      <span>Frais GoEvent (30%)</span>
+                      <span>Frais GoEvent (<span data-price="fb_pack.margin_pct" data-price-format="pct">30%</span>)</span>
                       <span class="font-bold" id="fbpack-margin-display">— FCFA</span>
                     </div>
                     <div class="border-t border-blue-300 pt-2 mt-2 flex justify-between text-blue-900">
@@ -2484,7 +2484,7 @@
                           <span class="font-bold">${brut.toLocaleString("fr-FR")} FCFA</span>
                       </div>
                       <div class="flex justify-between text-sm text-red-500">
-                          <span>Frais GoEvent (7%)</span>
+                          <span>Frais GoEvent (${_btPct("organizer_pct", 7)}%)</span>
                           <span class="font-bold">- ${frais.toLocaleString("fr-FR")} FCFA</span>
                       </div>
                       <div class="w-full h-px bg-gray-200 my-2"></div>
@@ -2811,11 +2811,37 @@
       // CHANTIER 17 : PROMOTION (Boost + Pack FB)
       // ════════════════════════════════════════════════════════
 
+      // Valeurs par défaut : remplacées par les tarifs en vigueur (GET /pricing via cms.js),
+      // les mêmes que ceux facturés par l'API (core/pricing.py).
       const BOOST_PACKAGES = {
         "7d":  { duration: 7,  amount: 10000,  label: "7 jours" },
         "30d": { duration: 30, amount: 35000,  label: "30 jours" },
         "90d": { duration: 90, amount: 130000, label: "90 jours" },
       };
+      const FB_PACK = { min: 35000, marginPct: 30 };
+      function _btPct(key, fallback) {
+        const c = window.btPricingCache && window.btPricingCache.commission;
+        return c && typeof c[key] === "number" ? String(c[key]).replace(".", ",") : fallback;
+      }
+      function _applyPromoPricing(p) {
+        if (!p) return;
+        Object.keys(BOOST_PACKAGES).forEach((code) => {
+          if (p.boost && p.boost[code]) BOOST_PACKAGES[code].amount = p.boost[code].amount;
+        });
+        if (p.fb_pack) { FB_PACK.min = p.fb_pack.min_budget; FB_PACK.marginPct = p.fb_pack.margin_pct; }
+        // Coût par jour et économie vs 7 jours, recalculés depuis les tarifs
+        const base = BOOST_PACKAGES["7d"].amount / BOOST_PACKAGES["7d"].duration;
+        document.querySelectorAll("[data-boost-perday]").forEach((el) => {
+          const pk = BOOST_PACKAGES[el.getAttribute("data-boost-perday")];
+          const perDay = pk.amount / pk.duration;
+          const saving = Math.round((1 - perDay / base) * 100);
+          el.textContent = "≈ " + Math.round(perDay).toLocaleString("fr-FR") + " / jour" + (saving >= 5 ? " (-" + saving + "%)" : "");
+        });
+        const input = document.getElementById("fbpack-budget");
+        if (input) input.min = String(FB_PACK.min);
+      }
+      if (typeof window.btPricing === "function") window.btPricing().then(_applyPromoPricing);
+      else document.addEventListener("DOMContentLoaded", () => { if (window.btPricing) window.btPricing().then(_applyPromoPricing); });
 
       let _selectedBoostPkg = null;
       let _myBoosts = [];
@@ -2967,11 +2993,11 @@
       function updateFbPackRecap() {
         const budget = parseInt(document.getElementById("fbpack-budget").value) || 0;
         const recap = document.getElementById("fbpack-recap");
-        if (budget < 35000) {
+        if (budget < FB_PACK.min) {
           recap.classList.add("hidden");
           return;
         }
-        const margin = Math.round(budget * 0.30);
+        const margin = Math.round(budget * FB_PACK.marginPct / 100);
         const total = budget + margin;
         document.getElementById("fbpack-budget-display").textContent = budget.toLocaleString("fr-FR") + " FCFA";
         document.getElementById("fbpack-margin-display").textContent = margin.toLocaleString("fr-FR") + " FCFA";
@@ -2991,8 +3017,8 @@
           btToast("Sélectionnez un événement", "error");
           return;
         }
-        if (!budget || budget < 35000) {
-          btToast("Le budget minimum est de 35 000 FCFA", "error");
+        if (!budget || budget < FB_PACK.min) {
+          btToast("Le budget minimum est de " + FB_PACK.min.toLocaleString("fr-FR") + " FCFA", "error");
           return;
         }
         if (!phone || phone.length < 8) {
@@ -4006,5 +4032,7 @@
         </details>
       </div>
     </div>
-  </body>
+      <!-- Contenu éditable depuis le back-office (après bt-api.js : réutilise BT_API) -->
+    <script src="cms.js" defer></script>
+</body>
 </html>

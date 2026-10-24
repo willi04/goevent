@@ -13,6 +13,7 @@ from .promotion import BoostOrder, FbAdPackage
 from .premium_interest import PremiumInterest
 from models.promo import PromoCode, PromoUsage 
 from models.audience_log import AudienceExportLog
+from models.site_content import SiteContent, SitePageRevision, FaqItem, ZoneBlock, SiteSetting
 
 
 __all__ = [
@@ -29,4 +30,5 @@ __all__ = [
     "PremiumInterest",
     "PromoCode", "PromoUsage",
     "AudienceExportLog",
+    "SiteContent", "SitePageRevision", "FaqItem", "ZoneBlock", "SiteSetting",
 ]

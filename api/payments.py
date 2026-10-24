@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from fastapi import Header
-from core.config import settings
+from core.config import settings, COMMISSION_BUYER_RATE, COMMISSION_ORGANIZER_RATE
 from core.reconcile import reconcile_pending_payments, expire_old_orphans
 from core.limiter import limiter
 
@@ -80,9 +80,9 @@ async def initiate_ngser_payment(
                 "Le code promo rend ce billet gratuit : rechargez la page pour l'obtenir directement."
             )
 
-    frais_acheteur = prix_base * 0.04
+    frais_acheteur = prix_base * COMMISSION_BUYER_RATE
     total_a_payer = prix_base + frais_acheteur
-    frais_organisateur = prix_base * 0.07
+    frais_organisateur = prix_base * COMMISSION_ORGANIZER_RATE
     solde_orga = prix_base - frais_organisateur
     tes_benefices = frais_acheteur + frais_organisateur
 

@@ -169,19 +169,19 @@
             class="w-full h-full object-cover"
             src="https://lh3.googleusercontent.com/aida-public/AB6AXuBLgDK-_QkFA7YCZQAtSH6m1rbySJFBnLlXxmapfO0X-x4Im4k-29hluoN5MZidYlINb7qZU7f1T0vqBAB4KffEYNgaTVsggqeYMOSWTwjUmKMcs_SyJ6IgfsmyPzAFaT3gt-CTcIBeJ2Wv9m1VH9MTy1HS_IbFMxgvFDliXYMLsfB_Js0M08u9wjMaEII1GyjgHN0xKAR53UxQtBR5Dkagtbzl01pQqj_xKfn0ji2XT7VN9ZCuHFNgBDcrtWtRddBvnGq57cb8Mw"
             alt=""
-          />
+           data-cms-img="follow.img01"/>
         </div>
         <div class="relative z-10 max-w-3xl">
           <span
             class="text-primary-fixed font-bold uppercase tracking-widest text-xs"
-            >Découverte</span
+             data-cms="follow.001">Découverte</span
           >
           <h1
             class="text-3xl sm:text-4xl md:text-6xl font-extrabold font-headline text-white leading-tight mt-3 mb-6 break-words"
-          >
+           data-cms="follow.002">
             Suivez vos artistes<br />& organisateurs
           </h1>
-          <p class="text-base sm:text-lg text-primary-fixed/90 max-w-xl">
+          <p class="text-base sm:text-lg text-primary-fixed/90 max-w-xl" data-cms="follow.003">
             Recevez une notification dès qu'un artiste ou une organisation que
             vous suivez publie un nouvel événement sur GoEvent.
           </p>
@@ -205,7 +205,7 @@
             <button
               onclick="applyFilters()"
               class="bg-primary text-white px-6 py-3 rounded-full font-bold text-sm hover:bg-primary-container active:scale-95 transition-all shadow-sm shrink-0"
-            >
+             data-cms="follow.004">
               Rechercher
             </button>
           </div>
@@ -236,11 +236,11 @@
           <div class="flex-1 text-center md:text-left">
             <h3
               class="text-lg md:text-xl font-black font-headline text-[#00502c] mb-1"
-            >
+             data-cms="follow.005">
               Notifications par email en préparation
             </h3>
             <p class="text-gray-600 text-sm">
-              Vous serez notifié(e) par email dès qu'un organisateur que vous suivez publie un nouvel événement. <span class="font-bold">Activation prévue septembre 2026.</span> En attendant, suivez dès maintenant vos organisateurs préférés.
+              <span data-cms="follow.007">Vous serez notifié(e) par email dès qu'un organisateur que vous suivez publie un nouvel événement.</span> <span class="font-bold" data-cms="follow.006">Activation prévue septembre 2026.</span> <span data-cms="follow.008">En attendant, suivez dès maintenant vos organisateurs préférés.</span>
             </p>
           </div>
 
@@ -253,7 +253,7 @@
               style="font-variation-settings: &quot;FILL&quot; 1"
               >explore</span
             >
-            Découvrir les événements
+            <span data-cms="follow.009">Découvrir les événements</span>
           </a>
         </div>
       </section>
@@ -435,5 +435,7 @@
         });
       }
     </script>
-  </body>
+      <!-- Contenu éditable depuis le back-office (après bt-api.js : réutilise BT_API) -->
+    <script src="cms.js" defer></script>
+</body>
 </html>

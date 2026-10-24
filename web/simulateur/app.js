@@ -303,4 +303,21 @@
     var r=$('result'); if(r) r.scrollIntoView({behavior:reduceMotion?'auto':'smooth',block:'start'});
     var b=$('verdictBanner'); if(b && !reduceMotion){b.classList.remove('flash');void b.offsetWidth;b.classList.add('flash');}
   });}
+
+  // Tarifs en vigueur (back-office → Tarifs, via ../cms.js) : commission orga et forfaits Boost
+  function applyPricing(p){
+    if(!p) return;
+    if(p.commission && typeof p.commission.organizer_pct==='number') COMMISSION=p.commission.organizer_pct/100;
+    if(p.boost){
+      var sel=$('boost'), cur=sel.value, html='<option value="0">Aucun</option>';
+      ['7d','30d','90d'].forEach(function(code){
+        var b=p.boost[code]; if(!b) return;
+        html+='<option value="'+b.amount+'">'+b.days+' jours — '+fFCFA(b.amount)+'</option>';
+      });
+      sel.innerHTML=html;
+      if(cur!=='0'){var opts=sel.options; sel.selectedIndex=Math.min(Array.prototype.findIndex.call(opts,function(o){return o.value===cur;})>=0?Array.prototype.findIndex.call(opts,function(o){return o.value===cur;}):0,opts.length-1);}
+    }
+    compute();
+  }
+  document.addEventListener('DOMContentLoaded',function(){ if(window.btPricing) window.btPricing().then(applyPricing); });
 })();

@@ -367,6 +367,30 @@ utiliser `textContent` ou une fonction d'échappement explicite. Un titre
 d'événement mal échappé peut casser toute la page ou introduire du JS
 malveillant si l'organisateur est hostile.
 
+### Contenu éditable (CMS)
+
+- Tout texte éditorial ajouté dans une page publique doit être balisé :
+  relancer `python scripts/cms_tag.py` (idempotent, ne renumérote jamais une
+  clé existante). Ne jamais réutiliser ni renommer une clé `data-cms` déjà en
+  production : la surcharge correspondante serait perdue ou appliquée au
+  mauvais endroit.
+- Un élément dont le texte est écrit par le JS (id référencé dans un script)
+  ne doit pas porter `data-cms` : le script de balisage les ignore.
+- Valeurs CMS appliquées en `textContent` / `setAttribute` uniquement. Seuls
+  `body_html` des pages légales et `answer_html` de la FAQ passent en
+  `innerHTML`, après nettoyage bleach côté serveur (`api/cms.py`).
+- Un montant ou un pourcentage commercial affiché (`… FCFA`) doit rester
+  aligné sur le tarif réellement facturé (`core/config.py`) : ces champs sont
+  réservés à l'admin.
+- **Prix** : jamais écrit en dur dans une page. Mettre la valeur par défaut
+  dans l'élément et `data-price="groupe.cle"` (format :
+  `data-price-format="number|pct|month"`), la clé étant déclarée dans
+  `core/pricing.py`. Côté API, tout montant facturé se lit via
+  `get_pricing(db, fresh=True)`, jamais via une constante.
+- **Emplacements** : une nouvelle zone = une entrée dans `core/zones.py` +
+  un `<div data-zone="…" class="hidden">` dans la page. Ne jamais renommer
+  une clé de zone en production (ses blocs deviendraient invisibles).
+
 ### Localisation
 
 Toute chaîne visible à l'utilisateur est en français. Toute chaîne

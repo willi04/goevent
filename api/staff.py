@@ -72,6 +72,11 @@ def _capabilities_for(user: User) -> dict:
         "moderate_partners": False,
         "moderate_cancellations": False,
         "moderate_feedbacks": False,
+
+        # Back-office contenu du site (textes, images, FAQ) / pages légales
+        "content_manage": False,
+        "legal_pages_manage": False,
+        "pricing_manage": False,
     }
     
     if role == "admin":
@@ -99,6 +104,7 @@ def _capabilities_for(user: User) -> dict:
                 "fb_packages_manage": True,
                 "moderate_feedbacks": True,
                 "commissions_view": True,
+                "content_manage": True,
                  # ─── Capabilities ex-designer absorbées temporairement ───
                 "ads_slides_read": True,
                 "ads_slides_write": True,

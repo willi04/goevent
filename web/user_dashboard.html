@@ -294,6 +294,9 @@
               </span>
             </div>
 
+            <!-- EMPLACEMENT : haut du tableau de bord fan (back-office → Emplacements) -->
+            <div data-zone="fan.top" class="hidden mb-8"></div>
+
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
               <div
                 class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between sm:block group transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1"
@@ -390,6 +393,9 @@
                 Chargement...
               </div>
             </div>
+
+            <!-- EMPLACEMENT : avant « Événements recommandés » -->
+            <div data-zone="fan.before_recommended" class="hidden mb-8"></div>
 
             <h3 class="text-lg font-extrabold font-headline mb-4 text-gray-900">
               Événements recommandés
@@ -1237,5 +1243,7 @@
         }
       }
     </script>
-  </body>
+      <!-- Contenu éditable depuis le back-office (après bt-api.js : réutilise BT_API) -->
+    <script src="cms.js" defer></script>
+</body>
 </html>

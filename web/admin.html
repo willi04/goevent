@@ -374,6 +374,15 @@
             <span>Remboursements</span>
             <span id="badge-refunds-pending" class="ml-auto bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full hidden">0</span>
           </button>
+          <button
+              onclick="showTab('content')"
+              data-tab="content"
+              data-capability="content_manage"
+              class="tab-btn w-full text-left flex items-center gap-3"
+          >
+            <span class="material-symbols-outlined text-lg">edit_note</span>
+            <span>Contenu du site</span>
+          </button>
       </aside>
       <!-- Main content -->
       <main class="flex-1 p-6 space-y-6 overflow-x-hidden">
@@ -477,6 +486,15 @@
           >
             <span class="material-symbols-outlined text-lg">currency_exchange</span>
             Remboursements
+          </button>
+          <button
+              onclick="showTab('content')"
+              data-tab="content"
+              data-capability="content_manage"
+              class="tab-btn flex-shrink-0"
+          >
+            <span class="material-symbols-outlined text-lg">edit_note</span>
+            Contenu du site
           </button>
         </div>
 
@@ -1033,6 +1051,9 @@
             </div>
           </div>
         </section>
+
+        <!-- ── SECTION CONTENU DU SITE (rendue par admin-cms.js) ── -->
+        <section id="section-content" class="section-hidden"></section>
       </main>
     </div>
 
@@ -1128,9 +1149,9 @@
               <div id="ctr-pricing-hint" class="bg-blue-50 border border-blue-100 rounded-xl p-3">
                 <p class="text-[10px] font-bold text-blue-700 uppercase tracking-widest mb-2">Tarifs de référence</p>
                 <div class="flex gap-2 flex-wrap">
-                  <button type="button" onclick="applyPricing(7, 50000)" class="action-btn text-xs" style="background:#dbeafe;color:#1e40af">1 sem · 50 000</button>
-                  <button type="button" onclick="applyPricing(30, 150000)" class="action-btn text-xs" style="background:#dbeafe;color:#1e40af">1 mois · 150 000</button>
-                  <button type="button" onclick="applyPricing(90, 500000)" class="action-btn text-xs" style="background:#dbeafe;color:#1e40af">3 mois · 500 000</button>
+                  <button type="button" onclick="applyPricing(7, _slotPrice('1w', 50000))" class="action-btn text-xs" style="background:#dbeafe;color:#1e40af">1 sem · <span data-slot-price="1w">50 000</span></button>
+                  <button type="button" onclick="applyPricing(30, _slotPrice('1m', 150000))" class="action-btn text-xs" style="background:#dbeafe;color:#1e40af">1 mois · <span data-slot-price="1m">150 000</span></button>
+                  <button type="button" onclick="applyPricing(90, _slotPrice('3m', 500000))" class="action-btn text-xs" style="background:#dbeafe;color:#1e40af">3 mois · <span data-slot-price="3m">500 000</span></button>
                 </div>
               </div>
         
@@ -1478,6 +1499,7 @@
               { tab: "contracts",     cap: "ads_contracts_read" },
               { tab: "slides",        cap: "ads_slides_read" },
               { tab: "fbpacks",       cap: "fb_packages_manage" },
+              { tab: "content",       cap: "content_manage" },
           ];
       
           for (const { tab, cap } of priorityOrder) {
@@ -1508,6 +1530,7 @@
           slides:        "ads_slides_read",
           fbpacks:       "fb_packages_manage",
           refunds:       "view_finance",
+          content:       "content_manage",
       };
       
       function showTab(tab) {
@@ -1526,6 +1549,7 @@
               s.classList.toggle("section-hidden", s.id !== `section-${tab}`);
           });
           if (tab === "dashboard") loadDashboard();
+          if (tab === "content" && typeof cmsInit === "function") cmsInit();
           if (tab === "events") loadEvents();
           if (tab === "users") loadUsers();
           if (tab === "finance") loadFinance();
@@ -3347,5 +3371,7 @@
           }, 1500);
       });
     </script>
-  </body>
+      <!-- Back-office « Contenu du site » (textes, images, FAQ, pages légales) -->
+    <script src="admin-cms.js"></script>
+</body>
 </html>

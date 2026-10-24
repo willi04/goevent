@@ -152,10 +152,10 @@
         <div class="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
           <span class="material-symbols-outlined text-3xl">help</span>
         </div>
-        <h1 class="text-3xl md:text-5xl font-black font-headline text-gray-900 tracking-tight mb-3">
+        <h1 class="text-3xl md:text-5xl font-black font-headline text-gray-900 tracking-tight mb-3" data-cms="centre_aide.001">
           Centre d'aide
         </h1>
-        <p class="text-gray-500 font-medium max-w-xl mx-auto">
+        <p class="text-gray-500 font-medium max-w-xl mx-auto" data-cms="centre_aide.002">
           Trouvez rapidement les réponses à vos questions sur GoEvent.
         </p>
       </div>
@@ -189,7 +189,7 @@
           data-cat="all"
         >
           Toutes
-          <span class="category-count text-xs bg-gray-100 px-2 py-0.5 rounded-full">20</span>
+          <span class="category-count text-xs bg-gray-100 px-2 py-0.5 rounded-full">19</span>
         </button>
         <button
           onclick="filterCategory('compte')"
@@ -229,7 +229,7 @@
       </div>
 
       <!-- FAQ ITEMS -->
-      <div id="faq-container" class="space-y-3 mb-12">
+      <div id="faq-container" class="space-y-3 mb-12" data-cms-faq>
         <!-- ──────── COMPTE ──────── -->
         <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="compte">
           <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
@@ -290,7 +290,7 @@
               C'est simple et rapide :<br/>
               <strong>1.</strong> Choisissez l'événement qui vous intéresse<br/>
               <strong>2.</strong> Sélectionnez le type de billet et la quantité<br/>
-              <strong>3.</strong> Choisissez votre mode de paiement : Orange Money OU paiement cash à l'entrée<br/>
+              <strong>3.</strong> Payez avec Orange Money (les billets gratuits sont délivrés sans paiement)<br/>
               <strong>4.</strong> Validez la transaction<br/>
               Votre billet (QR code) apparaît immédiatement dans votre tableau de bord.
             </p>
@@ -304,10 +304,9 @@
           </button>
           <div class="faq-answer px-5 pb-5">
             <p class="text-sm text-gray-600 leading-relaxed">
-              Actuellement, GoEvent accepte deux modes de paiement :<br/>
-              🟠 <strong>Orange Money</strong> : paiement instantané en ligne<br/>
-              💵 <strong>Cash à l'entrée</strong> : vous réservez en ligne et payez en cash le jour de l'événement à un agent désigné<br/>
-              D'autres moyens (Moov Money, cartes bancaires) seront ajoutés progressivement.
+              Le paiement se fait en ligne avec <strong>Orange Money</strong>, de façon instantanée et sécurisée.
+              Les billets d'événements gratuits sont délivrés directement, sans paiement. Le paiement en espèces
+              à l'entrée n'est plus proposé. D'autres moyens de paiement mobile seront ajoutés progressivement.
             </p>
           </div>
         </div>
@@ -320,18 +319,6 @@
           <div class="faq-answer px-5 pb-5">
             <p class="text-sm text-gray-600 leading-relaxed">
               Vérifiez d'abord votre solde Orange Money et votre connexion réseau. Si l'argent a été débité de votre compte mais que le billet n'apparaît pas dans votre tableau de bord après 5 minutes, contactez immédiatement notre support WhatsApp avec votre numéro de transaction Orange Money. Nous traitons ces cas en priorité.
-            </p>
-          </div>
-        </div>
-
-        <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="achat">
-          <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
-            <span class="font-bold text-gray-900 text-sm md:text-base">Comment fonctionne le paiement cash à l'entrée ?</span>
-            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
-          </button>
-          <div class="faq-answer px-5 pb-5">
-            <p class="text-sm text-gray-600 leading-relaxed">
-              Vous réservez votre place gratuitement en ligne, et vous payez en cash directement à l'entrée de l'événement à l'agent contrôleur. C'est pratique si vous n'avez pas Orange Money ou si vous préférez payer le jour J. Attention : votre place n'est pas garantie si vous n'arrivez pas avant l'heure de fermeture des portes.
             </p>
           </div>
         </div>
@@ -498,10 +485,10 @@
         <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
           <span class="material-symbols-outlined text-3xl">support_agent</span>
         </div>
-        <h2 class="text-2xl md:text-3xl font-black font-headline mb-3">
+        <h2 class="text-2xl md:text-3xl font-black font-headline mb-3" data-cms="centre_aide.003">
           Vous n'avez pas trouvé votre réponse ?
         </h2>
-        <p class="text-white/90 mb-6 max-w-md mx-auto">
+        <p class="text-white/90 mb-6 max-w-md mx-auto" data-cms="centre_aide.004">
           Notre équipe est là pour vous aider. Contactez-nous directement, on vous répond rapidement.
         </p>
         <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -510,21 +497,21 @@
             class="px-6 py-3.5 bg-green-500 hover:bg-green-600 text-white font-bold rounded-full shadow-lg shadow-green-500/30 active:scale-95 transition-all flex items-center gap-2"
           >
             <span class="material-symbols-outlined">chat</span>
-            Support WhatsApp
+            <span data-cms="centre_aide.005">Support WhatsApp</span>
           </button>
           <a
-            href="mailto:emmanuel.madoukou30@gmail.com"
+            href="mailto:emmanuel.madoukou30@gmail.com" data-cms-href="global.contact.email" data-cms-href-prefix="mailto:"
             class="px-6 py-3.5 bg-white text-primary font-bold rounded-full shadow-lg active:scale-95 transition-all flex items-center gap-2 hover:bg-gray-50"
           >
             <span class="material-symbols-outlined">mail</span>
-            Nous écrire
+            <span data-cms="centre_aide.006">Nous écrire</span>
           </a>
           <a
             href="feedback.html"
             class="px-6 py-3.5 border-2 border-white/30 text-white font-bold rounded-full active:scale-95 transition-all flex items-center gap-2 hover:bg-white/10"
           >
             <span class="material-symbols-outlined">forum</span>
-            Donner mon avis
+            <span data-cms="centre_aide.007">Donner mon avis</span>
           </a>
         </div>
       </div>
@@ -545,13 +532,13 @@
             Support WhatsApp bientôt disponible
           </h3>
           <p class="text-gray-600 mb-6 leading-relaxed">
-            Notre numéro WhatsApp Business RCA sera disponible <strong>dès le 5 mai 2026</strong>, juste après notre arrivée à Bangui.
+            Notre support WhatsApp n'est pas disponible pour le moment. Écrivez-nous par email, nous répondons rapidement.
           </p>
           <div class="bg-emerald-50 rounded-2xl p-4 mb-6 text-left">
             <p class="text-xs font-bold uppercase tracking-widest text-primary mb-2">En attendant, contactez-nous :</p>
-            <a href="mailto:emmanuel.madoukou30@gmail.com" class="flex items-center gap-3 text-sm font-semibold text-gray-700 hover:text-primary transition-colors">
+            <a href="mailto:emmanuel.madoukou30@gmail.com" data-cms-href="global.contact.email" data-cms-href-prefix="mailto:" class="flex items-center gap-3 text-sm font-semibold text-gray-700 hover:text-primary transition-colors">
               <span class="material-symbols-outlined">mail</span>
-              emmanuel.madoukou30@gmail.com
+              <span data-cms="global.contact.email">emmanuel.madoukou30@gmail.com</span>
             </a>
           </div>
           <button onclick="closeWhatsAppModal()" class="w-full py-3 bg-primary text-white font-bold rounded-xl hover:bg-primary-container active:scale-95 transition-all">
@@ -694,6 +681,12 @@
 
       // ── WhatsApp Modal ─────────────────────────────
       function contactWhatsApp() {
+        // Numéro piloté par le back-office (global.contact.whatsapp) ; modale si non renseigné.
+        const wa = typeof btCmsValue === "function" ? btCmsValue("global.contact.whatsapp", "23672259398") : "23672259398";
+        if (wa) {
+          window.open("https://wa.me/" + String(wa).replace(/\D/g, ""), "_blank", "noopener");
+          return;
+        }
         const modal = document.getElementById("whatsapp-modal");
         modal.classList.remove("hidden");
         modal.classList.add("flex");
@@ -715,5 +708,7 @@
         if (e.key === "Escape") closeWhatsAppModal();
       });
     </script>
-  </body>
+      <!-- Contenu éditable depuis le back-office (après bt-api.js : réutilise BT_API) -->
+    <script src="cms.js" defer></script>
+</body>
 </html>

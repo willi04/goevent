@@ -221,6 +221,55 @@ comme entré, et retourne un feedback visuel et sonore. La route
 `GET /tickets/scan/stats/{event_id}` est interrogée toutes les 30 secondes
 pour afficher l'affluence temps réel.
 
+### Flux 5 : Contenu éditable du site (back-office CMS)
+
+Les textes, images et liens des pages publiques sont modifiables depuis
+`admin.html` → « Contenu du site », sans toucher au HTML.
+
+- **Le HTML reste la valeur par défaut.** Chaque texte éditorial porte un
+  attribut `data-cms="page.NNN"` (images : `data-cms-img`, liens :
+  `data-cms-href`), posé par `scripts/cms_tag.py`. `core/cms_registry.py`
+  lit ces attributs au démarrage de l'API pour construire la liste des champs
+  (page, section, texte d'origine). Les composants générés en JS (footer,
+  drawer, encarts simulateur) et les coordonnées sont déclarés dans
+  `GLOBAL_FIELDS`.
+- **La base ne stocke que les surcharges** (`site_contents`). Supprimer une
+  surcharge = revenir au texte du HTML.
+- **`web/cms.js`** (inclus sur chaque page publique) appelle
+  `GET /content?pages=…` et applique les surcharges en `textContent`
+  (jamais `innerHTML`). API indisponible = la page garde son texte statique.
+- **Pages légales** : corps HTML versionné (`site_page_revisions`,
+  append-only), nettoyé par bleach, rendu dans `[data-cms-page]` ; sans
+  version publiée, le texte du fichier HTML reste affiché.
+- **FAQ** : `faq_items`, rendue dans `[data-cms-faq]` (FAQ statique conservée
+  tant que la table est vide).
+- **Droits** : textes, images, FAQ = admin + CM ; pages légales et montants
+  affichés (FCFA, % du partenariat) = admin.
+
+### Flux 6 : Emplacements (annonces, pubs partenaires) et tarifs
+
+- **Zones fixes** déclarées dans `core/zones.py` et posées dans le HTML
+  (`<div data-zone="home.after_featured">`, grille : `data-zone-infeed`).
+  Accueil (4), Événements (colonne + carte dans la liste), fiche événement,
+  espace fan (2). Le design reste maîtrisé : on n'ajoute pas de zone depuis
+  l'admin, on la déclare dans le code.
+- **Blocs** (`zone_blocks`) : affiche (image), bannière partenaire, annonce,
+  groupe de cartes. Dates de diffusion, ordre, statistiques d'affichages et
+  de clics. Mode `rotate` (un bloc au hasard), `stack` (tous) ou `infeed`
+  (toutes les N cartes).
+- **Zone vide** : `hide` (disparaît), `house` (encart « Emplacement
+  disponible » → page Partenaires, textes `global.zone.house_*`) ou `static`
+  (la section HTML d'origine reste : « Comment ça marche », bloc organisateur).
+- `web/cms.js` : `GET /zones?keys=…` puis rendu DOM (`textContent`,
+  liens `rel="sponsored noopener"`) ; compteurs via
+  `POST /zones/events` en `text/plain` (pas de preflight CORS).
+- **Tarifs** : source unique `core/pricing.py` (défauts `core/config.py`,
+  surcharges admin dans `site_settings["pricing"]`). Affichage :
+  `GET /pricing` → `[data-price="boost.7d"]` (page Partenaires, dashboard
+  orga, simulateur, checkout, admin). Facturation : `api/promotion.py` relit
+  `get_pricing(db, fresh=True)` → **prix affiché = prix facturé**. La
+  commission billetterie est exposée en lecture seule (elle engage les CGU).
+
 ## Principes transverses
 
 Cinq principes guident l'évolution du code et doivent être respectés par

@@ -9,7 +9,7 @@ Plateforme de billetterie en ligne conçue pour la République centrafricaine : 
 - **Organisateurs** : création et publication d’événements, catégories de billets, codes promo, tableau de bord des ventes, demandes de retrait vers Orange Money.
 - **Acheteurs** : catalogue d’événements, achat par Orange Money (ou billet gratuit), billet à QR code, espace « Mes billets ».
 - **Agents de scan** : validation des billets à l’entrée depuis une interface mobile.
-- **Back-office** : modération, régie publicitaire (mise en avant d’événements), support.
+- **Back-office** : modération, régie publicitaire (mise en avant d’événements), support, et gestion du contenu du site (textes, images, FAQ, pages légales versionnées, emplacements d’annonces et de pubs partenaires, tarifs) sans toucher au code.
 
 ## Architecture
 

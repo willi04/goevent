@@ -176,12 +176,12 @@
       <div class="text-center mb-12">
         <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-emerald-50 rounded-full mb-6">
           <span class="material-symbols-outlined text-primary text-base">lock</span>
-          <span class="text-xs font-bold text-primary uppercase tracking-wider">Document légal</span>
+          <span class="text-xs font-bold text-primary uppercase tracking-wider" data-cms="confidentialite.001">Document légal</span>
         </div>
-        <h1 class="text-4xl md:text-5xl font-black text-primary font-headline mb-4">
+        <h1 class="text-4xl md:text-5xl font-black text-primary font-headline mb-4" data-cms="confidentialite.002">
           Politique de Confidentialité
         </h1>
-        <p class="text-neutral-500 text-sm">
+        <p class="text-neutral-500 text-sm" data-cms-page-date>
           Dernière mise à jour : 21 Juin 2026
         </p>
       </div>
@@ -189,14 +189,14 @@
       <!-- Encadré important -->
       <div class="bg-emerald-50 border-l-4 border-primary rounded-r-2xl p-6 mb-10">
         <p class="text-sm text-neutral-700 leading-relaxed">
-          <strong class="text-primary">Votre vie privée est notre priorité.</strong> GoEvent
+          <strong class="text-primary" data-cms="confidentialite.003">Votre vie privée est notre priorité.</strong> <span data-cms="confidentialite.004">GoEvent
           s'engage à protéger vos données personnelles. La présente politique explique quelles
-          informations nous collectons, comment nous les utilisons, et quels sont vos droits.
+          informations nous collectons, comment nous les utilisons, et quels sont vos droits.</span>
         </p>
       </div>
 
       <!-- Contenu légal -->
-      <div class="legal-content bg-white rounded-3xl p-8 md:p-12 shadow-sm">
+      <div class="legal-content bg-white rounded-3xl p-8 md:p-12 shadow-sm" data-cms-page="confidentialite">
         <h2>1. Identité du responsable de traitement</h2>
         <p>
           Le responsable du traitement des données personnelles collectées sur la plateforme
@@ -451,19 +451,19 @@
         <a
           href="cgu.html"
           class="px-6 py-3 bg-white border-2 border-primary text-primary rounded-full font-bold text-sm hover:bg-emerald-50 transition-all"
-        >
+         data-cms="confidentialite.005">
           → Conditions Générales
         </a>
         <a
           href="remboursements.html"
           class="px-6 py-3 bg-white border-2 border-primary text-primary rounded-full font-bold text-sm hover:bg-emerald-50 transition-all"
-        >
+         data-cms="confidentialite.006">
           → Politique de Remboursements
         </a>
         <a
           href="index.html"
           class="px-6 py-3 bg-gradient-to-r from-primary to-primary-container text-white rounded-full font-bold text-sm hover:scale-105 transition-all shadow-lg shadow-primary/20"
-        >
+         data-cms="confidentialite.007">
           ← Retour à l'accueil
         </a>
       </div>
@@ -518,5 +518,7 @@
         }
       }
     </script>
-  </body>
+      <!-- Contenu éditable depuis le back-office (après bt-api.js : réutilise BT_API) -->
+    <script src="cms.js" defer></script>
+</body>
 </html>

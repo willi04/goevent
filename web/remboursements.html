@@ -175,12 +175,12 @@
       <div class="text-center mb-12">
         <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-emerald-50 rounded-full mb-6">
           <span class="material-symbols-outlined text-primary text-base">paid</span>
-          <span class="text-xs font-bold text-primary uppercase tracking-wider">Document légal</span>
+          <span class="text-xs font-bold text-primary uppercase tracking-wider" data-cms="remboursements.001">Document légal</span>
         </div>
-        <h1 class="text-4xl md:text-5xl font-black text-primary font-headline mb-4">
+        <h1 class="text-4xl md:text-5xl font-black text-primary font-headline mb-4" data-cms="remboursements.002">
           Politique de Remboursements
         </h1>
-        <p class="text-neutral-500 text-sm">
+        <p class="text-neutral-500 text-sm" data-cms-page-date>
           Dernière mise à jour : 21 Juin 2026
         </p>
       </div>
@@ -188,14 +188,14 @@
       <!-- Encadré important -->
       <div class="bg-emerald-50 border-l-4 border-primary rounded-r-2xl p-6 mb-10">
         <p class="text-sm text-neutral-700 leading-relaxed">
-          <strong class="text-primary">Soyez attentif(ve) avant tout achat.</strong> La présente
+          <strong class="text-primary" data-cms="remboursements.003">Soyez attentif(ve) avant tout achat.</strong> <span data-cms="remboursements.004">La présente
           politique précise dans quelles conditions un remboursement peut intervenir. En achetant
-          un billet sur GoEvent, vous acceptez les règles décrites ci-dessous.
+          un billet sur GoEvent, vous acceptez les règles décrites ci-dessous.</span>
         </p>
       </div>
 
       <!-- Contenu légal -->
-      <div class="legal-content bg-white rounded-3xl p-8 md:p-12 shadow-sm">
+      <div class="legal-content bg-white rounded-3xl p-8 md:p-12 shadow-sm" data-cms-page="remboursements">
         <h2>1. Principe général</h2>
         <p>
           Sur GoEvent, <strong>les billets achetés sont en principe non remboursables</strong>.
@@ -434,19 +434,19 @@
         <a
           href="cgu.html"
           class="px-6 py-3 bg-white border-2 border-primary text-primary rounded-full font-bold text-sm hover:bg-emerald-50 transition-all"
-        >
+         data-cms="remboursements.005">
           → Conditions Générales
         </a>
         <a
           href="confidentialite.html"
           class="px-6 py-3 bg-white border-2 border-primary text-primary rounded-full font-bold text-sm hover:bg-emerald-50 transition-all"
-        >
+         data-cms="remboursements.006">
           → Politique de Confidentialité
         </a>
         <a
           href="index.html"
           class="px-6 py-3 bg-gradient-to-r from-primary to-primary-container text-white rounded-full font-bold text-sm hover:scale-105 transition-all shadow-lg shadow-primary/20"
-        >
+         data-cms="remboursements.007">
           ← Retour à l'accueil
         </a>
       </div>
@@ -501,5 +501,7 @@
         }
       }
     </script>
-  </body>
+      <!-- Contenu éditable depuis le back-office (après bt-api.js : réutilise BT_API) -->
+    <script src="cms.js" defer></script>
+</body>
 </html>

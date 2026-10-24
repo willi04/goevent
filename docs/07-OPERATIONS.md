@@ -107,6 +107,21 @@ chargées). Déclenchement manuel : *Run workflow* (`workflow_dispatch`).
 - [ ] Comptes staff créés : ≥ 1 commercial, ≥ 1 CM.
 
 **Le jour J**
+- [ ] ⚠️ **Masquer le contenu de démo AVANT d'activer les clés prod** : avec
+      de vraies clés, un fan pourrait payer réellement un billet pour un
+      event fictif. Events de démo = ids 44 à 59 (orga `+23670000002`) :
+      ```sql
+      -- Aperçu : aucun billet ne doit exister sur ces events
+      SELECT e.id, e.title, COUNT(t.id) AS billets
+      FROM events e LEFT JOIN tickets t ON t.event_id = e.id
+      WHERE e.id BETWEEN 44 AND 59 GROUP BY e.id ORDER BY e.id;
+      -- Masquage (réversible)
+      UPDATE events SET is_active = false WHERE id BETWEEN 44 AND 59;
+      ```
+      Les comptes de démo (ids 16, 17, 23, 25–28) ont un PIN aléatoire
+      inconnu depuis le 17/10/2026 : connexion impossible. Suppression
+      définitive (comptes + events) après l'arrivée des vrais events, par
+      script dédié (clés étrangères : billets de test, promos, boosts).
 - [ ] Render : `NGSER_AUTH_TOKEN`, `NGSER_PAYMENT_TOKEN`,
       `NGSER_WITHDRAWAL_TOKEN`, `NGSER_SERVICE_NAME`, `NGSER_BASE_URL`
       (URL prod NGSER), `ENV=production`.
@@ -129,6 +144,29 @@ chargées). Déclenchement manuel : *Run workflow* (`workflow_dispatch`).
 Critère d'ouverture publique (soft launch) : 0 P0, 5 billets payants de
 bout en bout sans intervention, 1 retrait réussi, analyse des
 `failure_reason`.
+
+## Contenu du site (back-office)
+
+- Délai de mise en ligne d'une modification : immédiat pour l'éditeur
+  (cache invalidé dans son navigateur), ≤ 1 minute pour les visiteurs
+  (`Cache-Control: max-age=60`), jusqu'à 5 minutes pour un visiteur déjà sur
+  le site (cache de session de `cms.js`).
+- Pages légales : toujours renseigner « Ce qui change » à la publication.
+  Restaurer une ancienne version = la charger dans l'éditeur puis la publier
+  (nouvelle version datée, l'historique n'est jamais réécrit).
+- Ajout ou suppression de texte dans une page : relancer
+  `python scripts/cms_tag.py`, commiter, déployer (API + front). Le registre
+  est relu au démarrage de l'API.
+- Traçabilité : `security_logs` → `cms_update`, `cms_page_published`,
+  `cms_faq_created|updated|deleted|imported`.
+- Emplacements : un bloc programmé (début futur) ou terminé reste dans
+  l'admin avec son statut ; supprimer un bloc efface ses statistiques
+  (relever affichages/clics avant pour le bilan du partenaire).
+- Tarifs (admin) : changement effectif pour les paiements suivants en
+  ≈ 30 s (cache API), affichage ≤ 1 min. Une commande déjà payée garde son
+  montant. Journal : `pricing_update` (ancien → nouveau).
+- Traçabilité emplacements : `zone_block_created|updated|deleted`,
+  `zone_settings_updated`.
 
 ## Monitoring
 

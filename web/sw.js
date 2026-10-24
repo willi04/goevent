@@ -3,7 +3,7 @@
 //  Cache offline, sync background, notifications push
 // ============================================================
 
-const APP_VERSION = "v1.0.1"; // TRÈS IMPORTANT : Changement de version pour forcer la mise à jour
+const APP_VERSION = "v1.0.2"; // TRÈS IMPORTANT : Changement de version pour forcer la mise à jour
 const CACHE_STATIC = "goevent-static-" + APP_VERSION;
 const CACHE_API = "goevent-api-" + APP_VERSION;
 const API_BASE = "http://127.0.0.1:8000";
@@ -23,11 +23,11 @@ const APP_SHELL = [
   "/bt-api.js",
   "/pwa.js",
   "/manifest.json",
-  "/icons/icon-192.svg",
-  "/icons/icon-512.svg",
+  "/icons/icon-192.png",
+  "/icons/icon-512.png",
   // Fonts Google (si disponibles)
   "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap",
-  "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap",
+  "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=block",
 ];
 
 // Routes API à mettre en cache (lecture seule)
@@ -238,8 +238,8 @@ self.addEventListener("push", function (event) {
 
   var options = {
     body: data.body || "Vous avez une nouvelle notification",
-    icon: "/icons/icon-192.svg",
-    badge: "/icons/icon-72.svg",
+    icon: "/icons/icon-192.png",
+    badge: "/icons/icon-192.png",
     vibrate: [200, 100, 200],
     tag: data.tag || "goevent-notification",
     renotify: true,
@@ -248,8 +248,8 @@ self.addEventListener("push", function (event) {
       dateOfArrival: Date.now(),
     },
     actions: [
-      { action: "open", title: "Voir", icon: "/icons/icon-72.svg" },
-      { action: "dismiss", title: "Ignorer", icon: "/icons/icon-72.svg" },
+      { action: "open", title: "Voir", icon: "/icons/icon-192.png" },
+      { action: "dismiss", title: "Ignorer", icon: "/icons/icon-192.png" },
     ],
   };
 

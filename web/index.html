@@ -2,11 +2,18 @@
 <html class="light" lang="fr">
   <head>
     <meta charset="utf-8" />
-    <meta
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-      name="viewport"
-    />
-    <title>GoEvent</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GoEvent – Billets de concerts et d'événements à Bangui via Orange Money</title>
+    <meta name="description" content="Concerts, spectacles, festivals et sport en Centrafrique : achetez vos billets en ligne, payez par Orange Money et recevez votre billet QR code par e-mail." />
+    <link rel="canonical" href="https://goevent.africa/" />
+    <meta property="og:site_name" content="GoEvent" />
+    <meta property="og:title" content="GoEvent – Billets de concerts et d&#x27;événements à Bangui via Orange Money" />
+    <meta property="og:description" content="Concerts, spectacles, festivals et sport en Centrafrique : achetez vos billets en ligne, payez par Orange Money et recevez votre billet QR code par e-mail." />
+    <meta property="og:url" content="https://goevent.africa/" />
+    <meta property="og:image" content="https://goevent.africa/icons/icon-512.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="fr_FR" />
+    <meta name="twitter:card" content="summary" />
     <link rel="icon" type="image/png" href="icons/favicon.png" />
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link
@@ -14,7 +21,7 @@
       rel="stylesheet"
     />
     <link
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=block"
       rel="stylesheet"
     />
     <link rel="manifest" href="manifest.json" />
@@ -199,7 +206,8 @@
         id="splash-text-wrapper"
         class="transition-all duration-500 ease-in-out"
       >
-        <h1
+        <div
+          aria-hidden="true"
           class="text-5xl md:text-6xl font-black text-white border-r-4 border-blue-500 pr-1 animate-pulse-cursor"
         >
           <span id="typewriter-text"></span
@@ -208,7 +216,7 @@
             class="text-blue-500 opacity-0 transition-opacity"
             >.</span
           >
-        </h1>
+        </div>
       </div>
     </div>
     <style>
@@ -248,8 +256,8 @@
       <button
         onclick="toggleMobileMenu()"
         class="p-2 -mr-2 text-gray-700 hover:text-primary transition-colors focus:outline-none"
-      >
-        <span class="material-symbols-outlined" style="font-size: 32px"
+       aria-label="Ouvrir le menu">
+        <span aria-hidden="true" class="material-symbols-outlined" style="font-size: 32px"
           >menu</span
         >
       </button>
@@ -276,29 +284,29 @@
           <a
             href="index.html"
             class="flex items-center gap-3 p-4 bg-primary/10 rounded-2xl text-primary font-bold"
-            ><span class="material-symbols-outlined">home</span> Accueil</a
+            ><span aria-hidden="true" class="material-symbols-outlined">home</span> Accueil</a
           >
           <a
             href="event.html"
             class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
-            ><span class="material-symbols-outlined">stadium</span>
+            ><span aria-hidden="true" class="material-symbols-outlined">stadium</span>
             Événements</a
           >
           <a
             href="follow.html"
             class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
-            ><span class="material-symbols-outlined">favorite</span> Follow</a
+            ><span aria-hidden="true" class="material-symbols-outlined">favorite</span> Suivre</a
           >
           <a
             href="partenaire.html"
             class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
-            ><span class="material-symbols-outlined">handshake</span>
+            ><span aria-hidden="true" class="material-symbols-outlined">handshake</span>
             Partenaires</a
           >
           <a
             href="a_propos.html"
             class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
-            ><span class="material-symbols-outlined">info</span> À propos</a
+            ><span aria-hidden="true" class="material-symbols-outlined">info</span> À propos</a
           >
         </nav>
 
@@ -343,7 +351,7 @@
           class="hidden absolute left-4 top-1/2 -translate-y-1/2 z-30 w-12 h-12 rounded-full bg-black/30 hover:bg-black/60 text-white items-center justify-center transition-all backdrop-blur-sm"
           aria-label="Slide précédente"
         >
-          <span class="material-symbols-outlined">chevron_left</span>
+          <span aria-hidden="true" class="material-symbols-outlined">chevron_left</span>
         </button>
         <button
           id="hero-next"
@@ -351,7 +359,7 @@
           class="hidden absolute right-4 top-1/2 -translate-y-1/2 z-30 w-12 h-12 rounded-full bg-black/30 hover:bg-black/60 text-white items-center justify-center transition-all backdrop-blur-sm"
           aria-label="Slide suivante"
         >
-          <span class="material-symbols-outlined">chevron_right</span>
+          <span aria-hidden="true" class="material-symbols-outlined">chevron_right</span>
         </button>
       </section>
       
@@ -359,7 +367,7 @@
       <div class="block md:hidden">
         <section class="px-6 relative z-10 -mt-12 mb-8">
           <div class="bg-white p-2 rounded-2xl shadow-xl shadow-gray-200/50 flex items-center gap-2 mb-6">
-            <span class="material-symbols-outlined text-gray-400 pl-2 text-xl">search</span>
+            <span aria-hidden="true" class="material-symbols-outlined text-gray-400 pl-2 text-xl">search</span>
             <input
               type="text"
               id="mobile-search"
@@ -372,8 +380,8 @@
                 if (q) window.location.href = 'event.html?search=' + encodeURIComponent(q);
               "
               class="w-10 h-10 bg-gray-50 hover:bg-gray-100 rounded-xl flex items-center justify-center text-gray-500 transition-colors shrink-0"
-            >
-              <span class="material-symbols-outlined text-lg">filter_list</span>
+             aria-label="Filtres">
+              <span aria-hidden="true" class="material-symbols-outlined text-lg">filter_list</span>
             </button>
           </div>
         </section>
@@ -421,7 +429,7 @@
           class="hidden text-center py-20 bg-gray-50 rounded-3xl border border-gray-100"
         >
           <span
-            class="material-symbols-outlined text-6xl text-outline block mb-4"
+            aria-hidden="true" class="material-symbols-outlined text-6xl text-outline block mb-4"
             >event_busy</span
           >
           <p class="text-on-surface-variant text-lg font-medium">
@@ -449,7 +457,7 @@
               class="w-20 h-20 md:w-24 md:h-24 rounded-full bg-primary-fixed mx-auto flex items-center justify-center mb-6 shadow-xl shadow-primary/10"
             >
               <span
-                class="material-symbols-outlined text-4xl text-on-primary-fixed"
+                aria-hidden="true" class="material-symbols-outlined text-4xl text-on-primary-fixed"
                 >search</span
               >
             </div>
@@ -468,7 +476,7 @@
               class="w-20 h-20 md:w-24 md:h-24 rounded-full bg-primary-fixed mx-auto flex items-center justify-center mb-6 shadow-xl shadow-primary/10"
             >
               <span
-                class="material-symbols-outlined text-4xl text-on-primary-fixed"
+                aria-hidden="true" class="material-symbols-outlined text-4xl text-on-primary-fixed"
                 >payments</span
               >
             </div>
@@ -486,7 +494,7 @@
               class="w-20 h-20 md:w-24 md:h-24 rounded-full bg-primary-fixed mx-auto flex items-center justify-center mb-6 shadow-xl shadow-primary/10"
             >
               <span
-                class="material-symbols-outlined text-4xl text-on-primary-fixed"
+                aria-hidden="true" class="material-symbols-outlined text-4xl text-on-primary-fixed"
                 >qr_code_2</span
               >
             </div>
@@ -496,7 +504,7 @@
             <p
               class="text-on-surface-variant text-sm md:text-base max-w-xs mx-auto leading-relaxed"
             >
-              Votre billet numérique avec QR Code est envoyé par SMS et e-mail.
+              Votre billet QR code arrive par e-mail et reste disponible dans « Mes billets ».
             </p>
           </div>
         </div>
@@ -522,8 +530,8 @@
               Vous êtes artiste ou organisateur ?
             </h2>
             <p class="text-base md:text-lg text-primary-fixed mb-8">
-              Propulsez vos événements avec la plateforme numéro 1 en République
-              Centrafricaine.
+              Publiez votre événement en quelques minutes, vendez vos billets via
+              Orange Money et suivez vos ventes en temps réel.
             </p>
             <a
               href="signup.html"
@@ -748,7 +756,7 @@
           const cta = s.cta_link && s.cta_text
             ? `<a href="${this._escapeAttr(s.cta_link)}" class="inline-flex items-center gap-2 mt-8 px-8 py-4 bg-primary-fixed text-on-primary-fixed rounded-full font-bold text-base md:text-lg hover:scale-105 active:scale-95 transition-transform shadow-2xl">
                  ${this._escapeHtml(s.cta_text)}
-                 <span class="material-symbols-outlined">arrow_forward</span>
+                 <span aria-hidden="true" class="material-symbols-outlined">arrow_forward</span>
                </a>`
             : "";
       
@@ -886,7 +894,7 @@
           btnContainer.innerHTML = `
             <button onclick="window.location.href='event.html'" class="px-8 py-4 rounded-2xl bg-white border-2 border-primary text-primary font-bold hover:bg-primary hover:text-white transition-all duration-300 shadow-sm flex items-center gap-2 group">
                 Découvrez plus d'événements
-                <span class="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>
+                <span aria-hidden="true" class="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>
             </button>
           `;
           grid.appendChild(btnContainer);
@@ -899,14 +907,14 @@
             const showArrows = featuredEvents.length > 3;
             carouselTrack.innerHTML = `
                     <div id="netflix-wrapper" class="relative group w-full">
-                        ${showArrows ? `<button onclick="scrollNetflix(-1)" class="absolute left-0 top-0 bottom-0 z-20 bg-black/40 hover:bg-black/70 text-white w-10 md:w-14 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all rounded-l-2xl">
-                            <span class="material-symbols-outlined text-3xl">chevron_left</span>
+                        ${showArrows ? `<button onclick="scrollNetflix(-1)" class="absolute left-0 top-0 bottom-0 z-20 bg-black/40 hover:bg-black/70 text-white w-10 md:w-14 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all rounded-l-2xl" aria-label="Précédent">
+                            <span aria-hidden="true" class="material-symbols-outlined text-3xl">chevron_left</span>
                         </button>` : ""}
                         <div id="netflix-track-inner" class="netflix-track-inner px-6 md:px-0">
                             ${featuredEvents.map((event) => renderNetflixCard(event)).join("")}
                         </div>
-                        ${showArrows ? `<button onclick="scrollNetflix(1)" class="absolute right-0 top-0 bottom-0 z-20 bg-black/40 hover:bg-black/70 text-white w-10 md:w-14 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all rounded-r-2xl">
-                            <span class="material-symbols-outlined text-3xl">chevron_right</span>
+                        ${showArrows ? `<button onclick="scrollNetflix(1)" class="absolute right-0 top-0 bottom-0 z-20 bg-black/40 hover:bg-black/70 text-white w-10 md:w-14 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all rounded-r-2xl" aria-label="Suivant">
+                            <span aria-hidden="true" class="material-symbols-outlined text-3xl">chevron_right</span>
                         </button>` : ""}
                     </div>
                 `;
@@ -935,7 +943,7 @@
         // Chantier 17 : badge "Mis en avant" si event boosté ET visible ce bucket
         const boostBadge = (event.is_boosted && !event.is_sold_out)
           ? `<div class="absolute top-3 right-3 bg-gradient-to-r from-orange-500 to-red-500 text-white px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-lg flex items-center gap-1">
-               <span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1">local_fire_department</span>
+               <span aria-hidden="true" class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1">local_fire_department</span>
                Mis en avant
              </div>`
           : "";
@@ -944,7 +952,7 @@
         const isFree = !event.price || event.price === 0;
         const freeBadge = (isFree && !event.is_boosted && !event.is_sold_out)
           ? `<div class="absolute top-3 right-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-lg flex items-center gap-1">
-               <span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1">card_giftcard</span>
+               <span aria-hidden="true" class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1">card_giftcard</span>
                Gratuit
              </div>`
           : "";
@@ -952,7 +960,7 @@
         // Badge "COMPLET" (override boost + gratuit : rien à mettre en avant si sold-out)
         const soldOutBadge = event.is_sold_out
           ? `<div class="absolute top-3 right-3 bg-gray-900/90 backdrop-blur text-white px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-lg flex items-center gap-1">
-               <span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1">block</span>
+               <span aria-hidden="true" class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1">block</span>
                Complet
              </div>`
           : "";
@@ -971,7 +979,7 @@
                 <div class="px-2 flex flex-col flex-grow">
                     <h3 class="font-headline font-extrabold text-gray-900 text-lg line-clamp-2 mb-2 leading-tight group-hover:text-primary transition-colors">${_btEscapeHtml(event.title)}</h3>
                     <p class="text-xs text-gray-500 flex items-center gap-1.5 mb-4 font-medium mt-auto">
-                        <span class="material-symbols-outlined text-[15px]">calendar_today</span> ${dateStr}
+                        <span aria-hidden="true" class="material-symbols-outlined text-[15px]">calendar_today</span> ${dateStr}
                     </p>
                     <div class="flex items-center justify-between pt-3 border-t border-gray-100">
                         <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Dès</span>
@@ -995,7 +1003,7 @@
         // Badge "Mis en avant" UNIQUEMENT si event boosté (Chantier 17).
         const boostBadge = (event.is_boosted && !event.is_sold_out)
           ? `<div class="absolute top-3 right-3 bg-gradient-to-r from-orange-500 to-red-500 text-white text-[9px] font-black uppercase px-2 py-1 rounded shadow-md flex items-center gap-1">
-               <span class="material-symbols-outlined text-[11px]" style="font-variation-settings: 'FILL' 1">local_fire_department</span>
+               <span aria-hidden="true" class="material-symbols-outlined text-[11px]" style="font-variation-settings: 'FILL' 1">local_fire_department</span>
                Mis en avant
              </div>`
           : "";
@@ -1004,7 +1012,7 @@
         const isFree = !event.price || event.price === 0;
         const freeBadgeNetflix = (isFree && !event.is_boosted && !event.is_sold_out)
           ? `<div class="absolute top-3 right-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-[9px] font-black uppercase px-2 py-1 rounded shadow-md flex items-center gap-1">
-               <span class="material-symbols-outlined text-[11px]" style="font-variation-settings: 'FILL' 1">card_giftcard</span>
+               <span aria-hidden="true" class="material-symbols-outlined text-[11px]" style="font-variation-settings: 'FILL' 1">card_giftcard</span>
                Gratuit
              </div>`
           : "";
@@ -1012,7 +1020,7 @@
         // Badge "COMPLET" override (Chantier UX pré-lancement : informer avant clic)
         const soldOutBadgeNetflix = event.is_sold_out
           ? `<div class="absolute top-3 right-3 bg-gray-900/90 backdrop-blur text-white text-[9px] font-black uppercase px-2 py-1 rounded shadow-md flex items-center gap-1">
-               <span class="material-symbols-outlined text-[11px]" style="font-variation-settings: 'FILL' 1">block</span>
+               <span aria-hidden="true" class="material-symbols-outlined text-[11px]" style="font-variation-settings: 'FILL' 1">block</span>
                Complet
              </div>`
           : "";

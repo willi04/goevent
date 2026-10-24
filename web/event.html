@@ -5,11 +5,18 @@
     <meta name="bt-page" content="evenements" />
     <link rel="manifest" href="manifest.json" />
     <meta name="theme-color" content="#00502c" />
-    <meta
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-      name="viewport"
-    />
-    <title>GoEvent</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tous les événements à Bangui et en RCA | GoEvent</title>
+    <meta name="description" content="Agenda des concerts, festivals, spectacles et expositions en République Centrafricaine. Filtrez par catégorie, prix et lieu, puis réservez en ligne via Orange Money." />
+    <link rel="canonical" href="https://goevent.africa/event.html" />
+    <meta property="og:site_name" content="GoEvent" />
+    <meta property="og:title" content="Tous les événements à Bangui et en RCA | GoEvent" />
+    <meta property="og:description" content="Agenda des concerts, festivals, spectacles et expositions en République Centrafricaine. Filtrez par catégorie, prix et lieu, puis réservez en ligne via Orange Money." />
+    <meta property="og:url" content="https://goevent.africa/event.html" />
+    <meta property="og:image" content="https://goevent.africa/icons/icon-512.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="fr_FR" />
+    <meta name="twitter:card" content="summary" />
     <link rel="icon" type="image/png" href="icons/favicon.png" />
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link
@@ -17,7 +24,7 @@
       rel="stylesheet"
     />
     <link
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=block"
       rel="stylesheet"
     />
     <script id="tailwind-config">
@@ -123,8 +130,8 @@
       <button
         onclick="toggleMobileMenu()"
         class="p-2 -mr-2 text-gray-700 hover:text-primary transition-colors focus:outline-none"
-      >
-        <span class="material-symbols-outlined" style="font-size: 32px"
+       aria-label="Ouvrir le menu">
+        <span aria-hidden="true" class="material-symbols-outlined" style="font-size: 32px"
           >menu</span
         >
       </button>
@@ -151,29 +158,29 @@
           <a
             href="index.html"
             class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
-            ><span class="material-symbols-outlined">home</span> Accueil</a
+            ><span aria-hidden="true" class="material-symbols-outlined">home</span> Accueil</a
           >
           <a
             href="event.html"
             class="flex items-center gap-3 p-4 bg-primary/10 rounded-2xl text-primary font-bold"
-            ><span class="material-symbols-outlined">stadium</span>
+            ><span aria-hidden="true" class="material-symbols-outlined">stadium</span>
             Événements</a
           >
           <a
             href="follow.html"
             class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
-            ><span class="material-symbols-outlined">favorite</span> Follow</a
+            ><span aria-hidden="true" class="material-symbols-outlined">favorite</span> Suivre</a
           >
           <a
             href="partenaire.html"
             class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
-            ><span class="material-symbols-outlined">handshake</span>
+            ><span aria-hidden="true" class="material-symbols-outlined">handshake</span>
             Partenaires</a
           >
           <a
             href="a_propos.html"
             class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
-            ><span class="material-symbols-outlined">info</span> À propos</a
+            ><span aria-hidden="true" class="material-symbols-outlined">info</span> À propos</a
           >
         </nav>
         <!-- Sections drawer (Aide + Support WhatsApp + Inviter un ami) -->
@@ -204,7 +211,7 @@
             class="bg-surface-container-lowest p-2 rounded-2xl md:rounded-full shadow-2xl flex flex-col md:flex-row items-center transition-all focus-within:ring-4 focus-within:ring-primary/10 gap-3 md:gap-0"
           >
             <div class="flex items-center w-full">
-              <span class="material-symbols-outlined ml-2 md:ml-6 text-outline"
+              <span aria-hidden="true" class="material-symbols-outlined ml-2 md:ml-6 text-outline"
                 >search</span
               >
               <input
@@ -227,7 +234,7 @@
           <aside class="w-full md:w-72 flex-shrink-0 space-y-10">
             <details class="md:!open" open>
               <summary class="md:hidden cursor-pointer text-on-primary-fixed-variant font-headline font-bold text-lg flex items-center gap-2 py-3">
-                <span class="material-symbols-outlined">filter_list</span>
+                <span aria-hidden="true" class="material-symbols-outlined">filter_list</span>
                 Filtres
               </summary>
               <div>
@@ -302,7 +309,7 @@
                     class="flex justify-between text-xs text-outline font-medium"
                   >
                     <span>0 FCFA</span>
-                    <span id="price-display">100.000 FCFA</span>
+                    <span id="price-display">100 000 FCFA</span>
                   </div>
                 </div>
   
@@ -317,7 +324,7 @@
                   >
                     <option value="">Tous les lieux</option>
                     <option value="Stade 20,000 places">
-                      Stade 20,000 places
+                      Stade 20 000 places
                     </option>
                     <option value="Alliance Française">Alliance Française</option>
                     <option value="Palais de la CEMAC">Palais de la CEMAC</option>
@@ -378,7 +385,7 @@
                     class="font-bold text-primary flex items-center gap-1 pointer-events-none"
                   >
                     <span id="sort-text">Plus récents</span>
-                    <span class="material-symbols-outlined text-sm"
+                    <span aria-hidden="true" class="material-symbols-outlined text-sm"
                       >keyboard_arrow_down</span
                     >
                   </button>
@@ -502,20 +509,20 @@
            // Badge "TERMINÉ" en vert GoEvent, panier normal sinon, "Complet" grisé si sold-out
             const btnHtml = isPast 
                 ? `<div class="px-4 py-2 bg-primary text-white rounded-full font-black text-[15px] uppercase tracking-widest flex items-center gap-1 shadow-sm">
-                     <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1">history</span> TERMINE
+                     <span aria-hidden="true" class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1">history</span> TERMINE
                    </div>`
                 : e.is_sold_out
                 ? `<div class="px-4 py-2 bg-gray-200 text-gray-500 rounded-full font-black text-[12px] uppercase tracking-widest flex items-center gap-1 shadow-sm">
-                     <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1">block</span> Complet
+                     <span aria-hidden="true" class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1">block</span> Complet
                    </div>`
-                : `<button onclick="event.stopPropagation(); window.location.href='event_detail.html?id=${e.id}'" class="p-3 bg-primary/5 text-primary rounded-full hover:bg-primary hover:text-white transition-all shadow-sm active:scale-95">
-                    <span class="material-symbols-outlined">shopping_cart</span>
+                : `<button onclick="event.stopPropagation(); window.location.href='event_detail.html?id=${e.id}'" aria-label="Réserver ${_btEscapeHtml(e.title)}" class="p-3 bg-primary/5 text-primary rounded-full hover:bg-primary hover:text-white transition-all shadow-sm active:scale-95">
+                    <span aria-hidden="true" class="material-symbols-outlined">shopping_cart</span>
                   </button>`;
 
             // Badge "Mis en avant" pour les events boostés (Chantier 17)
             const boostBadge = (e.is_boosted && !isPast && !e.is_sold_out)
               ? `<div class="absolute top-4 right-4 bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-lg flex items-center gap-1">
-                   <span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1">local_fire_department</span>
+                   <span aria-hidden="true" class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1">local_fire_department</span>
                    Mis en avant
                  </div>`
               : "";
@@ -524,7 +531,7 @@
             const isFree = !e.price || e.price === 0;
             const freeBadge = (isFree && !e.is_boosted && !isPast && !e.is_sold_out)
               ? `<div class="absolute top-4 right-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-lg flex items-center gap-1">
-                   <span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1">card_giftcard</span>
+                   <span aria-hidden="true" class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1">card_giftcard</span>
                    Gratuit
                  </div>`
               : "";
@@ -532,7 +539,7 @@
             // Badge "COMPLET" (override boost + gratuit + bouton panier ; event reste cliquable)
             const soldOutBadge = (e.is_sold_out && !isPast)
               ? `<div class="absolute top-4 right-4 bg-gray-900/90 backdrop-blur text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-lg flex items-center gap-1">
-                   <span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1">block</span>
+                   <span aria-hidden="true" class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1">block</span>
                    Complet
                  </div>`
               : "";
@@ -550,14 +557,14 @@
               </div>
               <div class="p-6 flex-1 flex flex-col">
                 <div class="flex items-center gap-2 text-xs text-outline mb-2">
-                  <span class="material-symbols-outlined text-sm">calendar_today</span>
+                  <span aria-hidden="true" class="material-symbols-outlined text-sm">calendar_today</span>
                   <span class="capitalize">${dateString}</span>
                 </div>
                 <h3 class="text-lg font-headline font-bold text-on-surface mb-3 leading-tight line-clamp-2">
                   ${_btEscapeHtml(e.title)}
                 </h3>
                 <div class="flex items-center gap-2 text-sm text-outline mb-6">
-                  <span class="material-symbols-outlined text-sm">location_on</span>
+                  <span aria-hidden="true" class="material-symbols-outlined text-sm">location_on</span>
                   <span class="truncate">${_btEscapeHtml(e.location)}</span>
                 </div>
                 <div class="flex items-center justify-between mt-auto">
@@ -676,8 +683,8 @@
           let html = "";
 
           // Bouton Précédent (chevron_left)
-          html += `<button onclick="changePage(${currentPage - 1})" class="w-12 h-12 rounded-xl border border-outline-variant flex items-center justify-center hover:bg-surface-container-high transition-colors disabled:opacity-30 disabled:cursor-not-allowed" ${currentPage === 1 ? "disabled" : ""}>
-                        <span class="material-symbols-outlined">chevron_left</span>
+          html += `<button onclick="changePage(${currentPage - 1})" class="w-12 h-12 rounded-xl border border-outline-variant flex items-center justify-center hover:bg-surface-container-high transition-colors disabled:opacity-30 disabled:cursor-not-allowed" ${currentPage === 1 ? "disabled" : ""} aria-label="Précédent">
+                        <span aria-hidden="true" class="material-symbols-outlined">chevron_left</span>
                      </button>`;
 
           // Les numéros (1, 2, 3...)
@@ -690,8 +697,8 @@
           }
 
           // Bouton Suivant (chevron_right)
-          html += `<button onclick="changePage(${currentPage + 1})" class="w-12 h-12 rounded-xl border border-outline-variant flex items-center justify-center hover:bg-surface-container-high transition-colors disabled:opacity-30 disabled:cursor-not-allowed" ${currentPage === totalPages ? "disabled" : ""}>
-                        <span class="material-symbols-outlined">chevron_right</span>
+          html += `<button onclick="changePage(${currentPage + 1})" class="w-12 h-12 rounded-xl border border-outline-variant flex items-center justify-center hover:bg-surface-container-high transition-colors disabled:opacity-30 disabled:cursor-not-allowed" ${currentPage === totalPages ? "disabled" : ""} aria-label="Suivant">
+                        <span aria-hidden="true" class="material-symbols-outlined">chevron_right</span>
                      </button>`;
 
           paginationContainer.innerHTML = html;

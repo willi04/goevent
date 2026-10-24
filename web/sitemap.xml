@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://goevent.africa/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>
+  <url><loc>https://goevent.africa/event.html</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
+  <url><loc>https://goevent.africa/partenaire.html</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://goevent.africa/a_propos.html</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://goevent.africa/follow.html</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://goevent.africa/centre_aide.html</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://goevent.africa/signup.html</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
+  <url><loc>https://goevent.africa/login.html</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://goevent.africa/cgu.html</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
+  <url><loc>https://goevent.africa/confidentialite.html</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
+  <url><loc>https://goevent.africa/remboursements.html</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
+</urlset>

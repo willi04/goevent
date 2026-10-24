@@ -1,0 +1,16 @@
+User-agent: *
+Allow: /
+
+# Espaces privés et outils internes : inutiles dans les résultats de recherche
+Disallow: /admin.html
+Disallow: /admin-login.html
+Disallow: /checkout.html
+Disallow: /scanner.html
+Disallow: /ticket_view.html
+Disallow: /mes_billets.html
+Disallow: /user_dashboard.html
+Disallow: /organisation_dashboard.html
+Disallow: /artist_dashboard.html
+Disallow: /simulateur/
+
+Sitemap: https://goevent.africa/sitemap.xml

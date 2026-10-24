@@ -2,11 +2,16 @@
 <html lang="fr" class="light">
   <head>
     <meta charset="utf-8" />
-    <meta
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-      name="viewport"
-    />
-    <title>GoEvent</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Événement | GoEvent</title>
+    <meta name="description" content="Détails de l&#x27;événement, prix des billets et réservation en ligne via Orange Money sur GoEvent." />
+    <meta property="og:site_name" content="GoEvent" />
+    <meta property="og:title" content="Événement | GoEvent" />
+    <meta property="og:description" content="Détails de l&#x27;événement, prix des billets et réservation en ligne via Orange Money sur GoEvent." />
+    <meta property="og:image" content="https://goevent.africa/icons/icon-512.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="fr_FR" />
+    <meta name="twitter:card" content="summary" />
     <link rel="icon" type="image/png" href="icons/favicon.png" />
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link
@@ -14,7 +19,7 @@
       rel="stylesheet"
     />
     <link
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=block"
       rel="stylesheet"
     />
     <link rel="manifest" href="manifest.json" />
@@ -104,8 +109,8 @@
       <button
         onclick="toggleMobileMenu()"
         class="p-2 text-gray-500 hover:text-primary rounded-full hover:bg-gray-50 transition-colors"
-      >
-        <span class="material-symbols-outlined" style="font-size: 32px">menu</span>
+       aria-label="Ouvrir le menu">
+        <span aria-hidden="true" class="material-symbols-outlined" style="font-size: 32px">menu</span>
       </button>
     </div>
 
@@ -130,29 +135,29 @@
           <a
             href="index.html"
             class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
-            ><span class="material-symbols-outlined">home</span> Accueil</a
+            ><span aria-hidden="true" class="material-symbols-outlined">home</span> Accueil</a
           >
           <a
             href="event.html"
             class="flex items-center gap-3 p-4 bg-primary/10 rounded-2xl text-primary font-bold"
-            ><span class="material-symbols-outlined">stadium</span>
+            ><span aria-hidden="true" class="material-symbols-outlined">stadium</span>
             Événements</a
           >
           <a
             href="follow.html"
             class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
-            ><span class="material-symbols-outlined">favorite</span> Follow</a
+            ><span aria-hidden="true" class="material-symbols-outlined">favorite</span> Suivre</a
           >
           <a
             href="partenaire.html"
             class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
-            ><span class="material-symbols-outlined">handshake</span>
+            ><span aria-hidden="true" class="material-symbols-outlined">handshake</span>
             Partenaires</a
           >
           <a
             href="a_propos.html"
             class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
-            ><span class="material-symbols-outlined">info</span> À propos</a
+            ><span aria-hidden="true" class="material-symbols-outlined">info</span> À propos</a
           >
         </nav>
         <!-- Sections drawer (Aide + Support WhatsApp + Inviter un ami) -->
@@ -217,7 +222,7 @@
                 <div
                   class="bg-gray-50/80 border border-gray-100 rounded-2xl p-5 flex items-center gap-4"
                 >
-                  <span class="material-symbols-outlined text-primary text-3xl"
+                  <span aria-hidden="true" class="material-symbols-outlined text-primary text-3xl"
                     >calendar_month</span
                   >
                   <div>
@@ -238,7 +243,7 @@
                 <div
                   class="bg-gray-50/80 border border-gray-100 rounded-2xl p-5 flex items-center gap-4"
                 >
-                  <span class="material-symbols-outlined text-primary text-3xl"
+                  <span aria-hidden="true" class="material-symbols-outlined text-primary text-3xl"
                     >location_on</span
                   >
                   <div>
@@ -260,7 +265,7 @@
               <div
                 class="bg-gray-50/80 border border-gray-100 rounded-2xl p-5 flex items-center gap-4 w-full"
               >
-                <span class="material-symbols-outlined text-primary text-3xl"
+                <span aria-hidden="true" class="material-symbols-outlined text-primary text-3xl"
                   >verified_user</span
                 >
                 <div>
@@ -334,7 +339,7 @@
               onclick="openShareModal()"
               class="w-full mt-3 py-3 rounded-2xl bg-white border-2 border-primary text-primary font-bold text-sm hover:bg-primary hover:text-white transition-all active:scale-95 flex items-center justify-center gap-2"
             >
-              <span class="material-symbols-outlined text-base">share</span>
+              <span aria-hidden="true" class="material-symbols-outlined text-base">share</span>
               Partager cet événement
             </button>
             <p
@@ -366,8 +371,8 @@
     
     <div id="image-lightbox" class="fixed inset-0 z-[10000] bg-black/95 hidden opacity-0 transition-opacity duration-300 items-center justify-center p-4 md:p-12 cursor-zoom-out">
       
-      <button id="close-lightbox" class="absolute top-6 right-6 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-full backdrop-blur transition-all active:scale-95">
-        <span class="material-symbols-outlined text-3xl">close</span>
+      <button id="close-lightbox" class="absolute top-6 right-6 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-full backdrop-blur transition-all active:scale-95" aria-label="Fermer">
+        <span aria-hidden="true" class="material-symbols-outlined text-3xl">close</span>
       </button>
       
       <img id="lightbox-img" src="" class="max-w-full max-h-full object-contain transform scale-90 transition-transform duration-300 rounded-2xl shadow-2xl" alt="Affiche en grand" />
@@ -377,6 +382,26 @@
     <script>
       
       let currentEvent = null;
+
+      // Titre, description et URL canonique propres à l'événement (onglet, favoris,
+      // moteurs qui exécutent le JS). Les aperçus WhatsApp/Facebook, eux, ne lisent
+      // que le HTML initial : il faudra un rendu serveur de /e/:slug pour les couvrir.
+      function _setEventSeo(ev) {
+        if (!ev || !ev.title) return;
+        document.title = ev.title + " | GoEvent";
+        const desc = (ev.description || "").replace(/\s+/g, " ").trim().slice(0, 155);
+        const meta = document.querySelector('meta[name="description"]');
+        if (meta && desc) meta.setAttribute("content", desc);
+        if (ev.slug) {
+          let canon = document.querySelector('link[rel="canonical"]');
+          if (!canon) {
+            canon = document.createElement("link");
+            canon.rel = "canonical";
+            document.head.appendChild(canon);
+          }
+          canon.href = "https://goevent.africa/e/" + ev.slug;
+        }
+      }
       let availableTiers = []; // NOUVEAU : Va stocker uniquement les billets disponibles
       let selectedTierIndex = null;
       let appliedPromo = null;        // Chantier 19.A : code promo validé
@@ -482,6 +507,7 @@
           const organizerEl = document.getElementById("event-organizer");
 
           if (titleEl) titleEl.textContent = currentEvent.title;
+          _setEventSeo(currentEvent);
           if (descEl)
             descEl.textContent =
               currentEvent.description || "Aucune description disponible.";
@@ -492,7 +518,7 @@
             locEl.textContent = currentEvent.location || "Lieu non précisé";
           if (organizerEl)
             organizerEl.textContent =
-              currentEvent.organizer || "Organisateur Certifié";
+              currentEvent.organizer || "Organisateur";
 
           if (coverEl) {
             coverEl.src =
@@ -523,7 +549,7 @@
             btnReserve.disabled = true;
             btnReserve.onclick = null; // On enlève l'action de clic
             btnReserve.className = "w-full py-4 md:py-5 rounded-2xl bg-primary text-white font-black text-center flex items-center justify-center gap-2 shadow-lg cursor-not-allowed";
-            btnReserve.innerHTML = `<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">history</span> TERMINE`;
+            btnReserve.innerHTML = `<span aria-hidden="true" class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">history</span> TERMINE`;
           }
 
           
@@ -586,7 +612,7 @@
               if (ticketSection) {
                   const fomoDiv = document.createElement('div');
                   fomoDiv.className = "bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-2xl flex items-center gap-3 mb-4 shadow-sm animate-pulse";
-                  fomoDiv.innerHTML = `<span class="material-symbols-outlined text-amber-600 text-2xl" style="font-variation-settings: 'FILL' 1">local_fire_department</span>
+                  fomoDiv.innerHTML = `<span aria-hidden="true" class="material-symbols-outlined text-amber-600 text-2xl" style="font-variation-settings: 'FILL' 1">local_fire_department</span>
                                        <div>
                                           <p class="text-sm font-black uppercase tracking-widest text-amber-600">Vite !</p>
                                           <p class="text-sm font-bold">Il ne reste plus que ${currentEvent.seats_available} places disponibles.</p>
@@ -645,7 +671,7 @@
           const origBtn = btn ? btn.innerHTML : null;
           if (btn) {
               btn.disabled = true;
-              btn.innerHTML = '<span class="material-symbols-outlined animate-spin text-sm">sync</span>';
+              btn.innerHTML = '<span aria-hidden="true" class="material-symbols-outlined animate-spin text-sm">sync</span>';
           }
           try {
               const tierName = (selectedTierIndex !== null && availableTiers[selectedTierIndex])
@@ -690,28 +716,28 @@
           if (isValid) {
               banner.className = "bg-green-50 border-2 border-green-200 rounded-2xl p-4 mb-4 flex items-center gap-3";
               banner.innerHTML = `
-                  <span class="material-symbols-outlined text-green-600 text-2xl" style="font-variation-settings: 'FILL' 1">verified</span>
+                  <span aria-hidden="true" class="material-symbols-outlined text-green-600 text-2xl" style="font-variation-settings: 'FILL' 1">verified</span>
                   <div class="flex-1 min-w-0">
                       <p class="text-xs font-black uppercase tracking-widest text-green-700">Code appliqué</p>
                       <p class="text-sm font-bold text-green-900 truncate">
                           <span class="font-mono">${_btEscapeHtml(promo.code)}</span> — ${_btEscapeHtml(promo.message)}
                       </p>
                   </div>
-                  <button onclick="clearPromo()" class="text-green-600 hover:text-green-800 p-1" title="Retirer le code">
-                      <span class="material-symbols-outlined text-base">close</span>
+                  <button onclick="clearPromo()" class="text-green-600 hover:text-green-800 p-1" title="Retirer le code" aria-label="Retirer le code promo">
+                      <span aria-hidden="true" class="material-symbols-outlined text-base">close</span>
                   </button>`;
           } else {
               banner.className = "bg-orange-50 border-2 border-orange-200 rounded-2xl p-4 mb-4 flex items-center gap-3";
               banner.innerHTML = `
-                  <span class="material-symbols-outlined text-orange-600 text-2xl">info</span>
+                  <span aria-hidden="true" class="material-symbols-outlined text-orange-600 text-2xl">info</span>
                   <div class="flex-1 min-w-0">
                       <p class="text-xs font-black uppercase tracking-widest text-orange-700">Code non appliqué</p>
                       <p class="text-sm font-bold text-orange-900 truncate">
                           <span class="font-mono">${_btEscapeHtml(promo.code)}</span> — ${_btEscapeHtml(promo.message)}
                       </p>
                   </div>
-                  <button onclick="document.getElementById('promo-banner').remove()" class="text-orange-600 hover:text-orange-800 p-1">
-                      <span class="material-symbols-outlined text-base">close</span>
+                  <button onclick="document.getElementById('promo-banner').remove()" class="text-orange-600 hover:text-orange-800 p-1" aria-label="Fermer">
+                      <span aria-hidden="true" class="material-symbols-outlined text-base">close</span>
                   </button>`;
           }
           section.parentNode.insertBefore(banner, section);
@@ -769,7 +795,7 @@
                         return `
                         <div class="border-2 rounded-[1.5rem] py-5 px-6 flex items-center gap-4 transition-all duration-200 border-gray-100 bg-gray-50 opacity-60 grayscale cursor-not-allowed">
                             <div class="flex items-center justify-center w-12 h-12 rounded-full border bg-gray-200 border-gray-300 shrink-0">
-                                <span class="material-symbols-outlined text-gray-400 text-2xl" style="font-variation-settings: 'FILL' 1;">local_activity</span>
+                                <span aria-hidden="true" class="material-symbols-outlined text-gray-400 text-2xl" style="font-variation-settings: 'FILL' 1;">local_activity</span>
                             </div>
                             <div class="flex-1">
                                 <p class="font-headline font-extrabold text-base text-gray-500">${_btEscapeHtml(tier.name)}</p>
@@ -788,7 +814,7 @@
                     btn.disabled = true;
                     btn.onclick = null;
                     btn.className = "w-full py-4 md:py-5 rounded-2xl bg-primary text-white font-black text-center flex items-center justify-center gap-2 shadow-lg cursor-not-allowed transition-all";
-                    btn.innerHTML = `<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">history</span> TERMINE`;
+                    btn.innerHTML = `<span aria-hidden="true" class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">history</span> TERMINE`;
                 }
                 return; // On s'arrête ici
             }
@@ -797,7 +823,7 @@
             if (availableTiers.length === 0) {
               container.innerHTML = `
                     <div class="bg-red-50 border-2 border-red-100 rounded-[1.5rem] p-6 text-center animate-in fade-in duration-500">
-                        <span class="material-symbols-outlined text-red-500 text-4xl mb-2">event_busy</span>
+                        <span aria-hidden="true" class="material-symbols-outlined text-red-500 text-4xl mb-2">event_busy</span>
                         <p class="font-headline font-extrabold text-red-700 text-lg">Guichet Fermé</p>
                         <p class="text-sm text-red-500 mt-1 font-medium">Toutes les catégories sont épuisées pour cet événement.</p>
                     </div>
@@ -838,7 +864,7 @@
                 return `
                     <div onclick="selectTier(${index})" class="cursor-pointer border-2 rounded-[1.5rem] py-5 px-6 flex items-center gap-4 transition-all duration-200 ${classesBordure}">
                         <div class="flex items-center justify-center w-12 h-12 rounded-full border ${classesBadge} shrink-0">
-                            <span class="material-symbols-outlined text-primary text-2xl" style="font-variation-settings: 'FILL' 1;">local_activity</span>
+                            <span aria-hidden="true" class="material-symbols-outlined text-primary text-2xl" style="font-variation-settings: 'FILL' 1;">local_activity</span>
                         </div>
                         <div class="flex-1">
                             <p class="font-headline font-extrabold text-base ${classesTexteTitre}">${_btEscapeHtml(tier.name)}</p>
@@ -887,7 +913,7 @@
           btn.className =
             "w-full py-4 md:py-5 rounded-2xl bg-primary text-white font-bold text-sm transition-all hover:bg-primary-container shadow-lg shadow-primary/20 active:scale-95";
           btn.innerHTML = finalPrice === 0
-            ? `<span class="material-symbols-outlined align-middle text-base">confirmation_number</span> Obtenir mon billet gratuit`
+            ? `<span aria-hidden="true" class="material-symbols-outlined align-middle text-base">confirmation_number</span> Obtenir mon billet gratuit`
             : `Réserver • ${finalPrice.toLocaleString("fr-FR")} FCFA`;
         }
       }
@@ -988,7 +1014,7 @@
               
               const soldOutBadge = e.is_sold_out
                 ? `<span class="absolute top-3 right-3 bg-gray-900/90 backdrop-blur text-white px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-wider shadow-md flex items-center gap-1">
-                     <span class="material-symbols-outlined text-[11px]" style="font-variation-settings: 'FILL' 1">block</span>
+                     <span aria-hidden="true" class="material-symbols-outlined text-[11px]" style="font-variation-settings: 'FILL' 1">block</span>
                      Complet
                    </span>`
                 : "";
@@ -1007,7 +1033,7 @@
                           
                           <div class="mt-auto pt-4 border-t border-gray-50 flex justify-between items-center">
                               <span class="text-xs font-bold text-outline flex items-center gap-1.5">
-                                  <span class="material-symbols-outlined text-[14px]">calendar_today</span>
+                                  <span aria-hidden="true" class="material-symbols-outlined text-[14px]">calendar_today</span>
                                   ${dateStr}
                               </span>
                               ${(e.is_boosted && !e.is_sold_out)
@@ -1215,13 +1241,13 @@
     <!-- ━━━━━━━━━━━━━ MODALE PARTAGE ÉVÉNEMENT ━━━━━━━━━━━━━ -->
     <div id="share-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 items-center justify-center p-4 hidden">
       <div class="bg-white rounded-3xl max-w-md w-full p-6 md:p-8 relative shadow-2xl max-h-[90vh] overflow-y-auto">
-        <button onclick="closeShareModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors">
-          <span class="material-symbols-outlined">close</span>
+        <button onclick="closeShareModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors" aria-label="Fermer">
+          <span aria-hidden="true" class="material-symbols-outlined">close</span>
         </button>
 
         <div class="text-center mb-6">
           <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
-            <span class="material-symbols-outlined text-3xl text-primary">share</span>
+            <span aria-hidden="true" class="material-symbols-outlined text-3xl text-primary">share</span>
           </div>
           <h3 class="text-xl font-black text-gray-900 font-headline mb-1">
             Partager cet événement
@@ -1233,7 +1259,7 @@
 
         <!-- Aperçu du lien -->
         <div class="bg-gray-50 rounded-xl p-3 mb-4 flex items-center gap-2">
-          <span class="material-symbols-outlined text-gray-400 text-base">link</span>
+          <span aria-hidden="true" class="material-symbols-outlined text-gray-400 text-base">link</span>
           <span id="share-link-preview" class="text-xs text-gray-600 font-mono truncate flex-1">
             https://api.goevent.africa/e/...
           </span>
@@ -1243,28 +1269,28 @@
         <div class="grid grid-cols-2 gap-3 mb-4">
           <button onclick="shareWhatsApp()" class="flex flex-col items-center gap-2 p-4 bg-green-50 hover:bg-green-100 rounded-2xl transition-all active:scale-95">
             <div class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
-              <span class="material-symbols-outlined text-white">chat</span>
+              <span aria-hidden="true" class="material-symbols-outlined text-white">chat</span>
             </div>
             <span class="text-xs font-bold text-gray-700">WhatsApp</span>
           </button>
 
           <button onclick="shareFacebook()" class="flex flex-col items-center gap-2 p-4 bg-blue-50 hover:bg-blue-100 rounded-2xl transition-all active:scale-95">
             <div class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
-              <span class="material-symbols-outlined text-white">thumb_up</span>
+              <span aria-hidden="true" class="material-symbols-outlined text-white">thumb_up</span>
             </div>
             <span class="text-xs font-bold text-gray-700">Facebook</span>
           </button>
 
           <button onclick="copyShareLink()" class="flex flex-col items-center gap-2 p-4 bg-gray-50 hover:bg-gray-100 rounded-2xl transition-all active:scale-95">
             <div class="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center">
-              <span class="material-symbols-outlined text-white" id="copy-icon">content_copy</span>
+              <span aria-hidden="true" class="material-symbols-outlined text-white" id="copy-icon">content_copy</span>
             </div>
             <span class="text-xs font-bold text-gray-700" id="copy-label">Copier le lien</span>
           </button>
 
           <button onclick="downloadQrCode()" class="flex flex-col items-center gap-2 p-4 bg-purple-50 hover:bg-purple-100 rounded-2xl transition-all active:scale-95">
             <div class="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center">
-              <span class="material-symbols-outlined text-white">qr_code_2</span>
+              <span aria-hidden="true" class="material-symbols-outlined text-white">qr_code_2</span>
             </div>
             <span class="text-xs font-bold text-gray-700">QR Code</span>
           </button>
@@ -1273,7 +1299,7 @@
         <!-- Aperçu du message à partager -->
         <details class="bg-gray-50 rounded-xl p-3">
           <summary class="text-xs font-bold text-gray-600 cursor-pointer flex items-center gap-1">
-            <span class="material-symbols-outlined text-base">visibility</span>
+            <span aria-hidden="true" class="material-symbols-outlined text-base">visibility</span>
             Voir le message qui sera partagé
           </summary>
           <pre id="share-message-preview" class="text-[11px] text-gray-600 mt-3 whitespace-pre-wrap font-body bg-white p-3 rounded-lg border border-gray-200"></pre>

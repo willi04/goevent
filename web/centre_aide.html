@@ -2,8 +2,18 @@
 <html lang="fr">
   <head>
     <meta charset="utf-8" />
-    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>Centre d'aide — GoEvent</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Centre d'aide | GoEvent</title>
+    <meta name="description" content="Questions fréquentes sur l&#x27;achat de billets, le paiement Orange Money et la gestion de votre compte GoEvent." />
+    <link rel="canonical" href="https://goevent.africa/centre_aide.html" />
+    <meta property="og:site_name" content="GoEvent" />
+    <meta property="og:title" content="Centre d&#x27;aide | GoEvent" />
+    <meta property="og:description" content="Questions fréquentes sur l&#x27;achat de billets, le paiement Orange Money et la gestion de votre compte GoEvent." />
+    <meta property="og:url" content="https://goevent.africa/centre_aide.html" />
+    <meta property="og:image" content="https://goevent.africa/icons/icon-512.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="fr_FR" />
+    <meta name="twitter:card" content="summary" />
     <link rel="icon" type="image/png" href="icons/favicon.png" />
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link
@@ -11,7 +21,7 @@
       rel="stylesheet"
     />
     <link
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=block"
       rel="stylesheet"
     />
     <link rel="manifest" href="manifest.json" />
@@ -81,8 +91,8 @@
       <button
         onclick="toggleMobileMenu()"
         class="p-2 text-gray-500 hover:text-primary rounded-full hover:bg-gray-50 transition-colors"
-      >
-        <span class="material-symbols-outlined" style="font-size: 32px">menu</span>
+       aria-label="Ouvrir le menu">
+        <span aria-hidden="true" class="material-symbols-outlined" style="font-size: 32px">menu</span>
       </button>
     </div>
 
@@ -110,34 +120,34 @@
           <a
             href="index.html"
             class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
-            ><span class="material-symbols-outlined">home</span> Accueil</a
+            ><span aria-hidden="true" class="material-symbols-outlined">home</span> Accueil</a
           >
           <a
             href="event.html"
             class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
-            ><span class="material-symbols-outlined">stadium</span>
+            ><span aria-hidden="true" class="material-symbols-outlined">stadium</span>
             Événements</a
           >
           <a
             href="follow.html"
             class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
-            ><span class="material-symbols-outlined">favorite</span> Follow</a
+            ><span aria-hidden="true" class="material-symbols-outlined">favorite</span> Suivre</a
           >
           <a
             href="partenaire.html"
             class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
-            ><span class="material-symbols-outlined">handshake</span>
+            ><span aria-hidden="true" class="material-symbols-outlined">handshake</span>
             Partenaires</a
           >
           <a
             href="a_propos.html"
             class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
-            ><span class="material-symbols-outlined">info</span> À propos</a
+            ><span aria-hidden="true" class="material-symbols-outlined">info</span> À propos</a
           >
           <a
             href="centre_aide.html"
             class="flex items-center gap-3 p-4 bg-primary/10 rounded-2xl text-primary font-bold"
-            ><span class="material-symbols-outlined">help</span> Centre d'aide</a
+            ><span aria-hidden="true" class="material-symbols-outlined">help</span> Centre d'aide</a
           >
         </nav>
 
@@ -150,7 +160,7 @@
       <!-- HERO -->
       <div class="text-center mb-10">
         <div class="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
-          <span class="material-symbols-outlined text-3xl">help</span>
+          <span aria-hidden="true" class="material-symbols-outlined text-3xl">help</span>
         </div>
         <h1 class="text-3xl md:text-5xl font-black font-headline text-gray-900 tracking-tight mb-3">
           Centre d'aide
@@ -163,7 +173,7 @@
       <!-- BARRE DE RECHERCHE -->
       <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-2 mb-8">
         <div class="relative">
-          <span class="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">search</span>
+          <span aria-hidden="true" class="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">search</span>
           <input
             id="faq-search"
             type="text"
@@ -175,8 +185,8 @@
             id="faq-clear"
             onclick="clearSearch()"
             class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden"
-          >
-            <span class="material-symbols-outlined">close</span>
+           aria-label="Fermer">
+            <span aria-hidden="true" class="material-symbols-outlined">close</span>
           </button>
         </div>
       </div>
@@ -234,7 +244,7 @@
         <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="compte">
           <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
             <span class="font-bold text-gray-900 text-sm md:text-base">Comment créer un compte sur GoEvent ?</span>
-            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+            <span aria-hidden="true" class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
           </button>
           <div class="faq-answer px-5 pb-5">
             <p class="text-sm text-gray-600 leading-relaxed">
@@ -246,7 +256,7 @@
         <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="compte">
           <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
             <span class="font-bold text-gray-900 text-sm md:text-base">J'ai oublié mon mot de passe, que faire ?</span>
-            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+            <span aria-hidden="true" class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
           </button>
           <div class="faq-answer px-5 pb-5">
             <p class="text-sm text-gray-600 leading-relaxed">
@@ -258,7 +268,7 @@
         <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="compte">
           <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
             <span class="font-bold text-gray-900 text-sm md:text-base">Comment modifier mes informations personnelles ?</span>
-            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+            <span aria-hidden="true" class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
           </button>
           <div class="faq-answer px-5 pb-5">
             <p class="text-sm text-gray-600 leading-relaxed">
@@ -270,11 +280,11 @@
         <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="compte">
           <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
             <span class="font-bold text-gray-900 text-sm md:text-base">Comment supprimer mon compte ?</span>
-            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+            <span aria-hidden="true" class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
           </button>
           <div class="faq-answer px-5 pb-5">
             <p class="text-sm text-gray-600 leading-relaxed">
-              Pour supprimer définitivement votre compte, contactez notre support à <a href="mailto:emmanuel.madoukou30@gmail.com" class="text-primary underline">emmanuel.madoukou30@gmail.com</a>. Conformément à notre <a href="confidentialite.html" class="text-primary underline">politique de confidentialité</a>, certaines données peuvent être conservées pour respecter nos obligations légales (comptabilité notamment).
+              Pour supprimer définitivement votre compte, contactez notre support à <a href="mailto:contact@goevent.africa" class="text-primary underline">contact@goevent.africa</a>. Conformément à notre <a href="confidentialite.html" class="text-primary underline">politique de confidentialité</a>, certaines données peuvent être conservées pour respecter nos obligations légales (comptabilité notamment).
             </p>
           </div>
         </div>
@@ -283,14 +293,14 @@
         <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="achat">
           <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
             <span class="font-bold text-gray-900 text-sm md:text-base">Comment acheter un billet sur GoEvent ?</span>
-            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+            <span aria-hidden="true" class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
           </button>
           <div class="faq-answer px-5 pb-5">
             <p class="text-sm text-gray-600 leading-relaxed">
               C'est simple et rapide :<br/>
               <strong>1.</strong> Choisissez l'événement qui vous intéresse<br/>
               <strong>2.</strong> Sélectionnez le type de billet et la quantité<br/>
-              <strong>3.</strong> Choisissez votre mode de paiement : Orange Money OU paiement cash à l'entrée<br/>
+              <strong>3.</strong> Payez avec Orange Money (les événements gratuits ne demandent aucun paiement)<br/>
               <strong>4.</strong> Validez la transaction<br/>
               Votre billet (QR code) apparaît immédiatement dans votre tableau de bord.
             </p>
@@ -300,14 +310,12 @@
         <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="achat">
           <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
             <span class="font-bold text-gray-900 text-sm md:text-base">Quels modes de paiement sont acceptés ?</span>
-            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+            <span aria-hidden="true" class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
           </button>
           <div class="faq-answer px-5 pb-5">
             <p class="text-sm text-gray-600 leading-relaxed">
-              Actuellement, GoEvent accepte deux modes de paiement :<br/>
-              🟠 <strong>Orange Money</strong> : paiement instantané en ligne<br/>
-              💵 <strong>Cash à l'entrée</strong> : vous réservez en ligne et payez en cash le jour de l'événement à un agent désigné<br/>
-              D'autres moyens (Moov Money, cartes bancaires) seront ajoutés progressivement.
+              Actuellement, GoEvent accepte <strong>Orange Money</strong> : paiement instantané en ligne depuis votre téléphone.<br/>
+              D'autres moyens de paiement seront ajoutés progressivement.
             </p>
           </div>
         </div>
@@ -315,7 +323,7 @@
         <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="achat">
           <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
             <span class="font-bold text-gray-900 text-sm md:text-base">Mon paiement Orange Money n'a pas abouti, que faire ?</span>
-            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+            <span aria-hidden="true" class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
           </button>
           <div class="faq-answer px-5 pb-5">
             <p class="text-sm text-gray-600 leading-relaxed">
@@ -324,26 +332,15 @@
           </div>
         </div>
 
-        <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="achat">
-          <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
-            <span class="font-bold text-gray-900 text-sm md:text-base">Comment fonctionne le paiement cash à l'entrée ?</span>
-            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
-          </button>
-          <div class="faq-answer px-5 pb-5">
-            <p class="text-sm text-gray-600 leading-relaxed">
-              Vous réservez votre place gratuitement en ligne, et vous payez en cash directement à l'entrée de l'événement à l'agent contrôleur. C'est pratique si vous n'avez pas Orange Money ou si vous préférez payer le jour J. Attention : votre place n'est pas garantie si vous n'arrivez pas avant l'heure de fermeture des portes.
-            </p>
-          </div>
-        </div>
 
         <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="achat">
           <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
             <span class="font-bold text-gray-900 text-sm md:text-base">Puis-je être remboursé d'un billet ?</span>
-            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+            <span aria-hidden="true" class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
           </button>
           <div class="faq-answer px-5 pb-5">
             <p class="text-sm text-gray-600 leading-relaxed">
-              En principe, les billets ne sont pas remboursables. Cependant, un remboursement intégral est garanti dans certains cas (annulation par l'organisateur, report refusé, erreur technique). Consultez notre <a href="remboursements.html" class="text-primary underline font-semibold">Politique de Remboursements</a> pour tous les détails.
+              En principe, les billets ne sont pas remboursables. Cependant, le prix du billet est remboursé dans certains cas (annulation par l'organisateur, report refusé, erreur technique de GoEvent). Les frais de service de 4 % ne sont remboursés qu'en cas d'erreur technique de notre part. Consultez notre <a href="remboursements.html" class="text-primary underline font-semibold">Politique de Remboursements</a> pour tous les détails.
             </p>
           </div>
         </div>
@@ -352,7 +349,7 @@
         <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="billet">
           <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
             <span class="font-bold text-gray-900 text-sm md:text-base">Où trouver mes billets après un achat ?</span>
-            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+            <span aria-hidden="true" class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
           </button>
           <div class="faq-answer px-5 pb-5">
             <p class="text-sm text-gray-600 leading-relaxed">
@@ -364,7 +361,7 @@
         <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="billet">
           <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
             <span class="font-bold text-gray-900 text-sm md:text-base">Comment présenter mon billet à l'entrée ?</span>
-            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+            <span aria-hidden="true" class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
           </button>
           <div class="faq-answer px-5 pb-5">
             <p class="text-sm text-gray-600 leading-relaxed">
@@ -376,7 +373,7 @@
         <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="billet">
           <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
             <span class="font-bold text-gray-900 text-sm md:text-base">Puis-je revendre ou transférer mon billet ?</span>
-            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+            <span aria-hidden="true" class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
           </button>
           <div class="faq-answer px-5 pb-5">
             <p class="text-sm text-gray-600 leading-relaxed">
@@ -388,7 +385,7 @@
         <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="billet">
           <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
             <span class="font-bold text-gray-900 text-sm md:text-base">Que faire si mon téléphone est déchargé à l'entrée ?</span>
-            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+            <span aria-hidden="true" class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
           </button>
           <div class="faq-answer px-5 pb-5">
             <p class="text-sm text-gray-600 leading-relaxed">
@@ -401,7 +398,7 @@
         <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="orga">
           <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
             <span class="font-bold text-gray-900 text-sm md:text-base">Comment devenir organisateur sur GoEvent ?</span>
-            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+            <span aria-hidden="true" class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
           </button>
           <div class="faq-answer px-5 pb-5">
             <p class="text-sm text-gray-600 leading-relaxed">
@@ -413,7 +410,7 @@
         <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="orga">
           <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
             <span class="font-bold text-gray-900 text-sm md:text-base">Quelles sont les commissions GoEvent ?</span>
-            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+            <span aria-hidden="true" class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
           </button>
           <div class="faq-answer px-5 pb-5">
             <p class="text-sm text-gray-600 leading-relaxed">
@@ -425,7 +422,7 @@
         <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="orga">
           <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
             <span class="font-bold text-gray-900 text-sm md:text-base">Quand reçois-je le paiement de mon événement ?</span>
-            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+            <span aria-hidden="true" class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
           </button>
           <div class="faq-answer px-5 pb-5">
             <p class="text-sm text-gray-600 leading-relaxed">
@@ -437,7 +434,7 @@
         <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="orga">
           <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
             <span class="font-bold text-gray-900 text-sm md:text-base">Comment ajouter un agent contrôleur ?</span>
-            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+            <span aria-hidden="true" class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
           </button>
           <div class="faq-answer px-5 pb-5">
             <p class="text-sm text-gray-600 leading-relaxed">
@@ -450,7 +447,7 @@
         <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="autre">
           <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
             <span class="font-bold text-gray-900 text-sm md:text-base">L'application fonctionne-t-elle hors-ligne ?</span>
-            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+            <span aria-hidden="true" class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
           </button>
           <div class="faq-answer px-5 pb-5">
             <p class="text-sm text-gray-600 leading-relaxed">
@@ -462,7 +459,7 @@
         <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="autre">
           <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
             <span class="font-bold text-gray-900 text-sm md:text-base">Mes données personnelles sont-elles sécurisées ?</span>
-            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+            <span aria-hidden="true" class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
           </button>
           <div class="faq-answer px-5 pb-5">
             <p class="text-sm text-gray-600 leading-relaxed">
@@ -474,7 +471,7 @@
         <div class="faq-item bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden" data-cat="autre">
           <button onclick="toggleFaq(this)" class="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors">
             <span class="font-bold text-gray-900 text-sm md:text-base">GoEvent est-il disponible dans d'autres pays ?</span>
-            <span class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
+            <span aria-hidden="true" class="faq-icon material-symbols-outlined text-primary flex-shrink-0">expand_more</span>
           </button>
           <div class="faq-answer px-5 pb-5">
             <p class="text-sm text-gray-600 leading-relaxed">
@@ -486,7 +483,7 @@
         <!-- AUCUN RÉSULTAT -->
         <div id="no-results" class="hidden text-center py-12">
           <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span class="material-symbols-outlined text-3xl text-gray-400">search_off</span>
+            <span aria-hidden="true" class="material-symbols-outlined text-3xl text-gray-400">search_off</span>
           </div>
           <p class="text-lg font-bold text-gray-900 mb-2">Aucun résultat trouvé</p>
           <p class="text-sm text-gray-500">Essayez d'autres mots-clés ou contactez-nous directement.</p>
@@ -496,7 +493,7 @@
       <!-- ━━━━━━━━━ BLOC CONTACT WHATSAPP ━━━━━━━━━ -->
       <div class="bg-gradient-to-br from-primary to-primary-container rounded-3xl p-8 md:p-10 text-white text-center shadow-xl shadow-primary/20">
         <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
-          <span class="material-symbols-outlined text-3xl">support_agent</span>
+          <span aria-hidden="true" class="material-symbols-outlined text-3xl">support_agent</span>
         </div>
         <h2 class="text-2xl md:text-3xl font-black font-headline mb-3">
           Vous n'avez pas trouvé votre réponse ?
@@ -509,21 +506,21 @@
             onclick="contactWhatsApp()"
             class="px-6 py-3.5 bg-green-500 hover:bg-green-600 text-white font-bold rounded-full shadow-lg shadow-green-500/30 active:scale-95 transition-all flex items-center gap-2"
           >
-            <span class="material-symbols-outlined">chat</span>
+            <span aria-hidden="true" class="material-symbols-outlined">chat</span>
             Support WhatsApp
           </button>
           <a
-            href="mailto:emmanuel.madoukou30@gmail.com"
+            href="mailto:contact@goevent.africa"
             class="px-6 py-3.5 bg-white text-primary font-bold rounded-full shadow-lg active:scale-95 transition-all flex items-center gap-2 hover:bg-gray-50"
           >
-            <span class="material-symbols-outlined">mail</span>
+            <span aria-hidden="true" class="material-symbols-outlined">mail</span>
             Nous écrire
           </a>
           <a
             href="feedback.html"
             class="px-6 py-3.5 border-2 border-white/30 text-white font-bold rounded-full active:scale-95 transition-all flex items-center gap-2 hover:bg-white/10"
           >
-            <span class="material-symbols-outlined">forum</span>
+            <span aria-hidden="true" class="material-symbols-outlined">forum</span>
             Donner mon avis
           </a>
         </div>
@@ -533,13 +530,13 @@
     <!-- MODALE INFO WHATSAPP -->
     <div id="whatsapp-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 items-center justify-center p-4 hidden">
       <div class="bg-white rounded-3xl max-w-md w-full p-8 relative shadow-2xl">
-        <button onclick="closeWhatsAppModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors">
-          <span class="material-symbols-outlined">close</span>
+        <button onclick="closeWhatsAppModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors" aria-label="Fermer">
+          <span aria-hidden="true" class="material-symbols-outlined">close</span>
         </button>
 
         <div class="text-center">
           <div class="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span class="material-symbols-outlined text-4xl text-green-500">schedule</span>
+            <span aria-hidden="true" class="material-symbols-outlined text-4xl text-green-500">schedule</span>
           </div>
           <h3 class="text-2xl font-black text-gray-900 font-headline mb-3">
             Support WhatsApp bientôt disponible
@@ -549,9 +546,9 @@
           </p>
           <div class="bg-emerald-50 rounded-2xl p-4 mb-6 text-left">
             <p class="text-xs font-bold uppercase tracking-widest text-primary mb-2">En attendant, contactez-nous :</p>
-            <a href="mailto:emmanuel.madoukou30@gmail.com" class="flex items-center gap-3 text-sm font-semibold text-gray-700 hover:text-primary transition-colors">
-              <span class="material-symbols-outlined">mail</span>
-              emmanuel.madoukou30@gmail.com
+            <a href="mailto:contact@goevent.africa" class="flex items-center gap-3 text-sm font-semibold text-gray-700 hover:text-primary transition-colors">
+              <span aria-hidden="true" class="material-symbols-outlined">mail</span>
+              contact@goevent.africa
             </a>
           </div>
           <button onclick="closeWhatsAppModal()" class="w-full py-3 bg-primary text-white font-bold rounded-xl hover:bg-primary-container active:scale-95 transition-all">

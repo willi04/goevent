@@ -2,11 +2,9 @@
 <html lang="fr">
   <head>
     <meta charset="utf-8" />
-    <meta
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-      name="viewport"
-    />
-    <title>GoEvent</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Espace organisateur | GoEvent</title>
+    <meta name="robots" content="noindex, nofollow" />
     <link rel="icon" type="image/png" href="icons/favicon.png" />
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link
@@ -14,7 +12,7 @@
       rel="stylesheet"
     />
     <link
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=block"
       rel="stylesheet"
     />
     <link rel="manifest" href="manifest.json" />
@@ -939,8 +937,8 @@
                     </button>
                     <button type="button" onclick="selectBoostPackage('90d')" class="boost-pkg-card border-2 border-gray-200 rounded-2xl p-4 hover:border-primary transition-all text-left" data-pkg="90d">
                       <div class="text-xs font-bold text-gray-400 uppercase tracking-widest">90 jours</div>
-                      <div class="text-2xl font-black text-gray-900 mt-2">130 000 <span class="text-sm font-bold text-gray-500">FCFA</span></div>
-                      <div class="text-[11px] text-gray-400 mt-1">≈ 1 444 / jour</div>
+                      <div class="text-2xl font-black text-gray-900 mt-2">100 000 <span class="text-sm font-bold text-gray-500">FCFA</span></div>
+                      <div class="text-[11px] text-green-600 font-bold mt-1">≈ 1 111 / jour (-22%)</div>
                     </button>
                   </div>
                 </div>
@@ -2814,7 +2812,7 @@
       const BOOST_PACKAGES = {
         "7d":  { duration: 7,  amount: 10000,  label: "7 jours" },
         "30d": { duration: 30, amount: 35000,  label: "30 jours" },
-        "90d": { duration: 90, amount: 130000, label: "90 jours" },
+        "90d": { duration: 90, amount: 100000, label: "90 jours" },
       };
 
       let _selectedBoostPkg = null;

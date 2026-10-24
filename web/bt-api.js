@@ -392,7 +392,7 @@ function btNavbar(activePage) {
   var links = [
     { label: "Accueil", href: "index.html", key: "accueil" },
     { label: "Événements", href: "event.html", key: "evenements" },
-    { label: "Follow", href: "follow.html", key: "follow" },
+    { label: "Suivre", href: "follow.html", key: "follow" },
     { label: "Partenaire", href: "partenaire.html", key: "partenaire" },
     { label: "À propos", href: "a_propos.html", key: "apropos" },
   ];
@@ -444,6 +444,9 @@ function btNavbar(activePage) {
 }
 
 // ── FOOTER — Design Stitch ────────────────────────────────────
+var BT_SUPPORT_EMAIL = "contact@goevent.africa";
+var BT_SUPPORT_WHATSAPP = "23672259398"; // format international sans "+"
+
 function btFooter() {
   return (
     '<footer class="bg-neutral-100 mt-12">' +
@@ -455,12 +458,12 @@ function btFooter() {
     '<img src="icons/event.png" alt="Logo" class="w-10 h-10 rounded-3xl shadow-sm" />' +
     '<span class="text-2xl font-bold tracking-tight bg-gradient-to-r from-emerald-900 to-emerald-700 bg-clip-text text-transparent font-headline">GoEvent</span>' +
     "</a>" +
-    '<p class="text-neutral-500 text-sm leading-relaxed mb-6 font-body max-w-sm">La première plateforme de billetterie en ligne en République Centrafricaine. Soutenons ensemble nos artistes.</p>' +
-    '<div class="flex gap-3">' +
-    '<a href="#" class="text-primary hover:opacity-100 opacity-70 transition-opacity"><span class="material-symbols-outlined">social_leaderboard</span></a>' +
-    '<a href="#" class="text-primary hover:opacity-100 opacity-70 transition-opacity"><span class="material-symbols-outlined">alternate_email</span></a>' +
-    '<a href="#" class="text-primary hover:opacity-100 opacity-70 transition-opacity"><span class="material-symbols-outlined">phone_android</span></a>' +
-    "</div>" +
+    '<p class="text-neutral-500 text-sm leading-relaxed mb-6 font-body max-w-sm">La billetterie en ligne de la République Centrafricaine. Soutenons ensemble nos artistes.</p>' +
+    '<ul class="space-y-2 text-sm text-neutral-600">' +
+    '<li><a href="mailto:' + BT_SUPPORT_EMAIL + '" class="inline-flex items-center gap-2 hover:text-primary transition-colors"><span class="material-symbols-outlined text-primary text-base" aria-hidden="true">mail</span>' + BT_SUPPORT_EMAIL + '</a></li>' +
+    '<li><a href="https://wa.me/' + BT_SUPPORT_WHATSAPP + '" target="_blank" rel="noopener" class="inline-flex items-center gap-2 hover:text-primary transition-colors"><span class="material-symbols-outlined text-primary text-base" aria-hidden="true">chat</span>WhatsApp : +236 72 25 93 98</a></li>' +
+    '<li class="inline-flex items-center gap-2"><span class="material-symbols-outlined text-primary text-base" aria-hidden="true">location_on</span>Bangui, République Centrafricaine</li>' +
+    "</ul>" +
     "</div>" +
     // Navigation
     "<div>" +
@@ -468,7 +471,7 @@ function btFooter() {
     '<ul class="space-y-3 text-sm text-neutral-500">' +
     '<li><a href="index.html" class="hover:text-primary transition-colors">Accueil</a></li>' +
     '<li><a href="event.html" class="hover:text-primary transition-colors">Événements</a></li>' +
-    '<li><a href="follow.html" class="hover:text-primary transition-colors">Follow</a></li>' +
+    '<li><a href="follow.html" class="hover:text-primary transition-colors">Suivre</a></li>' +
     '<li><a href="a_propos.html" class="hover:text-primary transition-colors">À propos</a></li>' +
     "</ul>" +
     "</div>" +
@@ -488,7 +491,7 @@ function btFooter() {
     '<li><a href="feedback.html" class="hover:text-primary transition-colors">Feedback</a></li>' +
     '<li><a href="feedback.html#noter" class="hover:text-primary transition-colors">Noter l\'application</a></li>' +
     '<li><a href="centre_aide.html" class="hover:text-primary transition-colors">Centre d\'aide</a></li>' +
-    '<li><a href="centre_aide.html" class="hover:text-primary transition-colors">Support WhatsApp</a></li>' +
+    '<li><a href="https://wa.me/' + BT_SUPPORT_WHATSAPP + '" target="_blank" rel="noopener" class="hover:text-primary transition-colors">Support WhatsApp</a></li>' +
     "</ul>" +
     "</div>" +
     // Légal + paiement
@@ -501,7 +504,7 @@ function btFooter() {
     "</ul>" +
     '<div class="bg-neutral-200 p-4 rounded-xl">' +
     '<div class="flex items-center gap-2 text-emerald-900 mb-1">' +
-    '<span class="material-symbols-outlined text-sm" style="font-variation-settings:\'FILL\' 1">payments</span>' +
+    '<span class="material-symbols-outlined text-sm" aria-hidden="true" style="font-variation-settings:\'FILL\' 1">payments</span>' +
     '<span class="text-xs font-black font-headline uppercase">Orange Money</span>' +
     "</div>" +
     '<p class="text-[11px] text-neutral-500">Payez en toute sécurité avec votre compte Orange Money local.</p>' +
@@ -510,7 +513,7 @@ function btFooter() {
     "</div>" + // Fin de la grille
     // Copyright
     '<div class="border-t border-neutral-200 py-8 px-8 md:px-16 text-center">' +
-    '<p class="text-neutral-400 text-xs font-headline font-bold uppercase tracking-widest">© 2026 GoEvent | Tous Droits Réservés.</p>' +
+    '<p class="text-neutral-400 text-xs font-headline font-bold uppercase tracking-widest">© ' + new Date().getFullYear() + ' GoEvent · Tous droits réservés</p>' +
     "</div>" +
     "</footer>"
   );
@@ -699,7 +702,7 @@ function btMobileAuthSection() {
 
 // ── DRAWER MOBILE : SECTIONS DU BAS (Aide + Support + Inviter) ─
 function btMobileDrawerSections() {
-  var supportPhone = "23672259398";
+  var supportPhone = BT_SUPPORT_WHATSAPP;
   var inviteText = encodeURIComponent(
     "Salut ! Je viens de découvrir GoEvent, la plateforme de billetterie en RCA. " +
     "Tu peux acheter tes billets en ligne via Orange Money. " +

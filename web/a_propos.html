@@ -2,23 +2,19 @@
 <html class="light" lang="fr">
   <head>
     <meta charset="utf-8" />
-    <meta
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-      name="viewport"
-    />
-    <title>GoEvent</title>
-    <link rel="icon" type="image/png" href="icons/favicon.png" />
-    <meta
-      name="description"
-      content="Achetez vos billets d'événements en République Centrafricaine via Orange Money. Concerts, spectacles, sport et plus."
-    />
-    <meta property="og:title" content="GoEvent" />
-    <meta
-      property="og:description"
-      content="La billetterie événementielle de la RCA — payez via Orange Money"
-    />
-    <meta property="og:image" content="/icons/icon-512.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>À propos de GoEvent – La billetterie centrafricaine</title>
+    <meta name="description" content="GoEvent connecte artistes, organisateurs et public autour des événements en République Centrafricaine. Billets QR code, paiement Orange Money." />
+    <link rel="canonical" href="https://goevent.africa/a_propos.html" />
+    <meta property="og:site_name" content="GoEvent" />
+    <meta property="og:title" content="À propos de GoEvent – La billetterie centrafricaine" />
+    <meta property="og:description" content="GoEvent connecte artistes, organisateurs et public autour des événements en République Centrafricaine. Billets QR code, paiement Orange Money." />
+    <meta property="og:url" content="https://goevent.africa/a_propos.html" />
+    <meta property="og:image" content="https://goevent.africa/icons/icon-512.png" />
     <meta property="og:type" content="website" />
+    <meta property="og:locale" content="fr_FR" />
+    <meta name="twitter:card" content="summary" />
+    <link rel="icon" type="image/png" href="icons/favicon.png" />
     <meta name="bt-page" content="apropos" />
 
     <link rel="manifest" href="manifest.json" />
@@ -39,7 +35,7 @@
       rel="stylesheet"
     />
     <link
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=block"
       rel="stylesheet"
     />
     <script id="tailwind-config">
@@ -126,8 +122,8 @@
       <button
         onclick="toggleMobileMenu()"
         class="p-2 -mr-2 text-gray-700 hover:text-primary transition-colors focus:outline-none"
-      >
-        <span class="material-symbols-outlined" style="font-size: 32px"
+       aria-label="Ouvrir le menu">
+        <span aria-hidden="true" class="material-symbols-outlined" style="font-size: 32px"
           >menu</span
         >
       </button>
@@ -154,24 +150,29 @@
           <a
             href="index.html"
             class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
-            ><span class="material-symbols-outlined">home</span> Accueil</a
+            ><span aria-hidden="true" class="material-symbols-outlined">home</span> Accueil</a
           >
           <a
             href="event.html"
             class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
-            ><span class="material-symbols-outlined">stadium</span>
+            ><span aria-hidden="true" class="material-symbols-outlined">stadium</span>
             Événements</a
+          >
+          <a
+            href="follow.html"
+            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
+            ><span aria-hidden="true" class="material-symbols-outlined">favorite</span> Suivre</a
           >
           <a
             href="partenaire.html"
             class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
-            ><span class="material-symbols-outlined">handshake</span>
+            ><span aria-hidden="true" class="material-symbols-outlined">handshake</span>
             Partenaires</a
           >
           <a
             href="a_propos.html"
             class="flex items-center gap-3 p-4 bg-primary/10 rounded-2xl text-primary font-bold"
-            ><span class="material-symbols-outlined">info</span> À propos</a
+            ><span aria-hidden="true" class="material-symbols-outlined">info</span> À propos</a
           >
         </nav>
 
@@ -236,7 +237,7 @@
             <div
               class="w-16 h-16 lush-gradient rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-primary/20"
             >
-              <span class="material-symbols-outlined text-white text-3xl"
+              <span aria-hidden="true" class="material-symbols-outlined text-white text-3xl"
                 >confirmation_number</span
               >
             </div>
@@ -254,7 +255,7 @@
             <div
               class="w-16 h-16 lush-gradient rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-primary/20"
             >
-              <span class="material-symbols-outlined text-white text-3xl"
+              <span aria-hidden="true" class="material-symbols-outlined text-white text-3xl"
                 >groups</span
               >
             </div>
@@ -272,7 +273,7 @@
             <div
               class="w-16 h-16 lush-gradient rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-primary/20"
             >
-              <span class="material-symbols-outlined text-white text-3xl"
+              <span aria-hidden="true" class="material-symbols-outlined text-white text-3xl"
                 >verified_user</span
               >
             </div>
@@ -280,8 +281,8 @@
               Sécurisé & local
             </h3>
             <p class="text-on-surface-variant text-sm leading-relaxed">
-              Paiement certifié Orange Money RCA. Vos données et transactions
-              sont protégées et restent en Centrafrique.
+              Paiement par Orange Money, codes PIN chiffrés et connexions
+              sécurisées (HTTPS). Vos données ne sont jamais revendues.
             </p>
           </div>
         </div>
@@ -311,7 +312,7 @@
                 class="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary transition-colors duration-300"
               >
                 <span
-                  class="material-symbols-outlined text-primary text-[28px] group-hover:text-white transition-colors duration-300"
+                  aria-hidden="true" class="material-symbols-outlined text-primary text-[28px] group-hover:text-white transition-colors duration-300"
                   >music_note</span
                 >
               </div>
@@ -322,7 +323,7 @@
                   Artistes & Musiciens
                 </h3>
                 <p class="text-on-surface-variant text-sm">
-                  Concerts, showcases, albums release — gérez vos événements et
+                  Concerts, showcases, sorties d'album — gérez vos événements et
                   vendez vos billets directement à vos fans.
                 </p>
               </div>
@@ -335,7 +336,7 @@
                 class="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary transition-colors duration-300"
               >
                 <span
-                  class="material-symbols-outlined text-primary text-[28px] group-hover:text-white transition-colors duration-300"
+                  aria-hidden="true" class="material-symbols-outlined text-primary text-[28px] group-hover:text-white transition-colors duration-300"
                   >volunteer_activism</span
                 >
               </div>
@@ -359,7 +360,7 @@
                 class="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary transition-colors duration-300"
               >
                 <span
-                  class="material-symbols-outlined text-primary text-[28px] group-hover:text-white transition-colors duration-300"
+                  aria-hidden="true" class="material-symbols-outlined text-primary text-[28px] group-hover:text-white transition-colors duration-300"
                   >business_center</span
                 >
               </div>
@@ -383,7 +384,7 @@
                 class="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary transition-colors duration-300"
               >
                 <span
-                  class="material-symbols-outlined text-primary text-[28px] group-hover:text-white transition-colors duration-300"
+                  aria-hidden="true" class="material-symbols-outlined text-primary text-[28px] group-hover:text-white transition-colors duration-300"
                   >account_balance</span
                 >
               </div>
@@ -414,7 +415,7 @@
             <div id="stat-card-events" class="stat-card">
               <div class="flex justify-center mb-2 md:mb-3">
                 <span
-                  class="material-symbols-outlined text-4xl md:text-5xl text-white/90"
+                  aria-hidden="true" class="material-symbols-outlined text-4xl md:text-5xl text-white/90"
                   style="font-variation-settings: 'FILL' 0, 'wght' 300"
                   >celebration</span
                 >
@@ -437,7 +438,7 @@
             <div id="stat-card-tickets" class="stat-card">
               <div class="flex justify-center mb-2 md:mb-3">
                 <span
-                  class="material-symbols-outlined text-4xl md:text-5xl text-white/90"
+                  aria-hidden="true" class="material-symbols-outlined text-4xl md:text-5xl text-white/90"
                   style="font-variation-settings: 'FILL' 0, 'wght' 300"
                   >confirmation_number</span
                 >
@@ -460,7 +461,7 @@
             <div id="stat-card-organizers" class="stat-card">
               <div class="flex justify-center mb-2 md:mb-3">
                 <span
-                  class="material-symbols-outlined text-4xl md:text-5xl text-white/90"
+                  aria-hidden="true" class="material-symbols-outlined text-4xl md:text-5xl text-white/90"
                   style="font-variation-settings: 'FILL' 0, 'wght' 300"
                   >groups</span
                 >
@@ -483,7 +484,7 @@
             <div class="stat-card">
               <div class="flex justify-center mb-2 md:mb-3">
                 <span
-                  class="material-symbols-outlined text-4xl md:text-5xl text-white/90"
+                  aria-hidden="true" class="material-symbols-outlined text-4xl md:text-5xl text-white/90"
                   style="font-variation-settings: 'FILL' 0, 'wght' 300"
                   >payments</span
                 >

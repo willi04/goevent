@@ -2,11 +2,9 @@
 <html lang="fr" class="light">
   <head>
     <meta charset="utf-8" />
-    <meta
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-      name="viewport"
-    />
-    <title>GoEvent</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Paiement | GoEvent</title>
+    <meta name="robots" content="noindex, nofollow" />
     <link rel="icon" type="image/png" href="icons/favicon.png" />
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link
@@ -14,7 +12,7 @@
       rel="stylesheet"
     />
     <link
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=block"
       rel="stylesheet"
     />
     <link rel="manifest" href="manifest.json" />
@@ -116,8 +114,8 @@
       <button
         onclick="toggleMobileMenu()"
         class="p-2 -mr-2 text-gray-700 hover:text-primary transition-colors focus:outline-none"
-      >
-        <span class="material-symbols-outlined" style="font-size: 32px"
+       aria-label="Ouvrir le menu">
+        <span aria-hidden="true" class="material-symbols-outlined" style="font-size: 32px"
           >menu</span
         >
       </button>
@@ -144,7 +142,7 @@
         <div
           class="flex items-center gap-2 text-primary font-bold uppercase tracking-widest text-sm bg-primary/5 px-4 py-2 rounded-full"
         >
-          <span class="material-symbols-outlined text-sm">lock</span> Paiement
+          <span aria-hidden="true" class="material-symbols-outlined text-sm">lock</span> Paiement
           sécurisé
         </div>
       </div>
@@ -168,37 +166,37 @@
           <button
             onclick="toggleMobileMenu()"
             class="p-2 text-gray-400 hover:text-red-500 transition-colors"
-          >
-            <span class="material-symbols-outlined">close</span>
+           aria-label="Fermer">
+            <span aria-hidden="true" class="material-symbols-outlined">close</span>
           </button>
         </div>
         <nav class="space-y-1 flex-1 overflow-y-auto">
           <a
             href="index.html"
             class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
-            ><span class="material-symbols-outlined">home</span> Accueil</a
+            ><span aria-hidden="true" class="material-symbols-outlined">home</span> Accueil</a
           >
           <a
             href="event.html"
             class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
-            ><span class="material-symbols-outlined">stadium</span>
+            ><span aria-hidden="true" class="material-symbols-outlined">stadium</span>
             Événements</a
           >
           <a
             href="follow.html"
             class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
-            ><span class="material-symbols-outlined">favorite</span> Follow</a
+            ><span aria-hidden="true" class="material-symbols-outlined">favorite</span> Suivre</a
           >
           <a
             href="partenaire.html"
             class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
-            ><span class="material-symbols-outlined">handshake</span>
+            ><span aria-hidden="true" class="material-symbols-outlined">handshake</span>
             Partenaires</a
           >
           <a
             href="a_propos.html"
             class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
-            ><span class="material-symbols-outlined">info</span> À propos</a
+            ><span aria-hidden="true" class="material-symbols-outlined">info</span> À propos</a
           >
         </nav>
         <div id="mobile-auth-section" class="mt-4 pt-6 border-t border-gray-100 space-y-3">
@@ -215,7 +213,7 @@
           onclick="history.back()"
           class="flex items-center gap-2 text-gray-500 hover:text-primary font-bold text-sm transition-colors mb-4"
         >
-          <span class="material-symbols-outlined text-lg">arrow_back</span>
+          <span aria-hidden="true" class="material-symbols-outlined text-lg">arrow_back</span>
           Retour
         </button>
         <div class="flex items-center gap-3">
@@ -334,7 +332,7 @@
               <!-- ⚠️ Bloc événement gratuit (caché par défaut, affiché si event.price = 0) -->
               <div id="free-event-info" class="hidden bg-green-50 border border-green-200 rounded-xl p-4 relative z-10">
                 <div class="flex gap-3">
-                  <span class="material-symbols-outlined text-green-600">celebration</span>
+                  <span aria-hidden="true" class="material-symbols-outlined text-green-600">celebration</span>
                   <div class="text-sm text-green-900">
                     <div class="font-bold mb-1">Événement gratuit</div>
                     <p class="text-xs">Aucun paiement nécessaire. Votre billet sera généré immédiatement et accessible depuis votre espace.</p>
@@ -359,7 +357,7 @@
             <div
               class="flex items-center justify-center gap-2 text-gray-400 mt-4"
             >
-              <span class="material-symbols-outlined text-sm"
+              <span aria-hidden="true" class="material-symbols-outlined text-sm"
                 >verified_user</span
               >
               <p class="text-[10px] font-bold uppercase tracking-widest">
@@ -440,7 +438,7 @@
         <div
           class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6"
         >
-          <span class="material-symbols-outlined text-green-500 text-4xl"
+          <span aria-hidden="true" class="material-symbols-outlined text-green-500 text-4xl"
             >check_circle</span
           >
         </div>
@@ -533,7 +531,7 @@
               banner.id = "checkout-promo-banner";
               banner.className = "bg-green-50 border-2 border-green-200 rounded-2xl p-4 flex items-center gap-3 mb-6";
               banner.innerHTML = `
-                  <span class="material-symbols-outlined text-green-600 text-2xl" style="font-variation-settings: 'FILL' 1">verified</span>
+                  <span aria-hidden="true" class="material-symbols-outlined text-green-600 text-2xl" style="font-variation-settings: 'FILL' 1">verified</span>
                   <div class="flex-1 min-w-0">
                       <p class="text-xs font-black uppercase tracking-widest text-green-700">Code promo</p>
                       <p class="text-sm font-bold text-green-900">
@@ -769,7 +767,7 @@
         }
         
         btn.disabled = true;
-        btn.innerHTML = '<span class="material-symbols-outlined animate-spin">sync</span> Traitement...';
+        btn.innerHTML = '<span aria-hidden="true" class="material-symbols-outlined animate-spin">sync</span> Traitement...';
         
         try {
           const payload = {

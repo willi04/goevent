@@ -5,11 +5,18 @@
     <meta name="bt-page" content="" />
     <link rel="manifest" href="manifest.json" />
     <meta name="theme-color" content="#00502c" />
-    <meta
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-      name="viewport"
-    />
-    <title>GoEvent</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Connexion | GoEvent</title>
+    <meta name="description" content="Connectez-vous à GoEvent pour retrouver vos billets et vos événements suivis." />
+    <link rel="canonical" href="https://goevent.africa/login.html" />
+    <meta property="og:site_name" content="GoEvent" />
+    <meta property="og:title" content="Connexion | GoEvent" />
+    <meta property="og:description" content="Connectez-vous à GoEvent pour retrouver vos billets et vos événements suivis." />
+    <meta property="og:url" content="https://goevent.africa/login.html" />
+    <meta property="og:image" content="https://goevent.africa/icons/icon-512.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="fr_FR" />
+    <meta name="twitter:card" content="summary" />
     <link rel="icon" type="image/png" href="icons/favicon.png" />
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link
@@ -17,7 +24,7 @@
       rel="stylesheet"
     />
     <link
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=block"
       rel="stylesheet"
     />
     <script id="tailwind-config">
@@ -168,7 +175,7 @@
               class="flex items-center space-x-3 bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/10"
             >
               <span
-                class="material-symbols-outlined text-secondary-fixed text-2xl"
+                aria-hidden="true" class="material-symbols-outlined text-secondary-fixed text-2xl"
                 >verified_user</span
               >
               <div>
@@ -180,12 +187,12 @@
               class="flex items-center space-x-3 bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/10"
             >
               <span
-                class="material-symbols-outlined text-secondary-fixed text-2xl"
+                aria-hidden="true" class="material-symbols-outlined text-secondary-fixed text-2xl"
                 >local_activity</span
               >
               <div>
                 <p class="text-white font-bold text-sm">Billets Instantanés</p>
-                <p class="text-primary-fixed text-xs">QR Code par Email</p>
+                <p class="text-primary-fixed text-xs">QR code par e-mail</p>
               </div>
             </div>
           </div>
@@ -201,7 +208,7 @@
           class="md:hidden absolute top-6 right-6 flex items-center gap-1.5 text-on-surface-variant hover:text-primary font-bold text-xs transition-colors group bg-white/80 backdrop-blur px-3 py-2 rounded-full shadow-sm"
           aria-label="Retour à l'accueil"
         >
-          <span class="material-symbols-outlined text-lg group-hover:-translate-x-0.5 transition-transform">arrow_back</span>
+          <span aria-hidden="true" class="material-symbols-outlined text-lg group-hover:-translate-x-0.5 transition-transform">arrow_back</span>
         </a>
 
         <div class="w-full max-w-md space-y-10">
@@ -263,7 +270,7 @@
                   class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none"
                 >
                   <span
-                    class="material-symbols-outlined text-outline group-focus-within:text-primary transition-colors"
+                    aria-hidden="true" class="material-symbols-outlined text-outline group-focus-within:text-primary transition-colors"
                     >lock</span
                   >
                 </div>
@@ -280,15 +287,12 @@
               </div>
             </div>
             <div class="flex items-center gap-4 mb-6">
-                <img
-                  src="icons/orange-money-log[1].png"
-                  class="w-11 h-11 rounded-2xl object-contain shadow-sm"
-                  alt="Orange Money"
-                  onerror="this.outerHTML='<div class=&quot;w-14 h-14 bg-om-primary rounded-2xl flex items-center justify-center shadow-sm&quot;><span class=&quot;material-symbols-outlined text-white text-3xl&quot; style=&quot;font-variation-settings: \'FILL\' 1&quot;>payments</span></div>'"
-                />
+              <div class="w-11 h-11 shrink-0 bg-primary/10 rounded-2xl flex items-center justify-center" aria-hidden="true">
+                <span class="material-symbols-outlined text-primary text-2xl" aria-hidden="true">shield_lock</span>
+              </div>
               <p class="text-sm text-on-secondary-fixed-variant leading-tight">
-                Connectez-vous avec vos identifiants sécurisés
-                <strong>Orange Money</strong>.
+                Utilisez votre <strong>code PIN GoEvent</strong>, choisi à l'inscription.
+                Ne saisissez jamais votre code secret Orange Money ici.
               </p>
             </div>
             <div class="pt-4 space-y-6">
@@ -298,7 +302,7 @@
                 type="submit"
               >
                 <span>Se connecter</span>
-                <span class="material-symbols-outlined text-xl"
+                <span aria-hidden="true" class="material-symbols-outlined text-xl"
                   >arrow_forward</span
                 >
               </button>
@@ -327,15 +331,15 @@
           <button
             onclick="closeForgotModal()"
             class="absolute top-5 right-5 text-gray-400 hover:text-gray-900 transition-colors bg-gray-50 rounded-full w-8 h-8 flex items-center justify-center"
-          >
-            <span class="material-symbols-outlined text-[20px]">close</span>
+           aria-label="Fermer">
+            <span aria-hidden="true" class="material-symbols-outlined text-[20px]">close</span>
           </button>
 
           <div id="forgot-step-1">
             <div
               class="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-6 mx-auto"
             >
-              <span class="material-symbols-outlined text-3xl">mail</span>
+              <span aria-hidden="true" class="material-symbols-outlined text-3xl">mail</span>
             </div>
             <h3
               class="text-2xl font-black font-headline text-center mb-2 text-gray-900"
@@ -368,7 +372,7 @@
             <div
               class="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-6 mx-auto"
             >
-              <span class="material-symbols-outlined text-3xl">key</span>
+              <span aria-hidden="true" class="material-symbols-outlined text-3xl">key</span>
             </div>
             <h3
               class="text-2xl font-black font-headline text-center mb-2 text-gray-900"
@@ -531,7 +535,7 @@
         const btn = document.getElementById("btn-forgot-send");
         const origText = btn.innerHTML;
         btn.innerHTML =
-          '<span class="material-symbols-outlined animate-spin align-middle mr-2">sync</span>Envoi...';
+          '<span aria-hidden="true" class="material-symbols-outlined animate-spin align-middle mr-2">sync</span>Envoi...';
         btn.disabled = true;
 
         try {

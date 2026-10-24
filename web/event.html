@@ -191,13 +191,13 @@
           <img
             class="w-full h-full object-cover"
             src="https://lh3.googleusercontent.com/aida-public/AB6AXuDYrO4AdsJ1jzIg-Cpdg3nB8XV6gdqIBMK2bvR5f_n22Ar07kZhASMKWw1wCbNaxC0T1uVCUb4C2wFWmlfqGcgkiA-1g8Ga-QvWqFK_lsAG4QSrEa9iFJeK4T149VhnHiYS3ZI7pGjbq5nyLwmhjbpTW-1-mDUGpfi9tNLIr-QmWBR205QckolaescsuA7lp1S6yMR1b8QKBs4uYABdMQusHtNFahR8ZT_xLhGXPSQOxp4FYG-ingUsOw-uPoleJXlOYtah2Pk_Kg"
-          />
+           data-cms-img="event.img01"/>
           <div class="absolute inset-0 bg-primary/60 backdrop-blur-[2px]"></div>
         </div>
         <div class="relative z-10 w-full max-w-4xl px-4 text-center">
           <h1
             class="text-4xl md:text-5xl lg:text-6xl font-headline font-extrabold text-white mb-8 tracking-tight"
-          >
+           data-cms="event.001">
             Tous les événements
           </h1>
           <div
@@ -215,7 +215,7 @@
             </div>
             <button
               class="w-full md:w-auto bg-primary text-white px-8 py-3.5 rounded-xl md:rounded-full font-bold hover:bg-primary-container transition-colors"
-            >
+             data-cms="event.002">
               Rechercher
             </button>
           </div>
@@ -228,13 +228,13 @@
             <details class="md:!open" open>
               <summary class="md:hidden cursor-pointer text-on-primary-fixed-variant font-headline font-bold text-lg flex items-center gap-2 py-3">
                 <span class="material-symbols-outlined">filter_list</span>
-                Filtres
+                <span data-cms="event.003">Filtres</span>
               </summary>
               <div>
                 <div class="mb-8">
                   <span
                     class="text-xs font-label uppercase tracking-widest text-outline mb-4 block"
-                    >Catégories</span
+                     data-cms="event.004">Catégories</span
                   >
                   <div class="space-y-3" id="filter-categories">
                     <label class="flex items-center group cursor-pointer">
@@ -245,7 +245,7 @@
                       />
                       <span
                         class="ml-3 text-on-surface group-hover:text-primary transition-colors"
-                        >Concerts & Live</span
+                         data-cms="event.005">Concerts & Live</span
                       >
                     </label>
                     <label class="flex items-center group cursor-pointer">
@@ -256,7 +256,7 @@
                       />
                       <span
                         class="ml-3 text-on-surface group-hover:text-primary transition-colors"
-                        >Festivals Culturels</span
+                         data-cms="event.006">Festivals Culturels</span
                       >
                     </label>
                     <label class="flex items-center group cursor-pointer">
@@ -267,7 +267,7 @@
                       />
                       <span
                         class="ml-3 text-on-surface group-hover:text-primary transition-colors"
-                        >Théâtre & Danse</span
+                         data-cms="event.007">Théâtre & Danse</span
                       >
                     </label>
                     <label class="flex items-center group cursor-pointer">
@@ -278,7 +278,7 @@
                       />
                       <span
                         class="ml-3 text-on-surface group-hover:text-primary transition-colors"
-                        >Expositions</span
+                         data-cms="event.008">Expositions</span
                       >
                     </label>
                   </div>
@@ -287,7 +287,7 @@
                 <div class="mb-8">
                   <span
                     class="text-xs font-label uppercase tracking-widest text-outline mb-4 block"
-                    >Prix Max (FCFA)</span
+                     data-cms="event.009">Prix Max (FCFA)</span
                   >
                   <input
                     id="price-filter"
@@ -301,7 +301,7 @@
                   <div
                     class="flex justify-between text-xs text-outline font-medium"
                   >
-                    <span>0 FCFA</span>
+                    <span data-cms="event.010">0 FCFA</span>
                     <span id="price-display">100.000 FCFA</span>
                   </div>
                 </div>
@@ -309,7 +309,7 @@
                 <div class="mb-8">
                   <span
                     class="text-xs font-label uppercase tracking-widest text-outline mb-4 block"
-                    >Lieu</span
+                     data-cms="event.011">Lieu</span
                   >
                   <select
                     id="location-filter"
@@ -324,7 +324,7 @@
                   </select>
                 </div>
                 <div class="mb-8">
-                  <span class="text-xs font-label uppercase tracking-widest text-outline mb-4 block">Période</span>
+                  <span class="text-xs font-label uppercase tracking-widest text-outline mb-4 block" data-cms="event.012">Période</span>
                   <label class="flex items-start group cursor-pointer">
                     <input
                       id="include-past-filter"
@@ -332,13 +332,17 @@
                       class="rounded border-outline-variant text-primary focus:ring-primary w-5 h-5 transition-all mt-0.5"
                     />
                     <span class="ml-3 text-on-surface group-hover:text-primary transition-colors text-sm">
-                      Inclure les événements terminés
-                      <span class="block text-xs text-outline mt-0.5">(30 derniers jours uniquement)</span>
+                      <span data-cms="event.014">Inclure les événements terminés</span>
+                      <span class="block text-xs text-outline mt-0.5" data-cms="event.013">(30 derniers jours uniquement)</span>
                     </span>
                   </label>
                 </div>
               </div>
             </details>
+            <!-- EMPLACEMENT : colonne sous les filtres (ordinateur, reste visible au défilement) -->
+            <div class="hidden md:block sticky top-28">
+              <div data-zone="events.sidebar" data-zone-layout="narrow" class="hidden"></div>
+            </div>
           </aside>
 
           <div class="flex-1">
@@ -352,12 +356,12 @@
                 >
                   Chargement...
                 </h2>
-                <p class="text-outline text-sm mt-1">
+                <p class="text-outline text-sm mt-1" data-cms="event.015">
                   Spectacles en RCA et alentours
                 </p>
               </div>
               <div class="flex items-center gap-2 text-sm">
-                <span class="text-outline">Trier par:</span>
+                <span class="text-outline" data-cms="event.016">Trier par:</span>
 
                 <div class="relative">
                   <select
@@ -389,6 +393,7 @@
             <div
               class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
               id="events-grid-container"
+              data-zone-infeed="events.infeed"
             >
               <div class="col-span-full py-20 text-center">
                 <div class="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
@@ -569,6 +574,8 @@
           `;
           })
           .join("");
+        // Cartes sponsorisées (back-office → Emplacements), réinsérées à chaque rendu
+        if (typeof window.btZonesInfeed === "function") window.btZonesInfeed(container);
       }
       // 4. LE CODE QUE TU M'AS ENVOYÉ (avec la pagination corrigée)
       document.addEventListener("DOMContentLoaded", async () => {
@@ -748,5 +755,7 @@
       document.getElementById("footer").innerHTML = btFooter();
     </script>
     <script src="pwa.js"></script>
-  </body>
+      <!-- Contenu éditable depuis le back-office (après bt-api.js : réutilise BT_API) -->
+    <script src="cms.js" defer></script>
+</body>
 </html>

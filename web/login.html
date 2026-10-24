@@ -124,7 +124,7 @@
             class="w-full h-full object-cover"
             alt="Soirée culturelle à Bangui"
             src="https://lh3.googleusercontent.com/aida-public/AB6AXuAEVjqwRoX7auYEvNEEEOUeYVTdHs0su3-XQljGYS7mqJnz5F8vYBYg_sB-ho1pcVKABfPec_HiusUiU6Z3uMXHMV4ZSwRs7fntsMBrV0oWV5NqjAih6KA7HICEysTpXNBq-gyUFDCweG80P4iChdsgHuo_UC8BS45GTOn_PaSxDxZVvasyTMYsFzu8HDcMeJKP76OgbBothVZ-BBlD25nQw36w2zG1inN2ukOQON-ylghiXM-Wx6OZwcwxCFoxY7j2Fki7H3yGRw"
-          />
+           data-cms-img="login.img01"/>
           <div
             class="absolute inset-0 bg-gradient-to-br from-primary via-primary-container/90 to-primary/80 mix-blend-multiply"
           ></div>
@@ -140,22 +140,22 @@
               src="icons/event.png"
               alt="Logo"
               class="w-10 h-10 rounded-3xl shadow-sm"
-            />
+             data-cms-img="login.img02"/>
             <span
               class="text-2xl font-bold tracking-tight text-white font-headline"
-              >GoEvent</span
+               data-cms="login.001">GoEvent</span
             >
           </a>
 
           <h1
             class="text-4xl md:text-5xl lg:text-6xl font-extrabold font-headline text-white leading-tight tracking-tighter"
           >
-            Vos plus belles soirées <br />
-            <span class="text-primary-fixed">commencent ici.</span>
+            <span data-cms="login.003">Vos plus belles soirées</span> <br />
+            <span class="text-primary-fixed" data-cms="login.002">commencent ici.</span>
           </h1>
           <p
             class="hidden md:block mt-6 text-primary-fixed text-lg max-w-md opacity-90 leading-relaxed"
-          >
+           data-cms="login.004">
             Connectez-vous pour retrouver vos billets, événements suivis et
             l'agenda culturel de Bangui.
           </p>
@@ -172,8 +172,8 @@
                 >verified_user</span
               >
               <div>
-                <p class="text-white font-bold text-sm">Paiement Sécurisé</p>
-                <p class="text-primary-fixed text-xs">via Orange Money</p>
+                <p class="text-white font-bold text-sm" data-cms="login.005">Paiement Sécurisé</p>
+                <p class="text-primary-fixed text-xs" data-cms="login.006">via Orange Money</p>
               </div>
             </div>
             <div
@@ -184,8 +184,8 @@
                 >local_activity</span
               >
               <div>
-                <p class="text-white font-bold text-sm">Billets Instantanés</p>
-                <p class="text-primary-fixed text-xs">QR Code par Email</p>
+                <p class="text-white font-bold text-sm" data-cms="login.007">Billets Instantanés</p>
+                <p class="text-primary-fixed text-xs" data-cms="login.008">QR Code par Email</p>
               </div>
             </div>
           </div>
@@ -206,10 +206,10 @@
 
         <div class="w-full max-w-md space-y-10">
           <header class="space-y-3">
-            <h2 class="text-4xl font-headline font-extrabold text-on-surface">
+            <h2 class="text-4xl font-headline font-extrabold text-on-surface" data-cms="login.009">
               Connexion
             </h2>
-            <p class="text-on-surface-variant font-medium">
+            <p class="text-on-surface-variant font-medium" data-cms="login.010">
               Bon retour ! Accédez à vos billets et réservations.
             </p>
           </header>
@@ -223,7 +223,7 @@
             <div class="space-y-2">
               <label
                 class="text-xs font-bold uppercase tracking-widest text-outline ml-1"
-                >Numéro de Téléphone</label
+                 data-cms="login.011">Numéro de Téléphone</label
               >
               <div class="relative group">
                 <div
@@ -249,13 +249,13 @@
               <div class="flex justify-between items-center px-1">
                 <label
                   class="text-xs font-bold uppercase tracking-widest text-outline"
-                  >Code PIN (6 chiffres)</label
+                   data-cms="login.012">Code PIN (6 chiffres)</label
                 >
                 <a
                   class="text-xs font-bold text-primary hover:underline"
                   href="#"
                   onclick="openForgotModal()"
-                  >Oublié ?</a
+                   data-cms="login.013">Oublié ?</a
                 >
               </div>
               <div class="relative group">
@@ -285,10 +285,10 @@
                   class="w-11 h-11 rounded-2xl object-contain shadow-sm"
                   alt="Orange Money"
                   onerror="this.outerHTML='<div class=&quot;w-14 h-14 bg-om-primary rounded-2xl flex items-center justify-center shadow-sm&quot;><span class=&quot;material-symbols-outlined text-white text-3xl&quot; style=&quot;font-variation-settings: \'FILL\' 1&quot;>payments</span></div>'"
-                />
+                 data-cms-img="login.img03"/>
               <p class="text-sm text-on-secondary-fixed-variant leading-tight">
-                Connectez-vous avec vos identifiants sécurisés
-                <strong>Orange Money</strong>.
+                <span data-cms="login.015">Connectez-vous avec vos identifiants sécurisés</span>
+                <strong data-cms="login.014">Orange Money</strong>.
               </p>
             </div>
             <div class="pt-4 space-y-6">
@@ -304,11 +304,11 @@
               </button>
               <div class="text-center">
                 <p class="text-on-surface-variant font-medium">
-                  Pas encore de compte ?
+                  <span data-cms="login.017">Pas encore de compte ?</span>
                   <a
                     class="text-primary font-bold hover:underline ml-1"
                     href="signup.html"
-                    >Créer un compte</a
+                     data-cms="login.016">Créer un compte</a
                   >
                 </p>
               </div>
@@ -628,5 +628,7 @@
         }
       });
     </script>
-  </body>
+      <!-- Contenu éditable depuis le back-office (après bt-api.js : réutilise BT_API) -->
+    <script src="cms.js" defer></script>
+</body>
 </html>

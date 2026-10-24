@@ -158,12 +158,12 @@
       <div class="text-center mb-12">
         <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-emerald-50 rounded-full mb-6">
           <span class="material-symbols-outlined text-primary text-base">gavel</span>
-          <span class="text-xs font-bold text-primary uppercase tracking-wider">Document légal</span>
+          <span class="text-xs font-bold text-primary uppercase tracking-wider" data-cms="cgu.001">Document légal</span>
         </div>
-        <h1 class="text-4xl md:text-5xl font-black text-primary font-headline mb-4">
+        <h1 class="text-4xl md:text-5xl font-black text-primary font-headline mb-4" data-cms="cgu.002">
           Conditions Générales d'Utilisation
         </h1>
-        <p class="text-neutral-500 text-sm">
+        <p class="text-neutral-500 text-sm" data-cms-page-date>
           Dernière mise à jour : 21 Juin 2026
         </p>
       </div>
@@ -171,15 +171,15 @@
       <!-- Encadré important -->
       <div class="bg-emerald-50 border-l-4 border-primary rounded-r-2xl p-6 mb-10">
         <p class="text-sm text-neutral-700 leading-relaxed">
-          <strong class="text-primary">À lire attentivement.</strong> En accédant ou en utilisant la
+          <strong class="text-primary" data-cms="cgu.003">À lire attentivement.</strong> <span data-cms="cgu.004">En accédant ou en utilisant la
           plateforme GoEvent, vous acceptez d'être lié(e) par les présentes conditions générales
           d'utilisation. Si vous n'acceptez pas ces conditions, veuillez ne pas utiliser la
-          plateforme.
+          plateforme.</span>
         </p>
       </div>
 
       <!-- Contenu légal -->
-      <div class="legal-content bg-white rounded-3xl p-8 md:p-12 shadow-sm">
+      <div class="legal-content bg-white rounded-3xl p-8 md:p-12 shadow-sm" data-cms-page="cgu">
         <h2>1. Préambule</h2>
         <p>
           GoEvent est une plateforme numérique de billetterie événementielle, opérée par
@@ -471,19 +471,19 @@
         <a
           href="confidentialite.html"
           class="px-6 py-3 bg-white border-2 border-primary text-primary rounded-full font-bold text-sm hover:bg-emerald-50 transition-all"
-        >
+         data-cms="cgu.005">
           → Politique de Confidentialité
         </a>
         <a
           href="remboursements.html"
           class="px-6 py-3 bg-white border-2 border-primary text-primary rounded-full font-bold text-sm hover:bg-emerald-50 transition-all"
-        >
+         data-cms="cgu.006">
           → Politique de Remboursements
         </a>
         <a
           href="index.html"
           class="px-6 py-3 bg-gradient-to-r from-primary to-primary-container text-white rounded-full font-bold text-sm hover:scale-105 transition-all shadow-lg shadow-primary/20"
-        >
+         data-cms="cgu.007">
           ← Retour à l'accueil
         </a>
       </div>
@@ -538,5 +538,7 @@
         }
       }
     </script>
-  </body>
+      <!-- Contenu éditable depuis le back-office (après bt-api.js : réutilise BT_API) -->
+    <script src="cms.js" defer></script>
+</body>
 </html>

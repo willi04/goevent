@@ -15,24 +15,24 @@
 <header class="topbar">
   <a class="brand" href="https://goevent.africa" target="_blank" rel="noopener">
     <span class="logo">
-      <img class="logo-img" src="event.png" alt="GoEvent" onerror="this.parentNode.classList.add('mark');this.remove();">
+      <img class="logo-img" src="event.png" alt="GoEvent" onerror="this.parentNode.classList.add('mark');this.remove();" data-cms-img="simulateur.img01">
       <svg class="logo-bolt" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></svg>
     </span>
-    <span class="brand-txt"><b>Simulateur <span class="g">GoEvent</span></b><small class="tagline">Calcule la rentabilité de ton événement</small></span>
+    <span class="brand-txt"><b><span data-cms="simulateur.002">Simulateur</span> <span class="g" data-cms="simulateur.001">GoEvent</span></b><small class="tagline" data-cms="simulateur.003">Calcule la rentabilité de ton événement</small></span>
   </a>
   <nav class="topnav">
     <a href="#history" class="nav-link" id="histLink">Historique</a>
-    <a href="https://goevent.africa" target="_blank" rel="noopener" class="nav-cta">goevent.africa <span aria-hidden="true">↗</span></a>
+    <a href="https://goevent.africa" target="_blank" rel="noopener" class="nav-cta"><span data-cms="simulateur.004">goevent.africa</span> <span aria-hidden="true">↗</span></a>
   </nav>
 </header>
 
 <div class="wrap">
 
   <header class="hero reveal">
-    <p class="eyebrow">Simulateur · organisateurs</p>
-    <h1>Ton événement est-il viable&nbsp;?</h1>
-    <p class="lede">Décris ton projet, simule tes coûts et tes billets, et vois en direct s'il est rentable — avec des conseils taillés pour lui.</p>
-    <p class="fanline">Plutôt fan qu'organisateur&nbsp;? <a href="https://goevent.africa/events.html" target="_blank" rel="noopener">Découvre les événements →</a></p>
+    <p class="eyebrow" data-cms="simulateur.005">Simulateur · organisateurs</p>
+    <h1 data-cms="simulateur.006">Ton événement est-il viable&nbsp;?</h1>
+    <p class="lede" data-cms="simulateur.007">Décris ton projet, simule tes coûts et tes billets, et vois en direct s'il est rentable — avec des conseils taillés pour lui.</p>
+    <p class="fanline"><span data-cms="simulateur.009">Plutôt fan qu'organisateur&nbsp;?</span> <a href="https://goevent.africa/events.html" target="_blank" rel="noopener" data-cms="simulateur.008">Découvre les événements →</a></p>
   </header>
 
   <div class="layout">
@@ -41,8 +41,8 @@
     <div class="col-form">
       <div class="project reveal">
         <div class="prow">
-          <label><span class="k">Nom du projet</span><input id="pName" type="text" placeholder="ex : Festival Bangui 2026"></label>
-          <label><span class="k">Type d'événement</span>
+          <label><span class="k" data-cms="simulateur.010">Nom du projet</span><input id="pName" type="text" placeholder="ex : Festival Bangui 2026"></label>
+          <label><span class="k" data-cms="simulateur.011">Type d'événement</span>
             <select id="pType">
               <option value="Concert">Concert</option>
               <option value="Cérémonie">Cérémonie / mariage</option>
@@ -57,52 +57,52 @@
       </div>
 
       <section class="reveal">
-        <div class="sec-h"><h2>Coûts fixes</h2><span class="num" id="fixedTotalTag"></span></div>
-        <p class="sec-note">Ce que tu paies que tu vendes 10 ou 500 billets.</p>
-        <div class="row fixed head"><span>Poste</span><span>Montant</span><span></span></div>
+        <div class="sec-h"><h2 data-cms="simulateur.012">Coûts fixes</h2><span class="num" id="fixedTotalTag"></span></div>
+        <p class="sec-note" data-cms="simulateur.013">Ce que tu paies que tu vendes 10 ou 500 billets.</p>
+        <div class="row fixed head"><span data-cms="simulateur.014">Poste</span><span data-cms="simulateur.015">Montant</span><span></span></div>
         <div id="fixedRows"></div>
         <button class="add" id="addFixed">+ Ajouter un coût</button>
         <div class="inline2" style="margin-top:14px">
-          <label class="field"><span class="k">Marge imprévus (%)</span><input id="contingency" inputmode="decimal" placeholder="ex : 10"></label>
-          <label class="field"><span class="k">Boost GoEvent</span>
+          <label class="field"><span class="k" data-cms="simulateur.016">Marge imprévus (%)</span><input id="contingency" inputmode="decimal" placeholder="ex : 10"></label>
+          <label class="field"><span class="k" data-cms="simulateur.017">Boost GoEvent</span>
             <select id="boost"><option value="0">Aucun</option><option value="10000">10 000 FCFA</option><option value="35000">35 000 FCFA</option><option value="130000">130 000 FCFA</option></select></label>
         </div>
       </section>
 
       <section class="reveal">
-        <div class="sec-h"><h2>Coût par participant</h2><span class="num">optionnel</span></div>
-        <p class="sec-note">Ce qui coûte à chaque présent : boisson, repas, bracelet…</p>
-        <label class="field"><span class="k">Coût par participant (FCFA)</span><input id="varCost" inputmode="numeric" placeholder="ex : 1 000 — vide si aucun"></label>
+        <div class="sec-h"><h2 data-cms="simulateur.018">Coût par participant</h2><span class="num" data-cms="simulateur.019">optionnel</span></div>
+        <p class="sec-note" data-cms="simulateur.020">Ce qui coûte à chaque présent : boisson, repas, bracelet…</p>
+        <label class="field"><span class="k" data-cms="simulateur.021">Coût par participant (FCFA)</span><input id="varCost" inputmode="numeric" placeholder="ex : 1 000 — vide si aucun"></label>
       </section>
 
       <section class="reveal">
-        <div class="sec-h"><h2>Paliers de billets</h2><span class="num" id="billNum">quota = places</span></div>
+        <div class="sec-h"><h2 data-cms="simulateur.022">Paliers de billets</h2><span class="num" id="billNum">quota = places</span></div>
         <p class="sec-note" id="billNote">Un palier par type de billet. Le quota = nombre de places de ce type.</p>
-        <div class="row tier head"><span>Palier</span><span>Prix</span><span>Quota</span><span></span></div>
+        <div class="row tier head"><span data-cms="simulateur.023">Palier</span><span data-cms="simulateur.024">Prix</span><span data-cms="simulateur.025">Quota</span><span></span></div>
         <div id="tierRows"></div>
         <button class="add" id="addTier">+ Ajouter un palier</button>
       </section>
 
       <section class="reveal">
-        <div class="sec-h"><h2>Scénarios de remplissage</h2><span class="num">%</span></div>
-        <p class="sec-note">Trois hypothèses. Ajuste-les à ta réalité.</p>
+        <div class="sec-h"><h2 data-cms="simulateur.026">Scénarios de remplissage</h2><span class="num">%</span></div>
+        <p class="sec-note" data-cms="simulateur.027">Trois hypothèses. Ajuste-les à ta réalité.</p>
         <div class="inline3">
-          <label class="field"><span class="k">Pessimiste</span><input id="sPess" inputmode="numeric" value="40"></label>
-          <label class="field"><span class="k">Réaliste</span><input id="sReal" inputmode="numeric" value="65"></label>
-          <label class="field"><span class="k">Optimiste</span><input id="sOpti" inputmode="numeric" value="90"></label>
+          <label class="field"><span class="k" data-cms="simulateur.028">Pessimiste</span><input id="sPess" inputmode="numeric" value="40"></label>
+          <label class="field"><span class="k" data-cms="simulateur.029">Réaliste</span><input id="sReal" inputmode="numeric" value="65"></label>
+          <label class="field"><span class="k" data-cms="simulateur.030">Optimiste</span><input id="sOpti" inputmode="numeric" value="90"></label>
         </div>
       </section>
 
       <section class="reveal">
         <label class="switch" for="freeToggle">
           <input type="checkbox" id="freeToggle"><span class="track"></span>
-          <span class="lab"><b>Événement gratuit</b><span>0 commission. Pas une perte — un investissement d'audience.</span></span>
+          <span class="lab"><b data-cms="simulateur.031">Événement gratuit</b><span data-cms="simulateur.032">0 commission. Pas une perte — un investissement d'audience.</span></span>
         </label>
         <div class="free-params hidden" id="freeParams">
-          <p class="sec-note" style="margin-bottom:12px">Un gratuit se rembourse plus tard, quand tu reconvertis tes présents en billets payants.</p>
+          <p class="sec-note" style="margin-bottom:12px" data-cms="simulateur.033">Un gratuit se rembourse plus tard, quand tu reconvertis tes présents en billets payants.</p>
           <div class="inline2">
-            <label class="field"><span class="k">Reconversion espérée (%)</span><input id="convPct" inputmode="numeric" placeholder="ex : 15"></label>
-            <label class="field"><span class="k">Panier d'un futur billet</span><input id="futureBasket" inputmode="numeric" placeholder="ex : 5 000"></label>
+            <label class="field"><span class="k" data-cms="simulateur.034">Reconversion espérée (%)</span><input id="convPct" inputmode="numeric" placeholder="ex : 15"></label>
+            <label class="field"><span class="k" data-cms="simulateur.035">Panier d'un futur billet</span><input id="futureBasket" inputmode="numeric" placeholder="ex : 5 000"></label>
           </div>
         </div>
       </section>
@@ -114,7 +114,7 @@
     <div class="col-side">
       <div class="result" id="result">
         <div class="result-top">
-          <div><p class="result-title">Résultat</p><p class="result-sub" id="resultSub">—</p></div>
+          <div><p class="result-title" data-cms="simulateur.036">Résultat</p><p class="result-sub" id="resultSub">—</p></div>
           <div class="result-actions">
             <button id="saveBtn" class="chip-btn" title="Enregistrer au projet">Enregistrer</button>
             <button id="copyBtn" class="chip-btn" title="Copier le récapitulatif">Copier</button>
@@ -123,55 +123,55 @@
 
         <div class="verdict-banner neutral" id="verdictBanner">
           <span class="v-emoji" id="vEmoji">🧮</span>
-          <p class="verdict neutral" id="verdict">Prêt à simuler&nbsp;?<small>Remplis les coûts et les billets à gauche : ton résultat apparaît ici en direct.</small></p>
+          <p class="verdict neutral" id="verdict">Prêt à simuler&nbsp;?<small data-cms="simulateur.037">Remplis les coûts et les billets à gauche : ton résultat apparaît ici en direct.</small></p>
         </div>
 
         <div id="richResult" style="display:none">
           <div id="gaugeBlock">
-            <p class="blk-label">Jauge de remplissage</p>
+            <p class="blk-label" data-cms="simulateur.038">Jauge de remplissage</p>
             <div class="gauge" id="gauge">
               <div class="gauge-track"><div class="gauge-red" id="gRed"></div><div class="gauge-green" id="gGreen"></div></div>
               <div class="seuil" id="gSeuil"></div>
             </div>
-            <div class="gauge-scale"><span>0%</span><span id="gSeuilBottom" class="seuil-b">Seuil : —</span><span>salle pleine</span></div>
+            <div class="gauge-scale"><span>0%</span><span id="gSeuilBottom" class="seuil-b">Seuil : —</span><span data-cms="simulateur.039">salle pleine</span></div>
           </div>
 
           <div id="scenBlock">
-            <p class="blk-label">Résultat net par scénario</p>
+            <p class="blk-label" data-cms="simulateur.040">Résultat net par scénario</p>
             <div class="scen-row" id="scenRow"></div>
           </div>
 
-          <p class="blk-label">Chiffres clés</p>
+          <p class="blk-label" data-cms="simulateur.041">Chiffres clés</p>
           <div class="keyfigs" id="keyFigs"></div>
         </div>
       </div>
 
       <div class="insight advice" id="adviceCard" style="display:none">
-        <h3>Conseils sur ton projet</h3>
+        <h3 data-cms="simulateur.042">Conseils sur ton projet</h3>
         <ul id="adviceBody"></ul>
       </div>
 
       <div class="insight" id="sensCard" style="display:none">
-        <h3>Effet d'un ajustement de prix <span class="h3-sub">+500 FCFA / billet</span></h3>
+        <h3><span data-cms="simulateur.044">Effet d'un ajustement de prix</span> <span class="h3-sub" data-cms="simulateur.043">+500 FCFA / billet</span></h3>
         <div id="sensBody"></div>
-        <p class="hint" style="margin-top:10px">Impact sur ton net au scénario réaliste, à remplissage constant.</p>
+        <p class="hint" style="margin-top:10px" data-cms="simulateur.045">Impact sur ton net au scénario réaliste, à remplissage constant.</p>
       </div>
 
       <div class="insight" id="boostCard" style="display:none">
-        <h3>Ton Boost se rembourse-t-il ?</h3>
+        <h3 data-cms="simulateur.046">Ton Boost se rembourse-t-il ?</h3>
         <p class="boost-msg" id="boostBody"></p>
       </div>
     </div><!-- /col-side -->
   </div><!-- /layout -->
 
   <div class="insight history-card reveal" id="history">
-    <h3>Historique des projets</h3>
-    <div id="histBody"><p class="hist-empty">Aucun projet enregistré. Simule, puis « Enregistrer ».</p></div>
+    <h3 data-cms="simulateur.047">Historique des projets</h3>
+    <div id="histBody"><p class="hist-empty" data-cms="simulateur.048">Aucun projet enregistré. Simule, puis « Enregistrer ».</p></div>
   </div>
 
   <div class="cta reveal">
-    <a href="https://goevent.africa/signup.html" target="_blank" rel="noopener"><span class="dot"></span>Crée ton événement sur GoEvent</a>
-    <p>Billetterie, paiement mobile et suivi en temps réel — goevent.africa</p>
+    <a href="https://goevent.africa/signup.html" target="_blank" rel="noopener"><span class="dot"></span><span data-cms="simulateur.049">Crée ton événement sur GoEvent</span></a>
+    <p data-cms="simulateur.050">Billetterie, paiement mobile et suivi en temps réel — goevent.africa</p>
   </div>
 
 </div>
@@ -180,34 +180,36 @@
   <div class="foot-inner">
     <div class="foot-brand">
       <span class="foot-logo">
-        <img class="logo-img" src="event.png" alt="GoEvent" onerror="this.parentNode.classList.add('mark');this.remove();">
+        <img class="logo-img" src="event.png" alt="GoEvent" onerror="this.parentNode.classList.add('mark');this.remove();" data-cms-img="simulateur.img02">
         <svg class="logo-bolt" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></svg>
       </span>
-      <div><b>GoEvent</b><p>La billetterie des événements en Afrique francophone.</p></div>
+      <div><b data-cms="simulateur.051">GoEvent</b><p data-cms="simulateur.052">La billetterie des événements en Afrique francophone.</p></div>
     </div>
     <nav class="foot-cols">
       <div class="foot-col">
-        <h4>Pour les fans</h4>
-        <a href="https://goevent.africa/event.html">Découvrir les événements</a>
-        <a href="https://goevent.africa">Accueil</a>
+        <h4 data-cms="simulateur.053">Pour les fans</h4>
+        <a href="https://goevent.africa/event.html" data-cms="simulateur.054">Découvrir les événements</a>
+        <a href="https://goevent.africa" data-cms="simulateur.055">Accueil</a>
       </div>
       <div class="foot-col">
-        <h4>Pour les organisateurs</h4>
-        <a href="https://goevent.africa/signup.html">Créer un compte</a>
-        <a href="https://goevent.africa">Gérer mes événements</a>
+        <h4 data-cms="simulateur.056">Pour les organisateurs</h4>
+        <a href="https://goevent.africa/signup.html" data-cms="simulateur.057">Créer un compte</a>
+        <a href="https://goevent.africa" data-cms="simulateur.058">Gérer mes événements</a>
       </div>
       <div class="foot-col">
-        <h4>GoEvent</h4>
-        <a href="https://goevent.africa/cgu.html">Conditions d'utilisation</a>
-        <a href="https://goevent.africa/Confidentialite.html">Confidentialité</a>
+        <h4 data-cms="simulateur.059">GoEvent</h4>
+        <a href="https://goevent.africa/cgu.html" data-cms="simulateur.060">Conditions d'utilisation</a>
+        <a href="https://goevent.africa/Confidentialite.html" data-cms="simulateur.061">Confidentialité</a>
       </div>
     </nav>
   </div>
   <div class="foot-bottom">
-    <span>© 2026 GoEvent — Simulateur de rentabilité</span>
-    <span>goevent.africa</span>
+    <span data-cms="simulateur.062">© 2026 GoEvent — Simulateur de rentabilité</span>
+    <span data-cms="simulateur.063">goevent.africa</span>
   </div>
 </footer>
 <script src="app.js"></script>
+    <!-- Contenu éditable depuis le back-office (après bt-api.js : réutilise BT_API) -->
+    <script src="../cms.js" defer></script>
 </body>
 </html>

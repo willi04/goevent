@@ -17,6 +17,12 @@ BOOST_PACKAGES = {
 
 FB_PACK_MIN_BUDGET = 35_000   # Budget Facebook minimum (FCFA)
 FB_PACK_MARGIN_RATE = 0.30    # 30% de marge GoEvent fixe
+# ⚠️ Valeurs PAR DÉFAUT : les tarifs en vigueur se règlent dans le back-office
+# (Contenu du site → Tarifs) et sont lus via core/pricing.get_pricing().
+
+# Commission billetterie (CGU art. 6) : modifiable uniquement ici + CGU.
+COMMISSION_BUYER_RATE = 0.04      # frais de service à la charge de l'acheteur
+COMMISSION_ORGANIZER_RATE = 0.07  # commission à la charge de l'organisateur
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(

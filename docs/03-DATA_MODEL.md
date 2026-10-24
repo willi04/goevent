@@ -308,6 +308,33 @@ enregistré avec l'organisateur, l'événement source, le nombre de lignes,
 l'IP, l'user-agent et les filtres appliqués. Ne pas modifier
 rétroactivement.
 
+### `site_contents`, `site_page_revisions`, `faq_items` (back-office CMS)
+
+- `site_contents` : `key` (PK, ex. `index.004`, `global.contact.email`),
+  `value`, `updated_at`, `updated_by`. Uniquement les **surcharges** : la
+  valeur par défaut est le texte du HTML (registre : `core/cms_registry.py`).
+  Images : data URL PNG/JPEG/WebP ≤ 1,5 Mo, servies par
+  `GET /content/media/{key}?v=<timestamp>` (cache long). Une clé dont
+  l'élément a disparu du HTML est ignorée (orpheline, sans effet).
+- `site_page_revisions` : `slug` (`cgu`, `confidentialite`,
+  `remboursements`), `title`, `body_html` (nettoyé), `note`, `created_at`,
+  `created_by`. **Append-only** : la version en ligne est l'`id` max du slug,
+  l'historique sert de preuve des versions successives des documents légaux.
+- `faq_items` : `category` (`compte`, `achat`, `billet`, `orga`, `autre`),
+  `question`, `answer_html` (nettoyé), `position`, `is_active`.
+
+### `zone_blocks`, `site_settings` (emplacements et tarifs)
+
+- `zone_blocks` : `zone` (clé de `core/zones.py`, indexée), `kind`
+  (`image|banner|announcement|cards`), `title`, `body`, `image` (data URL
+  ≤ 1,5 Mo, servie par `GET /zones/media/{id}?v=…`), `link_url`,
+  `link_label`, `sponsor`, `theme` (`green|dark|light|gold`), `items` (JSON
+  des cartes, 8 max), `position`, `is_active`, `starts_at`, `ends_at` (UTC
+  naïf), `impressions`, `clicks`, `created_at`, `updated_at`, `updated_by`.
+- `site_settings` : `key` (PK) → `value` (JSON). `zones` : réglages par zone
+  (`empty`, `every`) ; `pricing` : tarifs surchargés (seules les clés connues
+  de `core/pricing.DEFAULT_PRICING` sont lues).
+
 ## Relations principales
 
 Les relations foreign key du système, visualisées :

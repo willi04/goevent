@@ -122,10 +122,10 @@
         </div>
         <h1
           class="text-3xl md:text-4xl font-black font-headline text-gray-900 tracking-tight mb-3"
-        >
+         data-cms="feedback.001">
           Votre avis compte
         </h1>
-        <p class="text-gray-500 font-medium">
+        <p class="text-gray-500 font-medium" data-cms="feedback.002">
           Aidez-nous à faire de GoEvent la meilleure plateforme de Centrafrique.
         </p>
       </div>
@@ -133,7 +133,7 @@
       <div
         class="bg-white rounded-[2rem] p-8 md:p-10 shadow-sm border border-gray-100 mb-8 flex flex-col items-center transition-all hover:shadow-md"
       >
-        <h2 class="text-lg font-extrabold font-headline mb-6 text-gray-900">
+        <h2 class="text-lg font-extrabold font-headline mb-6 text-gray-900" data-cms="feedback.003">
           Comment évaluez-vous votre expérience ?
         </h2>
 
@@ -178,14 +178,14 @@
       <div
         class="bg-white rounded-[2rem] p-8 md:p-10 shadow-sm border border-gray-100 mb-12"
       >
-        <h2 class="text-xl font-extrabold font-headline mb-6 text-gray-900">
+        <h2 class="text-xl font-extrabold font-headline mb-6 text-gray-900" data-cms="feedback.004">
           Laissez-nous un message
         </h2>
         <div class="space-y-6">
           <div>
             <label
               class="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2"
-              >Catégorie</label
+               data-cms="feedback.005">Catégorie</label
             >
             <div class="relative">
               <span
@@ -212,7 +212,7 @@
           <div>
             <label
               class="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2"
-              >Votre message <span class="text-red-500">*</span></label
+              ><span data-cms="feedback.006">Votre message</span> <span class="text-red-500">*</span></label
             >
             <textarea
               id="fb-msg"
@@ -225,7 +225,7 @@
           <div>
             <label
               class="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2"
-              >Email (Optionnel)</label
+               data-cms="feedback.007">Email (Optionnel)</label
             >
             <div class="relative">
               <span
@@ -245,14 +245,14 @@
             onclick="submitFeedback()"
             class="w-full mt-4 py-4 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 hover:bg-primary-container active:scale-95 transition-all flex items-center justify-center gap-2"
           >
-            Envoyer mon feedback
+            <span data-cms="feedback.008">Envoyer mon feedback</span>
             <span class="material-symbols-outlined text-lg">send</span>
           </button>
         </div>
       </div>
 
       <div>
-        <h2 class="text-2xl font-black font-headline mb-6 text-gray-900">
+        <h2 class="text-2xl font-black font-headline mb-6 text-gray-900" data-cms="feedback.009">
           Avis de la communauté
         </h2>
         <div id="community-feedbacks" class="space-y-4">
@@ -499,5 +499,7 @@
       // Charger au démarrage
       loadCommunityFeedbacks();
     </script>
-  </body>
+      <!-- Contenu éditable depuis le back-office (après bt-api.js : réutilise BT_API) -->
+    <script src="cms.js" defer></script>
+</body>
 </html>

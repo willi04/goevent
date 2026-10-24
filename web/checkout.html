@@ -216,12 +216,12 @@
           class="flex items-center gap-2 text-gray-500 hover:text-primary font-bold text-sm transition-colors mb-4"
         >
           <span class="material-symbols-outlined text-lg">arrow_back</span>
-          Retour
+          <span data-cms="checkout.001">Retour</span>
         </button>
         <div class="flex items-center gap-3">
           <h1
             class="text-3xl md:text-5xl font-black font-headline tracking-tight text-gray-900"
-          >
+           data-cms="checkout.002">
             Finalisez votre achat
           </h1>
           <span
@@ -245,13 +245,13 @@
                   class="bg-primary/10 text-primary w-8 h-8 rounded-full flex items-center justify-center text-sm"
                   >1</span
                 >
-                Vos informations
+                <span data-cms="checkout.003">Vos informations</span>
               </h2>
               <div class="space-y-5">
                 <div>
                   <label
                     class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2"
-                    >Nom complet</label
+                     data-cms="checkout.004">Nom complet</label
                   >
                   <input
                     type="text"
@@ -263,7 +263,7 @@
                 <div>
                   <label
                     class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2"
-                    >Adresse Email</label
+                     data-cms="checkout.005">Adresse Email</label
                   >
                   <input
                     type="email"
@@ -362,7 +362,7 @@
               <span class="material-symbols-outlined text-sm"
                 >verified_user</span
               >
-              <p class="text-[10px] font-bold uppercase tracking-widest">
+              <p class="text-[10px] font-bold uppercase tracking-widest" data-cms="checkout.006">
                 Transaction 100% chiffrée
               </p>
             </div>
@@ -373,7 +373,7 @@
           <div
             class="bg-white p-6 md:p-8 rounded-[2rem] shadow-xl border border-gray-100 lg:sticky lg:top-28"
           >
-            <h3 class="font-headline font-black text-xl mb-6">Récapitulatif</h3>
+            <h3 class="font-headline font-black text-xl mb-6" data-cms="checkout.007">Récapitulatif</h3>
 
             <div class="flex gap-4 mb-6 pb-6 border-b border-gray-100">
               <div
@@ -418,7 +418,7 @@
             >
               <span
                 class="text-xs font-bold text-gray-400 uppercase tracking-widest"
-                >Total à payer</span
+                 data-cms="checkout.008">Total à payer</span
               >
               <span id="summary-total" class="font-black text-2xl text-primary"
                 >... FCFA</span
@@ -574,12 +574,14 @@
           return;
         }
 
-        // Orange Money : 4% acheteur
-        const fee = Math.ceil(currentEventPrice * 0.04);
-        const total = currentEventPrice + fee;
+        // Frais acheteur en vigueur (GET /pricing) ; même calcul que l'API :
+        // total = int(prix + prix × taux) (api/payments.py) → montant affiché = montant débité.
+        const pct = (window.btPricingCache && window.btPricingCache.commission) ? window.btPricingCache.commission.buyer_pct : 4;
+        const total = Math.trunc(currentEventPrice + currentEventPrice * (pct / 100));
+        const fee = total - currentEventPrice;
 
         if (sumFee) sumFee.textContent = fee.toLocaleString("fr-FR") + " FCFA";
-        if (sumFeeLabel) sumFeeLabel.textContent = "Frais de service (4%)";
+        if (sumFeeLabel) sumFeeLabel.textContent = "Frais de service (" + String(pct).replace(".", ",") + "%)";
         if (sumTot) sumTot.textContent = total.toLocaleString("fr-FR") + " FCFA";
         if (btnText) btnText.innerHTML = `Payer ${total.toLocaleString("fr-FR")} FCFA`;
         if (btnIcon) btnIcon.textContent = "lock";
@@ -750,6 +752,10 @@
         }
       });
 
+      // Tarifs chargés par cms.js (defer) : recalcul du récapitulatif à leur arrivée
+      document.addEventListener("DOMContentLoaded", () => {
+        if (typeof window.btPricing === "function") window.btPricing().then(() => { if (!isFreeEvent && currentEventPrice > 0) refreshTotals(); });
+      });
       // ==========================================
       // 7. SOUMISSION
       // ==========================================
@@ -810,5 +816,7 @@
         }
       }
     </script>
-  </body>
+      <!-- Contenu éditable depuis le back-office (après bt-api.js : réutilise BT_API) -->
+    <script src="cms.js" defer></script>
+</body>
 </html>

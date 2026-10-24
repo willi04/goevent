@@ -638,6 +638,14 @@
       ]));
     });
     panel.appendChild(pick);
+    var PREVIEW_URLS = { index: "index.html", event: "event.html", event_detail: "event.html", fan: "user_dashboard.html" };
+    var hint = { event_detail: "Ouvre la liste, puis n'importe quel événement : l'aperçu reste actif.",
+                 fan: "Visible avec un compte fan (l'aperçu se lance depuis ce compte)." }[S.zonePage];
+    panel.appendChild(el("div", { class: "flex flex-wrap items-center gap-3 mb-4 text-xs" }, [
+      el("a", { class: "action-btn text-xs", style: "background:#fef3c7;color:#92400e", target: "_blank", rel: "noopener",
+        href: PREVIEW_URLS[S.zonePage] + "?emplacements=1", text: "Voir les emplacements sur le site ↗" }),
+      el("span", { class: "text-gray-500", text: "Encadrés en orange, visibles par l'équipe uniquement." + (hint ? " " + hint : "") }),
+    ]));
     d.zones.filter(function (z) { return z.page === S.zonePage; }).forEach(function (z) { panel.appendChild(zoneCard(z)); });
   }
 
@@ -657,18 +665,9 @@
 
     // Réglages : si vide / fréquence
     var settings = el("div", { class: "flex flex-wrap items-center gap-3 text-xs bg-gray-50 rounded-xl p-3" });
-    if (z.empty === "static") {
-      settings.appendChild(el("span", { class: "text-gray-600", text: "Si aucun bloc en ligne : la section d'origine du site reste affichée." }));
-    } else {
-      var sel = el("select", { class: "input-field text-xs", style: "width:auto;padding:6px 10px", onchange: function (e) {
-        saveZoneSettings(z, { empty: e.target.value });
-      } }, [
-        el("option", { value: "house", text: "Afficher l'encart « Emplacement disponible »", selected: z.empty === "house" ? "selected" : null }),
-        el("option", { value: "hide", text: "Masquer l'emplacement", selected: z.empty === "hide" ? "selected" : null }),
-      ]);
-      settings.appendChild(el("span", { class: "font-bold text-gray-600", text: "Si vide :" }));
-      settings.appendChild(sel);
-    }
+    settings.appendChild(el("span", { class: "text-gray-600", text: z.empty === "static"
+      ? "Sans bloc en ligne : la section d'origine du site reste affichée."
+      : "Sans bloc en ligne : rien n'est affiché au public." }));
     if (z.every) {
       var every = el("input", { type: "number", min: "3", max: "24", value: String(z.every), class: "input-field text-xs", style: "width:70px;padding:6px 8px",
         onchange: function (e) {
@@ -686,7 +685,7 @@
     body.appendChild(settings);
 
     if (!z.blocks.length) {
-      body.appendChild(el("p", { class: "text-xs text-gray-400 py-2", text: "Aucun bloc. " + (z.empty === "static" ? "Le site affiche la section d'origine." : z.empty === "house" ? "Le site affiche l'encart « Emplacement disponible »." : "L'emplacement est masqué sur le site.") }));
+      body.appendChild(el("p", { class: "text-xs text-gray-400 py-2", text: "Aucun bloc. " + (z.empty === "static" ? "Le site affiche la section d'origine." : "L'emplacement est masqué sur le site (libre à proposer).") }));
     }
     z.blocks.forEach(function (b, i) { body.appendChild(blockRow(z, b, i)); });
     body.appendChild(el("button", { class: "action-btn btn-primary text-xs flex items-center gap-1", onclick: function () { blockModal(z, null); } }, [
@@ -739,7 +738,7 @@
 
   function saveZoneSettings(z, payload) {
     btApi.put("/admin/zones/" + encodeURIComponent(z.key) + "/settings", payload).then(function (s) {
-      z.empty = s.empty; z.every = s.every; bust(); toast("Réglage enregistré.", "success"); renderZones();
+      z.every = s.every; bust(); toast("Réglage enregistré.", "success"); renderZones();
     }).catch(function (e) { toast(e.message || "Erreur", "error"); loadZones(); });
   }
 

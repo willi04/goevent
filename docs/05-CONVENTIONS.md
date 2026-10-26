@@ -390,6 +390,11 @@ malveillant si l'organisateur est hostile.
 - **Emplacements** : une nouvelle zone = une entrée dans `core/zones.py` +
   un `<div data-zone="…" class="hidden">` dans la page. Ne jamais renommer
   une clé de zone en production (ses blocs deviendraient invisibles).
+- **Événements privés** : toute nouvelle requête publique sur `Event`
+  (liste, recherche, fiche, achat, promo, partage, recommandations) filtre
+  `Event.visibility == "public"`. Les invités ne vont jamais dans `tickets`.
+  Une donnée d'invité n'apparaît ni sur le pass (pas de téléphone), ni au
+  scan (pas de téléphone), ni sur le lien de suivi (chiffres seulement).
 
 ### QR codes et bibliothèques tierces
 

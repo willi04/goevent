@@ -14,6 +14,7 @@ from .premium_interest import PremiumInterest
 from models.promo import PromoCode, PromoUsage 
 from models.audience_log import AudienceExportLog
 from models.site_content import SiteContent, SitePageRevision, FaqItem, ZoneBlock, SiteSetting
+from models.invitation import PrivateEventSettings, EventGuest, GuestCheckin, InvitationPack
 
 
 __all__ = [
@@ -31,4 +32,5 @@ __all__ = [
     "PromoCode", "PromoUsage",
     "AudienceExportLog",
     "SiteContent", "SitePageRevision", "FaqItem", "ZoneBlock", "SiteSetting",
+    "PrivateEventSettings", "EventGuest", "GuestCheckin", "InvitationPack",
 ]

@@ -273,6 +273,36 @@ Les textes, images et liens des pages publiques sont modifiables depuis
   `get_pricing(db, fresh=True)` → **prix affiché = prix facturé**. La
   commission billetterie est exposée en lecture seule (elle engage les CGU).
 
+### Flux 7 : Invitations digitales à QR code (événements privés)
+
+- **Événement privé** = `Event` avec `visibility = "private"` : jamais listé,
+  ni recherchable, ni lisible par `GET /events/{id}`, ni vendable
+  (`lock_event_for_booking`), ni promo / Boost / Pack FB. Propriétaire
+  technique des événements accompagnés : compte orga interne **inactif**
+  « GoEvent Invitations » (`INVITATION_HOUSE_PHONE`).
+- **Invités hors `tickets`** (`event_guests`) : aucune interaction possible
+  avec paiements, commissions, remboursements, `seats_sold`, cagnotte ou
+  export d'audience. Logique métier : `core/invitations.py` (partagée avec le
+  futur tableau de bord orga « autonome ») ; routes : `api/invitations.py`.
+- **Pass** : jeton aléatoire 32 caractères ; QR = URL
+  `goevent.africa/i/<jeton>` (rewrite Vercel → `invitation.html`, page
+  autonome sans script tiers, `no-referrer`). Envoi : lien `wa.me` ouvert par
+  l'équipe (un clic par invité), message modifiable par événement.
+- **Pack payé** (taille en personnes × Autonome/Accompagné) activé par
+  l'admin après paiement reçu **au nom de GoEvent SARLU**, référence
+  unique par canal. Sans pack actif : import possible, envoi / scan / lien de
+  suivi bloqués.
+- **Scan** : `POST /scan` reconnaît l'URL d'un pass → branche invitations
+  (verrou ligne, pass groupe : l'agent choisit combien entrent, `client_uuid`
+  idempotent). **Hors ligne** : le scanner télécharge la liste (empreintes
+  SHA-256 des jetons, jamais les jetons), valide localement, synchronise
+  ensuite (`/invitations/checkins/sync`, idempotent) ; deux téléphones hors
+  ligne qui acceptent le même pass → entrée marquée en conflit.
+- **Suivi client** : `goevent.africa/suivi/<jeton>` → titre, date et
+  chiffres uniquement (pas de lieu, aucun nom ni numéro), jeton révocable.
+- **Purge J+30** : `purge_due()` (cron reconcile + bouton admin) anonymise
+  noms, numéros et jetons ; seuls les chiffres restent.
+
 ## Principes transverses
 
 Cinq principes guident l'évolution du code et doivent être respectés par

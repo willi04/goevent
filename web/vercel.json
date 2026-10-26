@@ -3,6 +3,42 @@
     {
       "source": "/e/:slug",
       "destination": "/event_detail.html?slug=:slug"
+    },
+    {
+      "source": "/i/:token",
+      "destination": "/invitation.html?t=:token"
+    },
+    {
+      "source": "/suivi/:token",
+      "destination": "/suivi.html?t=:token"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/i/(.*)",
+      "headers": [
+        {
+          "key": "Referrer-Policy",
+          "value": "no-referrer"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
+        }
+      ]
+    },
+    {
+      "source": "/suivi/(.*)",
+      "headers": [
+        {
+          "key": "Referrer-Policy",
+          "value": "no-referrer"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
+        }
+      ]
     }
   ]
 }

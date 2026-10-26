@@ -38,7 +38,8 @@ def list_events(
     import random
     import time
 
-    query = db.query(Event).filter(Event.is_active == True)
+    # Événements privés (invitations) : jamais listés ni recherchables
+    query = db.query(Event).filter(Event.is_active == True, Event.visibility == "public")
 
     # Filtre temporel
     if upcoming_only:
@@ -156,7 +157,8 @@ def get_event_by_slug(slug: str, db: Session = Depends(get_db)):
     event_id = slug_to_event_id(slug)
     if event_id is None:
         raise HTTPException(404, "Lien invalide")
-    event = db.query(Event).filter(Event.id == event_id, Event.is_active == True).first()
+    event = db.query(Event).filter(Event.id == event_id, Event.is_active == True,
+                                   Event.visibility == "public").first()
     if not event:
         raise HTTPException(404, "Événement introuvable")
     return _event_dict(event)
@@ -164,7 +166,8 @@ def get_event_by_slug(slug: str, db: Session = Depends(get_db)):
 
 @router.get("/events/{event_id}")
 def get_event(event_id: int, db: Session = Depends(get_db)):
-    e = db.query(Event).filter(Event.id == event_id).first()
+    # Un événement privé n'est pas lisible par énumération d'id (titre, lieu, date d'un mariage…)
+    e = db.query(Event).filter(Event.id == event_id, Event.visibility == "public").first()
     if not e:
         raise HTTPException(404, "Événement introuvable")
     return _event_dict(e)

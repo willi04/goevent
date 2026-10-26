@@ -46,6 +46,8 @@ def _check_event_belongs(db: Session, event_id: int, user: User) -> Event:
         raise HTTPException(404, "Événement introuvable")
     if event.organizer_id != user.id:
         raise HTTPException(403, "Cet événement ne vous appartient pas")
+    if event.visibility != "public":
+        raise HTTPException(400, "Pas de code promo sur un événement privé (invitations).")
     return event
 
 
@@ -370,7 +372,7 @@ def validate_promo_code(
     Note : on ne vérifie PAS max_uses_per_user ici (pas d'auth requise pour la preview).
     L'erreur "Déjà utilisé" remontera au moment du paiement avec un message clair.
     """
-    event = db.query(Event).filter(Event.id == data.event_id).first()
+    event = db.query(Event).filter(Event.id == data.event_id, Event.visibility == "public").first()
     if not event:
         raise HTTPException(404, "Événement introuvable")
 

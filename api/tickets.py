@@ -16,6 +16,7 @@ from core.limiter import limiter
 
 from utils.locks import lock_event_for_booking
 from utils.promo import lock_promo_for_use, compute_discount
+from core import invitations
 from core.database import get_db
 from core.security import get_current_user, log_security_event
 from models.event import Event
@@ -203,6 +204,12 @@ def valider_billet(request: Request, data: ScanTicket, db: Session = Depends(get
     if current_user.role not in ("agent", "organizer", "organisation"):
         raise HTTPException(status_code=403, detail="Accès refusé. Réservé aux contrôleurs.")
 
+    # Pass d'invitation (QR = URL goevent.africa/i/<jeton>) : branche dédiée,
+    # mêmes contrôles d'accès, places multiples (cf. core/invitations.scan)
+    invitation_token = invitations.parse_pass_qr(data.qr_data)
+    if invitation_token:
+        return invitations.scan(db, current_user, invitation_token, data.count, request, data.client_uuid)
+
     # Verrou ligne : 2 agents qui scannent le même QR simultanément →
     # un seul passe, l'autre voit "DÉJÀ UTILISÉ".
     ticket = (
@@ -264,6 +271,13 @@ def scan_stats(event_id: int, db: Session = Depends(get_db),
             raise HTTPException(403, "Vous n'êtes pas assigné à cet événement")
     else:
         raise HTTPException(403, "Accès refusé")
+
+    if event.visibility == "private":   # invitations : personnes (places), pas billets
+        s = invitations.stats(db, event_id)
+        return {"event_title": event.title, "total_confirmed": s["expected"], "total_entered": s["entered"],
+                "total_remaining": s["remaining"], "entry_rate_pct": s["rate"],
+                "billets_vendus": s["expected"], "personnes_entrees": s["entered"],
+                "personnes_restantes": s["remaining"], "taux_entree": f"{s['rate']:.1f}%"}
 
     # Billets validés = paye (NGSER + gratuits ont ce statut) + paye_cash (legacy)
     total_confirmed = db.query(Ticket).filter(

@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Le jeton du pass est dans l'URL : ne jamais le transmettre aux sites ouverts depuis cette page -->
+  <meta name="referrer" content="no-referrer" />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#00502c" />
+  <title>Votre invitation | GoEvent</title>
+  <link rel="icon" href="/icons/icon-192.svg" />
+  <!-- Page volontairement autonome : aucun script tiers, aucune police externe, aucun traceur. -->
+  <style>
+    :root { --green: #00502c; --green2: #006b3c; --ink: #111827; --muted: #6b7280; --line: #e5e7eb; --bg: #f3f4f1; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    main { max-width: 440px; margin: 0 auto; padding: 16px 16px 32px; }
+    .card { background: #fff; border-radius: 28px; overflow: hidden; box-shadow: 0 12px 32px rgba(0,0,0,.08); }
+    .top { background: linear-gradient(140deg, var(--green), var(--green2)); color: #fff; padding: 26px 22px 22px; text-align: center; }
+    .host { font-size: 13px; letter-spacing: .04em; opacity: .85; margin: 0; }
+    h1 { font-size: 24px; line-height: 1.2; margin: 8px 0 10px; font-weight: 800; }
+    .meta { font-size: 14px; opacity: .92; margin: 2px 0; }
+    .body { padding: 22px; text-align: center; }
+    .guest { font-size: 22px; font-weight: 800; margin: 0; }
+    .seats { color: var(--muted); font-size: 14px; margin: 4px 0 0; }
+    .chips { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
+    .chip { background: #ecfdf3; color: var(--green); font-weight: 700; font-size: 13px; padding: 5px 12px; border-radius: 999px; }
+    .qr { margin: 20px auto 6px; width: 260px; max-width: 100%; aspect-ratio: 1; background: #fff; border: 1px solid var(--line); border-radius: 20px; padding: 8px; }
+    .qr img { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+    .hint { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+    .banner { border-radius: 16px; padding: 12px 14px; font-size: 14px; font-weight: 600; margin: 16px 0 0; text-align: left; }
+    .ok { background: #ecfdf3; color: #065f46; } .warn { background: #fffbeb; color: #92400e; } .bad { background: #fef2f2; color: #991b1b; }
+    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+    .btn { display: block; text-align: center; text-decoration: none; font-weight: 700; font-size: 14px; padding: 12px 10px; border-radius: 14px; border: 1px solid var(--line); color: var(--ink); background: #fff; }
+    .btn:active { transform: scale(.98); }
+    .offline { font-size: 12px; color: var(--muted); text-align: center; margin: 12px 0 0; }
+    .loading { text-align: center; color: var(--muted); padding: 60px 0; }
+    footer { text-align: center; margin-top: 22px; font-size: 12px; color: var(--muted); }
+    footer a { color: var(--muted); }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <main>
+    <div id="loading" class="loading">Chargement de votre invitation…</div>
+    <div id="pass" class="card hidden">
+      <div class="top">
+        <p class="host" id="host"></p>
+        <h1 id="title"></h1>
+        <p class="meta" id="date"></p>
+        <p class="meta" id="location"></p>
+      </div>
+      <div class="body">
+        <p class="guest" id="guest"></p>
+        <p class="seats" id="seats"></p>
+        <div class="chips" id="chips"></div>
+        <div class="qr" id="qr-box"><img id="qr" alt="QR Code d'entrée" /></div>
+        <p class="hint" id="hint">Présentez ce QR Code à l'entrée. Il est personnel : ne le partagez pas.</p>
+        <div id="banner" class="banner hidden"></div>
+        <div class="actions" id="actions">
+          <a class="btn" id="btn-cal" href="#">📅 Ajouter au calendrier</a>
+          <a class="btn" id="btn-map" href="#" target="_blank" rel="noopener noreferrer">📍 Itinéraire</a>
+        </div>
+        <p class="offline hidden" id="offline">Hors connexion : dernière version enregistrée sur ce téléphone.</p>
+      </div>
+    </div>
+    <div id="error" class="card hidden"><div class="body">
+      <p class="guest">Invitation introuvable</p>
+      <p class="seats">Ce lien est invalide ou a été remplacé. Contactez la personne qui vous a invité.</p>
+    </div></div>
+    <footer>Propulsé par GoEvent — <a href="https://goevent.africa" rel="noopener">Organisez votre événement</a></footer>
+  </main>
+
+  <script src="/vendor/qrcode-generator-2.0.4.js"></script>
+  <script>
+    (function () {
+      "use strict";
+      var host = location.hostname;
+      var API = (host === "localhost" || host === "127.0.0.1") ? location.protocol + "//" + host + ":8000" : "https://api.goevent.africa";
+      var m = location.pathname.match(/\/i\/([A-Za-z0-9_-]{20,64})/);
+      var token = m ? m[1] : new URLSearchParams(location.search).get("t");
+      var KEY = "goevent_pass:" + token;
+      var $ = function (id) { return document.getElementById(id); };
+
+      function qrDataUrl(text) {
+        var q = qrcode(0, "M"); q.addData(text); q.make();
+        var n = q.getModuleCount(), mg = 4, total = n + 2 * mg, cell = Math.max(4, Math.floor(600 / total));
+        var c = document.createElement("canvas"); c.width = c.height = cell * total;
+        var g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); g.fillStyle = "#000";
+        for (var r = 0; r < n; r++) for (var k = 0; k < n; k++) if (q.isDark(r, k)) g.fillRect((k + mg) * cell, (r + mg) * cell, cell, cell);
+        return c.toDataURL("image/png");
+      }
+      function show(p, offline) {
+        $("loading").classList.add("hidden");
+        $("pass").classList.remove("hidden");
+        $("host").textContent = (p.host_label || "") + " vous invite";
+        $("title").textContent = p.event_title || "";
+        $("date").textContent = p.event_date_label ? "🗓 " + p.event_date_label : "";
+        $("location").textContent = p.location ? "📍 " + p.location : "";
+        $("guest").textContent = p.guest_name || "";
+        $("seats").textContent = "Pass valable pour " + p.seats + " personne" + (p.seats > 1 ? "s" : "");
+        var chips = $("chips"); chips.innerHTML = "";
+        [p.table ? "Table " + p.table : null, p.category].forEach(function (t) {
+          if (!t) return; var s = document.createElement("span"); s.className = "chip"; s.textContent = t; chips.appendChild(s);
+        });
+        var banner = $("banner"), noQr = false;
+        banner.className = "banner hidden";
+        var msg = null, cls = "ok";
+        if (p.status === "partial") { msg = p.seats_used + " personne(s) sur " + p.seats + " déjà entrée(s). Le pass reste valable pour les autres."; cls = "warn"; }
+        else if (p.status === "complete") { msg = "Pass déjà utilisé : " + p.seats_used + "/" + p.seats + " personne(s) entrée(s)."; cls = "warn"; }
+        else if (p.status === "revoked") { msg = "Ce pass a été annulé par l'organisateur."; cls = "bad"; noQr = true; }
+        else if (p.status === "cancelled") { msg = "Cet événement a été annulé."; cls = "bad"; noQr = true; }
+        else if (p.status === "inactive") { msg = "Votre invitation est en cours de préparation. Revenez sur ce lien un peu plus tard."; cls = "warn"; noQr = true; }
+        if (msg) { banner.textContent = msg; banner.className = "banner " + cls; }
+        $("qr-box").classList.toggle("hidden", noQr);
+        $("hint").classList.toggle("hidden", noQr);
+        if (!noQr && typeof qrcode === "function") $("qr").src = qrDataUrl(p.pass_url);
+        $("btn-cal").href = API + "/invitations/pass/" + encodeURIComponent(token) + "/calendar.ics";
+        if (p.location) $("btn-map").href = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(p.location);
+        else $("btn-map").classList.add("hidden");
+        $("offline").classList.toggle("hidden", !offline);
+        document.title = (p.event_title || "Invitation") + " | Invitation";
+      }
+      function fail() { $("loading").classList.add("hidden"); $("error").classList.remove("hidden"); }
+
+      if (!token || !/^[A-Za-z0-9_-]{20,64}$/.test(token)) { fail(); return; }
+      fetch(API + "/invitations/pass/" + encodeURIComponent(token), { cache: "no-store", credentials: "omit" })
+        .then(function (r) {
+          if (r.status === 404) { try { localStorage.removeItem(KEY); } catch (e) {} throw new Error("404"); }
+          if (!r.ok) throw new Error("net");
+          return r.json();
+        })
+        .then(function (p) { try { localStorage.setItem(KEY, JSON.stringify(p)); } catch (e) {} show(p, false); })
+        .catch(function (e) {
+          var cached = null;
+          try { cached = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (x) {}
+          if (e.message !== "404" && cached) show(cached, true); else fail();
+        });
+    })();
+  </script>
+</body>
+</html>

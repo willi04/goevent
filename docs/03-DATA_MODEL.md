@@ -335,6 +335,27 @@ rétroactivement.
   (`empty`, `every`) ; `pricing` : tarifs surchargés (seules les clés connues
   de `core/pricing.DEFAULT_PRICING` sont lues).
 
+### Invitations digitales : `events.visibility`, `private_event_settings`, `event_guests`, `guest_checkins`, `invitation_packs`
+
+- `events.visibility` : `public` (défaut) | `private`. **Tout accès public à
+  un événement filtre `visibility = 'public'`.**
+- `private_event_settings` (PK `event_id`) : `client_name`, `client_phone`,
+  `host_label`, `message_template` (NULL = message par défaut),
+  `service_level` (`autonome|accompagne`), `track_token` (lien de suivi,
+  révocable), `purge_after` (date + 30 j), `purged_at`.
+- `event_guests` : `token` (unique, aléatoire) + `token_hash` (SHA-256, liste
+  hors ligne), `full_name`, `phone` (E.164), `category`, `table_label`,
+  `seats` (1-20), `seats_used`, `revoked_at`, `sent_at`, `first/last_checkin_at`,
+  `purged`. Invariant : `seats_used <= seats` (verrou ligne au scan).
+- `guest_checkins` : journal des entrées (`source` online|offline|manual,
+  `client_uuid` unique → idempotence, `conflict`, `reason` pour l'entrée
+  manuelle).
+- `invitation_packs` : `size`, `service`, `amount_fcfa` (figé à l'activation),
+  `status` (`actif|annule`), `payment_channel`, `payment_ref`,
+  `amount_received`, `confirmed_goevent_account`, activation/annulation
+  tracées. **Unique (`payment_channel`, `payment_ref`)**. Quota = somme des
+  packs actifs, en personnes.
+
 ## Relations principales
 
 Les relations foreign key du système, visualisées :

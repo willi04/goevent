@@ -24,7 +24,8 @@ def lock_event_for_booking(db: Session, event_id: int) -> Event:
     """
     event = (
         db.query(Event)
-        .filter(Event.id == event_id, Event.is_active == True)
+        # visibility : un événement privé (invitations) n'est jamais vendu ni réservable
+        .filter(Event.id == event_id, Event.is_active == True, Event.visibility == "public")
         .with_for_update()
         .first()
     )

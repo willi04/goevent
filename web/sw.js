@@ -3,7 +3,7 @@
 //  Cache offline, sync background, notifications push
 // ============================================================
 
-const APP_VERSION = "v1.1.0"; // À incrémenter à chaque changement de ce fichier ou de l'App Shell
+const APP_VERSION = "v1.2.0"; // À incrémenter à chaque changement de ce fichier ou de l'App Shell
 const CACHE_STATIC = "goevent-static-" + APP_VERSION;
 const CACHE_API = "goevent-api-" + APP_VERSION;
 // API de prod + API locale (dev). Seules les lectures publiques de la liste
@@ -27,6 +27,7 @@ const APP_SHELL = [
   "/a_propos.html",
   "/scanner.html",
   "/ticket_view.html",
+  "/invitation.html",
   "/bt-api.js",
   "/auth-guard.js",
   "/vendor/qrcode-generator-2.0.4.js",

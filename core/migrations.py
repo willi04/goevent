@@ -107,6 +107,16 @@ MIGRATIONS = [
         "CREATE INDEX IF NOT EXISTS ix_security_logs_user_created "
         "ON security_logs (user_id, created_at DESC)",
     ),
+    # ──────────────────────────────────────────────────────────
+    # Invitations digitales (oct. 2026) : événements privés jamais listés ni
+    # vendus. DEFAULT constant → ajout instantané (métadonnée, PG ≥ 11), les
+    # événements existants restent "public". Toute requête Event lit cette
+    # colonne : à exécuter AVANT le déploiement si possible (cf. docs/07).
+    # ──────────────────────────────────────────────────────────
+    (
+        "events.visibility",
+        "ALTER TABLE events ADD COLUMN IF NOT EXISTS visibility VARCHAR(10) NOT NULL DEFAULT 'public'",
+    ),
 ]
 
 

@@ -20,8 +20,10 @@ def get_agent_event(db: Session = Depends(get_db), current_user: User = Depends(
     if current_user.role == "agent" and current_user.agent_event_id:
         event = db.query(Event).filter(Event.id == current_user.agent_event_id).first()
         if event:
-            return {"event_name": event.title, 
-                   "event_id": event.id,}
+            return {"event_name": event.title,
+                    "event_id": event.id,
+                    # private = invitations : le scanner propose le mode hors ligne
+                    "visibility": event.visibility}
 
     if current_user.role in ("organizer", "organisation"):
         event = (

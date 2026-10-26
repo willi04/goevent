@@ -321,6 +321,7 @@
     return block("Invités", [importBox,
       el("div", { class: "flex flex-wrap items-center gap-2 mb-3" }, [search, filter, el("span", { class: "flex-1" }), sendBtn]),
       el("p", { class: "text-[11px] text-gray-500 mb-2", text: "« Envoyer au suivant » ouvre WhatsApp avec le message prêt pour le prochain invité non servi : appuyez sur Envoyer dans WhatsApp, revenez ici, recommencez." }),
+      el("p", { id: "inv-nophone", class: "hidden text-xs font-semibold text-amber-800 bg-amber-50 rounded-xl p-3 mb-2" }),
       el("div", { id: "inv-guests" })]);
   }
 
@@ -345,7 +346,7 @@
     var head = split(lines[0]).map(function (h) { return h.trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, ""); });
     if (head.some(function (h) { return /^(nom|name|invite)/.test(h); })) {
       var find = function (re) { for (var i = 0; i < head.length; i++) if (re.test(head[i])) return i; return -1; };
-      cols = { full_name: find(/^(nom|name|invite)/), phone: find(/^(tel|phone|numero|whatsapp)/), seats: find(/^(place|nb|nombre|pers)/),
+      cols = { full_name: find(/^(nom|name|invite)/), phone: find(/^(tel|phone|numero|n°|no |whatsapp|gsm|portable|mobile|contact|cel)/), seats: find(/^(place|nb|nombre|pers)/),
                table_label: find(/^table/), category: find(/^(cat|groupe|type)/) };
       start = 1;
     }
@@ -374,6 +375,11 @@
         el("p", { class: "text-sm font-bold text-gray-900", text: r.valid.length + " invité(s) valide(s), " + q.adding + " personne(s) · " + r.errors.length + " ligne(s) en erreur" }),
         el("p", { class: "text-xs text-gray-600", text: q.pack ? "Pack : " + q.pack + " personnes · liste après import : " + q.after + (q.exceeds ? " → DÉPASSE LE PACK" : "")
                                                                : "Aucun pack payé : l'import est possible, l'envoi restera bloqué jusqu'à l'activation." }),
+        (function () {
+          var noph = r.valid.filter(function (v) { return !v.phone; }).length;
+          return noph ? el("p", { class: "text-xs font-bold text-amber-800 mt-1", text: "⚠ " + noph + " invité(s) sans numéro : leur pass ne pourra pas partir par WhatsApp. " +
+            "Vérifiez que la colonne Téléphone est bien la 2e (ou titrée « Téléphone »)." }) : null;
+        })(),
         r.errors.length ? el("ul", { class: "text-xs text-red-700 mt-2 list-disc pl-5 max-h-40 overflow-auto" }, r.errors.map(function (e) {
           return el("li", { text: "Ligne " + e.line + (e.name ? " (" + e.name + ")" : "") + " : " + e.message });
         })) : null,
@@ -386,7 +392,7 @@
   function loadGuests() {
     if (!S.eventId) return;
     var qs = "?page=" + S.page + "&limit=50" + (S.q ? "&q=" + encodeURIComponent(S.q) : "") + (S.status ? "&status=" + S.status : "");
-    btApi.get("/admin/invitations/events/" + S.eventId + "/guests" + qs).then(function (d) { S.guests = d; S.queue = d.send_queue; renderGuests(); })
+    btApi.get("/admin/invitations/events/" + S.eventId + "/guests" + qs).then(function (d) { S.guests = d; S.queue = d.send_queue; S.noPhone = d.pending_without_phone || 0; renderGuests(); })
       .catch(function (e) { toast(e.message || "Erreur", "error"); });
   }
 
@@ -394,9 +400,17 @@
     var box = document.getElementById("inv-guests"), d = S.guests;
     var btn = document.getElementById("inv-send-next");
     if (btn) {
-      btn.textContent = S.queue.length ? "Envoyer au suivant sur WhatsApp (" + S.queue.length + ")" : "Tous les pass sont envoyés";
+      // « Tous les pass sont envoyés » seulement s'il ne reste vraiment rien à envoyer
+      btn.textContent = S.queue.length ? "Envoyer au suivant sur WhatsApp (" + S.queue.length + ")"
+        : S.noPhone ? "Aucun invité avec numéro à envoyer" : "Tous les pass sont envoyés";
       btn.disabled = !S.queue.length || !S.ev.quota;
       btn.title = S.ev.quota ? "" : "Activez un pack pour envoyer les pass";
+    }
+    var warn = document.getElementById("inv-nophone");
+    if (warn) {
+      warn.textContent = S.noPhone ? "⚠ " + S.noPhone + " invité(s) sans numéro : leur pass n'est PAS envoyé. Ajoutez le numéro (« Modifier ») " +
+        "pour l'envoyer par WhatsApp, ou transmettez le lien vous-même (« Copier le lien »)." : "";
+      warn.classList.toggle("hidden", !S.noPhone);
     }
     if (!box || !d) return;
     box.innerHTML = "";

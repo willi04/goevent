@@ -233,7 +233,11 @@ def admin_guests(event_id: int, q: Optional[str] = Query(None, max_length=80),
         EventGuest.event_id == ev.id, EventGuest.sent_at.is_(None), EventGuest.revoked_at.is_(None),
         EventGuest.phone.isnot(None), EventGuest.token.isnot(None)).order_by(EventGuest.full_name, EventGuest.id).all()]
     return {"total": total, "page": page, "limit": limit, "guests": [_guest_out(ev, st, g) for g in rows],
-            "send_queue": pending_ids}
+            "send_queue": pending_ids,
+            # Pass jamais envoyés faute de numéro : à compléter ou à transmettre à la main (« Copier le lien »)
+            "pending_without_phone": db.query(EventGuest.id).filter(
+                EventGuest.event_id == ev.id, EventGuest.sent_at.is_(None), EventGuest.revoked_at.is_(None),
+                EventGuest.phone.is_(None), EventGuest.token.isnot(None)).count()}
 
 
 @router.get("/admin/invitations/guests/{guest_id}")

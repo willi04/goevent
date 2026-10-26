@@ -391,6 +391,29 @@ malveillant si l'organisateur est hostile.
   un `<div data-zone="…" class="hidden">` dans la page. Ne jamais renommer
   une clé de zone en production (ses blocs deviendraient invisibles).
 
+### QR codes et bibliothèques tierces
+
+- Un QR de billet (`qr_hash`) ou d'invitation **vaut droit d'entrée** : il
+  est généré localement, jamais par un service tiers. Navigateur :
+  `<img data-bt-qr="…">` (rendu automatique) ou `btQrDataUrl(texte, px)`
+  pour un téléchargement (bt-api.js, bibliothèque `web/vendor/`). Email :
+  `core.email.qr_png()` + image intégrée (`cid:`).
+- Toute bibliothèque JS tierce exécutée sur une page sensible (scanner,
+  billet, paiement) est **hébergée dans `web/vendor/`, version figée dans
+  le nom du fichier** (ex. `html5-qrcode-2.3.8.min.js`), jamais chargée
+  depuis un CDN sans version. Mise à jour = nouveau fichier + tests.
+
+### Service worker (`web/sw.js`)
+
+- Il n'intercepte **que des GET** : lectures publiques de l'API en liste
+  blanche (`CACHEABLE_API`, sans en-tête `Authorization`), pages HTML
+  (réseau d'abord, cache hors ligne), fichiers statiques. Une requête
+  POST/PUT/DELETE (paiement, scan…) ne doit jamais passer par un délai ou
+  un cache du service worker : un faux « hors ligne » pendant que le
+  serveur traite entraîne un second clic, donc un double paiement.
+- Incrémenter `APP_VERSION` à chaque modification du fichier ou de
+  l'App Shell.
+
 ### Localisation
 
 Toute chaîne visible à l'utilisateur est en français. Toute chaîne

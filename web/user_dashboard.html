@@ -1181,9 +1181,8 @@
               const isPaidCash = b.payment_status === "paye_cash";
               const showQrCode = isPaidOnline || isPaidCash;
       
-              const qrUrl = showQrCode
-                ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${b.qr_hash}`
-                : "";
+              // QR généré localement (bt-api.js → btRenderQr) : le qr_hash ne part chez aucun tiers
+              const qrValue = showQrCode ? _btEscapeHtml(b.qr_hash) : "";
       
               // 🔧 Badge selon le statut
               let badgeClass = "bg-gray-100 text-gray-700";
@@ -1223,7 +1222,7 @@
                   ${showQrCode
                     ? `
                       <div class="bg-gray-50 rounded-3xl p-6 flex flex-col items-center border border-dashed border-gray-200">
-                        <img src="${qrUrl}" class="w-40 h-40 mb-4 rounded-xl shadow-inner bg-white p-2" alt="QR Code" />
+                        <img data-bt-qr="${qrValue}" data-bt-qr-size="320" class="w-40 h-40 mb-4 rounded-xl shadow-inner bg-white p-2" alt="QR Code" />
                         <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">ID: ${b.qr_hash.substring(0, 8)}</p>
                         <p class="text-xs font-bold text-primary mt-2">${qrCaption}</p>
                       </div>

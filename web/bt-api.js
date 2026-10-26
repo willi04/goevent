@@ -761,6 +761,76 @@ function _btEscapeHtml(s) {
     .replace(/'/g, "&#39;");
 }
 
+// ── QR codes générés localement ───────────────────────────────
+// Le contenu d'un QR de billet (qr_hash) VAUT droit d'entrée : il ne doit
+// jamais être envoyé à un service tiers. Bibliothèque figée dans web/vendor/
+// (qrcode-generator 2.0.4, MIT), chargée à la demande.
+//   <img data-bt-qr="texte">  → rendu automatique (MutationObserver)
+//   btQrDataUrl(texte, px)    → data URL PNG (téléchargement, impression)
+var _BT_VENDOR = (function () {
+  try {
+    var s = document.currentScript && document.currentScript.src;
+    return s ? s.replace(/[^\/]*$/, "") + "vendor/" : "vendor/";
+  } catch (e) { return "vendor/"; }
+})();
+var _btQrLoading = null;
+function btQrReady() {
+  if (typeof qrcode === "function") return Promise.resolve();
+  if (!_btQrLoading) {
+    _btQrLoading = new Promise(function (resolve, reject) {
+      var s = document.createElement("script");
+      s.src = _BT_VENDOR + "qrcode-generator-2.0.4.js";
+      s.onload = function () { typeof qrcode === "function" ? resolve() : reject(new Error("QR indisponible")); };
+      s.onerror = function () { _btQrLoading = null; reject(new Error("QR indisponible")); };
+      document.head.appendChild(s);
+    });
+  }
+  return _btQrLoading;
+}
+function btQrDataUrl(text, px, margin) {
+  var q = qrcode(0, "M");
+  q.addData(String(text));
+  q.make();
+  var n = q.getModuleCount(), m = margin == null ? 4 : margin, total = n + 2 * m;
+  var cell = Math.max(2, Math.floor((px || 256) / total));
+  var c = document.createElement("canvas");
+  c.width = c.height = cell * total;
+  var g = c.getContext("2d");
+  g.fillStyle = "#ffffff"; g.fillRect(0, 0, c.width, c.height);
+  g.fillStyle = "#000000";
+  for (var r = 0; r < n; r++) for (var k = 0; k < n; k++) if (q.isDark(r, k)) g.fillRect((k + m) * cell, (r + m) * cell, cell, cell);
+  return c.toDataURL("image/png");
+}
+function btRenderQr(root) {
+  var nodes = (root || document).querySelectorAll("[data-bt-qr]:not([data-bt-qr-done])");
+  if (!nodes.length) return Promise.resolve();
+  return btQrReady().then(function () {
+    Array.prototype.forEach.call(nodes, function (el) {
+      var txt = el.getAttribute("data-bt-qr");
+      if (!txt) return;
+      var size = parseInt(el.getAttribute("data-bt-qr-size") || "320", 10);
+      var url = btQrDataUrl(txt, size, el.hasAttribute("data-bt-qr-margin") ? parseInt(el.getAttribute("data-bt-qr-margin"), 10) : 4);
+      if (el.tagName === "IMG") el.src = url;
+      else { var img = document.createElement("img"); img.src = url; img.alt = "QR Code"; img.style.width = "100%"; el.appendChild(img); }
+      el.setAttribute("data-bt-qr-done", "1");
+    });
+  }).catch(function (e) { console.warn("[QR]", e.message); });
+}
+(function () {
+  function watch() {
+    btRenderQr(document);
+    if (typeof MutationObserver === "undefined" || !document.body) return;
+    var pending = false;
+    new MutationObserver(function () {
+      if (pending) return;
+      pending = true;
+      setTimeout(function () { pending = false; if (document.querySelector("[data-bt-qr]:not([data-bt-qr-done])")) btRenderQr(document); }, 0);
+    }).observe(document.body, { childList: true, subtree: true });
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", watch);
+  else watch();
+})();
+
 // ── Mes Billets ───────────────────────────────────────────────
 // ── Affichage des billets (Dashboard) ──────────────────────────
 async function btShowTickets() {
@@ -817,9 +887,7 @@ async function btShowTickets() {
           // Le QR Code (s'affiche uniquement si "ok" est vrai)
           (ok && t.qr_hash
             ? '<div class="my-6 flex flex-col items-center justify-center bg-gray-50 p-4 rounded-xl border-2 border-dashed border-gray-200">' +
-              '<img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' +
-              t.qr_hash +
-              '" alt="QR Code" class="w-32 h-32 mix-blend-multiply opacity-90 mb-2">' +
+              '<img data-bt-qr="' + _btEscapeHtml(t.qr_hash) + '" data-bt-qr-size="256" alt="QR Code" class="w-32 h-32 mix-blend-multiply opacity-90 mb-2">' +
               '<p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Billet #' +
               t.ticket_id +
               "</p>" +

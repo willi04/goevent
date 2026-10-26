@@ -9,10 +9,11 @@ vendable (cf. core/pricing.py → ad_formats).
 mode    : "rotate" → un bloc tiré au hasard à chaque affichage (pubs)
           "stack"  → tous les blocs, dans l'ordre (cartes, annonces)
           "infeed" → blocs insérés dans une grille toutes les `every` cartes
-empty   : comportement si aucun bloc en diffusion (réglable dans l'admin)
-          "hide"   → la zone disparaît
-          "house"  → encart standard « Emplacement disponible » → page Partenaires
-          "static" → le contenu HTML d'origine reste affiché (non réglable)
+empty   : comportement si aucun bloc en diffusion
+          "hide"   → la zone disparaît (rien n'est affiché au public)
+          "static" → le contenu HTML d'origine reste affiché
+Les emplacements libres ne sont visibles que par l'équipe : back-office →
+Emplacements, ou aperçu sur le site (?emplacements=1, compte admin/staff).
 """
 
 KINDS = {
@@ -33,7 +34,7 @@ ZONES = [
     # clé, page, libellé, description, mode, types autorisés, vide par défaut, format tarif
     {"key": "home.after_featured", "page": "index", "label": "Accueil · entre « En vedette » et « À venir »",
      "description": "Bandeau pleine largeur entre les deux listes d'événements.",
-     "mode": "rotate", "kinds": ["image", "banner", "announcement"], "empty": "house", "format": "home_banner"},
+     "mode": "rotate", "kinds": ["image", "banner", "announcement"], "empty": "hide", "format": "home_banner"},
     {"key": "home.how", "page": "index", "label": "Accueil · Comment ça marche",
      "description": "Remplace la section « Comment ça marche » : cartes ajoutables/supprimables.",
      "mode": "stack", "kinds": ["cards", "announcement"], "empty": "static", "format": None},
@@ -45,7 +46,7 @@ ZONES = [
      "mode": "rotate", "kinds": ["image", "banner", "announcement"], "empty": "hide", "format": "home_banner"},
     {"key": "events.sidebar", "page": "event", "label": "Événements · colonne sous les filtres",
      "description": "Ordinateur uniquement, reste visible au défilement. Sur mobile : voir la carte sponsorisée.",
-     "mode": "rotate", "kinds": ["image", "banner", "announcement"], "empty": "house", "format": "events_sidebar"},
+     "mode": "rotate", "kinds": ["image", "banner", "announcement"], "empty": "hide", "format": "events_sidebar"},
     {"key": "events.infeed", "page": "event", "label": "Événements · carte sponsorisée dans la liste",
      "description": "Carte insérée dans la grille d'événements (mobile et ordinateur).",
      "mode": "infeed", "kinds": ["image", "banner"], "empty": "hide", "format": "events_infeed", "every": 6},
@@ -65,11 +66,10 @@ ZONE_BY_KEY = {z["key"]: z for z in ZONES}
 
 
 def zone_settings(stored: dict, zone: dict) -> dict:
-    """Réglages effectifs d'une zone (stockés ∪ défauts)."""
+    """Réglages effectifs d'une zone (stockés ∪ défauts). « Si vide » n'est plus
+    réglable : un ancien réglage stocké (ex. « house ») est ignoré."""
     s = (stored or {}).get(zone["key"], {}) or {}
     empty = zone["empty"]
-    if empty != "static" and s.get("empty") in ("hide", "house"):
-        empty = s["empty"]
     every = zone.get("every")
     if every and isinstance(s.get("every"), int) and 3 <= s["every"] <= 24:
         every = s["every"]

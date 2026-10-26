@@ -70,12 +70,6 @@ GLOBAL_FIELDS = [
     ("global.simulateur.dash_text", "Encarts simulateur", "Dashboard orga : texte", "textarea",
      "Simule tes coûts, tes billets et ton remplissage en 2 minutes. Découvre ton seuil de rentabilité avant de te lancer."),
     ("global.simulateur.dash_cta", "Encarts simulateur", "Dashboard orga : bouton", "text", "Ouvrir le simulateur"),
-    ("global.zone.house_title", "Emplacements publicitaires libres", "Encart « emplacement disponible » : titre", "text",
-     "Votre marque ici"),
-    ("global.zone.house_text", "Emplacements publicitaires libres", "Encart « emplacement disponible » : texte", "textarea",
-     "Cet emplacement est disponible : touchez les passionnés d'événements de Centrafrique."),
-    ("global.zone.house_cta", "Emplacements publicitaires libres", "Encart « emplacement disponible » : bouton", "text",
-     "Devenir partenaire"),
 ]
 
 # Montants et pourcentages affichés = engagement commercial (doivent correspondre

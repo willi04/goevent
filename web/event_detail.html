@@ -1186,35 +1186,21 @@
       // ─── QR Code ─────────────────────────────────────
       function downloadQrCode() {
         if (!currentEvent) return;
-      
-        // Générer QR via API gratuite (qrserver.com)
-        const link = encodeURIComponent(buildShareLink());
-        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=512x512&data=${link}&format=png&margin=10`;
-      
-        // Télécharger l'image
-        fetch(qrUrl)
-          .then(response => response.blob())
-          .then(blob => {
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-      
-            const safeTitle = (currentEvent.title || "evenement")
-              .replace(/[^a-zA-Z0-9\s-_]/g, "_")
-              .substring(0, 40);
-            a.download = `GoEvent_QR_${safeTitle}.png`;
-      
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-      
-            if (typeof btToast === "function") btToast("QR Code téléchargé !", "success");
-          })
-          .catch(err => {
-            console.error("Erreur QR:", err);
-            if (typeof btToast === "function") btToast("Erreur génération QR", "error");
-          });
+        // QR généré dans le navigateur (bt-api.js) : plus d'appel à un service tiers
+        btQrReady().then(function () {
+          const a = document.createElement("a");
+          a.href = btQrDataUrl(buildShareLink(), 1024, 4);
+          const safeTitle = (currentEvent.title || "evenement")
+            .replace(/[^a-zA-Z0-9\s-_]/g, "_").substring(0, 40);
+          a.download = `GoEvent_QR_${safeTitle}.png`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          if (typeof btToast === "function") btToast("QR Code téléchargé !", "success");
+        }).catch(function (err) {
+          console.error("Erreur QR:", err);
+          if (typeof btToast === "function") btToast("Erreur lors de la génération du QR", "error");
+        });
       }
     </script>
     <!-- ━━━━━━━━━━━━━ MODALE PARTAGE ÉVÉNEMENT ━━━━━━━━━━━━━ -->

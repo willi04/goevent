@@ -72,6 +72,10 @@ manuelles), `path_token_key` / `qr_hash_key` (pages publiques à jeton,
 30/min par pass ou billet) + plafond IP commun `600/minute`
 (`shared_limit`, scope `public_token_pages`). Rappel : slowapi compte par
 **chemin d'URL** ; une limite simple sur `/x/{id}` est donc par id.
+Authentification : par numéro (login, inscription), par compte (refresh),
+par email (oubli / reset), plafonds IP larges — détail docs/05. Compteurs
+en mémoire d'instance : si Render passe à plusieurs instances, stockage
+partagé (Redis) obligatoire.
 
 ### Variables d'environnement
 

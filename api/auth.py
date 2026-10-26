@@ -3,7 +3,8 @@ api/auth.py
 Routeur authentification : register, login, refresh, profil, PIN,
 2FA (TOTP), mot de passe oublié / reset.
 """
-import random
+import re
+import secrets
 import string
 from datetime import datetime, timedelta
 
@@ -13,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from core.config import settings
 from core.database import get_db
-from core.limiter import limiter
+from core.limiter import hit_or_429, limiter
 from core.security import (
     hash_pin, verify_pin,
     create_access_token, create_refresh_token,
@@ -32,9 +33,17 @@ from core.permissions import ROLES_VALIDES
 
 
 # ── REGISTER ────────────────────────────────────────────────────
+# Limites (lot auth) : par numéro / email / compte, + plafond IP large. En RCA une IP
+# publique = souvent des centaines d'abonnés (CGNAT) ou toute une salle (Wi-Fi).
+def _digits(phone) -> str:
+    return re.sub(r"\D", "", str(phone or ""))[-12:]
+
+
 @router.post("/auth/register")
-@limiter.limit("3/minute")
+@limiter.limit("30/minute")
 def register(request: Request, data: UserRegister, db: Session = Depends(get_db)):
+    hit_or_429("10/hour", "register", _digits(data.phone_number),
+               "Trop de tentatives d'inscription pour ce numéro. Réessayez dans une heure.")
     # Inscription publique : seulement fan/organizer/agent autorisés.
     # admin/staff sont créés via routes admin dédiées (Commit 8.4).
     # partner est réservé pour usage futur, non inscriptible publiquement.
@@ -86,8 +95,12 @@ def register(request: Request, data: UserRegister, db: Session = Depends(get_db)
 
 # ── LOGIN ───────────────────────────────────────────────────────
 @router.post("/auth/login")
-@limiter.limit("5/minute")
+@limiter.limit("60/minute")
 def login(request: Request, data: UserLogin, db: Session = Depends(get_db)):
+    # Par numéro : un attaquant qui change d'IP reste limité ; une salle entière sur
+    # le même Wi-Fi ne se bloque plus mutuellement. Le verrou 5 PIN faux → 15 min reste.
+    hit_or_429("5/minute", "login", _digits(data.phone_number),
+               "Trop de tentatives de connexion pour ce numéro. Patientez une minute.")
     user = db.query(User).filter(User.phone_number == data.phone_number).first()
 
     if not user:
@@ -145,7 +158,7 @@ def login(request: Request, data: UserLogin, db: Session = Depends(get_db)):
 
 # ── REFRESH ─────────────────────────────────────────────────────
 @router.post("/auth/refresh")
-@limiter.limit("10/minute")
+@limiter.limit("600/minute")
 def refresh_access_token(request: Request, data: RefreshTokenRequest, db: Session = Depends(get_db)):
     try:
         payload = jwt.decode(data.refresh_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
@@ -153,6 +166,9 @@ def refresh_access_token(request: Request, data: RefreshTokenRequest, db: Sessio
             raise HTTPException(401, "Type de token invalide")
 
         user_id = int(payload["sub"])
+        # Par compte (jeton signé) : 300 fans derrière la même IP ne se gênent plus.
+        # Un 429 ici ne déconnecte pas (bt-api.js : seuls 401/403 déconnectent).
+        hit_or_429("30/minute", "refresh", str(user_id), "Trop de requêtes, réessayez dans un instant.")
         role = payload.get("role")
         user = db.query(User).filter(User.id == user_id).first()
 
@@ -224,16 +240,17 @@ def change_pin(data: PinChange, db: Session = Depends(get_db),
 
 # ── MOT DE PASSE OUBLIÉ / RESET PIN ─────────────────────────────
 @router.post("/auth/forgot-password")
-@limiter.limit("3/hour")
+@limiter.limit("30/hour")
 def forgot_password(request: Request, data: dict, db: Session = Depends(get_db)):
     from sqlalchemy import func
     email = (data.get("email") or "").strip().lower()
+    hit_or_429("3/hour", "forgot", email, "Trop de demandes pour cet email. Réessayez dans une heure.")
     user = db.query(User).filter(func.lower(User.email) == email).first()
 
     # Anti-énumération : même réponse que le compte existe ou non.
     # Le code n'est généré/envoyé que si le compte existe, sans le divulguer.
     if user:
-        code = "".join(random.choices(string.ascii_uppercase, k=6))
+        code = "".join(secrets.choice(string.ascii_uppercase) for _ in range(6))
         db.query(PasswordReset).filter(PasswordReset.email == email).delete()
         new_reset = PasswordReset(email=email, code=code)
         db.add(new_reset)
@@ -243,10 +260,11 @@ def forgot_password(request: Request, data: dict, db: Session = Depends(get_db))
     return {"status": "success", "message": "Si un compte existe, un code a été envoyé par email"}
 
 @router.post("/auth/reset-password")
-@limiter.limit("10/hour")
+@limiter.limit("60/hour")
 def reset_password(request: Request, data: dict, db: Session = Depends(get_db)):
     from sqlalchemy import func
     email = (data.get("email") or "").strip().lower()
+    hit_or_429("10/hour", "reset", email, "Trop d'essais pour cet email. Réessayez dans une heure.")
     code = data.get("code", "").upper()
     new_pin = data.get("new_password")
 

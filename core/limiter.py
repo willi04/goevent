@@ -18,7 +18,9 @@ Un plafond commun à tous les chemins exige limiter.shared_limit(..., scope=…)
 """
 import hashlib
 
+from fastapi import HTTPException
 from jose import JWTError, jwt
+from limits import parse as parse_limit
 from slowapi import Limiter
 from starlette.requests import Request
 
@@ -57,6 +59,15 @@ def qr_hash_key(request: Request) -> str:
 
 
 limiter = Limiter(key_func=ip_key)
+
+
+def hit_or_429(limit: str, scope: str, identity: str, message: str) -> None:
+    """Compteur dans la route, pour une clé lue dans le CORPS de la requête (numéro,
+    email, jeton de refresh) que slowapi ne sait pas lire. Même stockage, même reset."""
+    if not limiter.enabled or not identity:
+        return
+    if not limiter.limiter.hit(parse_limit(limit), "body", scope, _digest(identity)):
+        raise HTTPException(status_code=429, detail=message)
 
 # Plafond IP COMMUN aux pages publiques à jeton (pass, calendrier, suivi, billet) :
 # large (salle entière, CGNAT), anti-aspiration seulement. À utiliser avec

@@ -124,6 +124,14 @@ async function btFetch(path, opts) {
           btAuth.save(refreshData.access_token, refreshToken, null);
           reqOpts.headers.Authorization = "Bearer " + refreshData.access_token;
           res = await fetch(BT_API + path, reqOpts);
+        } else if (refreshRes.status !== 401 && refreshRes.status !== 403) {
+          // 429 (trop de requêtes) ou 5xx (API indisponible) : la session n'est PAS
+          // expirée → ne pas déconnecter (soir d'événement, panne passagère).
+          var busyErr = new Error(refreshRes.status === 429
+            ? "Trop de requêtes en ce moment : réessayez dans quelques secondes."
+            : "Service momentanément indisponible : réessayez dans un instant.");
+          busyErr.offline = true;
+          throw busyErr;
         } else {
           throw new Error("Refresh Token expiré");
         }

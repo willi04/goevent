@@ -263,10 +263,18 @@ externe.
 Les routes sensibles doivent porter un décorateur de rate limit
 SlowAPI. Les valeurs typiques déjà utilisées dans le code :
 
-- `/auth/login` : `10/minute` par IP.
-- `/auth/register` : `3/minute` par IP.
-- `/auth/forgot-password` : `3/minute` par IP.
-- `/payment/initiate-ngser` : `10/minute` par utilisateur authentifié.
+- `/auth/login` : `5/minute` par numéro (+ verrou 15 min après 5 PIN faux) ; plafond `60/minute` par IP.
+- `/auth/refresh` : `30/minute` par compte (jeton signé) ; plafond `600/minute` par IP.
+- `/auth/register` : `10/hour` par numéro ; plafond `30/minute` par IP.
+- `/auth/forgot-password` : `3/hour` par email ; plafond `30/hour` par IP.
+- `/auth/reset-password` : `10/hour` par email ; plafond `60/hour` par IP.
+- `/scan`, scanner invitations : par agent (`user_key`).
+- `/payment/initiate-ngser` : `15/minute` par IP.
+
+Clé lue dans le corps de la requête (numéro, email, jeton) : slowapi ne sait
+pas la lire → `hit_or_429(limite, scope, identité, message)` dans la route
+(`core/limiter.py`, même stockage). Côté front, un 429 ou un 5xx au refresh
+ne déconnecte pas (`bt-api.js`) : seuls 401/403 déconnectent.
 
 Une nouvelle route sensible doit s'inspirer du rate limit d'une route
 comparable existante, pas être laissée sans limite.

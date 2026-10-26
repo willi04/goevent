@@ -271,6 +271,12 @@ SlowAPI. Les valeurs typiques déjà utilisées dans le code :
 Une nouvelle route sensible doit s'inspirer du rate limit d'une route
 comparable existante, pas être laissée sans limite.
 
+Choix de la clé (`core/limiter.py`) : en RCA, une IP = souvent des
+centaines de personnes (CGNAT mobile, Wi-Fi d'une salle). Route
+authentifiée à fort trafic → `key_func=user_key` ; page publique à jeton →
+limite par jeton + `shared_limit(PUBLIC_IP_CEILING, scope="public_token_pages")`.
+Jamais `request.client.host` directement : `core.client_ip.client_ip(request)`.
+
 ## Verrous et intégrité
 
 Les règles suivantes portent sur les mutations de ressources partagées.

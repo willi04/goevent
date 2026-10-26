@@ -32,6 +32,15 @@ router = APIRouter()
 
 
 # ── STATS GLOBALES (filtrées selon le profil) ───────────────────
+@router.get("/admin/diagnostics/client-ip")
+@limiter.limit("10/minute")
+def diag_client_ip(request: Request, admin: User = Depends(get_current_admin)):
+    """Choix de CLIENT_IP_STRATEGY (docs/07) : en-têtes IP vus par l'API pour CETTE requête.
+    Admin uniquement ; rien n'est stocké."""
+    from core.client_ip import diagnostics
+    return diagnostics(request)
+
+
 @router.get("/admin/global-stats")
 def admin_global_stats(db: Session = Depends(get_db),
                        current_user: User = Depends(get_current_user)):

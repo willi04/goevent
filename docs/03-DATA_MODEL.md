@@ -346,7 +346,9 @@ rétroactivement.
 - `event_guests` : `token` (unique, aléatoire) + `token_hash` (SHA-256, liste
   hors ligne), `full_name`, `phone` (E.164), `category`, `table_label`,
   `seats` (1-20), `seats_used`, `revoked_at`, `sent_at`, `first/last_checkin_at`,
-  `purged`. Invariant : `seats_used <= seats` (verrou ligne au scan).
+  `purged`, `paper` (pass imprimé ; `sent_at` = imprimé), `phone4_salt` +
+  `phone4_hash` (PBKDF2-SHA256 5 000 it. des 4 derniers chiffres, liste hors
+  ligne ; effacés à la purge). Invariant : `seats_used <= seats` (verrou ligne au scan).
 - `guest_checkins` : journal des entrées (`source` online|offline|manual,
   `client_uuid` unique → idempotence, `conflict`, `reason` pour l'entrée
   manuelle).

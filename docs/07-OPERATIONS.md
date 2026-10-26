@@ -30,13 +30,48 @@ Sans eux, uvicorn voit l'IP du load balancer Render pour toutes les
 requêtes : le rate limiter (`core/limiter.py`) compte alors tous les
 utilisateurs ensemble (login 5/min, inscription 3/min **pour toute la
 plateforme**) et `security_logs.ip_address` ne contient que des IP
-internes. uvicorn 0.30 (version épinglée) retient la **dernière** entrée
-de `X-Forwarded-For`, celle ajoutée par Render : non falsifiable par le
-client. Si uvicorn est mis à jour, revérifier ce comportement.
+internes.
+
+⚠️ **Correction (lot 2.1)** : avec `--forwarded-allow-ips='*'`, uvicorn 0.30
+retient la **première** entrée (la plus à gauche) de `X-Forwarded-For`
+(`get_trusted_client_host` → `x_forwarded_for_hosts[0]`), c'est-à-dire la
+valeur envoyée par le **client** : falsifiable. Le code ne s'appuie donc plus
+sur `request.client.host` mais sur `core/client_ip.py`, réglé par la variable
+**`CLIENT_IP_STRATEGY`** (rate limiter + `security_logs` + session) :
+
+| Valeur | Source |
+|---|---|
+| `peer` (défaut) | `request.client.host` — comportement historique |
+| `header:<nom>` | en-tête posé par le proxy (ex. `header:true-client-ip`) |
+| `xff:<n>` | n-ième entrée de `X-Forwarded-For` en partant de la droite |
+
+**Choisir la valeur (une fois)** : depuis un PC, récupérer le jeton admin
+(console du back-office : `copy(btAuth.getToken())`), puis :
+
+```bash
+curl -s https://api.goevent.africa/admin/diagnostics/client-ip -H "Authorization: Bearer $TOKEN"
+curl -s https://api.goevent.africa/admin/diagnostics/client-ip -H "Authorization: Bearer $TOKEN" \
+     -H "X-Forwarded-For: 1.2.3.4" -H "True-Client-IP: 1.2.3.4" -H "CF-Connecting-IP: 1.2.3.4"
+```
+
+Le bon candidat (`candidates`) vaut votre IP publique dans **les deux**
+réponses et jamais `1.2.3.4`. Le mettre dans `CLIENT_IP_STRATEGY` sur
+Render, redéployer, revérifier (`client_ip` = votre IP). Comparer aussi au
+`clientIP` des journaux HTTP Render. À refaire si Render change de proxy ou
+si uvicorn est mis à jour.
 
 Vérification après deploy : se connecter, puis
 `GET /admin/security-logs` (compte admin) → la ligne `login_success`
 doit porter **votre** IP publique, pas une 10.x.x.x.
+
+### Rate limiting : clés
+
+`core/limiter.py` : `ip_key` (défaut), `user_key` (id du JWT, signature
+vérifiée — scanner, synchro, liste hors ligne, recherche, entrées
+manuelles), `path_token_key` / `qr_hash_key` (pages publiques à jeton,
+30/min par pass ou billet) + plafond IP commun `600/minute`
+(`shared_limit`, scope `public_token_pages`). Rappel : slowapi compte par
+**chemin d'URL** ; une limite simple sur `/x/{id}` est donc par id.
 
 ### Variables d'environnement
 
@@ -178,6 +213,21 @@ bout en bout sans intervention, 1 retrait réussi, analyse des
   `ALTER TABLE events ADD COLUMN IF NOT EXISTS visibility VARCHAR(10) NOT NULL DEFAULT 'public';`
   (la migration de démarrage le fait aussi, mais un échec de verrou au boot
   rendrait toutes les pages événement en erreur jusqu'au boot suivant).
+- **Lot 2.1 (avant le déploiement, même raison)** : `event_guests` est lue
+  par toutes les routes invitations :
+  `ALTER TABLE event_guests ADD COLUMN IF NOT EXISTS paper BOOLEAN NOT NULL DEFAULT false;`
+  `ALTER TABLE event_guests ADD COLUMN IF NOT EXISTS phone4_salt VARCHAR(32);`
+  `ALTER TABLE event_guests ADD COLUMN IF NOT EXISTS phone4_hash VARCHAR(64);`
+  Les empreintes « 4 derniers chiffres » des invités déjà importés sont
+  calculées au premier téléchargement de la liste hors ligne.
+- **Pass papier** : invités sans numéro = papier par défaut (colonne
+  « Papier » de l'import pour forcer oui/non). Fiche → « Imprimer les N
+  nouveaux » : PDF A4, 8 pass découpables par page, QR générés par l'API ;
+  les pass inclus passent à « Imprimé ». Imprimer en taille réelle.
+- **Entrée manuelle au scanner** : « Rechercher un invité » (nom ou table),
+  vérification par les 4 derniers chiffres du téléphone (comparés hors ligne
+  à une empreinte PBKDF2 salée, jamais au numéro) ou « identité vérifiée »,
+  motif obligatoire. Hors ligne : en file, synchronisée en `source=manual`.
 - **Moyens de paiement des packs** : `INVITATION_CHANNELS_ACTIVE` sur Render
   (codes séparés par des virgules ; défaut `especes_recu,orange_money_goevent`).
   Ajouter `virement_ecobank` à l'ouverture du compte. N'activer un pack
@@ -195,6 +245,7 @@ bout en bout sans intervention, 1 retrait réussi, analyse des
 - Traçabilité : `invitation_event_created|updated`, `invitation_guests_imported`,
   `invitation_pack_activated|cancelled`, `invitation_pass_revoked|restored|regenerated`,
   `invitation_manual_checkin`, `invitation_offline_list`, `invitation_offline_sync`,
+  `invitation_paper_pdf`,
   `invitation_track_link_created|revoked`, `invitation_agent_assigned|removed`,
   `invitation_purge`.
 

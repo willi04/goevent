@@ -40,7 +40,8 @@ def log_security_event(
         ip = None
         user_agent = None
         if request:
-            ip = request.client.host if request.client else None
+            from core.client_ip import client_ip
+            ip = client_ip(request)
             user_agent = request.headers.get("user-agent", "")[:500]
 
         log = SecurityLog(
@@ -92,11 +93,9 @@ class SessionManager:
         self.db = db
 
     def get_client_ip(self, request: Request) -> str:
-        # Même source que le rate limiter (slowapi get_remote_address).
-        # L'ancien XFF[0] est fourni par le CLIENT (falsifiable à volonté).
-        # L'IP réelle derrière Render exige uvicorn --proxy-headers
-        # --forwarded-allow-ips='*' (cf docs/07-OPERATIONS.md).
-        return request.client.host if request.client else None
+        # Même source que le rate limiter (core.client_ip, CLIENT_IP_STRATEGY).
+        from core.client_ip import client_ip
+        return client_ip(request)
 
     def verify_session(self, user_id: int, request: Request) -> bool:
         """

@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from fastapi import BackgroundTasks
 from core.email import envoyer_billet_email
 from fastapi import Request
-from core.limiter import limiter
+from core.limiter import PUBLIC_IP_CEILING, limiter, qr_hash_key, user_key
 
 from utils.locks import lock_event_for_booking
 from utils.promo import lock_promo_for_use, compute_discount
@@ -198,7 +198,7 @@ def _can_operate_event(user: User, event: Event) -> bool:
 
 # ── SCAN & VALIDATION D'ENTRÉE ──────────────────────────────────
 @router.post("/scan")
-@limiter.limit("120/minute")
+@limiter.limit("120/minute", key_func=user_key)   # par agent : toute l'équipe partage le Wi-Fi de la salle
 def valider_billet(request: Request, data: ScanTicket, db: Session = Depends(get_db),
                    current_user: User = Depends(get_current_user)):
     if current_user.role not in ("agent", "organizer", "organisation"):
@@ -312,7 +312,8 @@ def scan_stats(event_id: int, db: Session = Depends(get_db),
 # oubli PIN, achat pour un tiers). qr_hash est un UUID v4 128 bits, non-devinable
 # en pratique — rate limit 30/min pour éviter énumération brute-force résiduelle.
 @router.get("/ticket/view")
-@limiter.limit("30/minute")
+@limiter.limit("30/minute", key_func=qr_hash_key)
+@limiter.shared_limit(PUBLIC_IP_CEILING, scope="public_token_pages")
 def view_ticket_public(request: Request, qr_hash: str, db: Session = Depends(get_db)):
     """
     Retourne les infos d'un billet à partir de son qr_hash, sans auth.

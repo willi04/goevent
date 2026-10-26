@@ -34,7 +34,7 @@ INVITATION_PAYMENT_CHANNELS = [
     {"code": "orange_money_goevent", "label": "Orange Money GoEvent SARLU", "ref_label": "ID de transaction Orange Money"},
     {"code": "virement_ecobank", "label": "Virement Ecobank GoEvent SARLU", "ref_label": "Référence du virement"},
 ]
-INVITATION_PACK_SIZES = (50, 100, 300, 500)          # en personnes (un pass « + 2 » compte 3)
+INVITATION_PACK_SIZES = (25, 50, 100, 300, 500, 1000, 2000)   # en personnes (un pass « + 2 » compte 3)
 INVITATION_SERVICE_LEVELS = ("autonome", "accompagne")
 INVITATION_RETENTION_DAYS = 30                        # purge des listes d'invités après l'événement
 INVITATION_HOUSE_PHONE = "+23600000001"               # compte orga interne (inactif) des événements accompagnés
@@ -83,6 +83,10 @@ class Settings(BaseSettings):
     INVITATION_CHANNELS_ACTIVE: str = "especes_recu,orange_money_goevent"
     # Domaine des liens de pass (QR) et de suivi
     PUBLIC_SITE_URL: str = "https://goevent.africa"
+
+    # ── IP CLIENT (rate limit, journaux) ───────────────────────
+    # peer | header:<nom> | xff:<n> — cf. core/client_ip.py et docs/07. Défaut = historique.
+    CLIENT_IP_STRATEGY: str = "peer"
 
     @property
     def cors_origins(self) -> list[str]:

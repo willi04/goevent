@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 
 from core.config import (
     BOOST_PACKAGES, COMMISSION_BUYER_RATE, COMMISSION_ORGANIZER_RATE,
-    FB_PACK_MARGIN_RATE, FB_PACK_MIN_BUDGET,
+    FB_PACK_MARGIN_RATE, FB_PACK_MIN_BUDGET, INVITATION_PACK_SIZES,
 )
 
 DEFAULT_PRICING = {
@@ -36,8 +36,10 @@ DEFAULT_PRICING = {
     # Invitations digitales : taille du pack (personnes) × niveau de service.
     # Valeurs PROVISOIRES. Montant figé sur le pack à son activation.
     "invitations": {
-        "autonome_50": 15_000, "autonome_100": 25_000, "autonome_300": 60_000, "autonome_500": 90_000,
-        "accompagne_50": 40_000, "accompagne_100": 55_000, "accompagne_300": 110_000, "accompagne_500": 150_000,
+        "autonome_25": 10_000, "autonome_50": 15_000, "autonome_100": 25_000, "autonome_300": 60_000,
+        "autonome_500": 90_000, "autonome_1000": 150_000, "autonome_2000": 250_000,
+        "accompagne_25": 30_000, "accompagne_50": 40_000, "accompagne_100": 55_000, "accompagne_300": 110_000,
+        "accompagne_500": 150_000, "accompagne_1000": 250_000, "accompagne_2000": 400_000,
     },
 }
 
@@ -51,7 +53,7 @@ LABELS = {
     "premium.qr_custom": "QR Code personnalisé", "premium.gift_tickets_from": "Tickets cadeaux (dès)",
     "premium.report": "Rapport post-event", "premium.printable": "Billets imprimables",
     **{"invitations.%s_%d" % (svc, n): "Invitations %s : %d personnes" % ("Autonome" if svc == "autonome" else "Accompagné", n)
-       for svc in ("autonome", "accompagne") for n in (50, 100, 300, 500)},
+       for svc in ("autonome", "accompagne") for n in INVITATION_PACK_SIZES},
 }
 
 MAX_AMOUNT = 10_000_000

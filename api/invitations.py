@@ -25,14 +25,14 @@ from sqlalchemy.orm import Session
 from core import invitations as inv
 from core.config import INVITATION_PACK_SIZES, INVITATION_SERVICE_LEVELS
 from core.database import get_db
-from core.limiter import limiter
+from core.limiter import PUBLIC_IP_CEILING, limiter, path_token_key, user_key
 from core.permissions import get_current_admin, is_admin, normalize_role, require_staff_function
 from core.security import get_current_user, hash_pin, log_security_event
 from models.event import Event
 from models.invitation import EventGuest, GuestCheckin, InvitationPack, PrivateEventSettings
 from models.user import User
 from schemas.invitation import (
-    AgentIn, GuestImportIn, GuestPatch, ManualCheckinIn, PackCancelIn, PackIn, PrivateEventIn,
+    AgentIn, AgentManualIn, GuestImportIn, GuestPatch, ManualCheckinIn, PackCancelIn, PackIn, PrivateEventIn,
     PrivateEventPatch, SyncIn,
 )
 
@@ -52,7 +52,9 @@ def _guest_status(g: EventGuest) -> str:
         return "complete"
     if g.seats_used > 0:
         return "partial"
-    return "sent" if g.sent_at else "pending"
+    if g.sent_at:
+        return "printed" if g.paper else "sent"
+    return "to_print" if g.paper else "pending"
 
 
 def _guest_out(ev: Event, st: PrivateEventSettings, g: EventGuest) -> dict:
@@ -61,8 +63,8 @@ def _guest_out(ev: Event, st: PrivateEventSettings, g: EventGuest) -> dict:
             "table_label": g.table_label, "category": g.category, "status": _guest_status(g),
             "sent_at": _iso(g.sent_at), "first_checkin_at": _iso(g.first_checkin_at),
             "last_checkin_at": _iso(g.last_checkin_at), "revoked_at": _iso(g.revoked_at),
-            "pass_url": inv.pass_url(g.token) if g.token else None,
-            "wa_url": inv.wa_url(g.phone, msg) if g.token else None, "message": msg}
+            "pass_url": inv.pass_url(g.token) if g.token else None, "paper": g.paper,
+            "wa_url": inv.wa_url(g.phone, msg) if g.token and not g.paper else None, "message": msg}
 
 
 def _pack_out(p: InvitationPack) -> dict:
@@ -227,17 +229,27 @@ def admin_guests(event_id: int, q: Optional[str] = Query(None, max_length=80),
         query = query.filter(EventGuest.seats_used == 0, EventGuest.revoked_at.is_(None))
     elif status == "revoked":
         query = query.filter(EventGuest.revoked_at.isnot(None))
+    elif status == "paper":
+        query = query.filter(EventGuest.paper == True)  # noqa: E712
     total = query.count()
     rows = query.order_by(EventGuest.full_name, EventGuest.id).offset((page - 1) * limit).limit(limit).all()
     pending_ids = [gid for (gid,) in db.query(EventGuest.id).filter(
         EventGuest.event_id == ev.id, EventGuest.sent_at.is_(None), EventGuest.revoked_at.is_(None),
-        EventGuest.phone.isnot(None), EventGuest.token.isnot(None)).order_by(EventGuest.full_name, EventGuest.id).all()]
+        EventGuest.phone.isnot(None), EventGuest.token.isnot(None), EventGuest.paper == False  # noqa: E712
+    ).order_by(EventGuest.full_name, EventGuest.id).all()]
+    paper_pending = db.query(EventGuest.id).filter(
+        EventGuest.event_id == ev.id, EventGuest.paper == True, EventGuest.revoked_at.is_(None),  # noqa: E712
+        EventGuest.token.isnot(None), EventGuest.sent_at.is_(None)).count()
+    paper_total = db.query(EventGuest.id).filter(
+        EventGuest.event_id == ev.id, EventGuest.paper == True, EventGuest.revoked_at.is_(None),  # noqa: E712
+        EventGuest.token.isnot(None)).count()
     return {"total": total, "page": page, "limit": limit, "guests": [_guest_out(ev, st, g) for g in rows],
             "send_queue": pending_ids,
             # Pass jamais envoyés faute de numéro : à compléter ou à transmettre à la main (« Copier le lien »)
             "pending_without_phone": db.query(EventGuest.id).filter(
                 EventGuest.event_id == ev.id, EventGuest.sent_at.is_(None), EventGuest.revoked_at.is_(None),
-                EventGuest.phone.is_(None), EventGuest.token.isnot(None)).count()}
+                EventGuest.phone.is_(None), EventGuest.token.isnot(None), EventGuest.paper == False).count(),  # noqa: E712
+            "paper_pending": paper_pending, "paper_total": paper_total}
 
 
 @router.get("/admin/invitations/guests/{guest_id}")
@@ -279,7 +291,10 @@ def admin_update_guest(request: Request, guest_id: int, data: GuestPatch, db: Se
         if phone and db.query(EventGuest.id).filter(EventGuest.event_id == ev.id, EventGuest.phone == phone,
                                                     EventGuest.id != g.id, EventGuest.revoked_at.is_(None)).first():
             raise HTTPException(400, "Ce numéro est déjà dans la liste.")
-        g.phone = phone
+        if phone != g.phone:
+            inv.set_phone(g, phone)
+    if "paper" in f and data.paper is not None:
+        g.paper = data.paper
     if "seats" in f and data.seats:
         if data.seats < g.seats_used:
             raise HTTPException(400, "%d personne(s) déjà entrée(s) avec ce pass." % g.seats_used)
@@ -360,13 +375,41 @@ def admin_delete_guest(request: Request, guest_id: int, db: Session = Depends(ge
 
 
 @router.post("/admin/invitations/guests/{guest_id}/checkin")
-@limiter.limit("120/minute")
+@limiter.limit("120/minute", key_func=user_key)
 def admin_manual_checkin(request: Request, guest_id: int, data: ManualCheckinIn, db: Session = Depends(get_db),
                          user: User = Depends(manager)):
     g, ev, st = _guest(db, guest_id)
     inv.require_active(db, ev.id)
     g = inv.manual_checkin(db, user, g, data.count, data.reason.strip(), request)
     return _guest_out(ev, st, g)
+
+
+@router.get("/admin/invitations/events/{event_id}/paper.pdf")
+@limiter.limit("20/minute")
+def admin_paper_pdf(request: Request, event_id: int, scope: str = Query("paper", pattern="^(paper|all|pending)$"),
+                    db: Session = Depends(get_db), user: User = Depends(manager)):
+    """PDF A4 des pass à imprimer (8 par page, découpables). scope : paper (pass papier), pending
+    (pass papier pas encore imprimés), all (tous les pass actifs). Les pass papier inclus sont marqués remis."""
+    ev, st = _load(db, event_id)
+    if st.purged_at:
+        raise HTTPException(400, "Liste supprimée.")
+    inv.require_active(db, ev.id)
+    q = db.query(EventGuest).filter(EventGuest.event_id == ev.id, EventGuest.revoked_at.is_(None),
+                                    EventGuest.token.isnot(None))
+    if scope == "paper":
+        q = q.filter(EventGuest.paper == True)  # noqa: E712
+    elif scope == "pending":
+        q = q.filter(EventGuest.paper == True, EventGuest.sent_at.is_(None))  # noqa: E712
+    guests = q.order_by(EventGuest.table_label, EventGuest.full_name).all()
+    pdf = inv.paper_pdf(ev, st, guests)
+    now = inv.utcnow()
+    for g in guests:
+        if g.paper and not g.sent_at:
+            g.sent_at, g.sent_by = now, user.id
+    db.commit()
+    log_security_event(db, "invitation_paper_pdf", request, user.id, "event %d : %d pass (%s)" % (ev.id, len(guests), scope))
+    return Response(pdf, media_type="application/pdf", headers={
+        "Content-Disposition": 'attachment; filename="pass-papier-%d.pdf"' % ev.id, "Cache-Control": "no-store"})
 
 
 @router.get("/admin/invitations/events/{event_id}/arrivals")
@@ -505,7 +548,8 @@ def _no_store(payload: dict) -> JSONResponse:
 
 
 @router.get("/invitations/pass/{token}")
-@limiter.limit("30/minute")
+@limiter.limit("30/minute", key_func=path_token_key)
+@limiter.shared_limit(PUBLIC_IP_CEILING, scope="public_token_pages")
 def public_pass(request: Request, token: str, db: Session = Depends(get_db)):
     g, ev, st = _pass_guest(db, token)
     if not ev.is_active:
@@ -529,7 +573,8 @@ def _ics(s: str) -> str:
 
 
 @router.get("/invitations/pass/{token}/calendar.ics")
-@limiter.limit("30/minute")
+@limiter.limit("30/minute", key_func=path_token_key)
+@limiter.shared_limit(PUBLIC_IP_CEILING, scope="public_token_pages")
 def public_pass_ics(request: Request, token: str, db: Session = Depends(get_db)):
     g, ev, st = _pass_guest(db, token)
     start = ev.event_date or inv.utcnow()
@@ -547,7 +592,8 @@ def public_pass_ics(request: Request, token: str, db: Session = Depends(get_db))
 
 
 @router.get("/invitations/track/{token}")
-@limiter.limit("60/minute")
+@limiter.limit("60/minute", key_func=path_token_key)
+@limiter.shared_limit(PUBLIC_IP_CEILING, scope="public_token_pages")
 def public_track(request: Request, token: str, db: Session = Depends(get_db)):
     if not inv._TOKEN_RE.match(token or ""):
         raise HTTPException(404, "Lien de suivi invalide ou révoqué")
@@ -577,8 +623,28 @@ def _scanner_event(db: Session, event_id: int, user: User) -> Event:
     return ev
 
 
+@router.get("/invitations/events/{event_id}/search")
+@limiter.limit("120/minute", key_func=user_key)
+def scanner_search(request: Request, event_id: int, q: str = Query("", max_length=60), db: Session = Depends(get_db),
+                   user: User = Depends(get_current_user)):
+    """Recherche par nom ou table (entrée manuelle au scanner). Jamais de numéro de téléphone."""
+    ev = _scanner_event(db, event_id, user)
+    inv.require_active(db, ev.id)
+    return {"guests": inv.search_guests(db, ev, q)}
+
+
+@router.post("/invitations/manual-checkin")
+@limiter.limit("120/minute", key_func=user_key)
+def scanner_manual_checkin(request: Request, data: AgentManualIn, db: Session = Depends(get_db),
+                           user: User = Depends(get_current_user)):
+    if normalize_role(user.role) not in ("agent", "organizer"):
+        raise HTTPException(403, "Réservé aux agents de contrôle.")
+    return inv.agent_manual_checkin(db, user, data.guest_id, data.count, data.reason, data.last4,
+                                    data.identity_checked, data.client_uuid, request)
+
+
 @router.get("/invitations/offline/{event_id}")
-@limiter.limit("10/minute")
+@limiter.limit("10/minute", key_func=user_key)
 def offline_list(request: Request, event_id: int, db: Session = Depends(get_db),
                  user: User = Depends(get_current_user)):
     ev = _scanner_event(db, event_id, user)
@@ -589,7 +655,7 @@ def offline_list(request: Request, event_id: int, db: Session = Depends(get_db),
 
 
 @router.post("/invitations/checkins/sync")
-@limiter.limit("30/minute")
+@limiter.limit("30/minute", key_func=user_key)
 def offline_sync(request: Request, data: SyncIn, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     if normalize_role(user.role) not in ("agent", "organizer", "admin", "staff"):
         raise HTTPException(403, "Accès refusé")

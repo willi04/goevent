@@ -37,6 +37,7 @@ class GuestRow(BaseModel):
     seats: Optional[str] = Field(None, max_length=10)
     table_label: Optional[str] = Field(None, max_length=100)
     category: Optional[str] = Field(None, max_length=100)
+    paper: Optional[str] = Field(None, max_length=20)   # « oui » / « non » / vide (= papier si pas de numéro)
 
 
 class GuestImportIn(BaseModel):
@@ -50,11 +51,22 @@ class GuestPatch(BaseModel):
     seats: Optional[int] = Field(None, ge=1, le=20)
     table_label: Optional[str] = Field(None, max_length=40)
     category: Optional[str] = Field(None, max_length=40)
+    paper: Optional[bool] = None
 
 
 class ManualCheckinIn(BaseModel):
     count: int = Field(..., ge=1, le=20)
     reason: str = Field(..., min_length=3, max_length=200)
+
+
+class AgentManualIn(BaseModel):
+    """Entrée manuelle depuis le scanner : recherche par nom, vérification, motif obligatoire."""
+    guest_id: int
+    count: int = Field(..., ge=1, le=20)
+    reason: str = Field(..., min_length=3, max_length=180)
+    last4: Optional[str] = Field(None, max_length=10)
+    identity_checked: bool = False
+    client_uuid: Optional[str] = Field(None, max_length=40)
 
 
 class AgentIn(BaseModel):
@@ -82,6 +94,8 @@ class SyncItem(BaseModel):
     h: str = Field(..., max_length=64)
     count: int = Field(1, ge=1, le=20)
     at: Optional[str] = Field(None, max_length=40)
+    source: Optional[str] = Field(None, max_length=10)     # "manual" : entrée manuelle hors ligne
+    reason: Optional[str] = Field(None, max_length=200)    # obligatoire si manual
 
 
 class SyncIn(BaseModel):

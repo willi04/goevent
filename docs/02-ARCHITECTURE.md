@@ -298,6 +298,15 @@ Les textes, images et liens des pages publiques sont modifiables depuis
   SHA-256 des jetons, jamais les jetons), valide localement, synchronise
   ensuite (`/invitations/checkins/sync`, idempotent) ; deux téléphones hors
   ligne qui acceptent le même pass → entrée marquée en conflit.
+- **Entrée manuelle (scanner)** : recherche par nom/table
+  (`GET /invitations/events/{id}/search`, jamais le numéro), vérification
+  4 derniers chiffres ou « identité vérifiée », motif obligatoire
+  (`POST /invitations/manual-checkin`, idempotent) ; hors ligne : recherche
+  sur la liste du téléphone, chiffres comparés à une empreinte PBKDF2
+  (sel par invité) via WebCrypto, synchro `source=manual`.
+- **Pass papier** : `event_guests.paper` (défaut si pas de numéro), exclus
+  de la file WhatsApp ; `GET /admin/invitations/events/{id}/paper.pdf`
+  (reportlab, A4, 8 pass/page, QR locaux).
 - **Suivi client** : `goevent.africa/suivi/<jeton>` → titre, date et
   chiffres uniquement (pas de lieu, aucun nom ni numéro), jeton révocable.
 - **Purge J+30** : `purge_due()` (cron reconcile + bouton admin) anonymise

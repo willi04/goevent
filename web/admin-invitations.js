@@ -295,17 +295,43 @@
   function guestsBlock() {
     var paste = el("textarea", { class: "input-field font-mono text-xs", rows: "5", id: "inv-paste",
       placeholder: "Collez ici les colonnes depuis Excel (ou un CSV) :\nNom ⇥ Téléphone ⇥ Places ⇥ Table ⇥ Catégorie\nJean Kossi ⇥ 75 00 00 01 ⇥ 2 ⇥ T1 ⇥ Famille" });
-    var file = el("input", { type: "file", accept: ".csv,text/csv,.txt", class: "text-xs", onchange: function (e) {
+    var file = el("input", { type: "file", accept: ".xlsx,.docx,.csv,.txt,.doc,.xls", class: "text-xs", onchange: function (e) {
       var f = e.target.files[0];
       if (!f) return;
-      var r = new FileReader();
-      r.onload = function () { paste.value = String(r.result || ""); };
-      r.readAsText(f, "utf-8");
+      var name = f.name.toLowerCase();
+      if (/\.(csv|txt)$/.test(name)) {
+        var r = new FileReader();
+        r.onload = function () { paste.value = String(r.result || ""); runImport(paste.value, true); };
+        r.readAsText(f, "utf-8");
+        return;
+      }
+      if (/\.(doc|xls)$/.test(name)) {
+        toast("Ancien format (.doc / .xls) : ouvrez le fichier et enregistrez-le en .docx ou .xlsx, ou copiez-collez la liste.", "error");
+        e.target.value = "";
+        return;
+      }
+      if (f.size > 2 * 1024 * 1024) { toast("Fichier trop lourd (2 Mo maximum).", "error"); e.target.value = ""; return; }
+      // .xlsx / .docx : lus par le serveur (contenu renvoyé, rien n'est stocké), puis vérification habituelle
+      var fd = new FormData();
+      fd.append("file", f);
+      fetch(BT_API + "/admin/invitations/events/" + S.eventId + "/guests/read-file", {
+        method: "POST", body: fd, headers: { Authorization: "Bearer " + btAuth.getToken() },
+      }).then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (d) {
+          if (!res.ok) throw new Error(typeof d.detail === "string" ? d.detail : "Lecture du fichier impossible.");
+          return d;
+        });
+      }).then(function (d) {
+        paste.value = d.text;
+        toast(d.rows + " ligne(s) lue(s) dans le fichier.", "success");
+        runImport(paste.value, true);
+      }).catch(function (err) { toast(err.message || "Lecture du fichier impossible.", "error"); })
+        .then(function () { e.target.value = ""; });
     } });
     var report = el("div", { id: "inv-import-report" });
     var importBox = el("details", { class: "mb-4", open: S.ev.listed ? null : "open" }, [
       el("summary", { class: "cursor-pointer font-bold text-sm text-primary mb-2", text: "Importer des invités" }),
-      el("p", { class: "text-[11px] text-gray-500 mb-2", text: "Colonnes : Nom, Téléphone (8 chiffres = +236, ou format international), Places (1 à 20, défaut 1), Table, Catégorie. Une ligne d'en-tête est reconnue automatiquement." }),
+      el("p", { class: "text-[11px] text-gray-500 mb-2", text: "Fichier Excel (.xlsx), Word (.docx, tableau), CSV, ou copier-coller. Colonnes dans cet ordre : Nom, Téléphone (8 chiffres = +236, ou format international), Places (1 à 20, défaut 1), Table, Catégorie — ou une ligne de titres (« Nom », « Téléphone »…). Anciens formats .doc / .xls : enregistrez-les d'abord en .docx / .xlsx." }),
       paste,
       el("div", { class: "flex flex-wrap items-center gap-3 mt-2" }, [file,
         el("button", { class: "action-btn btn-primary text-xs", text: "Vérifier la liste", onclick: function () { runImport(paste.value, true); } })]),

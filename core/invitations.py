@@ -324,6 +324,96 @@ def import_guests(db: Session, ev: Event, rows: list, user: User, dry_run: bool,
     return report
 
 
+# ── lecture de fichiers (.xlsx, .docx) ───────────────────────────────
+# Lecture SIMPLE : le contenu est converti en lignes séparées par des
+# tabulations, puis repasse par l'import habituel (mêmes colonnes, même
+# vérification). Valeurs uniquement : formules recalculées ignorées, macros
+# jamais exécutées. Le fichier est lu en mémoire puis jeté (rien n'est stocké).
+MAX_FILE_BYTES = 2 * 1024 * 1024
+_MAX_UNZIPPED = 40 * 1024 * 1024
+_MAX_COLS = 10
+
+
+def _cell(v) -> str:
+    if v is None:
+        return ""
+    if isinstance(v, float) and v.is_integer():
+        v = int(v)                      # 75000001.0 → « 75000001 » (numéros saisis en nombres)
+    if isinstance(v, datetime):
+        v = v.strftime("%d/%m/%Y")
+    return re.sub(r"[\t\r\n]+", " ", str(v)).strip()
+
+
+def _check_zip(data: bytes):
+    import io
+    import zipfile
+    try:
+        z = zipfile.ZipFile(io.BytesIO(data))
+        infos = z.infolist()
+    except zipfile.BadZipFile:
+        raise HTTPException(400, "Fichier illisible ou endommagé.")
+    if len(infos) > 2000 or sum(i.file_size for i in infos) > _MAX_UNZIPPED:
+        raise HTTPException(400, "Fichier trop volumineux une fois décompressé.")
+
+
+def file_to_text(filename: str, data: bytes) -> dict:
+    """Contenu d'un .xlsx (1re feuille) ou d'un .docx (tableaux, sinon lignes de texte) → texte tabulé."""
+    import io
+    name = (filename or "").lower()
+    if len(data) > MAX_FILE_BYTES:
+        raise HTTPException(400, "Fichier trop lourd (2 Mo maximum).")
+    if data[:8] == b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1":   # ancien format binaire Office
+        raise HTTPException(400, "Ancien format Word/Excel (.doc / .xls) : ouvrez le fichier et enregistrez-le "
+                                 "en .docx ou .xlsx (Fichier → Enregistrer sous), ou copiez-collez la liste.")
+    if data[:2] != b"PK":
+        raise HTTPException(400, "Format non reconnu : fichiers acceptés .xlsx, .docx, .csv ou .txt.")
+    _check_zip(data)
+    lines = []
+    if name.endswith((".xlsx", ".xlsm")):
+        from openpyxl import load_workbook
+        try:
+            wb = load_workbook(io.BytesIO(data), read_only=True, data_only=True)
+        except Exception:
+            raise HTTPException(400, "Fichier Excel illisible.")
+        try:
+            ws = wb.worksheets[0]
+            for row in ws.iter_rows(max_col=_MAX_COLS, values_only=True):
+                cells = [_cell(v) for v in row]
+                if any(cells):
+                    lines.append("\t".join(cells).rstrip("\t"))
+                if len(lines) > MAX_IMPORT_ROWS:
+                    break
+        finally:
+            wb.close()
+        fmt = "xlsx"
+    elif name.endswith(".docx"):
+        import docx
+        try:
+            d = docx.Document(io.BytesIO(data))
+        except Exception:
+            raise HTTPException(400, "Fichier Word illisible.")
+        for table in d.tables:
+            for row in table.rows:
+                cells, seen = [], set()
+                for c in row.cells[:_MAX_COLS]:
+                    if id(c._tc) in seen:     # cellule fusionnée : une seule fois
+                        continue
+                    seen.add(id(c._tc))
+                    cells.append(_cell(c.text))
+                if any(cells):
+                    lines.append("\t".join(cells).rstrip("\t"))
+        if not lines:                        # pas de tableau : une ligne de texte = une ligne de la liste
+            lines = [p.text.strip() for p in d.paragraphs if p.text.strip()]
+        fmt = "docx"
+    else:
+        raise HTTPException(400, "Format non reconnu : fichiers acceptés .xlsx, .docx, .csv ou .txt.")
+    if len(lines) > MAX_IMPORT_ROWS + 1:
+        raise HTTPException(400, "Liste trop longue : %d lignes maximum par import." % MAX_IMPORT_ROWS)
+    if not lines:
+        raise HTTPException(400, "Aucune ligne trouvée dans le fichier.")
+    return {"format": fmt, "rows": len(lines), "text": "\n".join(lines)}
+
+
 # ── scan ─────────────────────────────────────────────────────────────
 def guest_public(g: EventGuest) -> dict:
     return {"guest_name": g.full_name, "table": g.table_label, "category": g.category,

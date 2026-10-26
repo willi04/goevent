@@ -257,5 +257,8 @@ async def trigger_reconcile(
     # expire_old_orphans n'était appelé NULLE PART : tout checkout OM abandonné
     # >24h gardait sa place pré-réservée À VIE (seats_sold jamais décrémenté).
     summary["orphans"] = await expire_old_orphans(db)
+    # Données personnelles : listes d'invités anonymisées 30 j après l'événement
+    from core.invitations import purge_due
+    summary["invitations_anonymized"] = purge_due(db)
     print(f"🔄 Réconciliation terminée : {summary}")
     return {"status": "success", "summary": summary}

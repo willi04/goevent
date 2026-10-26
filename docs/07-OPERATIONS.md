@@ -171,6 +171,33 @@ bout en bout sans intervention, 1 retrait réussi, analyse des
 - Traçabilité emplacements : `zone_block_created|updated|deleted`,
   `zone_settings_updated`.
 
+## Invitations digitales (événements privés)
+
+- **Avant le premier déploiement** : créer la colonne `events.visibility`
+  (instantané, sans verrou long) — toute requête sur `events` la lit :
+  `ALTER TABLE events ADD COLUMN IF NOT EXISTS visibility VARCHAR(10) NOT NULL DEFAULT 'public';`
+  (la migration de démarrage le fait aussi, mais un échec de verrou au boot
+  rendrait toutes les pages événement en erreur jusqu'au boot suivant).
+- **Moyens de paiement des packs** : `INVITATION_CHANNELS_ACTIVE` sur Render
+  (codes séparés par des virgules ; défaut `especes_recu,orange_money_goevent`).
+  Ajouter `virement_ecobank` à l'ouverture du compte. N'activer un pack
+  qu'après paiement reçu au nom de GoEvent SARLU ; la référence saisie
+  (n° de reçu, ID de transaction) ne peut servir qu'une fois.
+- **Jour J** : faire « Actualiser la liste » sur chaque téléphone agent avec
+  du réseau avant l'ouverture des portes ; un téléphone par entrée si le
+  réseau est mauvais (deux téléphones hors ligne peuvent accepter le même
+  pass : conflit signalé après synchro, compteur « Conflits » de la fiche).
+- **Agents** : « Quitter » sur le scanner efface la liste du téléphone ; elle
+  est aussi effacée automatiquement 48 h après l'événement.
+- **Purge** : noms, numéros et jetons anonymisés 30 j après l'événement
+  (cron `/admin/reconcile`, résumé `invitations_anonymized`) ; anticipée
+  possible depuis la fiche (admin).
+- Traçabilité : `invitation_event_created|updated`, `invitation_guests_imported`,
+  `invitation_pack_activated|cancelled`, `invitation_pass_revoked|restored|regenerated`,
+  `invitation_manual_checkin`, `invitation_offline_list`, `invitation_offline_sync`,
+  `invitation_track_link_created|revoked`, `invitation_agent_assigned|removed`,
+  `invitation_purge`.
+
 ## Monitoring
 
 ### Logs à surveiller (Render)

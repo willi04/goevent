@@ -1,5 +1,5 @@
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class TicketTier(BaseModel):
@@ -13,7 +13,12 @@ class BuyTicket(BaseModel):
 
 
 class ScanTicket(BaseModel):
-    qr_data: str
+    qr_data: str = Field(..., max_length=500)
+    count: Optional[int] = Field(None, ge=1, le=20)   # invitations : personnes qui entrent avec ce pass
+    # invitations : identifiant unique de la tentative (généré par le scanner). Si la
+    # réponse se perd (réseau lent) et que le scanner bascule hors ligne, la synchro
+    # réutilise le même identifiant → aucune double entrée comptée.
+    client_uuid: Optional[str] = Field(None, max_length=40)
 
 
 class CashReservation(BaseModel):

@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="referrer" content="no-referrer" />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#00502c" />
+  <title>Suivi des arrivées | GoEvent</title>
+  <link rel="icon" href="/icons/icon-192.svg" />
+  <!-- Lien de suivi client : chiffres uniquement, aucun nom ni numéro d'invité. Aucun script tiers. -->
+  <style>
+    :root { --green: #00502c; --ink: #111827; --muted: #6b7280; --bg: #f3f4f1; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    main { max-width: 560px; margin: 0 auto; padding: 20px 16px 32px; }
+    .card { background: #fff; border-radius: 24px; padding: 22px; box-shadow: 0 12px 32px rgba(0,0,0,.07); }
+    .label { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0; }
+    h1 { font-size: 22px; margin: 6px 0 2px; }
+    .date { color: var(--muted); font-size: 14px; margin: 0 0 18px; }
+    .big { display: flex; align-items: baseline; gap: 8px; }
+    .big b { font-size: 52px; line-height: 1; color: var(--green); font-variant-numeric: tabular-nums; }
+    .big span { font-size: 20px; color: var(--muted); font-weight: 700; }
+    .bar { height: 14px; background: #e5efe8; border-radius: 999px; overflow: hidden; margin: 14px 0 18px; }
+    .bar i { display: block; height: 100%; width: 0; background: var(--green); transition: width .6s; }
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .k { background: #f8faf8; border-radius: 16px; padding: 12px; text-align: center; }
+    .k b { display: block; font-size: 24px; font-variant-numeric: tabular-nums; }
+    .k small { color: var(--muted); font-size: 12px; font-weight: 600; }
+    .upd { text-align: center; color: var(--muted); font-size: 12px; margin-top: 14px; }
+    .err { text-align: center; padding: 40px 10px; color: var(--muted); }
+    footer { text-align: center; margin-top: 22px; font-size: 12px; color: var(--muted); }
+    footer a { color: var(--muted); }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <main>
+    <div id="view" class="card hidden">
+      <p class="label">Suivi des arrivées en direct</p>
+      <h1 id="title"></h1>
+      <p class="date" id="date"></p>
+      <div class="big"><b id="entered">0</b><span>/ <span id="expected">0</span> invités arrivés</span></div>
+      <div class="bar"><i id="bar"></i></div>
+      <div class="grid">
+        <div class="k"><b id="k-entered">0</b><small>Entrés</small></div>
+        <div class="k"><b id="k-remaining">0</b><small>Restants</small></div>
+        <div class="k"><b id="k-rate">0 %</b><small>Taux</small></div>
+      </div>
+      <p class="upd" id="upd"></p>
+    </div>
+    <div id="error" class="card err hidden">Lien de suivi invalide ou révoqué.</div>
+    <div id="loading" class="card err">Chargement…</div>
+    <footer>Propulsé par GoEvent — <a href="https://goevent.africa" rel="noopener">Organisez votre événement</a></footer>
+  </main>
+  <script>
+    (function () {
+      "use strict";
+      var host = location.hostname;
+      var API = (host === "localhost" || host === "127.0.0.1") ? location.protocol + "//" + host + ":8000" : "https://api.goevent.africa";
+      var m = location.pathname.match(/\/suivi\/([A-Za-z0-9_-]{20,64})/);
+      var token = m ? m[1] : new URLSearchParams(location.search).get("t");
+      var $ = function (id) { return document.getElementById(id); };
+      var nf = function (n) { return Number(n || 0).toLocaleString("fr-FR"); };
+      var timer = null;
+      function load() {
+        fetch(API + "/invitations/track/" + encodeURIComponent(token), { credentials: "omit" })
+          .then(function (r) { if (r.status === 404) throw new Error("404"); if (!r.ok) throw new Error("net"); return r.json(); })
+          .then(function (d) {
+            $("loading").classList.add("hidden"); $("view").classList.remove("hidden");
+            $("title").textContent = d.event_title; $("date").textContent = d.event_date_label;
+            $("entered").textContent = nf(d.entered); $("expected").textContent = nf(d.expected);
+            $("k-entered").textContent = nf(d.entered); $("k-remaining").textContent = nf(d.remaining);
+            $("k-rate").textContent = String(Math.round(d.rate)) + " %";
+            $("bar").style.width = Math.min(100, d.rate) + "%";
+            $("upd").textContent = "Mis à jour à " + new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) +
+              " · actualisation automatique toutes les 30 secondes";
+            document.title = d.event_title + " | Suivi des arrivées";
+          })
+          .catch(function (e) {
+            if (e.message === "404") {
+              clearInterval(timer);
+              $("loading").classList.add("hidden"); $("view").classList.add("hidden"); $("error").classList.remove("hidden");
+            } else if (!$("view").classList.contains("hidden")) {
+              $("upd").textContent = "Connexion perdue : nouvel essai dans 30 secondes…";
+            }
+          });
+      }
+      if (!token || !/^[A-Za-z0-9_-]{20,64}$/.test(token)) { $("loading").classList.add("hidden"); $("error").classList.remove("hidden"); return; }
+      load();
+      timer = setInterval(load, 30000);
+    })();
+  </script>
+</body>
+</html>

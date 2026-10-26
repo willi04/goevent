@@ -104,11 +104,20 @@ async function btFetch(path, opts) {
 
     if (refreshToken && !path.includes("/auth/refresh")) {
       try {
-        var refreshRes = await fetch(BT_API + "/auth/refresh", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ refresh_token: refreshToken })
-        });
+        var refreshRes;
+        try {
+          refreshRes = await fetch(BT_API + "/auth/refresh", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ refresh_token: refreshToken })
+          });
+        } catch (netErr) {
+          // Réseau coupé pendant le rafraîchissement : ce n'est PAS une session
+          // expirée → ne jamais déconnecter (agent au contrôle d'entrée, réseau faible).
+          var offErr = new Error("Hors ligne — vérifiez votre connexion");
+          offErr.offline = true;
+          throw offErr;
+        }
 
         if (refreshRes.ok) {
           var refreshData = await refreshRes.json();
@@ -119,6 +128,7 @@ async function btFetch(path, opts) {
           throw new Error("Refresh Token expiré");
         }
       } catch (e) {
+        if (e && e.offline) throw e;
         if (!isAuthPage) {
           btAuth.logout();
           return;

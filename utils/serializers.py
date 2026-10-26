@@ -34,6 +34,7 @@ def _event_dict(e, include_organizer=True, is_boosted=False):
         "slug": event_id_to_slug(e.id),
         "location": e.location,
         "category": e.category,
+        "visibility": getattr(e, "visibility", "public") or "public",
         "event_date": e.event_date,
         "price": e.price,
         "total_seats": e.total_seats,

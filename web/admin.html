@@ -375,6 +375,15 @@
             <span id="badge-refunds-pending" class="ml-auto bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full hidden">0</span>
           </button>
           <button
+              onclick="showTab('invitations')"
+              data-tab="invitations"
+              data-capability="invitations_manage"
+              class="tab-btn w-full text-left flex items-center gap-3"
+          >
+            <span class="material-symbols-outlined text-lg">mail</span>
+            <span>Invitations</span>
+          </button>
+          <button
               onclick="showTab('content')"
               data-tab="content"
               data-capability="content_manage"
@@ -486,6 +495,15 @@
           >
             <span class="material-symbols-outlined text-lg">currency_exchange</span>
             Remboursements
+          </button>
+          <button
+              onclick="showTab('invitations')"
+              data-tab="invitations"
+              data-capability="invitations_manage"
+              class="tab-btn flex-shrink-0"
+          >
+            <span class="material-symbols-outlined text-lg">mail</span>
+            Invitations
           </button>
           <button
               onclick="showTab('content')"
@@ -1054,6 +1072,7 @@
 
         <!-- ── SECTION CONTENU DU SITE (rendue par admin-cms.js) ── -->
         <section id="section-content" class="section-hidden"></section>
+        <section id="section-invitations" class="section-hidden"></section>
       </main>
     </div>
 
@@ -1500,6 +1519,7 @@
               { tab: "slides",        cap: "ads_slides_read" },
               { tab: "fbpacks",       cap: "fb_packages_manage" },
               { tab: "content",       cap: "content_manage" },
+              { tab: "invitations",   cap: "invitations_manage" },
           ];
       
           for (const { tab, cap } of priorityOrder) {
@@ -1531,6 +1551,7 @@
           fbpacks:       "fb_packages_manage",
           refunds:       "view_finance",
           content:       "content_manage",
+          invitations:   "invitations_manage",
       };
       
       function showTab(tab) {
@@ -1550,6 +1571,8 @@
           });
           if (tab === "dashboard") loadDashboard();
           if (tab === "content" && typeof cmsInit === "function") cmsInit();
+          if (tab === "invitations" && typeof invInit === "function") invInit();
+          if (tab !== "invitations" && typeof invLeave === "function") invLeave();
           if (tab === "events") loadEvents();
           if (tab === "users") loadUsers();
           if (tab === "finance") loadFinance();
@@ -3373,5 +3396,6 @@
     </script>
       <!-- Back-office « Contenu du site » (textes, images, FAQ, pages légales) -->
     <script src="admin-cms.js"></script>
+    <script src="admin-invitations.js"></script>
 </body>
 </html>

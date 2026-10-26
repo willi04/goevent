@@ -121,13 +121,22 @@
       </div>
     </div>
 
+    <!-- Événement privé (invitations) : état réseau + liste hors ligne -->
+    <div id="offline-panel" class="hidden mb-4 bg-white rounded-2xl p-3 border border-gray-100 shadow-sm text-xs flex flex-wrap items-center gap-2">
+      <span id="net-dot" class="w-2.5 h-2.5 rounded-full bg-green-500"></span>
+      <span id="net-label" class="font-bold text-gray-700">En ligne</span>
+      <span id="offline-info" class="text-gray-500 flex-1 min-w-[140px]">Liste hors ligne : non téléchargée</span>
+      <span id="sync-info" class="font-bold text-amber-700 hidden"></span>
+      <button onclick="refreshOfflineList(true)" class="px-3 py-1.5 rounded-full bg-gray-100 font-bold text-gray-700 active:scale-95">Actualiser la liste</button>
+    </div>
+
     <div class="flex-1 flex flex-col items-center justify-center relative">
       <div id="reader"></div>
 
       <p
         class="text-gray-500 text-sm mt-6 font-bold uppercase tracking-widest text-center"
       >
-        Placez le QR Code du fan dans le cadre
+        Placez le QR Code du billet ou du pass dans le cadre
       </p>
 
     <div
@@ -155,9 +164,16 @@
         Nom du Fan
       </p>
       
+      <p id="result-detail" class="text-base font-bold text-gray-700 mb-2 hidden"></p>
       <p id="result-event" class="text-sm text-gray-500 font-medium mb-6">
         Titre de l'événement
       </p>
+      <!-- Pass pour plusieurs personnes : l'agent choisit combien entrent -->
+      <div id="count-picker" class="hidden w-full mb-4">
+        <p class="font-black text-gray-800 mb-3">Combien de personnes entrent maintenant ?</p>
+        <div id="count-buttons" class="grid grid-cols-5 gap-2 mb-3"></div>
+        <button onclick="relancerScanner()" class="w-full py-3 rounded-full bg-gray-100 text-gray-700 font-bold">Annuler</button>
+      </div>
       <p id="result-reason" class="text-red-500 font-bold mb-6 hidden">
         Raison de l'erreur
       </p>
@@ -195,12 +211,21 @@
           document.title = `Scanner - ${response.event_name}`;
           // event_id : depuis la réponse OU depuis le user en localStorage (fallback)
           currentEventId = response.event_id || (btAuth.getUser() || {}).agent_event_id || null;
+          isPrivateEvent = response.visibility === "private";
+          if (currentEventId) lsSet("goevent_offline_meta:" + currentEventId, { private: isPrivateEvent, title: response.event_name });
         } catch (error) {
           if (pageTitle)
             pageTitle.textContent = "Scanner - Contrôle des billets";
           // Tentative fallback uniquement via le user en localStorage
           currentEventId = (btAuth.getUser() || {}).agent_event_id || null;
+          // Hors ligne au démarrage : on reprend ce qui a été enregistré sur le téléphone
+          const meta = currentEventId ? lsGet("goevent_offline_meta:" + currentEventId, null) : null;
+          if (meta) {
+            isPrivateEvent = !!meta.private;
+            if (pageTitle && meta.title) pageTitle.textContent = `Scanner - ${meta.title}`;
+          }
         }
+        if (isPrivateEvent) initOffline();
 
         // Lancer les stats temps réel si on a un event_id
         if (currentEventId) {
@@ -255,6 +280,7 @@
           }
         } catch (err) {
           console.warn("Erreur chargement stats:", err);
+          if (isPrivateEvent && isNetworkError(err)) { setNet(false); updateLocalStats(); }
           // On garde les anciennes valeurs affichées (pas de flash "—")
         } finally {
           if (spinner) {
@@ -299,88 +325,285 @@
           });
       }
 
+      // ════════════════════════════════════════════════════════
+      // SCAN — billets (en ligne) et pass d'invitation (en ligne + hors ligne)
+      // ════════════════════════════════════════════════════════
+      const INV_RE = /\/i\/([A-Za-z0-9_-]{20,64})(?:[\/?#]|$)/;
+      let isPrivateEvent = false;
+      let lastScan = null;        // { text, token, uuid } : tentative en cours
+      const ONLINE_TIMEOUT_MS = 5000;
+
+      function lsGet(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
+      function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
+      function newUuid() {
+        if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+        return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) =>
+          (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16));
+      }
+      function deviceId() {
+        let id = lsGet("goevent_scanner_device", null);
+        if (!id) { id = newUuid(); lsSet("goevent_scanner_device", id); }
+        return id;
+      }
+      async function sha256hex(text) {
+        const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+        return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+      }
+      function withTimeout(promise, ms) {
+        return Promise.race([promise, new Promise((_, reject) => setTimeout(() => {
+          const e = new Error("Réseau trop lent"); e.offline = true; reject(e);
+        }, ms))]);
+      }
+      function isNetworkError(e) {
+        return !!e && (e.offline === true || e instanceof TypeError || /Failed to fetch|NetworkError|Load failed|Hors ligne/i.test(e.message || ""));
+      }
+      function beep(ok) {
+        try {
+          if (navigator.vibrate) navigator.vibrate(ok ? 100 : [80, 60, 80]);
+          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          const osc = ctx.createOscillator(), gain = ctx.createGain();
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.frequency.value = ok ? 800 : 300;
+          gain.gain.setValueAtTime(0.3, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+          osc.start(); osc.stop(ctx.currentTime + 0.15);
+        } catch (e) { /* pas de retour sonore disponible */ }
+      }
+
+      // ── Affichage du résultat ──────────────────────────────
+      function showResult(kind, title, name, detail, eventLabel, reason) {
+        const ok = kind === "ok";
+        const iconDiv = document.getElementById("result-icon");
+        iconDiv.className = "w-24 h-24 rounded-full flex items-center justify-center mb-4 text-white shadow-lg " +
+          (ok ? "bg-green-500" : kind === "ask" ? "bg-amber-500" : "bg-red-500");
+        iconDiv.innerHTML = '<span class="material-symbols-outlined text-5xl" style="font-variation-settings: \'FILL\' 1">' +
+          (ok ? "check_circle" : kind === "ask" ? "group" : "cancel") + "</span>";
+        const statusEl = document.getElementById("result-status");
+        statusEl.textContent = title;
+        statusEl.className = "text-3xl font-black mb-2 uppercase tracking-wide " +
+          (ok ? "text-green-600" : kind === "ask" ? "text-amber-600" : "text-red-600");
+        document.getElementById("result-fan").textContent = name || "";
+        const det = document.getElementById("result-detail");
+        det.textContent = detail || ""; det.classList.toggle("hidden", !detail);
+        document.getElementById("result-event").textContent = eventLabel || "";
+        const reasonEl = document.getElementById("result-reason");
+        reasonEl.textContent = reason || ""; reasonEl.classList.toggle("hidden", !reason);
+        document.getElementById("count-picker").classList.add("hidden");
+        document.getElementById("btn-next-scan").classList.remove("hidden");
+        const modal = document.getElementById("scan-result");
+        modal.classList.remove("hidden"); modal.classList.add("flex");
+        if (kind !== "ask") beep(ok);
+      }
+      function guestDetail(r) {
+        const parts = [];
+        if (r.table) parts.push("Table " + r.table);
+        if (r.category) parts.push(r.category);
+        if (r.seats > 1) parts.push((r.seats_used || 0) + "/" + r.seats + " entrées");
+        return parts.join(" · ");
+      }
+      function askCount(name, remaining, detail, eventLabel, onChoose) {
+        showResult("ask", "PASS GROUPE", name, detail, eventLabel, null);
+        const box = document.getElementById("count-buttons");
+        box.innerHTML = "";
+        for (let i = 1; i <= Math.min(remaining, 20); i++) {
+          const b = document.createElement("button");
+          b.className = "py-3 rounded-2xl bg-[#00502c] text-white font-black text-lg active:scale-95";
+          b.textContent = String(i);
+          b.onclick = () => onChoose(i);
+          box.appendChild(b);
+        }
+        document.getElementById("count-picker").classList.remove("hidden");
+        document.getElementById("btn-next-scan").classList.add("hidden");
+      }
+
       // 4. Le cœur du système : Que se passe-t-il quand un QR est détecté ?
       async function onScanSuccess(decodedText, decodedResult) {
-        // Feedback haptic + sonore pour agent en environnement bruyant
-        try {
-          if (navigator.vibrate) navigator.vibrate(100);
-          // Bip audio léger (Web Audio API)
-          const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-          const osc = audioCtx.createOscillator();
-          const gain = audioCtx.createGain();
-          osc.connect(gain);
-          gain.connect(audioCtx.destination);
-          osc.frequency.value = 800;
-          gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
-          osc.start();
-          osc.stop(audioCtx.currentTime + 0.15);
-        } catch (e) {
-          // Pas de feedback dispo : on continue silencieusement
-        }
-        // On met la caméra en pause
         html5QrCode.pause(true);
-      
-        const resultModal = document.getElementById("scan-result");
-        const iconDiv = document.getElementById("result-icon");
-        const statusEl = document.getElementById("result-status");
-        const fanEl = document.getElementById("result-fan");
-        const eventEl = document.getElementById("result-event");
-        const reasonEl = document.getElementById("result-reason");
-        const btnNextScan = document.getElementById("btn-next-scan");
-      
-        // Reset l'affichage
-        reasonEl.classList.add("hidden");
-        btnNextScan.classList.remove("hidden");
-      
+        const m = INV_RE.exec(decodedText || "");
+        lastScan = { text: decodedText, token: m ? m[1] : null, uuid: newUuid() };
+        if (lastScan.token && isPrivateEvent) return scanInvitation(null);
         try {
-          const response = await btApi.post("/scan", { qr_data: decodedText });
-      
-          if (response.valid === true) {
-            // ✅ SUCCÈS : Billet payé et validé
-            iconDiv.className =
-              "w-24 h-24 rounded-full flex items-center justify-center mb-4 text-white shadow-lg bg-green-500";
-            iconDiv.innerHTML =
-              '<span class="material-symbols-outlined text-5xl" style="font-variation-settings: \'FILL\' 1">check_circle</span>';
-            
-            statusEl.textContent = "ACCÈS AUTORISÉ";
-            statusEl.className =
-              "text-3xl font-black mb-2 uppercase tracking-wide text-green-600";
-      
-            fanEl.textContent = response.message 
-              ? response.message.replace("Validé ! ", "").replace(" peut entrer.", "") 
-              : "Client vérifié";
-            eventEl.textContent = response.event || "Événement";
+          const response = await btApi.post("/scan", { qr_data: decodedText, client_uuid: lastScan.uuid });
+          if (response && response.needs_count) {
+            return askCount(response.guest_name, response.remaining, guestDetail(response), response.event, (n) => scanInvitation(n));
           }
-          
+          if (response && response.valid === true) {
+            const name = response.kind === "invitation" ? response.guest_name
+              : (response.message ? response.message.replace("Validé ! ", "").replace(" peut entrer.", "") : "Client vérifié");
+            showResult("ok", "ACCÈS AUTORISÉ", name, response.kind === "invitation" ? guestDetail(response) : "", response.event || "Événement");
+          }
         } catch (error) {
-          // ❌ ÉCHEC : Faux billet ou déjà utilisé
-          iconDiv.className =
-            "w-24 h-24 rounded-full flex items-center justify-center mb-4 text-white shadow-lg bg-red-500";
-          iconDiv.innerHTML =
-            '<span class="material-symbols-outlined text-5xl" style="font-variation-settings: \'FILL\' 1">cancel</span>';
-          
-          statusEl.textContent = "REFUSÉ";
-          statusEl.className =
-            "text-3xl font-black mb-2 uppercase tracking-wide text-red-600";
-      
-          fanEl.textContent = "Billet Invalide";
-          reasonEl.textContent =
-            error.message || error.detail || "Ce QR Code n'est pas reconnu.";
-          reasonEl.classList.remove("hidden");
+          showResult("bad", "REFUSÉ", lastScan.token ? "Pass invalide" : "Billet Invalide", "", "",
+            error.message || error.detail || "Ce QR Code n'est pas reconnu.");
         }
-      
-        // On affiche la modale
-        resultModal.classList.remove("hidden");
-        resultModal.classList.add("flex");
+      }
+
+      // Pass d'invitation : en ligne d'abord, bascule hors ligne si le réseau ne répond pas
+      async function scanInvitation(count) {
+        const body = { qr_data: lastScan.text, client_uuid: lastScan.uuid };
+        if (count) body.count = count;
+        try {
+          const r = await withTimeout(btApi.post("/scan", body), ONLINE_TIMEOUT_MS);
+          setNet(true);
+          if (!r) return;
+          if (r.needs_count) return askCount(r.guest_name, r.remaining, guestDetail(r), r.event, (n) => scanInvitation(n));
+          if (r.valid) {
+            applyLocal(lastScan.token, r.admitted || 0);
+            showResult("ok", r.duplicate ? "DÉJÀ ENREGISTRÉ" : "ACCÈS AUTORISÉ", r.guest_name,
+              (r.admitted ? r.admitted + " personne(s) · " : "") + guestDetail(r), r.event);
+          }
+        } catch (e) {
+          if (isNetworkError(e)) { setNet(false); return scanOffline(count); }
+          showResult("bad", "REFUSÉ", "Pass refusé", "", "", e.message || "Pass non reconnu.");
+        }
+      }
+
+      // ════════════════════════════════════════════════════════
+      // HORS LIGNE (événements privés) — liste locale + file de synchro
+      // La liste ne contient que l'EMPREINTE SHA-256 des jetons, jamais le jeton.
+      // ════════════════════════════════════════════════════════
+      const listKey = () => "goevent_offline_list:" + currentEventId;
+      const queueKey = () => "goevent_offline_queue:" + currentEventId;
+      let tokenHashCache = {};
+
+      function setNet(online) {
+        const dot = document.getElementById("net-dot"), label = document.getElementById("net-label");
+        if (!dot) return;
+        dot.className = "w-2.5 h-2.5 rounded-full " + (online ? "bg-green-500" : "bg-red-500");
+        label.textContent = online ? "En ligne" : "Hors ligne : contrôle sur la liste du téléphone";
+      }
+      function renderOfflineInfo() {
+        const list = lsGet(listKey(), null), q = lsGet(queueKey(), []);
+        const info = document.getElementById("offline-info"), sync = document.getElementById("sync-info");
+        if (info) info.textContent = list
+          ? `Liste hors ligne : ${list.guests.length} pass · ${new Date(list.saved_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}`
+          : "Liste hors ligne : non téléchargée";
+        if (sync) { sync.textContent = q.length ? `${q.length} entrée(s) à synchroniser` : ""; sync.classList.toggle("hidden", !q.length); }
+        if (!navigator.onLine || document.getElementById("net-label").textContent.startsWith("Hors")) updateLocalStats();
+      }
+      function updateLocalStats() {
+        const list = lsGet(listKey(), null);
+        if (!list) return;
+        let expected = 0, entered = 0;
+        list.guests.forEach((g) => { if (!g.r) { expected += g.s; entered += Math.min(g.u, g.s); } });
+        const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+        set("stat-entered", entered.toLocaleString("fr-FR"));
+        set("stat-expected", expected.toLocaleString("fr-FR"));
+        set("stat-remaining", Math.max(0, expected - entered).toLocaleString("fr-FR"));
+        set("stat-rate", (expected ? Math.round(entered / expected * 100) : 0) + "%");
+      }
+      function purgeExpiredLists() {
+        // Données d'invités sur le téléphone : effacées 48 h après l'événement
+        try {
+          Object.keys(localStorage).filter((k) => k.indexOf("goevent_offline_list:") === 0).forEach((k) => {
+            const l = lsGet(k, null);
+            if (l && l.event && l.event.date && Date.now() > new Date(l.event.date + (/[zZ]|[+-]\d\d:?\d\d$/.test(l.event.date) ? "" : "Z")).getTime() + 48 * 3600 * 1000) {
+              localStorage.removeItem(k);
+              localStorage.removeItem(k.replace("_list:", "_meta:"));
+            }
+          });
+        } catch (e) { /* stockage indisponible */ }
+      }
+      async function refreshOfflineList(manual) {
+        if (!isPrivateEvent || !currentEventId) return;
+        try {
+          await syncQueue();
+          const data = await withTimeout(btApi.get(`/invitations/offline/${currentEventId}`), 15000);
+          if (!data) return;
+          // Les entrées encore en file (pas synchronisées) restent comptées localement
+          const pending = {};
+          lsGet(queueKey(), []).forEach((it) => { pending[it.h] = (pending[it.h] || 0) + it.count; });
+          data.guests.forEach((g) => { if (pending[g.h]) g.u += pending[g.h]; });
+          data.saved_at = Date.now();
+          if (!lsSet(listKey(), data)) btToast("Stockage du téléphone plein : liste hors ligne non enregistrée.", "error");
+          setNet(true);
+          if (manual) btToast(`Liste hors ligne à jour (${data.guests.length} pass).`, "success");
+        } catch (e) {
+          if (isNetworkError(e)) setNet(false);
+          else if (manual) btToast(e.message || "Liste indisponible", "error");
+        }
+        renderOfflineInfo();
+      }
+      // Entrée validée en ligne : la liste locale suit, pour qu'une bascule hors ligne ne ré-admette pas
+      async function applyLocal(token, count) {
+        if (!count || !lsGet(listKey(), null)) return;
+        let h = tokenHashCache[token];
+        if (!h) { try { h = await sha256hex(token); tokenHashCache[token] = h; } catch (e) { return; } }
+        const list = lsGet(listKey(), null);
+        const g = list && list.guests.find((x) => x.h === h);
+        if (g) { g.u += count; lsSet(listKey(), list); }
+      }
+      async function scanOffline(count) {
+        const list = lsGet(listKey(), null);
+        if (!list) {
+          return showResult("bad", "HORS LIGNE", "Liste non disponible", "", "",
+            "Pas de réseau et la liste hors ligne n'a pas été téléchargée. Reconnectez-vous puis « Actualiser la liste ».");
+        }
+        let h;
+        try { h = tokenHashCache[lastScan.token] || await sha256hex(lastScan.token); }
+        catch (e) { return showResult("bad", "HORS LIGNE", "Contrôle impossible", "", "", "Navigateur non compatible avec le contrôle hors ligne."); }
+        tokenHashCache[lastScan.token] = h;
+        const g = list.guests.find((x) => x.h === h);
+        const label = (list.event && list.event.title ? list.event.title : "") + " · hors ligne";
+        if (!g) return showResult("bad", "REFUSÉ", "Pass introuvable", "", label, "Ce pass n'est pas sur la liste de l'événement.");
+        const info = { table: g.t, category: g.c, seats: g.s, seats_used: g.u };
+        if (g.r) return showResult("bad", "REFUSÉ", g.n, guestDetail(info), label, "Pass ANNULÉ par l'organisateur.");
+        const remaining = g.s - g.u;
+        if (remaining <= 0) return showResult("bad", "REFUSÉ", g.n, guestDetail(info), label, `Pass COMPLET : ${g.u}/${g.s} déjà entré(s).`);
+        if (!count) {
+          if (remaining > 1) return askCount(g.n, remaining, guestDetail(info), label, (n) => scanOffline(n));
+          count = 1;
+        }
+        count = Math.min(count, remaining);
+        g.u += count;
+        lsSet(listKey(), list);
+        const q = lsGet(queueKey(), []);
+        q.push({ uuid: lastScan.uuid, h, count, at: new Date().toISOString() });
+        lsSet(queueKey(), q);
+        renderOfflineInfo();
+        showResult("ok", "ACCÈS AUTORISÉ", g.n, count + " personne(s) · " + guestDetail({ ...info, seats_used: g.u }), label);
+      }
+      let syncing = false;
+      async function syncQueue() {
+        if (syncing || !currentEventId) return;
+        const q = lsGet(queueKey(), []);
+        if (!q.length) return;
+        syncing = true;
+        try {
+          const res = await withTimeout(btApi.post("/invitations/checkins/sync", { device_id: deviceId(), items: q.slice(0, 200) }), 15000);
+          if (!res) return;
+          const done = {};
+          let conflicts = 0;
+          res.results.forEach((r) => { done[r.uuid] = true; if (r.status === "conflict") conflicts++; });
+          lsSet(queueKey(), lsGet(queueKey(), []).filter((it) => !done[it.uuid]));
+          setNet(true);
+          if (conflicts) btToast(`${conflicts} pass déjà utilisé(s) sur un autre téléphone : signalé(s) à l'organisateur.`, "info");
+        } catch (e) {
+          if (isNetworkError(e)) setNet(false);
+        } finally {
+          syncing = false;
+          renderOfflineInfo();
+        }
+      }
+      function initOffline() {
+        document.getElementById("offline-panel").classList.remove("hidden");
+        purgeExpiredLists();
+        renderOfflineInfo();
+        refreshOfflineList(false);
+        window.addEventListener("online", () => { setNet(true); syncQueue().then(() => refreshOfflineList(false)); });
+        window.addEventListener("offline", () => { setNet(false); updateLocalStats(); });
+        setInterval(syncQueue, 30000);
+        setInterval(() => refreshOfflineList(false), 5 * 60000);
       }
       
       function relancerScanner() {
         document.getElementById("scan-result").classList.add("hidden");
         document.getElementById("scan-result").classList.remove("flex");
+        document.getElementById("count-picker").classList.add("hidden");
         html5QrCode.resume();
         // Refresh immédiat des stats après scan (sans attendre les 30s)
         if (typeof loadScanStats === "function") loadScanStats();
+        if (isPrivateEvent) syncQueue();
       }
       function onScanFailure(error) {
         // Cette fonction tourne en boucle tant qu'aucun QR code n'est trouvé.
@@ -413,6 +636,11 @@
           console.warn("Backend logout warning:", error);
         }
         
+        // Données d'invités stockées pour le hors ligne : effacées à la déconnexion
+        try {
+          if (lsGet(queueKey(), []).length && !confirm("Des entrées hors ligne ne sont pas encore synchronisées. Quitter quand même ?")) return;
+          Object.keys(localStorage).filter((k) => k.indexOf("goevent_offline_") === 0).forEach((k) => localStorage.removeItem(k));
+        } catch (e) { /* stockage indisponible */ }
         // 🔒 TOUJOURS effacer le token et rediriger
         btAuth.logout();
         sessionStorage.clear();

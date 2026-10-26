@@ -66,6 +66,8 @@ def _check_event_ownership(db: Session, event_id: int, user: User) -> Event:
         raise HTTPException(403, "Cet événement ne vous appartient pas")
     if not event.is_active:
         raise HTTPException(400, "Événement inactif ou annulé")
+    if event.visibility != "public":
+        raise HTTPException(400, "Pas de promotion sur un événement privé (invitations).")
     # Event doit être à venir (pas de promo sur du passé)
     if event.event_date and event.event_date < datetime.utcnow():
         raise HTTPException(400, "L'événement est déjà passé")

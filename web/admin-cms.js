@@ -929,6 +929,7 @@
     ["slot_hero", "Slot Hero (carrousel d'accueil)", "Vendu par contrat (Régie pub) : prérempli dans le formulaire de contrat et affiché aux partenaires."],
     ["ad_formats", "Emplacements publicitaires (par mois)", "Affiché sur la page Partenaires. Vide = « Sur devis »."],
     ["premium", "Services premium", "Affichage uniquement (page Partenaires)."],
+    ["invitations", "Invitations digitales (packs)", "Prix par taille de pack (personnes) et niveau de service. Montant figé sur un pack à son activation."],
   ];
 
   function loadPublicPricing() {

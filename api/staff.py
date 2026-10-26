@@ -77,6 +77,10 @@ def _capabilities_for(user: User) -> dict:
         "content_manage": False,
         "legal_pages_manage": False,
         "pricing_manage": False,
+
+        # Invitations digitales (événements privés) : gestion / activation des packs
+        "invitations_manage": False,
+        "invitations_activate": False,
     }
     
     if role == "admin":
@@ -94,6 +98,7 @@ def _capabilities_for(user: User) -> dict:
                 "ads_slides_read": True,
                 "moderate_partners": True,
                 "commissions_view": True,
+                "invitations_manage": True,
             })
         elif fn == "cm":
             caps.update({

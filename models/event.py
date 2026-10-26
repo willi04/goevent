@@ -20,6 +20,9 @@ class Event(Base):
     cover_image_url = Column(String, default="")
     ticket_tiers    = Column(JSONB, default=list)
     is_active       = Column(Boolean, default=True)
+    # "public" (billetterie) | "private" (invitations digitales : jamais listé,
+    # jamais vendu — cf. models/invitation.py). Migration : core/migrations.py
+    visibility      = Column(String(10), nullable=False, default="public", server_default="public")
     created_at      = Column(DateTime, default=datetime.utcnow)
     organizer_id    = Column(Integer, ForeignKey("users.id"))
 

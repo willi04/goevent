@@ -24,6 +24,22 @@ FB_PACK_MARGIN_RATE = 0.30    # 30% de marge GoEvent fixe
 COMMISSION_BUYER_RATE = 0.04      # frais de service à la charge de l'acheteur
 COMMISSION_ORGANIZER_RATE = 0.07  # commission à la charge de l'organisateur
 
+# ─── Invitations digitales : moyens de paiement des packs ──────────────
+# Activation MANUELLE par l'admin, uniquement après un paiement reçu sur un
+# moyen AU NOM DE GoEvent SARLU. La référence (n° de reçu, ID de transaction…)
+# est obligatoire et unique par canal. Activer/désactiver un canal :
+# variable INVITATION_CHANNELS_ACTIVE (codes séparés par des virgules).
+INVITATION_PAYMENT_CHANNELS = [
+    {"code": "especes_recu", "label": "Espèces contre reçu GoEvent SARLU", "ref_label": "N° du reçu GoEvent SARLU"},
+    {"code": "orange_money_goevent", "label": "Orange Money GoEvent SARLU", "ref_label": "ID de transaction Orange Money"},
+    {"code": "virement_ecobank", "label": "Virement Ecobank GoEvent SARLU", "ref_label": "Référence du virement"},
+]
+INVITATION_PACK_SIZES = (50, 100, 300, 500)          # en personnes (un pass « + 2 » compte 3)
+INVITATION_SERVICE_LEVELS = ("autonome", "accompagne")
+INVITATION_RETENTION_DAYS = 30                        # purge des listes d'invités après l'événement
+INVITATION_HOUSE_PHONE = "+23600000001"               # compte orga interne (inactif) des événements accompagnés
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -61,6 +77,12 @@ class Settings(BaseSettings):
     # ── EMAIL (SMTP Gmail) ──────────────────────────────────────
     SENDER_EMAIL: str = ""
     SENDER_PASSWORD: str = ""
+
+    # ── INVITATIONS ─────────────────────────────────────────────
+    # Canaux de paiement actifs (Ecobank : à ajouter à l'ouverture du compte)
+    INVITATION_CHANNELS_ACTIVE: str = "especes_recu,orange_money_goevent"
+    # Domaine des liens de pass (QR) et de suivi
+    PUBLIC_SITE_URL: str = "https://goevent.africa"
 
     @property
     def cors_origins(self) -> list[str]:

@@ -117,6 +117,19 @@ MIGRATIONS = [
         "events.visibility",
         "ALTER TABLE events ADD COLUMN IF NOT EXISTS visibility VARCHAR(10) NOT NULL DEFAULT 'public'",
     ),
+    # Invitations 2.1 : pass papier + vérification manuelle hors ligne (4 derniers chiffres)
+    (
+        "event_guests.paper",
+        "ALTER TABLE event_guests ADD COLUMN IF NOT EXISTS paper BOOLEAN NOT NULL DEFAULT false",
+    ),
+    (
+        "event_guests.phone4_salt",
+        "ALTER TABLE event_guests ADD COLUMN IF NOT EXISTS phone4_salt VARCHAR(32)",
+    ),
+    (
+        "event_guests.phone4_hash",
+        "ALTER TABLE event_guests ADD COLUMN IF NOT EXISTS phone4_hash VARCHAR(64)",
+    ),
 ]
 
 

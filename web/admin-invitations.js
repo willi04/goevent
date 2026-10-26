@@ -17,7 +17,8 @@
   var SERVICE = { autonome: "Autonome", accompagne: "Accompagné" };
   var STATUS = { pending: ["À envoyer", "bg-gray-100 text-gray-700"], sent: ["Envoyé", "bg-blue-100 text-blue-800"],
                  partial: ["Entré en partie", "bg-amber-100 text-amber-800"], complete: ["Entré", "bg-green-100 text-green-800"],
-                 revoked: ["Annulé", "bg-red-100 text-red-700"] };
+                 revoked: ["Annulé", "bg-red-100 text-red-700"], to_print: ["À imprimer", "bg-orange-100 text-orange-800"],
+                 printed: ["Imprimé", "bg-blue-100 text-blue-800"] };
 
   var toast = function (m, t) { if (typeof btToast === "function") btToast(m, t || "info"); };
   function el(tag, attrs, children) {
@@ -294,7 +295,7 @@
   // ── Invités : import, liste, envoi WhatsApp ──────────────────────
   function guestsBlock() {
     var paste = el("textarea", { class: "input-field font-mono text-xs", rows: "5", id: "inv-paste",
-      placeholder: "Collez ici les colonnes depuis Excel (ou un CSV) :\nNom ⇥ Téléphone ⇥ Places ⇥ Table ⇥ Catégorie\nJean Kossi ⇥ 75 00 00 01 ⇥ 2 ⇥ T1 ⇥ Famille" });
+      placeholder: "Collez ici les colonnes depuis Excel (ou un CSV) :\nNom ⇥ Téléphone ⇥ Places ⇥ Table ⇥ Catégorie ⇥ Papier\nJean Kossi ⇥ 75 00 00 01 ⇥ 2 ⇥ T1 ⇥ Famille ⇥ non" });
     var file = el("input", { type: "file", accept: ".xlsx,.docx,.csv,.txt,.doc,.xls", class: "text-xs", onchange: function (e) {
       var f = e.target.files[0];
       if (!f) return;
@@ -331,7 +332,7 @@
     var report = el("div", { id: "inv-import-report" });
     var importBox = el("details", { class: "mb-4", open: S.ev.listed ? null : "open" }, [
       el("summary", { class: "cursor-pointer font-bold text-sm text-primary mb-2", text: "Importer des invités" }),
-      el("p", { class: "text-[11px] text-gray-500 mb-2", text: "Fichier Excel (.xlsx), Word (.docx, tableau), CSV, ou copier-coller. Colonnes dans cet ordre : Nom, Téléphone (8 chiffres = +236, ou format international), Places (1 à 20, défaut 1), Table, Catégorie — ou une ligne de titres (« Nom », « Téléphone »…). Anciens formats .doc / .xls : enregistrez-les d'abord en .docx / .xlsx." }),
+      el("p", { class: "text-[11px] text-gray-500 mb-2", text: "Fichier Excel (.xlsx), Word (.docx, tableau), CSV, ou copier-coller. Colonnes dans cet ordre : Nom, Téléphone (8 chiffres = +236, ou format international), Places (1 à 20, défaut 1), Table, Catégorie, Papier (« oui » = pass imprimé ; vide = papier seulement si pas de numéro) — ou une ligne de titres (« Nom », « Téléphone »…). Anciens formats .doc / .xls : enregistrez-les d'abord en .docx / .xlsx." }),
       paste,
       el("div", { class: "flex flex-wrap items-center gap-3 mt-2" }, [file,
         el("button", { class: "action-btn btn-primary text-xs", text: "Vérifier la liste", onclick: function () { runImport(paste.value, true); } })]),
@@ -340,7 +341,7 @@
     var search = el("input", { class: "input-field", style: "max-width:260px", placeholder: "Rechercher (nom, numéro, table)", value: S.q,
       oninput: function (e) { S.q = e.target.value; S.page = 1; clearTimeout(S._t); S._t = setTimeout(loadGuests, 300); } });
     var filter = el("select", { class: "input-field", style: "max-width:200px", onchange: function (e) { S.status = e.target.value; S.page = 1; loadGuests(); } },
-      [["", "Tous"], ["pending", "À envoyer"], ["sent", "Envoyés"], ["arrived", "Entrés"], ["not_arrived", "Pas encore arrivés"], ["revoked", "Annulés"]].map(function (o) {
+      [["", "Tous"], ["pending", "À envoyer"], ["sent", "Envoyés"], ["paper", "Pass papier"], ["arrived", "Entrés"], ["not_arrived", "Pas encore arrivés"], ["revoked", "Annulés"]].map(function (o) {
         return el("option", { value: o[0], text: o[1], selected: S.status === o[0] ? "selected" : null });
       }));
     var sendBtn = el("button", { class: "action-btn text-xs", id: "inv-send-next", style: "background:#25d366;color:#fff", onclick: sendNext });
@@ -348,6 +349,7 @@
       el("div", { class: "flex flex-wrap items-center gap-2 mb-3" }, [search, filter, el("span", { class: "flex-1" }), sendBtn]),
       el("p", { class: "text-[11px] text-gray-500 mb-2", text: "« Envoyer au suivant » ouvre WhatsApp avec le message prêt pour le prochain invité non servi : appuyez sur Envoyer dans WhatsApp, revenez ici, recommencez." }),
       el("p", { id: "inv-nophone", class: "hidden text-xs font-semibold text-amber-800 bg-amber-50 rounded-xl p-3 mb-2" }),
+      el("div", { id: "inv-paper", class: "hidden flex flex-wrap items-center gap-2 text-xs font-semibold text-orange-900 bg-orange-50 rounded-xl p-3 mb-2" }),
       el("div", { id: "inv-guests" })]);
   }
 
@@ -368,17 +370,17 @@
       out.push(cur);
       return out;
     }
-    var cols = { full_name: 0, phone: 1, seats: 2, table_label: 3, category: 4 }, start = 0;
+    var cols = { full_name: 0, phone: 1, seats: 2, table_label: 3, category: 4, paper: 5 }, start = 0;
     var head = split(lines[0]).map(function (h) { return h.trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, ""); });
     if (head.some(function (h) { return /^(nom|name|invite)/.test(h); })) {
       var find = function (re) { for (var i = 0; i < head.length; i++) if (re.test(head[i])) return i; return -1; };
       cols = { full_name: find(/^(nom|name|invite)/), phone: find(/^(tel|phone|numero|n°|no |whatsapp|gsm|portable|mobile|contact|cel)/), seats: find(/^(place|nb|nombre|pers)/),
-               table_label: find(/^table/), category: find(/^(cat|groupe|type)/) };
+               table_label: find(/^table/), category: find(/^(cat|groupe|type)/), paper: find(/^(papier|paper|imprim)/) };
       start = 1;
     }
     return lines.slice(start).map(function (l, i) {
       var c = split(l), get = function (k) { return cols[k] >= 0 && c[cols[k]] != null ? String(c[cols[k]]).trim() : null; };
-      return { line: i + start + 1, full_name: get("full_name"), phone: get("phone"), seats: get("seats"), table_label: get("table_label"), category: get("category") };
+      return { line: i + start + 1, full_name: get("full_name"), phone: get("phone"), seats: get("seats"), table_label: get("table_label"), category: get("category"), paper: get("paper") || null };
     });
   }
 
@@ -402,9 +404,13 @@
         el("p", { class: "text-xs text-gray-600", text: q.pack ? "Pack : " + q.pack + " personnes · liste après import : " + q.after + (q.exceeds ? " → DÉPASSE LE PACK" : "")
                                                                : "Aucun pack payé : l'import est possible, l'envoi restera bloqué jusqu'à l'activation." }),
         (function () {
-          var noph = r.valid.filter(function (v) { return !v.phone; }).length;
-          return noph ? el("p", { class: "text-xs font-bold text-amber-800 mt-1", text: "⚠ " + noph + " invité(s) sans numéro : leur pass ne pourra pas partir par WhatsApp. " +
-            "Vérifiez que la colonne Téléphone est bien la 2e (ou titrée « Téléphone »)." }) : null;
+          var paper = r.valid.filter(function (v) { return v.paper; }).length;
+          var noph = r.valid.filter(function (v) { return !v.phone && !v.paper; }).length;
+          return el("div", {}, [
+            paper ? el("p", { class: "text-xs font-bold text-orange-800 mt-1", text: "🖨 " + paper + " pass papier (à imprimer, remis en main propre) — " +
+              "par défaut pour les invités sans numéro. Si c'est une erreur, vérifiez que la colonne Téléphone est bien la 2e (ou titrée « Téléphone »)." }) : null,
+            noph ? el("p", { class: "text-xs font-bold text-amber-800 mt-1", text: "⚠ " + noph + " invité(s) sans numéro et « papier = non » : leur pass ne partira ni par WhatsApp ni à l'impression." }) : null,
+          ]);
         })(),
         r.errors.length ? el("ul", { class: "text-xs text-red-700 mt-2 list-disc pl-5 max-h-40 overflow-auto" }, r.errors.map(function (e) {
           return el("li", { text: "Ligne " + e.line + (e.name ? " (" + e.name + ")" : "") + " : " + e.message });
@@ -418,7 +424,8 @@
   function loadGuests() {
     if (!S.eventId) return;
     var qs = "?page=" + S.page + "&limit=50" + (S.q ? "&q=" + encodeURIComponent(S.q) : "") + (S.status ? "&status=" + S.status : "");
-    btApi.get("/admin/invitations/events/" + S.eventId + "/guests" + qs).then(function (d) { S.guests = d; S.queue = d.send_queue; S.noPhone = d.pending_without_phone || 0; renderGuests(); })
+    btApi.get("/admin/invitations/events/" + S.eventId + "/guests" + qs).then(function (d) { S.guests = d; S.queue = d.send_queue; S.noPhone = d.pending_without_phone || 0;
+      S.paperPending = d.paper_pending || 0; S.paperTotal = d.paper_total || 0; renderGuests(); })
       .catch(function (e) { toast(e.message || "Erreur", "error"); });
   }
 
@@ -438,6 +445,17 @@
         "pour l'envoyer par WhatsApp, ou transmettez le lien vous-même (« Copier le lien »)." : "";
       warn.classList.toggle("hidden", !S.noPhone);
     }
+    var paper = document.getElementById("inv-paper");
+    if (paper) {
+      paper.innerHTML = "";
+      paper.classList.toggle("hidden", !S.paperTotal);
+      if (S.paperTotal) {
+        paper.appendChild(el("span", { class: "flex-1 min-w-[200px]", text: "🖨 " + S.paperTotal + " pass papier" +
+          (S.paperPending ? " dont " + S.paperPending + " à imprimer" : ", tous imprimés") + " (A4, 8 pass découpables par page, QR générés chez GoEvent)." }));
+        if (S.paperPending) paper.appendChild(act("Imprimer les " + S.paperPending + " nouveaux", "background:#ea580c;color:#fff", function () { downloadPaper("pending", this); }));
+        paper.appendChild(act("Réimprimer tous les pass papier", "background:#fff;color:#9a3412", function () { downloadPaper("paper", this); }));
+      }
+    }
     if (!box || !d) return;
     box.innerHTML = "";
     if (!d.guests.length) { box.appendChild(el("p", { class: "text-sm text-gray-400 py-4 text-center", text: "Aucun invité." })); return; }
@@ -452,6 +470,28 @@
         el("button", { class: "action-btn text-xs", text: "→", disabled: S.page >= pages ? "disabled" : null, onclick: function () { S.page++; loadGuests(); } }),
       ]));
     }
+  }
+
+  // PDF des pass papier (fetch authentifié → téléchargement). Les pass papier inclus passent à « Imprimé ».
+  function downloadPaper(scope, btn) {
+    if (!S.ev.quota) { toast("Activez un pack avant d'imprimer les pass.", "error"); return; }
+    if (btn) btn.disabled = true;
+    fetch(BT_API + "/admin/invitations/events/" + S.eventId + "/paper.pdf?scope=" + scope, {
+      headers: { Authorization: "Bearer " + btAuth.getToken() },
+    }).then(function (res) {
+      if (!res.ok) return res.json().catch(function () { return {}; }).then(function (d) {
+        throw new Error(typeof d.detail === "string" ? d.detail : "PDF indisponible.");
+      });
+      return res.blob();
+    }).then(function (blob) {
+      var url = URL.createObjectURL(blob);
+      var a = el("a", { href: url, download: "pass-papier-" + S.eventId + ".pdf" });
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 30000);
+      toast("PDF prêt : imprimez en A4 (taille réelle), puis découpez le long des pointillés.", "success");
+      reloadEvent().then(loadGuests);
+    }).catch(function (e) { toast(e.message || "PDF indisponible.", "error"); })
+      .then(function () { if (btn) btn.disabled = false; });
   }
 
   function act(label, style, fn) { return el("button", { class: "action-btn text-[11px]", style: style, text: label, onclick: fn }); }
@@ -490,7 +530,7 @@
           el("span", { class: "font-bold text-sm text-gray-900", text: g.full_name }),
           el("span", { class: "text-[10px] font-black px-2 py-0.5 rounded-full " + st[1], text: st[0] }),
         ]),
-        el("p", { class: "text-[11px] text-gray-500", text: [g.phone || "sans numéro", g.seats + " place(s)" + (g.seats_used ? " · " + g.seats_used + " entrée(s)" : ""),
+        el("p", { class: "text-[11px] text-gray-500", text: [g.paper ? "pass papier" : null, g.phone || "sans numéro", g.seats + " place(s)" + (g.seats_used ? " · " + g.seats_used + " entrée(s)" : ""),
           g.table_label ? "table " + g.table_label : null, g.category].filter(Boolean).join(" · ") }),
       ]),
       actions,
@@ -516,14 +556,18 @@
   function guestModal(g) {
     var f = { name: el("input", { class: "input-field", maxlength: "120" }), phone: el("input", { class: "input-field", maxlength: "40" }),
               seats: el("input", { class: "input-field", type: "number", min: String(Math.max(1, g.seats_used)), max: "20" }),
-              table: el("input", { class: "input-field", maxlength: "40" }), cat: el("input", { class: "input-field", maxlength: "40" }) };
+              table: el("input", { class: "input-field", maxlength: "40" }), cat: el("input", { class: "input-field", maxlength: "40" }),
+              paper: el("input", { type: "checkbox" }) };
+    f.paper.checked = !!g.paper;
     f.name.value = g.full_name; f.phone.value = g.phone || ""; f.seats.value = g.seats; f.table.value = g.table_label || ""; f.cat.value = g.category || "";
     var body = el("div", { class: "space-y-3" }, [field("Nom", f.name), field("Téléphone", f.phone, "Le changer ne renvoie pas le pass : utilisez WhatsApp après."),
-      el("div", { class: "grid grid-cols-3 gap-3" }, [field("Places", f.seats), field("Table", f.table), field("Catégorie", f.cat)])]);
+      el("div", { class: "grid grid-cols-3 gap-3" }, [field("Places", f.seats), field("Table", f.table), field("Catégorie", f.cat)]),
+      el("label", { class: "flex items-center gap-2 text-sm font-semibold text-gray-800" }, [f.paper, "Pass papier (imprimé et remis en main propre, pas d'envoi WhatsApp)"])]);
     modal("Modifier l'invité", body, function (close) {
       var b = el("button", { class: "action-btn btn-primary", text: "Enregistrer", onclick: function () {
         btApi.patch("/admin/invitations/guests/" + g.id, { full_name: f.name.value.trim(), phone: f.phone.value.trim() || null,
-          seats: parseInt(f.seats.value, 10) || 1, table_label: f.table.value.trim() || null, category: f.cat.value.trim() || null })
+          seats: parseInt(f.seats.value, 10) || 1, table_label: f.table.value.trim() || null, category: f.cat.value.trim() || null,
+          paper: f.paper.checked })
           .then(function () { close(); toast("Invité enregistré.", "success"); reloadEvent().then(loadGuests); })
           .catch(function (e) { toast(e.message || "Erreur", "error"); });
       } });
@@ -536,11 +580,16 @@
     var count = el("input", { class: "input-field", type: "number", min: "1", max: String(remaining), value: String(remaining) });
     var reason = el("input", { class: "input-field", maxlength: "200", placeholder: "Ex. téléphone déchargé, identité vérifiée" });
     modal("Entrée manuelle : " + g.full_name, el("div", { class: "space-y-3" }, [field("Personnes qui entrent (" + remaining + " restante(s))", count), field("Motif (obligatoire)", reason)]), function (close) {
-      return [el("button", { class: "action-btn btn-primary", text: "Valider l'entrée", onclick: function () {
-        btApi.post("/admin/invitations/guests/" + g.id + "/checkin", { count: parseInt(count.value, 10) || 1, reason: reason.value.trim() })
+      var b = el("button", { class: "action-btn btn-primary", text: "Valider l'entrée", onclick: function () {
+        var n = parseInt(count.value, 10);
+        if (!(n >= 1 && n <= remaining)) { toast("Nombre de personnes : entre 1 et " + remaining + ".", "error"); return; }
+        if (reason.value.trim().length < 3) { toast("Indiquez le motif de l'entrée manuelle (3 caractères minimum).", "error"); reason.focus(); return; }
+        b.disabled = true;
+        btApi.post("/admin/invitations/guests/" + g.id + "/checkin", { count: n, reason: reason.value.trim() })
           .then(function () { close(); toast("Entrée enregistrée.", "success"); reloadEvent().then(loadGuests); })
-          .catch(function (e) { toast(e.message || "Erreur", "error"); });
-      } })];
+          .catch(function (e) { b.disabled = false; toast(e.message || "Erreur", "error"); });
+      } });
+      return [b];
     });
   }
 

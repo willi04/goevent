@@ -128,6 +128,56 @@
       <span id="offline-info" class="text-gray-500 flex-1 min-w-[140px]">Liste hors ligne : non téléchargée</span>
       <span id="sync-info" class="font-bold text-amber-700 hidden"></span>
       <button onclick="refreshOfflineList(true)" class="px-3 py-1.5 rounded-full bg-gray-100 font-bold text-gray-700 active:scale-95">Actualiser la liste</button>
+      <button onclick="openManual()" class="px-3 py-1.5 rounded-full bg-[#00502c] text-white font-bold active:scale-95 flex items-center gap-1">
+        <span class="material-symbols-outlined" style="font-size:16px">person_search</span>Rechercher un invité
+      </button>
+    </div>
+
+    <!-- Entrée manuelle (invité sans QR) : recherche par nom, vérification, motif obligatoire. En ligne et hors ligne. -->
+    <div id="manual-modal" class="hidden fixed inset-0 z-[60] bg-black/50 items-end sm:items-center justify-center p-3">
+      <div class="bg-white w-full max-w-md rounded-3xl p-5 max-h-[92vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-lg font-black text-gray-900">Entrée manuelle</h2>
+          <button onclick="closeManual(true)" aria-label="Fermer" class="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center active:scale-95">
+            <span class="material-symbols-outlined" style="font-size:20px">close</span>
+          </button>
+        </div>
+        <div id="manual-search-step">
+          <input id="manual-q" type="search" autocomplete="off" oninput="onManualInput()" placeholder="Nom de l'invité ou n° de table"
+            class="w-full px-4 py-3 rounded-2xl border border-gray-200 text-base focus:outline-none focus:border-[#00502c]" />
+          <div id="manual-results" class="mt-3 space-y-2"></div>
+        </div>
+        <div id="manual-confirm-step" class="hidden">
+          <p id="m-name" class="text-xl font-black text-gray-900"></p>
+          <p id="m-detail" class="text-sm text-gray-600 mb-4"></p>
+          <p class="font-bold text-sm text-gray-800 mb-2">Personnes qui entrent maintenant</p>
+          <div id="m-count" class="grid grid-cols-5 gap-2 mb-4"></div>
+          <div id="m-last4-box">
+            <label for="m-last4" class="font-bold text-sm text-gray-800">4 derniers chiffres du téléphone de l'invité</label>
+            <input id="m-last4" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="Demandez-les à l'invité"
+              class="w-full mt-1 px-4 py-3 rounded-2xl border border-gray-200 text-lg tracking-[0.4em] font-black focus:outline-none focus:border-[#00502c]" />
+            <p class="text-[11px] text-gray-500 mt-1">Ou, à défaut :</p>
+          </div>
+          <label class="flex items-start gap-2 mt-2 text-sm font-bold text-gray-800">
+            <input id="m-identity" type="checkbox" class="w-5 h-5 mt-0.5 accent-[#00502c]" />
+            <span>Identité vérifiée (pièce d'identité, ou invité reconnu par l'organisateur)</span>
+          </label>
+          <label for="m-reason" class="font-bold text-sm text-gray-800 mt-4 block">Motif (obligatoire)</label>
+          <input id="m-reason" list="m-reasons" maxlength="150" autocomplete="off" placeholder="ex. téléphone déchargé"
+            class="w-full mt-1 px-4 py-3 rounded-2xl border border-gray-200 text-base focus:outline-none focus:border-[#00502c]" />
+          <datalist id="m-reasons">
+            <option value="Téléphone déchargé"></option>
+            <option value="Pass oublié ou supprimé"></option>
+            <option value="QR Code illisible"></option>
+            <option value="Pass papier perdu"></option>
+          </datalist>
+          <p id="m-error" class="hidden text-sm text-red-600 font-bold mt-3"></p>
+          <div class="grid grid-cols-2 gap-2 mt-4">
+            <button onclick="manualBack()" class="py-3 rounded-full bg-gray-100 text-gray-700 font-bold active:scale-95">Retour</button>
+            <button id="m-submit" onclick="submitManual()" class="py-3 rounded-full bg-[#00502c] text-white font-black active:scale-95 disabled:opacity-50">Valider l'entrée</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="flex-1 flex flex-col items-center justify-center relative">
@@ -529,8 +579,11 @@
         if (!count || !lsGet(listKey(), null)) return;
         let h = tokenHashCache[token];
         if (!h) { try { h = await sha256hex(token); tokenHashCache[token] = h; } catch (e) { return; } }
+        applyLocalHash(h, count);
+      }
+      function applyLocalHash(h, count) {
         const list = lsGet(listKey(), null);
-        const g = list && list.guests.find((x) => x.h === h);
+        const g = count && list && list.guests.find((x) => x.h === h);
         if (g) { g.u += count; lsSet(listKey(), list); }
       }
       async function scanOffline(count) {
@@ -585,6 +638,186 @@
           renderOfflineInfo();
         }
       }
+      // ════════════════════════════════════════════════════════
+      // ENTRÉE MANUELLE — recherche par nom / table, en ligne puis liste du téléphone
+      // Vérification : 4 derniers chiffres (comparés à l'empreinte PBKDF2 hors ligne,
+      // jamais au numéro) ou « identité vérifiée ». Motif obligatoire.
+      // ════════════════════════════════════════════════════════
+      let manualSel = null, manualTimer = null, manualSeq = 0, manualCount = 1;
+      const $m = (id) => document.getElementById(id);
+      const normTxt = (s) => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+      async function pbkdf2hex(text, saltHex, iterations) {
+        const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(text), "PBKDF2", false, ["deriveBits"]);
+        const salt = new Uint8Array(saltHex.match(/../g).map((x) => parseInt(x, 16)));
+        const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt, iterations, hash: "SHA-256" }, key, 256);
+        return Array.from(new Uint8Array(bits)).map((b) => b.toString(16).padStart(2, "0")).join("");
+      }
+      function openManual() {
+        try { html5QrCode.pause(true); } catch (e) { /* caméra déjà en pause */ }
+        manualSel = null;
+        $m("manual-q").value = "";
+        $m("manual-results").innerHTML = '<p class="text-sm text-gray-500">Tapez au moins 2 lettres du nom ou le n° de table.</p>';
+        $m("manual-search-step").classList.remove("hidden");
+        $m("manual-confirm-step").classList.add("hidden");
+        const modal = $m("manual-modal");
+        modal.classList.remove("hidden"); modal.classList.add("flex");
+        setTimeout(() => $m("manual-q").focus(), 50);
+      }
+      function closeManual(resume) {
+        const modal = $m("manual-modal");
+        modal.classList.add("hidden"); modal.classList.remove("flex");
+        manualSel = null;
+        if (resume) { try { html5QrCode.resume(); } catch (e) { /* caméra non démarrée */ } }
+      }
+      function manualBack() {
+        manualSel = null;
+        $m("manual-confirm-step").classList.add("hidden");
+        $m("manual-search-step").classList.remove("hidden");
+      }
+      function onManualInput() { clearTimeout(manualTimer); manualTimer = setTimeout(runManualSearch, 250); }
+      function manualMsg(text, cls) {
+        const p = document.createElement("p");
+        p.className = "text-sm " + (cls || "text-gray-500");
+        p.textContent = text;
+        $m("manual-results").replaceChildren(p);
+      }
+      async function runManualSearch() {
+        const q = $m("manual-q").value.trim(), seq = ++manualSeq;
+        if (q.length < 2) return manualMsg("Tapez au moins 2 lettres du nom ou le n° de table.");
+        let rows, offline = false;
+        try {
+          const d = await withTimeout(btApi.get(`/invitations/events/${currentEventId}/search?q=${encodeURIComponent(q)}`), ONLINE_TIMEOUT_MS);
+          if (!d) return;
+          setNet(true);
+          rows = d.guests.map((g) => ({ id: g.id, h: g.h, name: g.guest_name, table: g.table, category: g.category,
+            seats: g.seats, used: g.seats_used, revoked: g.revoked, hasPhone: g.has_phone }));
+        } catch (e) {
+          if (seq !== manualSeq) return;
+          if (!isNetworkError(e)) return manualMsg(e.message || "Recherche impossible.", "text-red-600 font-bold");
+          setNet(false); offline = true;
+          const list = lsGet(listKey(), null);
+          if (!list) return manualMsg("Pas de réseau et la liste hors ligne n'a pas été téléchargée.", "text-red-600 font-bold");
+          const nq = normTxt(q);
+          rows = list.guests.filter((g) => normTxt(g.n).includes(nq) || normTxt(g.t).includes(nq)).slice(0, 20)
+            .map((g) => ({ id: null, h: g.h, name: g.n, table: g.t, category: g.c, seats: g.s, used: g.u, revoked: g.r, hasPhone: !!g.ph }));
+        }
+        if (seq !== manualSeq) return;
+        if (!rows.length) return manualMsg("Aucun invité trouvé" + (offline ? " (liste du téléphone)." : "."));
+        const box = $m("manual-results");
+        box.replaceChildren();
+        if (offline) { const p = document.createElement("p"); p.className = "text-[11px] font-bold text-amber-700"; p.textContent = "Hors ligne : recherche sur la liste du téléphone"; box.appendChild(p); }
+        rows.forEach((r) => {
+          const left = r.seats - r.used, blocked = r.revoked || left <= 0;
+          const b = document.createElement("button");
+          b.type = "button";
+          b.className = "w-full text-left px-4 py-3 rounded-2xl border flex items-center justify-between gap-3 " +
+            (blocked ? "border-gray-100 bg-gray-50 opacity-60" : "border-gray-200 active:scale-[.98]");
+          const info = document.createElement("span");
+          const n = document.createElement("span"); n.className = "block font-black text-gray-900"; n.textContent = r.name;
+          const dt = document.createElement("span"); dt.className = "block text-xs text-gray-500";
+          dt.textContent = guestDetail({ table: r.table, category: r.category, seats: r.seats, seats_used: r.used }) || "1 personne";
+          info.append(n, dt);
+          const badge = document.createElement("span");
+          badge.className = "shrink-0 text-xs font-black px-2 py-1 rounded-full " +
+            (r.revoked ? "bg-red-50 text-red-600" : left <= 0 ? "bg-gray-200 text-gray-600" : "bg-green-50 text-green-700");
+          badge.textContent = r.revoked ? "ANNULÉ" : left <= 0 ? "COMPLET" : left + " place" + (left > 1 ? "s" : "");
+          b.append(info, badge);
+          if (!blocked) b.onclick = () => selectManual(r);
+          box.appendChild(b);
+        });
+      }
+      function selectManual(r) {
+        manualSel = Object.assign({ uuid: newUuid() }, r);
+        manualCount = 1;
+        const left = r.seats - r.used;
+        $m("m-name").textContent = r.name;
+        $m("m-detail").textContent = [r.table ? "Table " + r.table : "", r.category || "", left + " place(s) restante(s) sur " + r.seats]
+          .filter(Boolean).join(" · ");
+        const box = $m("m-count");
+        box.replaceChildren();
+        for (let i = 1; i <= Math.min(left, 20); i++) {
+          const b = document.createElement("button");
+          b.type = "button"; b.textContent = String(i); b.dataset.n = String(i);
+          b.onclick = () => { manualCount = i; paintCount(); };
+          box.appendChild(b);
+        }
+        paintCount();
+        $m("m-last4-box").classList.toggle("hidden", !r.hasPhone);
+        $m("m-last4").value = ""; $m("m-identity").checked = false; $m("m-reason").value = "";
+        $m("m-error").classList.add("hidden");
+        $m("m-submit").disabled = false;
+        $m("manual-search-step").classList.add("hidden");
+        $m("manual-confirm-step").classList.remove("hidden");
+      }
+      function paintCount() {
+        Array.from($m("m-count").children).forEach((b) => {
+          b.className = "py-3 rounded-2xl font-black text-lg active:scale-95 " +
+            (Number(b.dataset.n) === manualCount ? "bg-[#00502c] text-white" : "bg-gray-100 text-gray-800");
+        });
+      }
+      function mErr(text) {
+        const el = $m("m-error");
+        el.textContent = text; el.classList.remove("hidden");
+        $m("m-submit").disabled = false;
+      }
+      async function submitManual() {
+        if (!manualSel) return;
+        const reason = $m("m-reason").value.trim().slice(0, 150);
+        const last4 = $m("m-last4").value.replace(/\D/g, "");
+        const identity = $m("m-identity").checked;
+        $m("m-error").classList.add("hidden");
+        if (last4 && last4.length !== 4) return mErr("Saisissez exactement 4 chiffres.");
+        if (!last4 && !identity) return mErr("Vérification requise : 4 derniers chiffres du téléphone ou « identité vérifiée ».");
+        if (reason.length < 3) return mErr("Indiquez le motif (3 caractères minimum).");
+        $m("m-submit").disabled = true;
+        const sel = manualSel, count = manualCount;
+        if (sel.id) {
+          try {
+            const r = await withTimeout(btApi.post("/invitations/manual-checkin", { guest_id: sel.id, count, reason,
+              last4: last4 || null, identity_checked: identity, client_uuid: sel.uuid }), ONLINE_TIMEOUT_MS);
+            setNet(true);
+            if (r && r.valid) {
+              if (sel.h) applyLocalHash(sel.h, r.admitted || 0);
+              closeManual(false);
+              showResult("ok", r.duplicate ? "DÉJÀ ENREGISTRÉ" : "ENTRÉE MANUELLE", r.guest_name,
+                (r.admitted ? r.admitted + " personne(s) · " : "") + guestDetail(r), r.event);
+            }
+            return;
+          } catch (e) {
+            if (!isNetworkError(e)) return mErr(e.message || "Entrée refusée.");
+            setNet(false);
+          }
+        }
+        // Hors ligne : même identifiant d'entrée (si le serveur l'a reçue malgré tout, la synchro la reconnaît)
+        const list = lsGet(listKey(), null);
+        const g = list && sel.h && list.guests.find((x) => x.h === sel.h);
+        if (!g) return mErr("Pas de réseau et invité absent de la liste du téléphone. Actualisez la liste dès que le réseau revient.");
+        if (g.r) return mErr("Pass ANNULÉ par l'organisateur.");
+        const left = g.s - g.u;
+        if (left <= 0) return mErr(`Pass COMPLET : ${g.u}/${g.s} déjà entré(s).`);
+        if (count > left) return mErr(`Il ne reste que ${left} place(s) sur ce pass.`);
+        let method = "identité vérifiée";
+        if (last4) {
+          if (!g.ph || !g.ps) return mErr("Cet invité n'a pas de numéro : cochez « identité vérifiée ».");
+          let ok = false;
+          try { ok = (await pbkdf2hex(last4, g.ps, list.phone4_iterations || 5000)) === g.ph; }
+          catch (e) { return mErr("Vérification des chiffres impossible sur ce téléphone : contrôlez l'identité et cochez la case."); }
+          if (!ok) return mErr("Les 4 derniers chiffres ne correspondent pas.");
+          method = "4 derniers chiffres";
+        }
+        g.u += count;
+        lsSet(listKey(), list);
+        const q = lsGet(queueKey(), []);
+        if (!q.some((it) => it.uuid === sel.uuid)) {
+          q.push({ uuid: sel.uuid, h: g.h, count, at: new Date().toISOString(), source: "manual", reason: `[${method}] ${reason}` });
+          lsSet(queueKey(), q);
+        }
+        renderOfflineInfo();
+        closeManual(false);
+        showResult("ok", "ENTRÉE MANUELLE", g.n, count + " personne(s) · " + guestDetail({ table: g.t, category: g.c, seats: g.s, seats_used: g.u }),
+          (list.event && list.event.title ? list.event.title : "") + " · hors ligne");
+      }
+
       function initOffline() {
         document.getElementById("offline-panel").classList.remove("hidden");
         purgeExpiredLists();

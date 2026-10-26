@@ -144,6 +144,37 @@ def channels(active_only: bool = False) -> list:
     return [c for c in out if c["active"]] if active_only else out
 
 
+PHONE4_ITERATIONS = 5000   # PBKDF2 : ralentit la reconstitution des 4 chiffres depuis la liste hors ligne
+
+
+def phone4_digest(last4: str, salt_hex: str, iterations: int = PHONE4_ITERATIONS) -> str:
+    return hashlib.pbkdf2_hmac("sha256", last4.encode(), bytes.fromhex(salt_hex), iterations).hex()
+
+
+def set_phone(g, phone: Optional[str]):
+    """Affecte le numéro et son empreinte « 4 derniers chiffres » (contrôle manuel hors ligne)."""
+    g.phone = phone
+    if phone:
+        g.phone4_salt = secrets.token_hex(16)
+        g.phone4_hash = phone4_digest(phone[-4:], g.phone4_salt)
+    else:
+        g.phone4_salt = g.phone4_hash = None
+
+
+def _yes(v) -> Optional[bool]:
+    """Colonne « papier » : oui / x / 1 / vrai → True ; non / 0 / faux → False ; vide → None."""
+    if v is None:
+        return None
+    s = str(v).strip().lower()
+    if not s:
+        return None
+    if s in ("oui", "o", "yes", "y", "x", "1", "vrai", "true", "papier", "imprimé", "imprime"):
+        return True
+    if s in ("non", "n", "no", "0", "faux", "false", "whatsapp", "wa"):
+        return False
+    return None
+
+
 def places_label(n: int) -> str:
     return "%d place%s" % (n, "s" if n > 1 else "")
 
@@ -293,8 +324,10 @@ def validate_rows(db: Session, event_id: int, rows: list) -> dict:
             errors.append({"line": line, "name": name, "message": "doublon (numéro déjà dans la liste)"}); continue
         if phone:
             seen.add(phone)
+        paper = _yes(r.get("paper"))
         valid.append({"line": line, "full_name": name, "phone": phone, "seats": seats,
-                      "table_label": _clean(r.get("table_label"), 40), "category": _clean(r.get("category"), 40)})
+                      "table_label": _clean(r.get("table_label"), 40), "category": _clean(r.get("category"), 40),
+                      "paper": (phone is None) if paper is None else paper})
     q, used = quota(db, event_id), seats_listed(db, event_id)
     adding = sum(v["seats"] for v in valid)
     return {"valid": valid, "errors": errors,
@@ -313,9 +346,11 @@ def import_guests(db: Session, ev: Event, rows: list, user: User, dry_run: bool,
                             % (report["quota"]["pack"], report["quota"]["after"]))
     for v in report["valid"]:
         tok = new_token()
-        db.add(EventGuest(event_id=ev.id, token=tok, token_hash=token_hash(tok), full_name=v["full_name"],
-                          phone=v["phone"], seats=v["seats"], table_label=v["table_label"],
-                          category=v["category"], created_by=user.id))
+        g = EventGuest(event_id=ev.id, token=tok, token_hash=token_hash(tok), full_name=v["full_name"],
+                       seats=v["seats"], table_label=v["table_label"], category=v["category"],
+                       paper=v["paper"], created_by=user.id)
+        set_phone(g, v["phone"])
+        db.add(g)
     db.commit()
     report["created"] = len(report["valid"])
     log_security_event(db, "invitation_guests_imported", request, user.id,
@@ -469,8 +504,59 @@ def scan(db: Session, user: User, token: str, count: Optional[int], request=None
                                                                    "nt" if count > 1 else ""))
 
 
-def manual_checkin(db: Session, user: User, g: EventGuest, count: int, reason: str, request=None) -> EventGuest:
-    db.refresh(g, with_for_update=True)
+def verify_identity(g: EventGuest, last4: Optional[str], identity_checked: bool) -> str:
+    """Contrôle manuel : 4 derniers chiffres du téléphone, sinon « identité vérifiée » cochée."""
+    last4 = re.sub(r"\D", "", last4 or "")
+    if last4:
+        if not g.phone:
+            raise HTTPException(400, "Cet invité n'a pas de numéro : cochez « identité vérifiée ».")
+        if len(last4) != 4 or not secrets.compare_digest(last4, g.phone[-4:]):
+            raise HTTPException(400, "Les 4 derniers chiffres ne correspondent pas.")
+        return "4 derniers chiffres"
+    if identity_checked:
+        return "identité vérifiée"
+    raise HTTPException(400, "Vérification requise : 4 derniers chiffres du téléphone ou « identité vérifiée ».")
+
+
+def agent_manual_checkin(db: Session, user: User, guest_id: int, count: int, reason: str, last4: Optional[str],
+                         identity_checked: bool, client_uuid: Optional[str], request=None) -> dict:
+    """Entrée manuelle depuis le scanner (agent assigné / orga propriétaire)."""
+    from api.tickets import _can_operate_event
+    g = db.query(EventGuest).filter(EventGuest.id == guest_id).with_for_update().first()
+    if not g or g.purged:
+        raise HTTPException(404, "Invité introuvable")
+    ev = db.query(Event).filter(Event.id == g.event_id).first()
+    if not _can_operate_event(user, ev):
+        raise HTTPException(403, "Cet invité appartient à un autre événement.")
+    require_active(db, ev.id)
+    cid = _valid_uuid(client_uuid)
+    if cid and db.query(GuestCheckin.id).filter(GuestCheckin.client_uuid == cid).first():
+        return dict(guest_public(g), valid=True, duplicate=True, admitted=0, event=ev.title,
+                    message="Entrée déjà enregistrée pour %s." % g.full_name)
+    method = verify_identity(g, last4, identity_checked)
+    g = manual_checkin(db, user, g, count, "[%s] %s" % (method, reason.strip()), request, client_uuid=cid, locked=True)
+    return dict(guest_public(g), valid=True, admitted=count, event=ev.title,
+                message="Entrée manuelle validée : %s (%d personne%s)." % (g.full_name, count, "s" if count > 1 else ""))
+
+
+def search_guests(db: Session, ev: Event, q: str, limit: int = 20) -> list:
+    q = (q or "").strip()
+    if len(q) < 2:
+        return []
+    like = "%%%s%%" % q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    rows = (db.query(EventGuest).filter(EventGuest.event_id == ev.id, EventGuest.purged == False,  # noqa: E712
+                                        (EventGuest.full_name.ilike(like)) | (EventGuest.table_label.ilike(like)))
+            .order_by(EventGuest.full_name).limit(limit).all())
+    # Jamais le numéro : seulement s'il existe (pour proposer la vérification des 4 chiffres)
+    # h : empreinte du jeton (déjà dans la liste hors ligne) pour basculer hors ligne si le réseau coupe
+    return [dict(guest_public(g), id=g.id, h=g.token_hash, revoked=bool(g.revoked_at), has_phone=bool(g.phone))
+            for g in rows]
+
+
+def manual_checkin(db: Session, user: User, g: EventGuest, count: int, reason: str, request=None,
+                   client_uuid: Optional[str] = None, locked: bool = False) -> EventGuest:
+    if not locked:
+        db.refresh(g, with_for_update=True)
     if g.revoked_at:
         raise HTTPException(400, "Pass annulé.")
     remaining = g.seats - g.seats_used
@@ -481,7 +567,7 @@ def manual_checkin(db: Session, user: User, g: EventGuest, count: int, reason: s
     g.first_checkin_at = g.first_checkin_at or now
     g.last_checkin_at = now
     db.add(GuestCheckin(guest_id=g.id, event_id=g.event_id, count=count, source="manual", scanned_at=now,
-                        by_user_id=user.id, reason=reason[:200]))
+                        by_user_id=user.id, reason=reason[:200], client_uuid=client_uuid))
     db.commit()
     log_security_event(db, "invitation_manual_checkin", request, user.id,
                        "pass %d (event %d) +%d : %s" % (g.id, g.event_id, count, reason[:150]))
@@ -491,11 +577,20 @@ def manual_checkin(db: Session, user: User, g: EventGuest, count: int, reason: s
 # ── hors ligne ──────────────────────────────────────────────────────
 def offline_list(db: Session, ev: Event) -> dict:
     guests = db.query(EventGuest).filter(EventGuest.event_id == ev.id, EventGuest.token_hash.isnot(None)).all()
+    # Invités importés avant le lot 2.1 : empreinte des 4 chiffres calculée une fois, à la volée
+    missing = [g for g in guests if g.phone and not g.phone4_hash]
+    for g in missing:
+        set_phone(g, g.phone)
+    if missing:
+        db.commit()
     return {
         "event": {"id": ev.id, "title": ev.title, "date": ev.event_date.isoformat() if ev.event_date else None},
         "generated_at": utcnow().isoformat() + "Z",
+        "phone4_iterations": PHONE4_ITERATIONS,
+        # ps / ph : sel + empreinte PBKDF2 des 4 derniers chiffres (contrôle manuel hors ligne)
         "guests": [{"h": g.token_hash, "n": g.full_name, "t": g.table_label, "c": g.category,
-                    "s": g.seats, "u": g.seats_used, "r": bool(g.revoked_at)} for g in guests],
+                    "s": g.seats, "u": g.seats_used, "r": bool(g.revoked_at),
+                    "ps": g.phone4_salt, "ph": g.phone4_hash} for g in guests],
     }
 
 
@@ -525,6 +620,10 @@ def sync_checkins(db: Session, user: User, device_id: Optional[str], items: list
             at = naive_utc(datetime.fromisoformat(str(it.get("at")).replace("Z", "+00:00")))
         except ValueError:
             at = utcnow()
+        manual = it.get("source") == "manual"
+        reason = _clean(it.get("reason"), 180) if manual else None
+        if manual and (not reason or len(reason) < 3):
+            results.append({"uuid": raw, "status": "invalid"}); continue
         remaining = max(0, g.seats - g.seats_used)
         applied = min(count, remaining)
         conflict = applied < count or bool(g.revoked_at)
@@ -532,10 +631,11 @@ def sync_checkins(db: Session, user: User, device_id: Optional[str], items: list
         if applied:
             g.first_checkin_at = min(filter(None, [g.first_checkin_at, at]))
             g.last_checkin_at = max(filter(None, [g.last_checkin_at, at]))
-        db.add(GuestCheckin(guest_id=g.id, event_id=g.event_id, count=count, source="offline", client_uuid=cid,
-                            scanned_at=at, by_user_id=user.id, device_id=(device_id or "")[:64] or None,
-                            conflict=conflict,
-                            reason=("pass annulé" if g.revoked_at else "places déjà utilisées") if conflict else None))
+        why = ("pass annulé" if g.revoked_at else "places déjà utilisées") if conflict else None
+        db.add(GuestCheckin(guest_id=g.id, event_id=g.event_id, count=count, source="manual" if manual else "offline",
+                            client_uuid=cid, scanned_at=at, by_user_id=user.id,
+                            device_id=(device_id or "")[:64] or None, conflict=conflict,
+                            reason=("[hors ligne] %s%s" % (reason, " — " + why if why else ""))[:200] if manual else why))
         db.commit()
         results.append({"uuid": raw, "status": "conflict" if conflict else "ok", "applied": applied})
     n_conf = sum(1 for r in results if r["status"] == "conflict")
@@ -543,6 +643,90 @@ def sync_checkins(db: Session, user: User, device_id: Optional[str], items: list
         log_security_event(db, "invitation_offline_sync", request, user.id,
                            "%d entrées, %d conflits (appareil %s)" % (len(items), n_conf, (device_id or "?")[:20]))
     return results
+
+
+# ── pass papier (PDF A4, 8 pass découpables par page) ─────────────────
+def _pdf_text(s) -> str:
+    """Polices PDF standard (WinAnsi) : on remplace ce qu'elles ne savent pas afficher."""
+    return str(s or "").encode("cp1252", "replace").decode("cp1252").replace("\n", " ").strip()
+
+
+def paper_pdf(ev: Event, st: PrivateEventSettings, guests: list) -> bytes:
+    import io
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import mm
+    from reportlab.lib.utils import ImageReader
+    from reportlab.pdfbase.pdfmetrics import stringWidth
+    from reportlab.pdfgen import canvas
+    from core.email import qr_png
+
+    W, H = A4
+    cols, rows = 2, 4
+    cw, ch = W / cols, H / rows
+    buf = io.BytesIO()
+    c = canvas.Canvas(buf, pagesize=A4)
+    c.setTitle(_pdf_text("Pass papier — %s" % ev.title))
+    c.setAuthor("GoEvent")
+
+    def fit(text, font, size, width, min_size=6):
+        text = _pdf_text(text)
+        while size > min_size and stringWidth(text, font, size) > width:
+            size -= 0.5
+        while text and stringWidth(text, font, size) > width:
+            text = text[:-2] + "…"
+        return text, size
+
+    host = st.host_label or st.client_name
+    date = fmt_date_fr(ev.event_date)
+    for i, g in enumerate(guests):
+        slot = i % (cols * rows)
+        if i and slot == 0:
+            c.showPage()
+        if slot == 0:
+            c.setDash(3, 3); c.setStrokeColorRGB(0.7, 0.7, 0.7); c.setLineWidth(0.5)
+            for k in range(1, cols):
+                c.line(k * cw, 0, k * cw, H)
+            for k in range(1, rows):
+                c.line(0, k * ch, W, k * ch)
+            c.setDash()
+        x0 = (slot % cols) * cw
+        y0 = H - (slot // cols + 1) * ch
+        pad = 7 * mm
+        qr = 34 * mm
+        # QR à droite
+        c.drawImage(ImageReader(io.BytesIO(qr_png(pass_url(g.token), box_size=8))), x0 + cw - pad - qr,
+                    y0 + (ch - qr) / 2 - 2 * mm, qr, qr)
+        tw = cw - 3 * pad - qr
+        y = y0 + ch - pad - 3 * mm
+        c.setFillColorRGB(0, 0.31, 0.17)
+        t, s = fit(host + " vous invite", "Helvetica", 8, tw); c.setFont("Helvetica", s); c.drawString(x0 + pad, y, t)
+        y -= 5 * mm
+        t, s = fit(ev.title, "Helvetica-Bold", 11, tw); c.setFont("Helvetica-Bold", s); c.drawString(x0 + pad, y, t)
+        c.setFillColorRGB(0.25, 0.25, 0.25)
+        y -= 5 * mm
+        t, s = fit(date, "Helvetica", 7.5, tw); c.setFont("Helvetica", s); c.drawString(x0 + pad, y, t)
+        y -= 4 * mm
+        t, s = fit(ev.location or "", "Helvetica", 7.5, tw); c.setFont("Helvetica", s); c.drawString(x0 + pad, y, t)
+        c.setFillColorRGB(0.07, 0.09, 0.15)
+        y -= 9 * mm
+        t, s = fit(g.full_name, "Helvetica-Bold", 13, tw); c.setFont("Helvetica-Bold", s); c.drawString(x0 + pad, y, t)
+        y -= 5.5 * mm
+        info = "Valable pour %s" % places_label(g.seats).replace("place", "personne")
+        if g.table_label:
+            info += " · Table %s" % g.table_label
+        t, s = fit(info, "Helvetica", 8.5, tw); c.setFont("Helvetica", s); c.drawString(x0 + pad, y, t)
+        if g.category:
+            y -= 4.5 * mm
+            t, s = fit(g.category, "Helvetica-Oblique", 8, tw); c.setFont("Helvetica-Oblique", s); c.drawString(x0 + pad, y, t)
+        c.setFillColorRGB(0.45, 0.45, 0.45)
+        t, s = fit("Pass personnel — présentez ce QR Code à l'entrée.", "Helvetica", 6.5, cw - 2 * pad)
+        c.setFont("Helvetica", s); c.drawString(x0 + pad, y0 + pad - 1 * mm, t)
+        t, s = fit("GoEvent · goevent.africa", "Helvetica", 6, qr)
+        c.setFont("Helvetica", s); c.drawRightString(x0 + cw - pad, y0 + pad - 1 * mm, t)
+    if not guests:
+        c.setFont("Helvetica", 12); c.drawString(30 * mm, H - 30 * mm, "Aucun pass à imprimer.")
+    c.save()
+    return buf.getvalue()
 
 
 # ── packs ────────────────────────────────────────────────────────────
@@ -600,7 +784,8 @@ def purge_due(db: Session, force_event_id: Optional[int] = None) -> int:
     for st in q.all():
         n += db.query(EventGuest).filter(EventGuest.event_id == st.event_id, EventGuest.purged == False).update(  # noqa: E712
             {EventGuest.full_name: "Invité supprimé", EventGuest.phone: None, EventGuest.token: None,
-             EventGuest.token_hash: None, EventGuest.purged: True}, synchronize_session=False)
+             EventGuest.token_hash: None, EventGuest.phone4_salt: None, EventGuest.phone4_hash: None,
+             EventGuest.purged: True}, synchronize_session=False)
         db.query(GuestCheckin).filter(GuestCheckin.event_id == st.event_id).update(
             {GuestCheckin.device_id: None, GuestCheckin.reason: None}, synchronize_session=False)
         st.client_phone = None

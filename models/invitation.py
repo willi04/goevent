@@ -54,6 +54,12 @@ class EventGuest(Base):
     first_checkin_at = Column(DateTime, nullable=True)
     last_checkin_at  = Column(DateTime, nullable=True)
     purged           = Column(Boolean, nullable=False, default=False)
+    # Pass papier (imprimé, remis en main propre) : par défaut quand l'invité n'a pas de numéro
+    paper            = Column(Boolean, nullable=False, default=False, server_default="false")
+    # Contrôle manuel hors ligne : empreinte PBKDF2 (sel par invité) des 4 derniers chiffres
+    # du téléphone. Seule l'empreinte part dans la liste hors ligne, jamais le numéro.
+    phone4_salt      = Column(String(32), nullable=True)
+    phone4_hash      = Column(String(64), nullable=True)
     created_by       = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at       = Column(DateTime, default=datetime.utcnow, nullable=False)
 

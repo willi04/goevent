@@ -345,7 +345,8 @@ def export_audience_csv(
         }.items() if v not in (None, False)
     )[:500]
 
-    ip = request.client.host if request.client else None
+    from core.client_ip import client_ip
+    ip = client_ip(request)
     ua = (request.headers.get("user-agent") or "")[:500]
 
     log_entry = AudienceExportLog(

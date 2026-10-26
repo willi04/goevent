@@ -75,7 +75,6 @@ class ZoneBlockPatch(BaseModel):
 
 
 class ZoneSettingsIn(BaseModel):
-    empty: Optional[str] = Field(None, max_length=10)   # hide | house
     every: Optional[int] = Field(None, ge=3, le=24)
 
 

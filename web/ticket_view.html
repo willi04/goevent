@@ -54,7 +54,7 @@
                     </div>
                     <div class="p-6 text-center">
                         <div class="mb-4">${statutBadge}</div>
-                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(t.qr_hash)}"
+                        <img data-bt-qr="${_escapeHtml(t.qr_hash)}" data-bt-qr-size="512"
                              alt="QR Code" class="mx-auto rounded-2xl border-4 border-gray-50 w-64 h-64" />
                         <p class="text-[10px] text-gray-400 mt-3 tracking-widest">ID: ${t.qr_hash.substring(0, 8).toUpperCase()}</p>
                         <div class="mt-6 p-3 bg-yellow-50 border-l-4 border-yellow-500 text-left rounded-r-lg">

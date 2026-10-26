@@ -3,10 +3,15 @@
 //  Cache offline, sync background, notifications push
 // ============================================================
 
-const APP_VERSION = "v1.0.1"; // TRÈS IMPORTANT : Changement de version pour forcer la mise à jour
+const APP_VERSION = "v1.1.0"; // À incrémenter à chaque changement de ce fichier ou de l'App Shell
 const CACHE_STATIC = "goevent-static-" + APP_VERSION;
 const CACHE_API = "goevent-api-" + APP_VERSION;
-const API_BASE = "http://127.0.0.1:8000";
+// API de prod + API locale (dev). Seules les lectures publiques de la liste
+// blanche CACHEABLE_API passent par le service worker : tout le reste
+// (POST/PUT/DELETE, paiement, scan, billets, admin) va directement au réseau,
+// sans délai ni cache — un délai artificiel sur un POST de paiement ferait
+// croire à un échec pendant que le serveur traite → second clic → double paiement.
+const API_ORIGINS = ["https://api.goevent.africa", "http://localhost:8000", "http://127.0.0.1:8000"];
 
 // Fichiers à mettre en cache immédiatement (App Shell)
 const APP_SHELL = [
@@ -20,7 +25,12 @@ const APP_SHELL = [
   "/artist_dashboard.html",
   "/organisation_dashboard.html",
   "/a_propos.html",
+  "/scanner.html",
+  "/ticket_view.html",
   "/bt-api.js",
+  "/auth-guard.js",
+  "/vendor/qrcode-generator-2.0.4.js",
+  "/vendor/html5-qrcode-2.3.8.min.js",
   "/pwa.js",
   "/manifest.json",
   "/icons/icon-192.svg",
@@ -30,7 +40,7 @@ const APP_SHELL = [
   "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap",
 ];
 
-// Routes API à mettre en cache (lecture seule)
+// Routes API publiques mises en cache (GET uniquement, réseau d'abord)
 const CACHEABLE_API = ["/events", "/categories"];
 
 // ── INSTALL ──────────────────────────────────────────────────
@@ -81,10 +91,18 @@ self.addEventListener("activate", function (event) {
 
 // ── FETCH — Stratégie par type de requête ────────────────────
 self.addEventListener("fetch", function (event) {
-  var url = new URL(event.request.url);
+  var request = event.request;
+  var url = new URL(request.url);
 
-  if (url.origin === API_BASE || url.hostname === "127.0.0.1") {
-    event.respondWith(networkFirstAPI(event.request));
+  // Jamais d'interception hors GET : le navigateur envoie la requête tel quel.
+  if (request.method !== "GET") return;
+
+  if (API_ORIGINS.indexOf(url.origin) !== -1) {
+    var cacheable = CACHEABLE_API.some(function (path) {
+      return url.pathname === path || url.pathname.startsWith(path + "/");
+    });
+    // Requêtes authentifiées ou hors liste blanche : réseau direct, pas de cache
+    if (cacheable && !request.headers.get("Authorization")) event.respondWith(networkFirstAPI(request));
     return;
   }
   if (
@@ -103,25 +121,26 @@ self.addEventListener("fetch", function (event) {
     return;
   }
   if (url.origin === self.location.origin) {
-    event.respondWith(staleWhileRevalidate(event.request));
+    // Pages HTML : réseau d'abord (fin des versions périmées après déploiement),
+    // cache seulement hors ligne. Scripts/styles/images : stale-while-revalidate.
+    if (request.mode === "navigate" || (request.headers.get("Accept") || "").indexOf("text/html") !== -1) {
+      event.respondWith(networkFirstPage(request));
+    } else {
+      event.respondWith(staleWhileRevalidate(request));
+    }
     return;
   }
 });
 
 // ── STRATÉGIES DE CACHE ───────────────────────────────────────
 
+// Lectures publiques uniquement (filtrées dans le handler fetch)
 async function networkFirstAPI(request) {
   try {
-    var response = await fetchWithTimeout(request, 5000);
-    if (request.method === "GET" && response.ok) {
-      var url = new URL(request.url);
-      var isCacheable = CACHEABLE_API.some(function (path) {
-        return url.pathname.startsWith(path);
-      });
-      if (isCacheable) {
-        var cache = await caches.open(CACHE_API);
-        cache.put(request, response.clone());
-      }
+    var response = await fetchWithTimeout(request, 8000);
+    if (response.ok) {
+      var cache = await caches.open(CACHE_API);
+      cache.put(request, response.clone());
     }
     return response;
   } catch (err) {
@@ -137,6 +156,22 @@ async function networkFirstAPI(request) {
       }),
       { status: 503, headers: { "Content-Type": "application/json" } },
     );
+  }
+}
+
+async function networkFirstPage(request) {
+  var cache = await caches.open(CACHE_STATIC);
+  try {
+    var response = await fetch(request);
+    // Pages avec paramètres sensibles (ex. ticket_view.html?qr_hash=…) : jamais mises en cache par URL complète
+    if (response.ok) cache.put(new URL(request.url).pathname, response.clone());
+    return response;
+  } catch (err) {
+    var cached = await cache.match(new URL(request.url).pathname);
+    if (cached) return cached;
+    var shell = await cache.match("/index.html");
+    if (shell) return shell;
+    return new Response("Hors ligne", { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } });
   }
 }
 

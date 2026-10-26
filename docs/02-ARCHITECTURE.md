@@ -257,9 +257,12 @@ Les textes, images et liens des pages publiques sont modifiables depuis
   groupe de cartes. Dates de diffusion, ordre, statistiques d'affichages et
   de clics. Mode `rotate` (un bloc au hasard), `stack` (tous) ou `infeed`
   (toutes les N cartes).
-- **Zone vide** : `hide` (disparaît), `house` (encart « Emplacement
-  disponible » → page Partenaires, textes `global.zone.house_*`) ou `static`
-  (la section HTML d'origine reste : « Comment ça marche », bloc organisateur).
+- **Zone vide = rien au public** (`hide`), sauf `static` : la section HTML
+  d'origine reste (« Comment ça marche », bloc organisateur). Pas d'encart
+  « emplacement disponible » côté public : les emplacements libres sont
+  connus en interne (back-office → Emplacements, et aperçu
+  `page.html?emplacements=1` réservé aux comptes admin/staff, encadrés orange,
+  sans compteur ; `?emplacements=0` pour quitter).
 - `web/cms.js` : `GET /zones?keys=…` puis rendu DOM (`textContent`,
   liens `rel="sponsored noopener"`) ; compteurs via
   `POST /zones/events` en `text/plain` (pas de preflight CORS).

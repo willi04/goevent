@@ -22,7 +22,6 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from api.cms import _REL_URL, _cached, _validate_image, content_editor
-from core.cms_registry import get_registry
 from core.database import get_db
 from core.limiter import limiter
 from core.permissions import get_current_admin
@@ -31,14 +30,11 @@ from core.pricing import (
 )
 from core.security import log_security_event
 from core.zones import CARD_ICONS, KINDS, THEMES, ZONE_BY_KEY, ZONE_PAGES, ZONES, zone_settings
-from models.site_content import SiteContent, SiteSetting, ZoneBlock
+from models.site_content import SiteSetting, ZoneBlock
 from models.user import User
 from schemas.site_content import PricingIn, ZoneBlockIn, ZoneBlockPatch, ZoneOrder, ZoneSettingsIn
 
 router = APIRouter(tags=["zones"])
-
-HOUSE_KEYS = ("global.zone.house_title", "global.zone.house_text", "global.zone.house_cta")
-
 
 # ── helpers ───────────────────────────────────────────────────────────
 def _naive_utc(dt: Optional[datetime]) -> Optional[datetime]:
@@ -167,14 +163,9 @@ def public_zones(request: Request, keys: str = Query(..., max_length=500), db: S
     for key in wanted:
         z = ZONE_BY_KEY[key]
         s = zone_settings(stored, z)
-        zones[key] = {"mode": z["mode"], "empty": s["empty"], "every": s["every"],
+        zones[key] = {"mode": z["mode"], "empty": s["empty"], "every": s["every"], "label": z["label"],
                       "blocks": [_public_block(b) for b in blocks if b.zone == key]}
-    registry = get_registry()
-    house = {k.rsplit("_", 1)[-1]: registry[k]["default"] for k in HOUSE_KEYS}
-    for row in db.query(SiteContent).filter(SiteContent.key.in_(HOUSE_KEYS)).all():
-        house[row.key.rsplit("_", 1)[-1]] = row.value
-    house["url"] = "partenaire.html#contact"
-    return _cached({"zones": zones, "house": house})
+    return _cached({"zones": zones})
 
 
 @router.get("/zones/media/{block_id}")
@@ -324,10 +315,7 @@ def admin_zone_settings(request: Request, zone_key: str, data: ZoneSettingsIn, d
         raise HTTPException(404, "Emplacement inconnu")
     stored = _setting(db, "zones")
     s = dict(stored.get(zone_key) or {})
-    if data.empty is not None:
-        if zone["empty"] == "static" or data.empty not in ("hide", "house"):
-            raise HTTPException(400, "Réglage non disponible pour cet emplacement.")
-        s["empty"] = data.empty
+    s.pop("empty", None)  # « Si vide » n'est plus réglable (zone vide = masquée)
     if data.every is not None:
         if not zone.get("every"):
             raise HTTPException(400, "Réglage non disponible pour cet emplacement.")

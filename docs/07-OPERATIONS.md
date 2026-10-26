@@ -165,6 +165,9 @@ bout en bout sans intervention, 1 retrait réussi, analyse des
 - Tarifs (admin) : changement effectif pour les paiements suivants en
   ≈ 30 s (cache API), affichage ≤ 1 min. Une commande déjà payée garde son
   montant. Journal : `pricing_update` (ancien → nouveau).
+- Prospection : back-office → Emplacements → « Voir les emplacements sur le
+  site » montre aux commerciaux où chaque format apparaît (aperçu interne,
+  invisible du public).
 - Traçabilité emplacements : `zone_block_created|updated|deleted`,
   `zone_settings_updated`.
 

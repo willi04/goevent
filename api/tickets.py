@@ -258,11 +258,10 @@ def scan_stats(event_id: int, db: Session = Depends(get_db),
         if event.organizer_id != current_user.id:
             raise HTTPException(403, "Cet événement n'est pas le vôtre")
     elif current_user.role == "agent":
+        # agent_event_id n'est posé que par l'orga propriétaire (create_agent) : seul critère.
+        # (org_name retiré : éditable via PUT /auth/me → 403 dès que l'orga se renommait)
         if current_user.agent_event_id != event.id:
             raise HTTPException(403, "Vous n'êtes pas assigné à cet événement")
-        org_name_required = event.organizer_user.org_name or event.organizer_user.full_name
-        if current_user.org_name != org_name_required:
-            raise HTTPException(403, "Vous n'êtes pas un agent de cet organisateur")
     else:
         raise HTTPException(403, "Accès refusé")
 

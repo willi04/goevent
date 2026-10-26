@@ -4,43 +4,45 @@ Envoi d'emails transactionnels via SMTP Gmail :
 - Billet + QR code après paiement
 - Code de réinitialisation du PIN
 """
+import io
 import smtplib
+from html import escape
+from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+
+import qrcode
+import qrcode.image.pure
 
 from core.config import settings
 
 
-def envoyer_billet_email(email_client, nom_client, ticket, event, amount):
-    if not settings.SENDER_EMAIL or not settings.SENDER_PASSWORD:
-        print("⚠️ Email credentials missing, skipping email")
-        return
+def qr_png(data: str, box_size: int = 10) -> bytes:
+    """QR code PNG généré localement. Le qr_hash d'un billet vaut droit d'entrée :
+    il ne doit jamais être transmis à un service tiers (ex-api.qrserver.com)."""
+    q = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=box_size, border=4)
+    q.add_data(data)
+    q.make(fit=True)
+    buf = io.BytesIO()
+    q.make_image(image_factory=qrcode.image.pure.PyPNGImage).save(buf)
+    return buf.getvalue()
 
-    msg = MIMEMultipart()
-    msg["From"] = f"GoEvent <{settings.SENDER_EMAIL}>"
-    msg["To"] = email_client
-    msg["Subject"] = f"🎟️ Confirmation & Billet : {event.title}"
 
-    qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={ticket.qr_hash}"
-    lien_magique = f"https://goevent.africa/ticket_view.html?qr_hash={ticket.qr_hash}"
-    label_prix = "🎟️ ENTRÉE GRATUITE" if amount <= 0 else f"💰 Montant : {amount} FCFA"
-    id_court = ticket.qr_hash[:8].upper() if ticket.qr_hash else ""
-
-    html_body = f"""
+_BILLET_HTML = """
     <html>
     <body style="font-family: 'Arial', sans-serif; background-color: #f4f4f4; padding: 20px; text-align: center;">
         <div style="background-color: #ffffff; max-width: 450px; margin: 0 auto; padding: 30px; border-radius: 20px; border: 1px solid #e2e2e2; box-shadow: 0 10px 25px rgba(0,0,0,0.05);">
             <h2 style="color: #00502c; font-size: 24px; margin-bottom: 5px;">GoEvent</h2>
             <p style="color: #888; font-size: 12px; text-transform: uppercase; letter-spacing: 2px;">Reçu de paiement</p>
 
-            <h3 style="color: #1a1c1c; font-size: 20px; margin-top: 20px;">{event.title}</h3>
-            <p style="color: #666; margin: 5px 0;">📍 {event.location}</p>
+            <h3 style="color: #1a1c1c; font-size: 20px; margin-top: 20px;">{title}</h3>
+            <p style="color: #666; margin: 5px 0;">📍 {location}</p>
             <p style="color: #00502c; font-weight: bold; font-size: 18px; margin: 15px 0;">{label_prix}</p>
 
             <hr style="border: none; border-top: 2px dashed #e2e2e2; margin: 25px 0;">
 
             <p style="color: #00502c; font-weight: bold; margin-bottom: 15px;">Voici votre QR Code d'accès :</p>
-            <img src="{qr_url}" alt="QR Code Billet" style="width: 200px; height: 200px; border-radius: 10px; border: 4px solid #f9f9f9;">
+            <img src="cid:qr-billet" alt="QR Code Billet" style="width: 200px; height: 200px; border-radius: 10px; border: 4px solid #f9f9f9;">
             <p style="color: #aaa; font-size: 10px; margin-top: 10px; letter-spacing: 1px;">ID: {id_court}</p>
 
             <p style="color: #666; font-size: 12px; margin-top: 25px; margin-bottom: 8px;">Accès à votre billet à tout moment :</p>
@@ -56,7 +58,36 @@ def envoyer_billet_email(email_client, nom_client, ticket, event, amount):
     </html>
     """
 
+
+def construire_billet_email(email_client, ticket, event, amount):
+    """Message MIME du billet (séparé de l'envoi pour être testable)."""
+    msg = MIMEMultipart("related")
+    msg["From"] = f"GoEvent <{settings.SENDER_EMAIL}>"
+    msg["To"] = email_client
+    msg["Subject"] = f"🎟️ Confirmation & Billet : {event.title}"
+    lien_magique = f"https://goevent.africa/ticket_view.html?qr_hash={ticket.qr_hash}"
+    label_prix = "🎟️ ENTRÉE GRATUITE" if amount <= 0 else f"💰 Montant : {amount} FCFA"
+    id_court = ticket.qr_hash[:8].upper() if ticket.qr_hash else ""
+    html_body = _BILLET_HTML.format(title=_esc(event.title), location=_esc(event.location),
+                                    label_prix=label_prix, id_court=id_court, lien_magique=lien_magique)
     msg.attach(MIMEText(html_body, "html"))
+    img = MIMEImage(qr_png(ticket.qr_hash), "png")
+    img.add_header("Content-ID", "<qr-billet>")
+    img.add_header("Content-Disposition", "inline", filename="billet-qr.png")
+    msg.attach(img)
+    return msg
+
+
+def _esc(s):
+    return escape(str(s or ""))
+
+
+def envoyer_billet_email(email_client, nom_client, ticket, event, amount):
+    if not settings.SENDER_EMAIL or not settings.SENDER_PASSWORD:
+        print("⚠️ Email credentials missing, skipping email")
+        return
+
+    msg = construire_billet_email(email_client, ticket, event, amount)
 
     try:
         server = smtplib.SMTP("smtp.gmail.com", 587, timeout=10)

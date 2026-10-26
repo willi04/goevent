@@ -17,7 +17,7 @@ import secrets
 from datetime import datetime, timedelta
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import JSONResponse, Response
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
@@ -254,6 +254,16 @@ def admin_import(request: Request, event_id: int, data: GuestImportIn, db: Sessi
     if st.purged_at:
         raise HTTPException(400, "Liste supprimée (conservation de 30 jours dépassée).")
     return inv.import_guests(db, ev, [r.model_dump() for r in data.rows], user, data.dry_run, request)
+
+
+@router.post("/admin/invitations/events/{event_id}/guests/read-file")
+@limiter.limit("30/minute")
+async def admin_read_file(request: Request, event_id: int, file: UploadFile = File(...), db: Session = Depends(get_db),
+                          user: User = Depends(manager)):
+    """Lit un .xlsx / .docx et renvoie son contenu tabulé (rien n'est importé ni stocké)."""
+    inv.get_private_event(db, event_id)
+    data = await file.read(inv.MAX_FILE_BYTES + 1)
+    return inv.file_to_text(file.filename, data)
 
 
 @router.patch("/admin/invitations/guests/{guest_id}")

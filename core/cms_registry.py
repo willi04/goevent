@@ -39,6 +39,7 @@ PAGE_TITLES = {
     "cgu": "CGU (en-tête et liens)",
     "confidentialite": "Confidentialité (en-tête et liens)",
     "remboursements": "Remboursements (en-tête et liens)",
+    "invitations": "Invitations (page publique)",
 }
 
 # Champs non balisés dans un fichier HTML (composants JS de bt-api.js, coordonnées).
@@ -49,6 +50,8 @@ GLOBAL_FIELDS = [
      "emmanuel.madoukou30@gmail.com"),
     ("global.contact.whatsapp", "Coordonnées", "Numéro WhatsApp support (format international, ex. 23672259398)",
      "phone", "23672259398"),
+    ("invitations.contact.whatsapp", "Contact", "Numéro WhatsApp des devis Invitations (format international ; vide = numéro support)",
+     "phone", ""),
     ("global.social.facebook", "Réseaux sociaux", "Page Facebook (lien complet, vide = masqué)", "url", ""),
     ("global.social.instagram", "Réseaux sociaux", "Compte Instagram (lien complet, vide = masqué)", "url", ""),
     ("global.social.tiktok", "Réseaux sociaux", "Compte TikTok (lien complet, vide = masqué)", "url", ""),
@@ -166,7 +169,7 @@ def get_registry(web_dir: str = str(WEB_DIR)) -> dict:
     """{key: field} dans l'ordre d'apparition (dict ordonné)."""
     fields, order = {}, []
     for key, section, label, kind, default in GLOBAL_FIELDS:
-        fields[key] = {"key": key, "page": "global", "section": section, "label": label,
+        fields[key] = {"key": key, "page": key.split(".", 1)[0], "section": section, "label": label,
                        "kind": kind, "default": default, "admin_only": False}
         order.append(key)
     root = Path(web_dir)

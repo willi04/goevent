@@ -65,7 +65,9 @@ PAGE_TAGS = ["h2", "h3", "h4", "p", "br", "strong", "b", "em", "i", "u", "a", "u
              "blockquote", "table", "thead", "tbody", "tr", "th", "td", "div", "span", "hr"]
 FAQ_TAGS = ["p", "br", "strong", "b", "em", "i", "u", "a", "ul", "ol", "li"]
 HTML_ATTRS = {"a": ["href", "title", "target", "rel"], "th": ["colspan", "rowspan", "scope", "class"],
-              "td": ["colspan", "rowspan", "class"], "*": ["class"]}
+              "td": ["colspan", "rowspan", "class"], "*": ["class"],
+              # ancres de section (ex. confidentialite.html#invitations, lien de la page Invitations)
+              "h2": ["id", "class"], "h3": ["id", "class"]}
 HTML_PROTOCOLS = ["http", "https", "mailto", "tel"]
 
 _CTRL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")

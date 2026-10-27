@@ -638,7 +638,7 @@
       ]));
     });
     panel.appendChild(pick);
-    var PREVIEW_URLS = { index: "index.html", event: "event.html", event_detail: "event.html", fan: "user_dashboard.html" };
+    var PREVIEW_URLS = { global: "index.html", index: "index.html", event: "event.html", event_detail: "event.html", fan: "user_dashboard.html" };
     var hint = { event_detail: "Ouvre la liste, puis n'importe quel événement : l'aperçu reste actif.",
                  fan: "Visible avec un compte fan (l'aperçu se lance depuis ce compte)." }[S.zonePage];
     panel.appendChild(el("div", { class: "flex flex-wrap items-center gap-3 mb-4 text-xs" }, [

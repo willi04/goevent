@@ -251,8 +251,15 @@ Les textes, images et liens des pages publiques sont modifiables depuis
 - **Zones fixes** déclarées dans `core/zones.py` et posées dans le HTML
   (`<div data-zone="home.after_featured">`, grille : `data-zone-infeed`).
   Accueil (4), Événements (colonne + carte dans la liste), fiche événement,
-  espace fan (2). Le design reste maîtrisé : on n'ajoute pas de zone depuis
-  l'admin, on la déclare dans le code.
+  espace fan (2), et `global.top` : bandeau d'annonce d'une ligne injecté par
+  `cms.js` en haut des pages publiques d'une LISTE BLANCHE (`TOPBAR_PAGES` :
+  accueil, événements, fiches, follow, partenaire, à propos, aide, légal,
+  feedback, connexion, inscription, simulateur ; jamais admin, scanner,
+  paiement, tableaux de bord, billet, `/i/`, `/suivi/`, invitations.html).
+  Une ligne, première annonce non fermée, fermeture mémorisée 7 jours par
+  version de contenu (`rev`), en-têtes fixes décalés. Non vendable. Le design
+  reste maîtrisé : on n'ajoute pas de zone depuis l'admin, on la déclare dans
+  le code.
 - **Blocs** (`zone_blocks`) : affiche (image), bannière partenaire, annonce,
   groupe de cartes. Dates de diffusion, ordre, statistiques d'affichages et
   de clics. Mode `rotate` (un bloc au hasard), `stack` (tous) ou `infeed`
@@ -274,6 +281,15 @@ Les textes, images et liens des pages publiques sont modifiables depuis
   commission billetterie est exposée en lecture seule (elle engage les CGU).
 
 ### Flux 7 : Invitations digitales à QR code (événements privés)
+
+- **Page publique** `invitations.html` (`/invitations`, lot 3) : page
+  AUTONOME (CSS inline, Plus Jakarta Sans hébergée `web/fonts/`, aucun script
+  ni police externe, aucun traceur), textes `data-cms` (page « invitations »),
+  tarifs lus sur `GET /invitations/catalog`, devis = lien `wa.me` vers
+  `invitations.contact.whatsapp` (à défaut `global.contact.whatsapp`) avec
+  message prérempli ; `?ref=<CODE>` (commercial, `[A-Za-z0-9-]{1,20}`) ajouté
+  en fin de message, sans cookie ni stockage. Image de partage statique
+  `web/og/invitations.png`.
 
 - **Événement privé** = `Event` avec `visibility = "private"` : jamais listé,
   ni recherchable, ni lisible par `GET /events/{id}`, ni vendable

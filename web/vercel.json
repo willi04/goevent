@@ -5,6 +5,10 @@
       "destination": "/event_detail.html?slug=:slug"
     },
     {
+      "source": "/invitations",
+      "destination": "/invitations.html"
+    },
+    {
       "source": "/i/:token",
       "destination": "/invitation.html?t=:token"
     },

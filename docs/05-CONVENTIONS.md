@@ -412,10 +412,9 @@ malveillant si l'organisateur est hostile.
   Bandeau `global.top` : une nouvelle page publique qui doit l'afficher est
   ajoutée à `TOPBAR_PAGES` (`web/cms.js`) ; ne jamais y mettre une page de
   paiement, de scan, de pass ou un tableau de bord.
-- **Pages autonomes** (`invitation.html`, `suivi.html`, `invitations.html`) :
-  pas de Tailwind CDN ni de police externe ; une modification du menu
-  principal (`btNavbar`) se reporte aussi dans l'en-tête de
-  `invitations.html`.
+- **Pages autonomes** (`invitation.html`, `suivi.html`) : pas de Tailwind CDN
+  ni de police externe. `invitations.html` (page de vente) suit au contraire
+  la charte commune (menu, tiroir, pied de page, barre mobile de `bt-api.js`).
 - **Événements privés** : toute nouvelle requête publique sur `Event`
   (liste, recherche, fiche, achat, promo, partage, recommandations) filtre
   `Event.visibility == "public"`. Les invités ne vont jamais dans `tickets`.

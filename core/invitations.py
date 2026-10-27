@@ -9,7 +9,8 @@ la route.
 Règles clés
 - Le pass d'un invité = un jeton aléatoire de 32 caractères (secrets), jamais
   dérivé d'un id. QR = URL du pass : {PUBLIC_SITE_URL}/i/<jeton>.
-- Quota en PERSONNES = somme des packs actifs. Avant tout pack : import
+- Quota en PERSONNES = somme des packs actifs (commandes figées, cf.
+  core/invitation_catalog.py : formules, prix, options, remises, activation). Avant tout pack : import
   possible, envoi / scan / suivi bloqués. Activation refusée si le pack est
   plus petit que la liste déjà importée.
 - Un pass peut couvrir 1 à 20 personnes : au scan, l'agent choisit combien
@@ -33,8 +34,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from core.config import (
-    INVITATION_HOUSE_PHONE, INVITATION_PACK_SIZES, INVITATION_PAYMENT_CHANNELS,
-    INVITATION_RETENTION_DAYS, INVITATION_SERVICE_LEVELS, settings,
+    INVITATION_HOUSE_PHONE, INVITATION_PAYMENT_CHANNELS, INVITATION_RETENTION_DAYS, settings,
 )
 from core.security import hash_pin, log_security_event
 from models.event import Event
@@ -222,13 +222,6 @@ def seats_listed(db: Session, event_id: int, exclude_guest: Optional[int] = None
     if exclude_guest:
         q = q.filter(EventGuest.id != exclude_guest)
     return int(q.scalar() or 0)
-
-
-def active_service(db: Session, event_id: int) -> Optional[str]:
-    """Niveau de service le plus élevé parmi les packs actifs."""
-    svcs = {r[0] for r in db.query(InvitationPack.service).filter(
-        InvitationPack.event_id == event_id, InvitationPack.status == "actif").all()}
-    return "accompagne" if "accompagne" in svcs else ("autonome" if svcs else None)
 
 
 def require_active(db: Session, event_id: int):
@@ -727,47 +720,6 @@ def paper_pdf(ev: Event, st: PrivateEventSettings, guests: list) -> bytes:
         c.setFont("Helvetica", 12); c.drawString(30 * mm, H - 30 * mm, "Aucun pass à imprimer.")
     c.save()
     return buf.getvalue()
-
-
-# ── packs ────────────────────────────────────────────────────────────
-def pack_price(db: Session, size: int, service: str) -> int:
-    from core.pricing import get_pricing
-    return int(get_pricing(db, fresh=True)["invitations"]["%s_%d" % (service, size)])
-
-
-def activate_pack(db: Session, ev: Event, user: User, size: int, service: str, channel: str, ref: str,
-                  amount_received: int, confirmed: bool, note: Optional[str], request=None) -> InvitationPack:
-    if size not in INVITATION_PACK_SIZES:
-        raise HTTPException(400, "Taille de pack invalide.")
-    if service not in INVITATION_SERVICE_LEVELS:
-        raise HTTPException(400, "Niveau de service invalide.")
-    ch = next((c for c in channels(active_only=True) if c["code"] == channel), None)
-    if not ch:
-        raise HTTPException(400, "Moyen de paiement non disponible.")
-    if not confirmed:
-        raise HTTPException(400, "Confirmez que le paiement a été reçu sur un moyen au nom de GoEvent SARLU.")
-    ref = re.sub(r"\s+", " ", (ref or "").strip())
-    if len(ref) < 3:
-        raise HTTPException(400, "Référence du paiement obligatoire (%s)." % ch["ref_label"])
-    price = pack_price(db, size, service)
-    if amount_received < price:
-        raise HTTPException(400, "Montant reçu (%d FCFA) inférieur au prix du pack (%d FCFA)." % (amount_received, price))
-    if db.query(InvitationPack.id).filter(InvitationPack.payment_channel == channel,
-                                          func.upper(InvitationPack.payment_ref) == ref.upper()).first():
-        raise HTTPException(409, "Cette référence de paiement a déjà servi à activer un pack.")
-    listed = seats_listed(db, ev.id)
-    if quota(db, ev.id) + size < listed:
-        raise HTTPException(400, "Pack trop petit : %d personnes déjà dans la liste." % listed)
-    pack = InvitationPack(event_id=ev.id, size=size, service=service, amount_fcfa=price, payment_channel=channel,
-                          payment_ref=ref[:80], amount_received=amount_received, confirmed_goevent_account=True,
-                          activated_by=user.id, note=(note or "")[:300] or None)
-    db.add(pack)
-    db.commit()
-    db.refresh(pack)
-    log_security_event(db, "invitation_pack_activated", request, user.id,
-                       "event %d : pack %d %s, %d FCFA, %s réf. %s (reçu %d)"
-                       % (ev.id, size, service, price, channel, ref[:40], amount_received))
-    return pack
 
 
 # ── purge J+30 ───────────────────────────────────────────────────────

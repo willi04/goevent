@@ -81,6 +81,7 @@ def _capabilities_for(user: User) -> dict:
         # Invitations digitales (événements privés) : gestion / activation des packs
         "invitations_manage": False,
         "invitations_activate": False,
+        "invitations_catalog": False,      # modifier le catalogue des packs (admin seul)
     }
     
     if role == "admin":

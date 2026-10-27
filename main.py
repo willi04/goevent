@@ -21,7 +21,7 @@ from api import ads as ads_router
 from api import (
     auth, events, tickets, agent, social,
     organizer, dashboard, admin, payments, promotion,
-    promo_codes, audience, cms, zones, invitations,
+    promo_codes, audience, cms, zones, invitations, invitation_catalog,
 )
 from api import staff as staff_router
 
@@ -74,6 +74,25 @@ Base.metadata.create_all(bind=engine)
 from core.migrations import run_migrations
 run_migrations()
 
+
+def _seed_invitation_catalog():
+    """Catalogue Invitations vide → reprise des formules / tailles / prix en vigueur (idempotent)."""
+    from core.database import SessionLocal
+    from core.invitation_catalog import seed_catalog
+    db = SessionLocal()
+    try:
+        n = seed_catalog(db)
+        if n:
+            print(f"[Catalogue invitations] Reprise : {n} packs créés")
+    except Exception as e:  # deux instances au boot : la contrainte d'unicité arbitre
+        db.rollback()
+        print(f"[Catalogue invitations] ⚠️  Reprise non effectuée (sera retentée au boot suivant) : {e}")
+    finally:
+        db.close()
+
+
+_seed_invitation_catalog()
+
 ROLES_VALIDES = ("fan", "organizer", "agent")
 
 app = FastAPI(title="GoEvent API", version="2.0.0")
@@ -117,6 +136,7 @@ app.include_router(audience.router)
 app.include_router(cms.router)
 app.include_router(zones.router)
 app.include_router(invitations.router)
+app.include_router(invitation_catalog.router)
 
 @app.get("/")
 def root():

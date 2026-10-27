@@ -401,6 +401,11 @@ malveillant si l'organisateur est hostile.
   `data-price-format="number|pct|month"`), la clé étant déclarée dans
   `core/pricing.py`. Côté API, tout montant facturé se lit via
   `get_pricing(db, fresh=True)`, jamais via une constante.
+- **Prix des invitations** : catalogue en base uniquement
+  (`core/invitation_catalog.py`). Tout montant d'invitation affiché (devis,
+  page publique, tableau de bord orga) vient de `quote()` ou de
+  `public_catalog()`, jamais recalculé côté front. Une commande activée ne
+  se relit que dans son instantané.
 - **Emplacements** : une nouvelle zone = une entrée dans `core/zones.py` +
   un `<div data-zone="…" class="hidden">` dans la page. Ne jamais renommer
   une clé de zone en production (ses blocs deviendraient invisibles).

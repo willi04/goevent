@@ -130,6 +130,28 @@ MIGRATIONS = [
         "event_guests.phone4_hash",
         "ALTER TABLE event_guests ADD COLUMN IF NOT EXISTS phone4_hash VARCHAR(64)",
     ),
+    # Invitations 2.2 : commande figée (instantané du catalogue). Un seul ALTER = un seul verrou.
+    # invitation_packs est lue par toutes les routes invitations (quota) : à exécuter AVANT le push.
+    (
+        "invitation_packs (commande figée)",
+        "ALTER TABLE invitation_packs "
+        "ADD COLUMN IF NOT EXISTS formula_id INTEGER, "
+        "ADD COLUMN IF NOT EXISTS formula_name VARCHAR(80), "
+        "ADD COLUMN IF NOT EXISTS catalog_pack_id INTEGER, "
+        "ADD COLUMN IF NOT EXISTS custom BOOLEAN NOT NULL DEFAULT false, "
+        "ADD COLUMN IF NOT EXISTS offered BOOLEAN NOT NULL DEFAULT false, "
+        "ADD COLUMN IF NOT EXISTS unit_price INTEGER, "
+        "ADD COLUMN IF NOT EXISTS options_total INTEGER, "
+        "ADD COLUMN IF NOT EXISTS discount_kind VARCHAR(10), "
+        "ADD COLUMN IF NOT EXISTS discount_code_id INTEGER, "
+        "ADD COLUMN IF NOT EXISTS discount_amount INTEGER, "
+        "ADD COLUMN IF NOT EXISTS agents_included INTEGER, "
+        "ADD COLUMN IF NOT EXISTS features JSONB, "
+        "ADD COLUMN IF NOT EXISTS amount_ht INTEGER, "
+        "ADD COLUMN IF NOT EXISTS amount_vat INTEGER, "
+        "ADD COLUMN IF NOT EXISTS vat_rate_bp INTEGER, "
+        "ADD COLUMN IF NOT EXISTS snapshot JSONB",
+    ),
 ]
 
 

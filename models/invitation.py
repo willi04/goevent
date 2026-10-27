@@ -16,6 +16,7 @@ from datetime import datetime
 from sqlalchemy import (
     Boolean, Column, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 
 from core.database import Base
 
@@ -86,9 +87,9 @@ class InvitationPack(Base):
     __tablename__ = "invitation_packs"
     id                        = Column(Integer, primary_key=True, index=True)
     event_id                  = Column(Integer, ForeignKey("events.id", ondelete="CASCADE"), nullable=False, index=True)
-    size                      = Column(Integer, nullable=False)        # 50 | 100 | 300 | 500 (personnes)
-    service                   = Column(String(20), nullable=False)     # autonome | accompagne
-    amount_fcfa               = Column(Integer, nullable=False)        # tarif en vigueur figé à l'activation
+    size                      = Column(Integer, nullable=False)        # personnes
+    service                   = Column(String(20), nullable=False)     # code de la formule (autonome, accompagne…)
+    amount_fcfa               = Column(Integer, nullable=False)        # TOTAL à payer (TTC), figé à l'activation
     status                    = Column(String(10), nullable=False, default="actif")  # actif | annule
     payment_channel           = Column(String(40), nullable=False)
     payment_ref               = Column(String(80), nullable=False)
@@ -100,6 +101,24 @@ class InvitationPack(Base):
     cancelled_at              = Column(DateTime, nullable=True)
     cancel_reason             = Column(String(300), nullable=True)
     note                      = Column(String(300), nullable=True)
+    # ── Commande figée (lot 2.2). NULL = pack activé avant le catalogue (« ancien pack »).
+    # Pas de FK vers le catalogue : colonnes ajoutées par ALTER avant la création des tables.
+    formula_id                = Column(Integer, nullable=True)
+    formula_name              = Column(String(80), nullable=True)
+    catalog_pack_id           = Column(Integer, nullable=True)
+    custom                    = Column(Boolean, nullable=False, default=False, server_default="false")  # sur mesure
+    offered                   = Column(Boolean, nullable=False, default=False, server_default="false")  # pack offert
+    unit_price                = Column(Integer, nullable=True)        # prix du pack avant remise
+    options_total             = Column(Integer, nullable=True)
+    discount_kind             = Column(String(10), nullable=True)     # code | manual
+    discount_code_id          = Column(Integer, nullable=True)
+    discount_amount           = Column(Integer, nullable=True)
+    agents_included           = Column(Integer, nullable=True)
+    features                  = Column(JSONB, nullable=True)          # {onsite_agents, track_link, team_sends}
+    amount_ht                 = Column(Integer, nullable=True)
+    amount_vat                = Column(Integer, nullable=True)
+    vat_rate_bp               = Column(Integer, nullable=True)        # taux en points de base (1925 = 19,25 %)
+    snapshot                  = Column(JSONB, nullable=True)          # détail complet (lignes, motifs, noms)
 
     # Un même paiement (canal + référence) ne peut activer qu'un seul pack, même annulé.
     __table_args__ = (UniqueConstraint("payment_channel", "payment_ref", name="uq_invitation_pack_payment"),)

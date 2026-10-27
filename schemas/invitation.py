@@ -75,16 +75,6 @@ class AgentIn(BaseModel):
     pin_code: str = Field(..., min_length=6, max_length=6)
 
 
-class PackIn(BaseModel):
-    size: int
-    service: str = Field(..., max_length=20)
-    payment_channel: str = Field(..., max_length=40)
-    payment_ref: str = Field(..., max_length=80)
-    amount_received: int = Field(..., ge=1, le=10_000_000)
-    confirmed_goevent_account: bool = False
-    note: Optional[str] = Field(None, max_length=300)
-
-
 class PackCancelIn(BaseModel):
     reason: str = Field(..., min_length=3, max_length=300)
 

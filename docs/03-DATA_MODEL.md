@@ -352,11 +352,25 @@ rétroactivement.
 - `guest_checkins` : journal des entrées (`source` online|offline|manual,
   `client_uuid` unique → idempotence, `conflict`, `reason` pour l'entrée
   manuelle).
-- `invitation_packs` : `size`, `service`, `amount_fcfa` (figé à l'activation),
-  `status` (`actif|annule`), `payment_channel`, `payment_ref`,
+- `invitation_packs` (= commandes) : `size`, `service` (code de formule),
+  `amount_fcfa` (TOTAL TTC à payer, figé), `status` (`actif|annule`),
+  `payment_channel` (`offert` pour un pack offert), `payment_ref`,
   `amount_received`, `confirmed_goevent_account`, activation/annulation
   tracées. **Unique (`payment_channel`, `payment_ref`)**. Quota = somme des
-  packs actifs, en personnes.
+  packs actifs, en personnes. Instantané (lot 2.2, NULL = ancien pack) :
+  `formula_id`, `formula_name`, `catalog_pack_id`, `custom`, `offered`,
+  `unit_price`, `options_total`, `discount_kind` (code|manual),
+  `discount_code_id`, `discount_amount`, `agents_included`, `features`
+  (JSONB), `amount_ht`, `amount_vat`, `vat_rate_bp`, `snapshot` (JSONB :
+  lignes d'options, motifs, TVA). Pas de FK vers le catalogue (ajoutées par
+  ALTER avant création des tables).
+- Catalogue : `inv_formulas` (code unique immuable, comportements,
+  `agents_step`), `inv_packs` (**index unique partiel (formula_id, size)
+  WHERE status = 'active'**), `inv_options` + `inv_option_formulas`,
+  `inv_discount_codes` (utilisations = commandes actives portant le code,
+  comptées sous verrou), `inv_catalog_log` (changes JSONB {champ: [ancien,
+  nouveau]}). Toutes portent `status` (active|archived), `used`,
+  `sort_order`. Réglages : `site_settings["invitations_catalog"]`.
 
 ## Relations principales
 

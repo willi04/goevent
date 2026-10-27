@@ -232,6 +232,17 @@ bout en bout sans intervention, 1 retrait réussi, analyse des
   vérification par les 4 derniers chiffres du téléphone (comparés hors ligne
   à une empreinte PBKDF2 salée, jamais au numéro) ou « identité vérifiée »,
   motif obligatoire. Hors ligne : en file, synchronisée en `source=manual`.
+- **Lot 2.2 (avant le déploiement)** : `invitation_packs` est lue par toutes
+  les routes invitations (quota) → passer CE seul ALTER sur Neon avant le push
+  (copie exacte dans `core/migrations.py`, entrée « invitation_packs (commande
+  figée) ») ; les tables du catalogue sont créées au démarrage et la reprise
+  (Autonome / Accompagné, 7 tailles, prix en vigueur) est automatique.
+- **Catalogue** : Invitations → « Catalogue des packs » (admin : modifier ;
+  commercial : lire + devis). Prix, options, codes de remise et TVA changent
+  sans redéploiement ; une commande activée ne change jamais. Pack offert :
+  admin, motif, compté à part (« Encaissé » = packs payés uniquement).
+  Traçabilité : `invitation_catalog_create|update|archive|restore|delete`,
+  `invitation_catalog_settings`, `invitation_pack_offered`.
 - **Moyens de paiement des packs** : `INVITATION_CHANNELS_ACTIVE` sur Render
   (codes séparés par des virgules ; défaut `especes_recu,orange_money_goevent`).
   Ajouter `virement_ecobank` à l'ouverture du compte. N'activer un pack

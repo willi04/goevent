@@ -15,6 +15,7 @@ from models.promo import PromoCode, PromoUsage
 from models.audience_log import AudienceExportLog
 from models.site_content import SiteContent, SitePageRevision, FaqItem, ZoneBlock, SiteSetting
 from models.invitation import PrivateEventSettings, EventGuest, GuestCheckin, InvitationPack
+from models.invitation_catalog import InvFormula, InvPack, InvOption, InvDiscountCode, InvCatalogLog
 
 
 __all__ = [
@@ -33,4 +34,5 @@ __all__ = [
     "AudienceExportLog",
     "SiteContent", "SitePageRevision", "FaqItem", "ZoneBlock", "SiteSetting",
     "PrivateEventSettings", "EventGuest", "GuestCheckin", "InvitationPack",
+    "InvFormula", "InvPack", "InvOption", "InvDiscountCode", "InvCatalogLog",
 ]

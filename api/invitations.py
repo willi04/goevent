@@ -22,19 +22,21 @@ from fastapi.responses import JSONResponse, Response
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
+from core import invitation_catalog as cat
 from core import invitations as inv
-from core.config import INVITATION_PACK_SIZES, INVITATION_SERVICE_LEVELS
 from core.database import get_db
 from core.limiter import PUBLIC_IP_CEILING, limiter, path_token_key, user_key
 from core.permissions import get_current_admin, is_admin, normalize_role, require_staff_function
 from core.security import get_current_user, hash_pin, log_security_event
 from models.event import Event
 from models.invitation import EventGuest, GuestCheckin, InvitationPack, PrivateEventSettings
+from models.invitation_catalog import InvFormula
 from models.user import User
 from schemas.invitation import (
-    AgentIn, AgentManualIn, GuestImportIn, GuestPatch, ManualCheckinIn, PackCancelIn, PackIn, PrivateEventIn,
+    AgentIn, AgentManualIn, GuestImportIn, GuestPatch, ManualCheckinIn, PackCancelIn, PrivateEventIn,
     PrivateEventPatch, SyncIn,
 )
+from schemas.invitation_catalog import OrderIn
 
 router = APIRouter(tags=["invitations"])
 manager = require_staff_function("commercial")   # admin + commercial (pas le CM)
@@ -68,18 +70,29 @@ def _guest_out(ev: Event, st: PrivateEventSettings, g: EventGuest) -> dict:
 
 
 def _pack_out(p: InvitationPack) -> dict:
+    """Commande figée (instantané) ; « ancien pack » si activé avant le catalogue (legacy = True)."""
+    snap = p.snapshot or {}
     return {"id": p.id, "size": p.size, "service": p.service, "amount_fcfa": p.amount_fcfa, "status": p.status,
             "payment_channel": p.payment_channel, "payment_ref": p.payment_ref, "amount_received": p.amount_received,
             "activated_at": _iso(p.activated_at), "cancelled_at": _iso(p.cancelled_at),
-            "cancel_reason": p.cancel_reason, "note": p.note}
+            "cancel_reason": p.cancel_reason, "note": p.note, "legacy": p.snapshot is None,
+            "formula_name": p.formula_name, "pack_name": (snap.get("pack") or {}).get("name"),
+            "custom": p.custom, "custom_reason": (snap.get("pack") or {}).get("custom_reason"),
+            "offered": p.offered, "offered_reason": snap.get("offered_reason"),
+            "unit_price": p.unit_price if p.unit_price is not None else p.amount_fcfa,
+            "options": snap.get("options") or [], "options_total": p.options_total or 0,
+            "discount": snap.get("discount"), "discount_amount": p.discount_amount or 0,
+            "agents_included": cat.order_agents(p), "features": cat.order_features(p),
+            "vat": snap.get("vat"), "amount_ht": p.amount_ht, "amount_vat": p.amount_vat}
 
 
 def _event_summary(db: Session, ev: Event, st: PrivateEventSettings) -> dict:
     return {"id": ev.id, "title": ev.title, "event_date": _iso(ev.event_date),
             "event_date_label": inv.fmt_date_fr(ev.event_date), "location": ev.location,
             "client_name": st.client_name, "service_level": st.service_level,
+            "formula_name": cat.formula_label(db, st.service_level),
             "quota": inv.quota(db, ev.id), "listed": inv.seats_listed(db, ev.id),
-            "active_service": inv.active_service(db, ev.id), "stats": inv.stats(db, ev.id),
+            "features": cat.event_features(db, ev.id, st.service_level), "stats": inv.stats(db, ev.id),
             "purged": bool(st.purged_at)}
 
 
@@ -101,9 +114,12 @@ def _guest(db: Session, guest_id: int, lock: bool = False):
     return g, ev, st
 
 
-def _service(v: Optional[str]) -> Optional[str]:
-    if v is not None and v not in INVITATION_SERVICE_LEVELS:
-        raise HTTPException(400, "Niveau de service invalide (autonome ou accompagne).")
+def _service(db: Session, v: Optional[str], current: Optional[str] = None) -> Optional[str]:
+    """Formule de l'événement = code d'une formule ACTIVE du catalogue (inchangée : acceptée même archivée)."""
+    if v is None or v == current:
+        return v
+    if not db.query(InvFormula.id).filter(InvFormula.code == v, InvFormula.status == "active").first():
+        raise HTTPException(400, "Formule inconnue ou archivée.")
     return v
 
 
@@ -120,11 +136,11 @@ def _phone(v: Optional[str]) -> Optional[str]:
 
 @router.get("/admin/invitations/meta")
 def admin_meta(db: Session = Depends(get_db), user: User = Depends(manager)):
-    from core.pricing import get_pricing
-    prices = get_pricing(db)["invitations"]
-    return {"pack_sizes": list(INVITATION_PACK_SIZES), "services": list(INVITATION_SERVICE_LEVELS),
-            "prices": prices, "channels": inv.channels(), "default_message": inv.DEFAULT_MESSAGE,
-            "message_vars": list(inv.MESSAGE_VARS), "can_activate": is_admin(user),
+    c = cat.full_catalog(db, include_archived=False)
+    return {"formulas": c["formulas"], "packs": [p for p in c["packs"] if p["available"]], "options": c["options"],
+            "catalog_settings": c["settings"], "units": c["units"],
+            "channels": inv.channels(), "default_message": inv.DEFAULT_MESSAGE,
+            "message_vars": list(inv.MESSAGE_VARS), "can_activate": is_admin(user), "can_edit_catalog": is_admin(user),
             "retention_days": inv.INVITATION_RETENTION_DAYS}
 
 
@@ -134,7 +150,7 @@ def admin_list_events(db: Session = Depends(get_db), user: User = Depends(manage
             .join(PrivateEventSettings, PrivateEventSettings.event_id == Event.id)
             .filter(Event.visibility == "private", Event.is_active == True)  # noqa: E712
             .order_by(Event.event_date.desc()).limit(300).all())
-    return {"events": [_event_summary(db, ev, st) for ev, st in rows]}
+    return {"events": [_event_summary(db, ev, st) for ev, st in rows], "summary": cat.revenue_summary(db)}
 
 
 @router.post("/admin/invitations/events")
@@ -153,7 +169,7 @@ def admin_create_event(request: Request, data: PrivateEventIn, db: Session = Dep
     st = PrivateEventSettings(event_id=ev.id, client_name=data.client_name.strip(), client_phone=_phone(data.client_phone),
                               host_label=(data.host_label or "").strip() or None,
                               message_template=inv.check_template(data.message_template),
-                              service_level=_service(data.service_level), purge_after=inv.purge_after_for(date),
+                              service_level=_service(db, data.service_level), purge_after=inv.purge_after_for(date),
                               created_by=user.id)
     db.add(st)
     db.commit()
@@ -171,7 +187,8 @@ def admin_get_event(event_id: int, db: Session = Depends(get_db), user: User = D
                 "message_template": st.message_template, "message_is_default": st.message_template is None,
                 "track_url": inv.track_url(st.track_token) if st.track_token else None,
                 "purge_after": _iso(st.purge_after), "packs": [_pack_out(p) for p in packs],
-                "agents": [{"id": a.id, "full_name": a.full_name, "phone_number": a.phone_number} for a in agents]})
+                "agents": [{"id": a.id, "full_name": a.full_name, "phone_number": a.phone_number} for a in agents],
+                "agents_included": cat.agents_included_total(db, ev.id)})
     return out
 
 
@@ -198,7 +215,7 @@ def admin_update_event(request: Request, event_id: int, data: PrivateEventPatch,
     if "host_label" in f:
         st.host_label = (data.host_label or "").strip() or None
     if "service_level" in f and data.service_level:
-        st.service_level = _service(data.service_level)
+        st.service_level = _service(db, data.service_level, st.service_level)
     if data.reset_message:
         st.message_template = None
     elif "message_template" in f:
@@ -428,8 +445,8 @@ def admin_arrivals(event_id: int, db: Session = Depends(get_db), user: User = De
 @limiter.limit("30/minute")
 def admin_track_link(request: Request, event_id: int, db: Session = Depends(get_db), user: User = Depends(manager)):
     ev, st = _load(db, event_id)
-    if inv.active_service(db, ev.id) != "accompagne":
-        raise HTTPException(400, "Le lien de suivi fait partie de l'offre Accompagné (aucun pack Accompagné actif).")
+    if not inv.quota(db, ev.id) or not cat.event_features(db, ev.id, st.service_level)["track_link"]:
+        raise HTTPException(400, "Le lien de suivi n'est inclus dans aucun pack actif de cet événement.")
     st.track_token, st.track_created_at = secrets.token_urlsafe(24), inv.utcnow()
     db.commit()
     log_security_event(db, "invitation_track_link_created", request, user.id, "event %d" % ev.id)
@@ -457,7 +474,7 @@ def admin_add_agent(request: Request, event_id: int, data: AgentIn, db: Session 
     phone = _phone(data.phone_number)
     if not phone.startswith("+236"):
         raise HTTPException(400, "Numéro centrafricain attendu (+236).")
-    org = "GoEvent" if st.service_level == "accompagne" else st.client_name[:100]
+    org = "GoEvent" if cat.event_features(db, ev.id, st.service_level)["onsite_agents"] else st.client_name[:100]
     u = db.query(User).filter(User.phone_number == phone).first()
     if u and u.is_active and normalize_role(u.role) != "agent":
         raise HTTPException(400, "Ce numéro est déjà utilisé par un autre type de compte.")
@@ -492,11 +509,13 @@ def admin_remove_agent(request: Request, event_id: int, agent_id: int, db: Sessi
 # ── packs (activation : admin uniquement) ────────────────────────────
 @router.post("/admin/invitations/events/{event_id}/packs")
 @limiter.limit("20/minute")
-def admin_activate_pack(request: Request, event_id: int, data: PackIn, db: Session = Depends(get_db),
+def admin_activate_pack(request: Request, event_id: int, data: OrderIn, db: Session = Depends(get_db),
                         user: User = Depends(get_current_admin)):
+    """Commande figée : même calcul que le devis (cat.quote). Montant reçu ≥ total, ou « Pack offert »."""
     ev, st = _load(db, event_id, lock=True)
-    p = inv.activate_pack(db, ev, user, data.size, data.service, data.payment_channel, data.payment_ref,
-                          data.amount_received, data.confirmed_goevent_account, data.note, request)
+    if st.purged_at:
+        raise HTTPException(400, "Liste supprimée.")
+    p = cat.activate(db, ev, user, True, data.model_dump(), inv.channels(), request)
     return _pack_out(p)
 
 

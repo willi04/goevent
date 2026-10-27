@@ -929,7 +929,6 @@
     ["slot_hero", "Slot Hero (carrousel d'accueil)", "Vendu par contrat (Régie pub) : prérempli dans le formulaire de contrat et affiché aux partenaires."],
     ["ad_formats", "Emplacements publicitaires (par mois)", "Affiché sur la page Partenaires. Vide = « Sur devis »."],
     ["premium", "Services premium", "Affichage uniquement (page Partenaires)."],
-    ["invitations", "Invitations digitales (packs)", "Prix par taille de pack (personnes) et niveau de service. Montant figé sur un pack à son activation."],
   ];
 
   function loadPublicPricing() {
@@ -977,6 +976,16 @@
         box,
       ]));
     });
+    panel.appendChild(el("div", { class: "card p-5 mb-3 flex flex-wrap items-center gap-3" }, [
+      el("div", { class: "flex-1 min-w-[220px]" }, [
+        el("p", { class: "font-black text-sm text-gray-900", text: "Invitations digitales (packs)" }),
+        el("p", { class: "text-[11px] text-gray-500", text: "Formules, packs, options, codes de remise et TVA : gérés dans Invitations → Catalogue des packs." }),
+      ]),
+      el("button", { class: "action-btn text-xs", style: "background:#ede9fe;color:#5b21b6", text: "Ouvrir le catalogue", onclick: function () {
+        if (typeof window.invOpenCatalog === "function") window.invOpenCatalog();
+        if (typeof showTab === "function") showTab("invitations");
+      } }),
+    ]));
     panel.appendChild(el("div", { class: "card p-5 mb-3 bg-gray-50" }, [
       el("p", { class: "font-black text-sm text-gray-900", text: "Commission billetterie (lecture seule)" }),
       el("p", { class: "text-sm text-gray-700 mt-1", text: "Acheteur : " + String(p.commission.buyer_pct).replace(".", ",") + " % · Organisateur : " + String(p.commission.organizer_pct).replace(".", ",") + " %" }),

@@ -288,10 +288,20 @@ Les textes, images et liens des pages publiques sont modifiables depuis
   `goevent.africa/i/<jeton>` (rewrite Vercel → `invitation.html`, page
   autonome sans script tiers, `no-referrer`). Envoi : lien `wa.me` ouvert par
   l'équipe (un clic par invité), message modifiable par événement.
-- **Pack payé** (taille en personnes × Autonome/Accompagné) activé par
-  l'admin après paiement reçu **au nom de GoEvent SARLU**, référence
-  unique par canal. Sans pack actif : import possible, envoi / scan / lien de
-  suivi bloqués.
+- **Catalogue** (lot 2.2, `core/invitation_catalog.py`, `api/invitation_catalog.py`) :
+  formules (comportements : agents GoEvent sur place + 1 agent / N invités,
+  lien de suivi, envoi par l'équipe), packs taille × formule (prix ou « sur
+  devis », dates de validité), options (forfait / unité / page), codes de
+  remise, réglages (plafond de remise manuelle, TVA désactivée par défaut),
+  historique. Admin modifie, commercial lit. Élément vendu = archivable,
+  jamais supprimable. `GET /invitations/catalog` public (lot 3), sans codes.
+- **Commande** : devis et activation passent par le MÊME calcul
+  (`quote()`) → affiché = facturé. Une seule remise (code OU manuelle admin
+  plafonnée), sur le pack uniquement. Sur mesure et « Pack offert » (canal
+  `offert`, total 0, motif) : admin. Activation par l'admin après paiement
+  reçu **au nom de GoEvent SARLU** (montant reçu ≥ total, référence unique
+  par canal) ; instantané figé dans `invitation_packs`. Sans pack actif :
+  import possible, envoi / scan / lien de suivi bloqués.
 - **Scan** : `POST /scan` reconnaît l'URL d'un pass → branche invitations
   (verrou ligne, pass groupe : l'agent choisit combien entrent, `client_uuid`
   idempotent). **Hors ligne** : le scanner télécharge la liste (empreintes

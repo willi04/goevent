@@ -34,8 +34,7 @@ INVITATION_PAYMENT_CHANNELS = [
     {"code": "orange_money_goevent", "label": "Orange Money GoEvent SARLU", "ref_label": "ID de transaction Orange Money"},
     {"code": "virement_ecobank", "label": "Virement Ecobank GoEvent SARLU", "ref_label": "Référence du virement"},
 ]
-INVITATION_PACK_SIZES = (25, 50, 100, 300, 500, 1000, 2000)   # en personnes (un pass « + 2 » compte 3)
-INVITATION_SERVICE_LEVELS = ("autonome", "accompagne")
+# Formules, tailles et prix des packs : catalogue en base (core/invitation_catalog.py, lot 2.2)
 INVITATION_RETENTION_DAYS = 30                        # purge des listes d'invités après l'événement
 INVITATION_HOUSE_PHONE = "+23600000001"               # compte orga interne (inactif) des événements accompagnés
 

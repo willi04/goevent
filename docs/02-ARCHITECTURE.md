@@ -282,9 +282,9 @@ Les textes, images et liens des pages publiques sont modifiables depuis
 
 ### Flux 7 : Invitations digitales à QR code (événements privés)
 
-- **Page publique** `invitations.html` (`/invitations`, lot 3) : page
-  AUTONOME (CSS inline, Plus Jakarta Sans hébergée `web/fonts/`, aucun script
-  ni police externe, aucun traceur), textes `data-cms` (page « invitations »),
+- **Page publique** `invitations.html` (`/invitations`, lot 3) : même charte
+  que les autres pages (Tailwind, menu partagé `btNavbar("invitations")`,
+  tiroir, pied de page, barre mobile), textes `data-cms` (page « invitations »),
   tarifs lus sur `GET /invitations/catalog`, devis = lien `wa.me` vers
   `invitations.contact.whatsapp` (à défaut `global.contact.whatsapp`) avec
   message prérempli ; `?ref=<CODE>` (commercial, `[A-Za-z0-9-]{1,20}`) ajouté

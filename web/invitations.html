@@ -1,0 +1,525 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Invitations digitales à QR Code | GoEvent</title>
+  <meta name="description" content="Pass nominatifs envoyés sur WhatsApp, contrôle des entrées même sans internet, pass papier pour les invités sans smartphone. Mariages, dots, galas, conférences : demandez votre devis." />
+  <link rel="canonical" href="https://goevent.africa/invitations" />
+  <meta name="theme-color" content="#04130c" />
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="fr_FR" />
+  <meta property="og:site_name" content="GoEvent" />
+  <meta property="og:url" content="https://goevent.africa/invitations" />
+  <meta property="og:title" content="Invitations digitales à QR Code | GoEvent" />
+  <meta property="og:description" content="Vos invités reçoivent leur pass sur WhatsApp, on scanne à l'entrée, même sans internet. Demandez votre devis." />
+  <meta property="og:image" content="https://goevent.africa/og/invitations.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Exemple de pass d'invitation GoEvent avec QR Code" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Invitations digitales à QR Code | GoEvent" />
+  <meta name="twitter:description" content="Pass sur WhatsApp, contrôle des entrées même sans internet. Demandez votre devis." />
+  <meta name="twitter:image" content="https://goevent.africa/og/invitations.png" />
+  <link rel="icon" href="/icons/icon-192.svg" />
+  <link rel="preload" href="/fonts/plus-jakarta-sans/plus-jakarta-sans-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <!-- Page volontairement autonome : police hébergée chez GoEvent (OFL), aucun script ni police externe, aucun traceur.
+       Tarifs lus sur GET /invitations/catalog (affiché = facturé) ; textes éditables (data-cms, page « invitations »). -->
+  <style>
+    @font-face { font-family: "Plus Jakarta Sans"; font-weight: 400; font-style: normal; font-display: swap;
+      src: url("/fonts/plus-jakarta-sans/plus-jakarta-sans-latin-400-normal.woff2") format("woff2"); }
+    @font-face { font-family: "Plus Jakarta Sans"; font-weight: 600; font-style: normal; font-display: swap;
+      src: url("/fonts/plus-jakarta-sans/plus-jakarta-sans-latin-600-normal.woff2") format("woff2"); }
+    @font-face { font-family: "Plus Jakarta Sans"; font-weight: 800; font-style: normal; font-display: swap;
+      src: url("/fonts/plus-jakarta-sans/plus-jakarta-sans-latin-800-normal.woff2") format("woff2"); }
+    :root { --bg: #04130c; --bg2: #071d13; --card: #0b2619; --line: rgba(255,255,255,.09); --ink: #f2f7f4; --muted: #a7bdb1;
+            --em: #34d399; --em2: #10b981; --brand: #00502c; --gold: #fecb00; }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.55 "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overflow-x: hidden; }
+    a { color: inherit; }
+    img { max-width: 100%; }
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 0 16px; }
+    .hidden { display: none !important; }
+    h1, h2, h3 { line-height: 1.15; margin: 0; letter-spacing: -.01em; }
+    h2 { font-size: clamp(24px, 6vw, 36px); font-weight: 800; }
+    .kicker { display: inline-block; font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--em); }
+    .lead { color: var(--muted); font-size: 16px; margin: 10px 0 0; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; cursor: pointer; text-decoration: none;
+           font: 800 15px/1 "Plus Jakarta Sans", system-ui, sans-serif; padding: 15px 22px; border-radius: 999px; transition: transform .15s, background .15s; }
+    .btn:active { transform: scale(.98); }
+    .btn-wa { background: var(--em2); color: #03140c; box-shadow: 0 10px 30px rgba(16,185,129,.25); }
+    .btn-wa:hover { background: var(--em); }
+    .btn-ghost { background: rgba(255,255,255,.06); color: var(--ink); border: 1px solid var(--line); }
+    .btn svg { width: 20px; height: 20px; flex: none; }
+    section { padding: 56px 0; }
+    .sec-alt { background: var(--bg2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    /* En-tête (même identité que le site : logo, vert, typographie) */
+    .top { position: sticky; top: 0; z-index: 40; background: rgba(4,19,12,.86); backdrop-filter: saturate(1.4) blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+    .top .wrap { display: flex; align-items: center; gap: 16px; height: 64px; }
+    .logo { display: flex; align-items: center; gap: 8px; text-decoration: none; }
+    .logo img { width: 36px; height: 36px; border-radius: 12px; }
+    .logo span { font-size: 22px; font-weight: 800; letter-spacing: -.02em; background: linear-gradient(90deg, #fff, #9df6b9); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .nav { display: none; gap: 22px; margin-left: 20px; font-size: 14px; font-weight: 600; }
+    .nav a { text-decoration: none; color: var(--muted); }
+    .nav a:hover, .nav a[aria-current] { color: #fff; }
+    .nav a[aria-current] { border-bottom: 2px solid var(--em); padding-bottom: 4px; }
+    .top-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    .top-right .login { display: none; font-size: 14px; font-weight: 700; text-decoration: none; color: var(--muted); }
+    .top .btn { padding: 10px 16px; font-size: 13px; }
+    .menu { position: relative; }
+    .menu summary { list-style: none; cursor: pointer; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; border: 1px solid var(--line); }
+    .menu summary::-webkit-details-marker { display: none; }
+    .menu-panel { position: absolute; right: 0; top: 48px; min-width: 210px; background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 8px; box-shadow: 0 20px 40px rgba(0,0,0,.4); }
+    .menu-panel a { display: block; padding: 11px 12px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 15px; }
+    .menu-panel a:hover, .menu-panel a[aria-current] { background: rgba(52,211,153,.12); color: var(--em); }
+    /* Accroche */
+    .hero { padding: 40px 0 56px; background: radial-gradient(900px 420px at 85% -10%, rgba(16,185,129,.28), transparent 60%), radial-gradient(700px 360px at -10% 20%, rgba(0,80,44,.55), transparent 60%); }
+    .hero-grid { display: grid; gap: 36px; align-items: center; }
+    .hero h1 { font-size: clamp(30px, 8.2vw, 54px); font-weight: 800; margin-top: 12px; }
+    .hero h1 em { font-style: normal; color: var(--em); }
+    .hero .lead { font-size: 17px; max-width: 560px; }
+    .cta-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+    .trust { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 18px; color: var(--muted); font-size: 13px; font-weight: 600; }
+    .trust span::before { content: "✓ "; color: var(--em); font-weight: 800; }
+    /* Exemple de pass (maquette statique, nom fictif) */
+    .pass { position: relative; max-width: min(340px, calc(100vw - 48px)); margin: 0 auto; background: #fff; color: #111827; border-radius: 28px; overflow: hidden; box-shadow: 0 30px 60px rgba(0,0,0,.45); transform: rotate(-2deg); }
+    .pass-top { background: linear-gradient(140deg, #00502c, #006b3c); color: #fff; padding: 22px 20px 18px; text-align: center; }
+    .pass-top p { margin: 2px 0; font-size: 13px; opacity: .92; }
+    .pass-top h3 { font-size: 21px; font-weight: 800; margin: 6px 0 8px; }
+    .pass-body { padding: 18px 20px 20px; text-align: center; }
+    .pass-body .g { font-size: 20px; font-weight: 800; margin: 0; }
+    .pass-body .s { color: #6b7280; font-size: 13px; margin: 2px 0 10px; }
+    .chip { display: inline-block; background: #ecfdf3; color: #00502c; font-weight: 800; font-size: 12px; padding: 4px 11px; border-radius: 999px; }
+    .pass-qr { width: 170px; height: 170px; margin: 14px auto 4px; border: 1px solid #e5e7eb; border-radius: 16px; padding: 6px; }
+    .pass-qr svg { width: 100%; height: 100%; display: block; }
+    .ribbon { position: absolute; top: 18px; right: -42px; transform: rotate(35deg); background: var(--gold); color: #111827; font-weight: 800; font-size: 11px; letter-spacing: .14em; padding: 6px 48px; }
+    .pass-cap { text-align: center; color: var(--muted); font-size: 12px; margin-top: 18px; }
+    /* Grilles */
+    .grid3 { display: grid; gap: 14px; margin-top: 28px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 24px; padding: 22px; }
+    .card h3 { font-size: 18px; font-weight: 800; margin-top: 12px; }
+    .card p { color: var(--muted); margin: 8px 0 0; font-size: 15px; }
+    .ico { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: rgba(52,211,153,.12); color: var(--em); }
+    .ico svg { width: 24px; height: 24px; }
+    .steps { counter-reset: s; display: grid; gap: 14px; margin-top: 28px; }
+    .step { position: relative; padding-left: 64px; }
+    .step::before { counter-increment: s; content: counter(s); position: absolute; left: 0; top: 0; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 18px; background: var(--em2); color: #03140c; }
+    .step h3 { font-size: 18px; font-weight: 800; padding-top: 10px; }
+    .step p { color: var(--muted); margin: 6px 0 0; font-size: 15px; }
+    /* Tarifs */
+    .plans { display: grid; gap: 16px; margin-top: 28px; }
+    .plan { background: var(--card); border: 1px solid var(--line); border-radius: 28px; padding: 22px; display: flex; flex-direction: column; }
+    .plan.feat { border-color: rgba(52,211,153,.55); box-shadow: 0 0 0 1px rgba(52,211,153,.25) inset; }
+    .plan-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .plan-head h3 { font-size: 22px; font-weight: 800; }
+    .badge { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; background: var(--gold); color: #111827; padding: 4px 10px; border-radius: 999px; }
+    .from { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
+    .from b { color: #fff; font-size: 22px; }
+    .incl { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 6px; font-size: 14px; }
+    .incl li { padding-left: 24px; position: relative; }
+    .incl li::before { content: "✓"; position: absolute; left: 0; color: var(--em); font-weight: 800; }
+    .packs { margin: 16px 0 0; border-top: 1px solid var(--line); }
+    .pk { display: flex; align-items: center; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--line); }
+    .pk-l { flex: 1; min-width: 0; font-size: 14px; }
+    .pk-l b { display: block; font-size: 15px; }
+    .pk-l small { display: block; color: var(--muted); }
+    .pk-p { display: block; font-weight: 800; white-space: nowrap; font-size: 16px; color: var(--em); margin-top: 2px; }
+    .pk-a { flex: none; text-decoration: none; font-size: 12px; font-weight: 800; color: var(--em); border: 1px solid rgba(52,211,153,.4); border-radius: 999px; padding: 7px 11px; white-space: nowrap; }
+    .pk-a:hover { background: rgba(52,211,153,.12); }
+    .note { color: var(--muted); font-size: 13px; margin-top: 14px; }
+    .opts { display: grid; gap: 10px; margin-top: 16px; }
+    .opt { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; justify-content: space-between; background: rgba(255,255,255,.03); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; font-size: 14px; }
+    .opt > div { min-width: 0; flex: 1 1 160px; }
+    .opt span { color: var(--muted); font-size: 12px; display: block; }
+    .opt b { text-align: right; }
+    .skel { height: 260px; border-radius: 28px; background: linear-gradient(90deg, var(--card), #10301f, var(--card)); background-size: 200% 100%; animation: sk 1.4s infinite; }
+    @keyframes sk { to { background-position: -200% 0; } }
+    .err { background: rgba(254,203,0,.08); border: 1px solid rgba(254,203,0,.35); color: #fde68a; border-radius: 18px; padding: 16px; margin-top: 24px; font-weight: 600; }
+    /* Mentions */
+    .ment { display: grid; gap: 10px; margin-top: 24px; list-style: none; padding: 0; }
+    .ment li { display: flex; gap: 12px; align-items: flex-start; font-size: 15px; }
+    .ment li svg { flex: none; width: 22px; height: 22px; color: var(--em); margin-top: 1px; }
+    /* Devis */
+    .quote { background: linear-gradient(150deg, #0b2a1b, #062014); border: 1px solid rgba(52,211,153,.3); border-radius: 30px; padding: 24px; }
+    .fields { display: grid; gap: 12px; margin: 18px 0; }
+    .field label { display: block; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+    .field input, .field select { width: 100%; font: 600 16px "Plus Jakarta Sans", system-ui, sans-serif; color: var(--ink); background: rgba(0,0,0,.25); border: 1px solid var(--line); border-radius: 14px; padding: 13px 14px; }
+    .field input:focus, .field select:focus { outline: 2px solid var(--em2); outline-offset: 1px; }
+    .ref { color: var(--muted); font-size: 12px; margin-top: 10px; }
+    /* FAQ */
+    .faq { margin-top: 24px; display: grid; gap: 10px; }
+    .faq details { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 0 18px; }
+    .faq summary { cursor: pointer; list-style: none; padding: 16px 0; font-weight: 800; display: flex; justify-content: space-between; gap: 12px; }
+    .faq summary::-webkit-details-marker { display: none; }
+    .faq summary::after { content: "+"; color: var(--em); font-size: 22px; line-height: 1; }
+    .faq details[open] summary::after { content: "–"; }
+    .faq p { color: var(--muted); margin: 0 0 16px; font-size: 15px; }
+    footer { padding: 36px 0 48px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+    footer .links { display: flex; flex-wrap: wrap; gap: 10px 18px; margin: 16px 0; }
+    footer .links a { text-decoration: none; }
+    footer .links a:hover { color: #fff; }
+    @media (min-width: 720px) {
+      .grid3, .steps { grid-template-columns: repeat(3, 1fr); }
+      .plans { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+      .fields { grid-template-columns: 1.2fr 1fr 1fr; }
+      .opts { grid-template-columns: 1fr 1fr; }
+      section { padding: 80px 0; }
+    }
+    @media (min-width: 960px) {
+      .nav, .top-right .login { display: flex; }
+      .menu { display: none; }
+      .hero { padding: 72px 0 90px; }
+      .hero-grid { grid-template-columns: 1.15fr .85fr; }
+      .pass { margin: 0 0 0 auto; }
+    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .skel { animation: none; } }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <a class="logo" href="index.html" aria-label="GoEvent, accueil"><img src="icons/event.png" alt="" width="36" height="36" /><span>GoEvent</span></a>
+      <nav class="nav" aria-label="Menu principal">
+        <a href="index.html">Accueil</a>
+        <a href="event.html">Événements</a>
+        <a href="invitations.html" aria-current="page">Invitations</a>
+        <a href="partenaire.html">Partenaire</a>
+        <a href="a_propos.html">À propos</a>
+      </nav>
+      <div class="top-right">
+        <a class="login" href="login.html">Se connecter</a>
+        <a class="btn btn-wa js-wa" href="#devis" data-cms="invitations.top.cta">Devis gratuit</a>
+        <details class="menu">
+          <summary aria-label="Menu"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>
+          <div class="menu-panel">
+            <a href="index.html">Accueil</a>
+            <a href="event.html">Événements</a>
+            <a href="invitations.html" aria-current="page">Invitations</a>
+            <a href="partenaire.html">Partenaire</a>
+            <a href="a_propos.html">À propos</a>
+            <a href="login.html">Se connecter</a>
+          </div>
+        </details>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <span class="kicker" data-cms="invitations.hero.kicker">Invitations digitales à QR Code</span>
+          <h1 data-cms="invitations.hero.title">Vos invités reçoivent leur pass sur WhatsApp. Vous profitez de la fête.</h1>
+          <p class="lead" data-cms="invitations.hero.subtitle">Mariages, dots, anniversaires, galas, conférences : GoEvent crée un pass nominatif pour chaque invité, l'envoie par WhatsApp et contrôle les entrées à la porte.</p>
+          <div class="cta-row">
+            <a class="btn btn-wa js-wa" href="#devis"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.9 11.9 0 0 0 4.6 4c1.7.7 2.4.8 3.2.7.5-.1 1.5-.6 1.8-1.2.2-.6.2-1.1.1-1.2l-.6-.3z"/></svg><span data-cms="invitations.hero.cta">Demander un devis</span></a>
+            <a class="btn btn-ghost" href="#tarifs" data-cms="invitations.hero.cta2">Voir les tarifs</a>
+          </div>
+          <div class="trust">
+            <span data-cms="invitations.hero.trust1">Fonctionne sans internet à l'entrée</span>
+            <span data-cms="invitations.hero.trust2">Pass papier pour les invités sans smartphone</span>
+            <span data-cms="invitations.hero.trust3">Données supprimées 30 jours après</span>
+          </div>
+        </div>
+        <div>
+          <div class="pass" role="img" aria-label="Exemple de pass d'invitation (nom fictif)">
+            <span class="ribbon">EXEMPLE</span>
+            <div class="pass-top">
+              <p>Famille Exemple vous invite</p>
+              <h3>Mariage d'Aïcha &amp; Junior</h3>
+              <p>🗓 samedi 12 décembre 2026 à 16h00</p>
+              <p>📍 Salle des fêtes, Bangui</p>
+            </div>
+            <div class="pass-body">
+              <p class="g">Aïcha Exemple</p>
+              <p class="s">Pass valable pour 2 personnes</p>
+              <span class="chip">Table 4</span>
+              <div class="pass-qr"><svg viewBox="0 0 33 33" shape-rendering="crispEdges" aria-hidden="true"><path fill="#111827" d="M2 2h1v1h-1zM3 2h1v1h-1zM4 2h1v1h-1zM5 2h1v1h-1zM6 2h1v1h-1zM7 2h1v1h-1zM8 2h1v1h-1zM10 2h1v1h-1zM11 2h1v1h-1zM13 2h1v1h-1zM14 2h1v1h-1zM17 2h1v1h-1zM18 2h1v1h-1zM20 2h1v1h-1zM22 2h1v1h-1zM24 2h1v1h-1zM25 2h1v1h-1zM26 2h1v1h-1zM27 2h1v1h-1zM28 2h1v1h-1zM29 2h1v1h-1zM30 2h1v1h-1zM2 3h1v1h-1zM8 3h1v1h-1zM10 3h1v1h-1zM11 3h1v1h-1zM13 3h1v1h-1zM18 3h1v1h-1zM19 3h1v1h-1zM21 3h1v1h-1zM24 3h1v1h-1zM30 3h1v1h-1zM2 4h1v1h-1zM4 4h1v1h-1zM5 4h1v1h-1zM6 4h1v1h-1zM8 4h1v1h-1zM10 4h1v1h-1zM11 4h1v1h-1zM12 4h1v1h-1zM13 4h1v1h-1zM14 4h1v1h-1zM17 4h1v1h-1zM18 4h1v1h-1zM21 4h1v1h-1zM24 4h1v1h-1zM26 4h1v1h-1zM27 4h1v1h-1zM28 4h1v1h-1zM30 4h1v1h-1zM2 5h1v1h-1zM4 5h1v1h-1zM5 5h1v1h-1zM6 5h1v1h-1zM8 5h1v1h-1zM12 5h1v1h-1zM13 5h1v1h-1zM18 5h1v1h-1zM19 5h1v1h-1zM22 5h1v1h-1zM24 5h1v1h-1zM26 5h1v1h-1zM27 5h1v1h-1zM28 5h1v1h-1zM30 5h1v1h-1zM2 6h1v1h-1zM4 6h1v1h-1zM5 6h1v1h-1zM6 6h1v1h-1zM8 6h1v1h-1zM10 6h1v1h-1zM11 6h1v1h-1zM14 6h1v1h-1zM16 6h1v1h-1zM17 6h1v1h-1zM18 6h1v1h-1zM20 6h1v1h-1zM21 6h1v1h-1zM24 6h1v1h-1zM26 6h1v1h-1zM27 6h1v1h-1zM28 6h1v1h-1zM30 6h1v1h-1zM2 7h1v1h-1zM8 7h1v1h-1zM12 7h1v1h-1zM13 7h1v1h-1zM17 7h1v1h-1zM18 7h1v1h-1zM19 7h1v1h-1zM20 7h1v1h-1zM22 7h1v1h-1zM24 7h1v1h-1zM30 7h1v1h-1zM2 8h1v1h-1zM3 8h1v1h-1zM4 8h1v1h-1zM5 8h1v1h-1zM6 8h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM10 8h1v1h-1zM12 8h1v1h-1zM14 8h1v1h-1zM16 8h1v1h-1zM18 8h1v1h-1zM20 8h1v1h-1zM22 8h1v1h-1zM24 8h1v1h-1zM25 8h1v1h-1zM26 8h1v1h-1zM27 8h1v1h-1zM28 8h1v1h-1zM29 8h1v1h-1zM30 8h1v1h-1zM13 9h1v1h-1zM14 9h1v1h-1zM15 9h1v1h-1zM17 9h1v1h-1zM18 9h1v1h-1zM22 9h1v1h-1zM2 10h1v1h-1zM5 10h1v1h-1zM6 10h1v1h-1zM7 10h1v1h-1zM8 10h1v1h-1zM9 10h1v1h-1zM10 10h1v1h-1zM13 10h1v1h-1zM14 10h1v1h-1zM15 10h1v1h-1zM18 10h1v1h-1zM19 10h1v1h-1zM21 10h1v1h-1zM23 10h1v1h-1zM26 10h1v1h-1zM28 10h1v1h-1zM29 10h1v1h-1zM30 10h1v1h-1zM2 11h1v1h-1zM3 11h1v1h-1zM5 11h1v1h-1zM6 11h1v1h-1zM7 11h1v1h-1zM9 11h1v1h-1zM10 11h1v1h-1zM15 11h1v1h-1zM18 11h1v1h-1zM19 11h1v1h-1zM20 11h1v1h-1zM21 11h1v1h-1zM25 11h1v1h-1zM26 11h1v1h-1zM28 11h1v1h-1zM29 11h1v1h-1zM2 12h1v1h-1zM3 12h1v1h-1zM4 12h1v1h-1zM5 12h1v1h-1zM6 12h1v1h-1zM7 12h1v1h-1zM8 12h1v1h-1zM9 12h1v1h-1zM10 12h1v1h-1zM13 12h1v1h-1zM15 12h1v1h-1zM17 12h1v1h-1zM18 12h1v1h-1zM25 12h1v1h-1zM28 12h1v1h-1zM2 13h1v1h-1zM3 13h1v1h-1zM4 13h1v1h-1zM5 13h1v1h-1zM7 13h1v1h-1zM9 13h1v1h-1zM11 13h1v1h-1zM12 13h1v1h-1zM13 13h1v1h-1zM14 13h1v1h-1zM15 13h1v1h-1zM17 13h1v1h-1zM18 13h1v1h-1zM19 13h1v1h-1zM20 13h1v1h-1zM23 13h1v1h-1zM24 13h1v1h-1zM26 13h1v1h-1zM27 13h1v1h-1zM30 13h1v1h-1zM3 14h1v1h-1zM5 14h1v1h-1zM6 14h1v1h-1zM8 14h1v1h-1zM9 14h1v1h-1zM10 14h1v1h-1zM12 14h1v1h-1zM13 14h1v1h-1zM15 14h1v1h-1zM17 14h1v1h-1zM22 14h1v1h-1zM24 14h1v1h-1zM30 14h1v1h-1zM2 15h1v1h-1zM5 15h1v1h-1zM6 15h1v1h-1zM9 15h1v1h-1zM13 15h1v1h-1zM14 15h1v1h-1zM15 15h1v1h-1zM16 15h1v1h-1zM17 15h1v1h-1zM18 15h1v1h-1zM24 15h1v1h-1zM25 15h1v1h-1zM26 15h1v1h-1zM27 15h1v1h-1zM28 15h1v1h-1zM29 15h1v1h-1zM30 15h1v1h-1zM2 16h1v1h-1zM3 16h1v1h-1zM4 16h1v1h-1zM7 16h1v1h-1zM8 16h1v1h-1zM12 16h1v1h-1zM13 16h1v1h-1zM15 16h1v1h-1zM17 16h1v1h-1zM18 16h1v1h-1zM19 16h1v1h-1zM21 16h1v1h-1zM25 16h1v1h-1zM26 16h1v1h-1zM28 16h1v1h-1zM30 16h1v1h-1zM2 17h1v1h-1zM3 17h1v1h-1zM5 17h1v1h-1zM6 17h1v1h-1zM9 17h1v1h-1zM10 17h1v1h-1zM14 17h1v1h-1zM17 17h1v1h-1zM20 17h1v1h-1zM21 17h1v1h-1zM22 17h1v1h-1zM25 17h1v1h-1zM26 17h1v1h-1zM28 17h1v1h-1zM30 17h1v1h-1zM2 18h1v1h-1zM5 18h1v1h-1zM6 18h1v1h-1zM8 18h1v1h-1zM14 18h1v1h-1zM16 18h1v1h-1zM25 18h1v1h-1zM27 18h1v1h-1zM2 19h1v1h-1zM3 19h1v1h-1zM4 19h1v1h-1zM5 19h1v1h-1zM9 19h1v1h-1zM11 19h1v1h-1zM12 19h1v1h-1zM15 19h1v1h-1zM16 19h1v1h-1zM17 19h1v1h-1zM20 19h1v1h-1zM21 19h1v1h-1zM22 19h1v1h-1zM23 19h1v1h-1zM26 19h1v1h-1zM28 19h1v1h-1zM29 19h1v1h-1zM2 20h1v1h-1zM3 20h1v1h-1zM4 20h1v1h-1zM8 20h1v1h-1zM10 20h1v1h-1zM14 20h1v1h-1zM17 20h1v1h-1zM19 20h1v1h-1zM20 20h1v1h-1zM21 20h1v1h-1zM22 20h1v1h-1zM24 20h1v1h-1zM27 20h1v1h-1zM30 20h1v1h-1zM2 21h1v1h-1zM3 21h1v1h-1zM11 21h1v1h-1zM16 21h1v1h-1zM17 21h1v1h-1zM18 21h1v1h-1zM25 21h1v1h-1zM27 21h1v1h-1zM28 21h1v1h-1zM2 22h1v1h-1zM3 22h1v1h-1zM4 22h1v1h-1zM5 22h1v1h-1zM8 22h1v1h-1zM9 22h1v1h-1zM13 22h1v1h-1zM15 22h1v1h-1zM16 22h1v1h-1zM18 22h1v1h-1zM19 22h1v1h-1zM21 22h1v1h-1zM22 22h1v1h-1zM23 22h1v1h-1zM24 22h1v1h-1zM25 22h1v1h-1zM26 22h1v1h-1zM27 22h1v1h-1zM28 22h1v1h-1zM29 22h1v1h-1zM10 23h1v1h-1zM13 23h1v1h-1zM14 23h1v1h-1zM16 23h1v1h-1zM17 23h1v1h-1zM22 23h1v1h-1zM26 23h1v1h-1zM27 23h1v1h-1zM2 24h1v1h-1zM3 24h1v1h-1zM4 24h1v1h-1zM5 24h1v1h-1zM6 24h1v1h-1zM7 24h1v1h-1zM8 24h1v1h-1zM10 24h1v1h-1zM11 24h1v1h-1zM14 24h1v1h-1zM16 24h1v1h-1zM17 24h1v1h-1zM18 24h1v1h-1zM19 24h1v1h-1zM21 24h1v1h-1zM22 24h1v1h-1zM24 24h1v1h-1zM26 24h1v1h-1zM27 24h1v1h-1zM2 25h1v1h-1zM8 25h1v1h-1zM10 25h1v1h-1zM11 25h1v1h-1zM14 25h1v1h-1zM16 25h1v1h-1zM18 25h1v1h-1zM19 25h1v1h-1zM20 25h1v1h-1zM21 25h1v1h-1zM22 25h1v1h-1zM26 25h1v1h-1zM2 26h1v1h-1zM4 26h1v1h-1zM5 26h1v1h-1zM6 26h1v1h-1zM8 26h1v1h-1zM10 26h1v1h-1zM11 26h1v1h-1zM15 26h1v1h-1zM16 26h1v1h-1zM18 26h1v1h-1zM21 26h1v1h-1zM22 26h1v1h-1zM23 26h1v1h-1zM24 26h1v1h-1zM25 26h1v1h-1zM26 26h1v1h-1zM27 26h1v1h-1zM29 26h1v1h-1zM30 26h1v1h-1zM2 27h1v1h-1zM4 27h1v1h-1zM5 27h1v1h-1zM6 27h1v1h-1zM8 27h1v1h-1zM10 27h1v1h-1zM12 27h1v1h-1zM14 27h1v1h-1zM15 27h1v1h-1zM17 27h1v1h-1zM18 27h1v1h-1zM20 27h1v1h-1zM22 27h1v1h-1zM30 27h1v1h-1zM2 28h1v1h-1zM4 28h1v1h-1zM5 28h1v1h-1zM6 28h1v1h-1zM8 28h1v1h-1zM12 28h1v1h-1zM13 28h1v1h-1zM17 28h1v1h-1zM18 28h1v1h-1zM20 28h1v1h-1zM21 28h1v1h-1zM23 28h1v1h-1zM25 28h1v1h-1zM26 28h1v1h-1zM28 28h1v1h-1zM29 28h1v1h-1zM30 28h1v1h-1zM2 29h1v1h-1zM8 29h1v1h-1zM13 29h1v1h-1zM15 29h1v1h-1zM16 29h1v1h-1zM23 29h1v1h-1zM25 29h1v1h-1zM27 29h1v1h-1zM28 29h1v1h-1zM30 29h1v1h-1zM2 30h1v1h-1zM3 30h1v1h-1zM4 30h1v1h-1zM5 30h1v1h-1zM6 30h1v1h-1zM7 30h1v1h-1zM8 30h1v1h-1zM10 30h1v1h-1zM12 30h1v1h-1zM13 30h1v1h-1zM14 30h1v1h-1zM17 30h1v1h-1zM18 30h1v1h-1zM21 30h1v1h-1zM22 30h1v1h-1zM23 30h1v1h-1zM24 30h1v1h-1zM26 30h1v1h-1z"/></svg></div>
+            </div>
+          </div>
+          <p class="pass-cap" data-cms="invitations.pass.caption">Exemple de pass reçu par un invité (nom fictif).</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="sec-alt">
+      <div class="wrap">
+        <span class="kicker" data-cms="invitations.benefits.kicker">Pourquoi GoEvent</span>
+        <h2 data-cms="invitations.benefits.title">Une entrée élégante, sans liste papier ni resquilleurs</h2>
+        <div class="grid3">
+          <div class="card">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 18h4"/></svg></div>
+            <h3 data-cms="invitations.benefit1.title">Un pass personnel sur le téléphone</h3>
+            <p data-cms="invitations.benefit1.text">Chaque invité reçoit son pass nominatif sur WhatsApp. Pas de carton à imprimer, pas de carton perdu.</p>
+          </div>
+          <div class="card">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 12h10"/></svg></div>
+            <h3 data-cms="invitations.benefit2.title">Contrôle à l'entrée en une seconde</h3>
+            <p data-cms="invitations.benefit2.text">Le QR Code est scanné à la porte, même sans connexion internet. Un pass ne sert pas deux fois.</p>
+          </div>
+          <div class="card">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></svg></div>
+            <h3 data-cms="invitations.benefit3.title">Pass pour toute une famille</h3>
+            <p data-cms="invitations.benefit3.text">Un seul pass peut couvrir plusieurs personnes : l'agent indique combien entrent, le reste du pass reste valable.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <span class="kicker" data-cms="invitations.steps.kicker">Comment ça marche</span>
+        <h2 data-cms="invitations.steps.title">Trois étapes, on s'occupe du reste</h2>
+        <div class="steps">
+          <div class="step"><h3 data-cms="invitations.step1.title">Envoyez votre liste</h3><p data-cms="invitations.step1.text">Un fichier Excel ou Word, ou une simple liste : noms, numéros WhatsApp et nombre de places.</p></div>
+          <div class="step"><h3 data-cms="invitations.step2.title">Vos invités reçoivent leur pass sur WhatsApp</h3><p data-cms="invitations.step2.text">Un message chaleureux à votre nom, avec un pass personnel à présenter à l'entrée.</p></div>
+          <div class="step"><h3 data-cms="invitations.step3.title">On scanne à l'entrée</h3><p data-cms="invitations.step3.text">Chaque pass est vérifié en une seconde, même sans internet. Vous suivez les arrivées en direct.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="sec-alt" id="tarifs">
+      <div class="wrap">
+        <span class="kicker" data-cms="invitations.pricing.kicker">Tarifs</span>
+        <h2 data-cms="invitations.pricing.title">Choisissez votre formule</h2>
+        <p class="lead" data-cms="invitations.pricing.subtitle">Le prix dépend du nombre de personnes attendues : un pass « + 2 » compte pour 3 personnes.</p>
+        <div id="plans" class="plans" aria-live="polite"><div class="skel"></div><div class="skel"></div></div>
+        <div id="plans-error" class="err hidden" data-cms="invitations.pricing.error">Tarifs momentanément indisponibles : demandez-nous un devis sur WhatsApp, nous répondons rapidement.</div>
+        <div id="options-box" class="hidden">
+          <h3 style="font-size:20px;font-weight:800;margin-top:36px" data-cms="invitations.options.title">Options</h3>
+          <div id="options" class="opts"></div>
+        </div>
+        <p class="note"><span id="vat-note"></span> <span data-cms="invitations.pricing.payment">Paiement intégral à la commande, à GoEvent SARLU (espèces contre reçu ou Orange Money). Les invitations sont activées dès réception.</span></p>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <span class="kicker" data-cms="invitations.mentions.kicker">Bon à savoir</span>
+        <h2 data-cms="invitations.mentions.title">Pensé pour les réalités du terrain</h2>
+        <ul class="ment">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span data-cms="invitations.mention1">Paiement intégral à la commande : vos invitations partent dès que le paiement est reçu.</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span data-cms="invitations.mention2">Le scan fonctionne sans internet : la liste est enregistrée sur le téléphone de l'agent et se synchronise ensuite.</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span data-cms="invitations.mention3">Pass multi-places : une famille entière peut entrer avec un seul pass, en une ou plusieurs fois.</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span data-cms="invitations.mention4">Pass papier pour les invités sans smartphone : imprimé avec son QR Code et remis en main propre.</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span><span data-cms="invitations.mention5">Les noms et numéros de vos invités sont supprimés 30 jours après l'événement, jamais utilisés pour de la publicité.</span> <a href="confidentialite.html#invitations" data-cms="invitations.mention5.link">En savoir plus</a></span></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="sec-alt" id="devis">
+      <div class="wrap">
+        <div class="quote">
+          <span class="kicker" data-cms="invitations.quote.kicker">Devis gratuit</span>
+          <h2 data-cms="invitations.quote.title">Parlons de votre événement</h2>
+          <p class="lead" data-cms="invitations.quote.text">Indiquez ce que vous savez déjà (tout est facultatif) : votre demande s'ouvre dans WhatsApp, prête à envoyer.</p>
+          <div class="fields">
+            <div class="field">
+              <label for="q-type" data-cms="invitations.quote.type">Type d'événement</label>
+              <select id="q-type">
+                <option value="">Choisir…</option>
+                <option>Mariage</option><option>Dot</option><option>Anniversaire</option><option>Baptême</option>
+                <option>Conférence</option><option>Gala</option><option>Soirée d'entreprise</option><option>Autre</option>
+              </select>
+            </div>
+            <div class="field"><label for="q-date" data-cms="invitations.quote.date">Date</label><input id="q-date" type="date" /></div>
+            <div class="field"><label for="q-count" data-cms="invitations.quote.count">Nombre d'invités</label><input id="q-count" type="number" min="1" max="5000" inputmode="numeric" placeholder="Ex. 250" /></div>
+          </div>
+          <a id="q-send" class="btn btn-wa js-wa" href="#devis" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2z"/></svg><span data-cms="invitations.quote.cta">Demander un devis sur WhatsApp</span></a>
+          <p id="q-ref" class="ref hidden"></p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <span class="kicker" data-cms="invitations.faq.kicker">Questions fréquentes</span>
+        <h2 data-cms="invitations.faq.title">Vos questions</h2>
+        <div class="faq" id="faq">
+          <details><summary data-cms="invitations.faq1.q">Mes invités doivent-ils installer une application ?</summary><p data-cms="invitations.faq1.a">Non. Le pass s'ouvre directement depuis le lien reçu sur WhatsApp, dans le navigateur du téléphone. Il reste lisible même hors connexion une fois ouvert.</p></details>
+          <details><summary data-cms="invitations.faq2.q">Et s'il n'y a pas de réseau dans la salle ?</summary><p data-cms="invitations.faq2.a">Nos agents téléchargent la liste avant l'ouverture des portes : le contrôle fonctionne sans internet et les entrées se synchronisent dès que le réseau revient.</p></details>
+          <details><summary data-cms="invitations.faq3.q">Un invité a perdu son pass ou n'a pas de smartphone, que se passe-t-il ?</summary><p data-cms="invitations.faq3.a">L'agent le retrouve par son nom et vérifie son identité. Les invités sans smartphone peuvent recevoir un pass papier imprimé.</p></details>
+          <details><summary data-cms="invitations.faq4.q">Comment se passe le paiement ?</summary><p data-cms="invitations.faq4.a">Le paiement se fait en une fois à la commande, à GoEvent SARLU (espèces contre reçu ou Orange Money). Vos invitations sont activées dès réception.</p></details>
+          <details><summary data-cms="invitations.faq5.q">Que deviennent les numéros de mes invités ?</summary><p data-cms="invitations.faq5.a">Ils servent uniquement à envoyer les pass de votre événement et sont supprimés 30 jours après. Ils ne sont jamais revendus ni utilisés pour de la publicité.</p></details>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <a class="logo" href="index.html"><img src="icons/event.png" alt="" width="36" height="36" /><span>GoEvent</span></a>
+      <div class="links">
+        <a href="event.html">Événements</a>
+        <a href="partenaire.html">Partenaire</a>
+        <a href="centre_aide.html">Centre d'aide</a>
+        <a href="cgu.html">CGU</a>
+        <a href="confidentialite.html">Confidentialité</a>
+        <a href="remboursements.html">Remboursements</a>
+      </div>
+      <p data-cms="global.footer.copyright">© 2026 GoEvent | Tous Droits Réservés.</p>
+    </div>
+  </footer>
+
+  <!-- Numéros WhatsApp (back-office → Contenu du site) : devis Invitations, à défaut support -->
+  <a id="wa-inv" class="hidden" href="#" data-cms-href="invitations.contact.whatsapp" data-cms-href-prefix="https://wa.me/" aria-hidden="true" tabindex="-1"></a>
+  <a id="wa-global" class="hidden" href="https://wa.me/23672259398" data-cms-href="global.contact.whatsapp" data-cms-href-prefix="https://wa.me/" aria-hidden="true" tabindex="-1"></a>
+
+  <script>
+    window.BT_API = (location.hostname === "localhost" || location.hostname === "127.0.0.1") ? location.protocol + "//" + location.hostname + ":8000" : "https://api.goevent.africa";
+  </script>
+  <script src="cms.js" defer></script>
+  <script>
+    (function () {
+      "use strict";
+      var API = window.BT_API;
+      var $ = function (id) { return document.getElementById(id); };
+      var nf = function (n) { return Number(n || 0).toLocaleString("fr-FR").replace(/ | /g, " "); };
+      var fcfa = function (n) { return nf(n) + " FCFA"; };
+      // Attribution commerciale : ?ref=<CODE> (lettres, chiffres, tiret, 20 max), sinon ignoré. URL et message uniquement.
+      var REF = (new URLSearchParams(location.search).get("ref") || "").trim();
+      if (!/^[A-Za-z0-9-]{1,20}$/.test(REF)) REF = "";
+      var catalog = null;
+
+      function waNumber() {
+        var pick = function (id) { var m = /^https:\/\/wa\.me\/(\d{8,15})$/.exec(($(id) && $(id).getAttribute("href")) || ""); return m ? m[1] : ""; };
+        return pick("wa-inv") || pick("wa-global");
+      }
+      function frDate(v) { var m = /^(\d{4})-(\d\d)-(\d\d)$/.exec(v || ""); return m ? m[3] + "/" + m[2] + "/" + m[1] : ""; }
+      function message(extra) {
+        var type = $("q-type").value, date = frDate($("q-date").value), n = parseInt($("q-count").value, 10);
+        var count = extra && extra.size ? extra.size + " invités" : (n > 0 ? n + " invités" : "[nombre d'invités]");
+        var t = "Bonjour GoEvent, je souhaite un devis pour des invitations : " + (type || "[type d'événement]") + ", " +
+                (date || "[date]") + ", " + count + ".";
+        if (extra && extra.formula) t += " Formule : " + extra.formula + (extra.size ? " (" + extra.size + " personnes)" : "") + ".";
+        if (REF) t += " Réf. : " + REF;
+        return t;
+      }
+      function waHref(extra) {
+        var num = waNumber();
+        return num ? "https://wa.me/" + num + "?text=" + encodeURIComponent(message(extra)) : "partenaire.html#contact";
+      }
+      function refreshLinks() {
+        var main = waHref(null);
+        // Tous les boutons « Demander un devis » ouvrent WhatsApp avec le message prérempli (champs du formulaire si remplis)
+        var ctas = document.querySelectorAll("a.js-wa");
+        for (var k = 0; k < ctas.length; k++) {
+          ctas[k].setAttribute("href", main);
+          if (main.indexOf("https://wa.me/") === 0) { ctas[k].setAttribute("target", "_blank"); ctas[k].setAttribute("rel", "noopener"); }
+        }
+        var packs = document.querySelectorAll("[data-pack-size]");
+        for (var i = 0; i < packs.length; i++) {
+          packs[i].setAttribute("href", waHref({ formula: packs[i].getAttribute("data-formula"), size: packs[i].getAttribute("data-pack-size") }));
+        }
+      }
+      if (REF) { $("q-ref").textContent = "Référence de votre conseiller : " + REF; $("q-ref").classList.remove("hidden"); }
+      ["q-type", "q-date", "q-count"].forEach(function (id) { $(id).addEventListener("input", refreshLinks); $(id).addEventListener("change", refreshLinks); });
+      // Les numéros peuvent être mis à jour par cms.js après le chargement
+      if (window.MutationObserver) new MutationObserver(refreshLinks).observe($("wa-inv"), { attributes: true });
+      if (window.MutationObserver) new MutationObserver(refreshLinks).observe($("wa-global"), { attributes: true });
+
+      function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+      function unitLabel(o) {
+        if (o.unit === "flat") return "forfait";
+        return "par " + (o.unit_label || (o.unit === "per_page" ? "page" : "unité"));
+      }
+      function render(c) {
+        catalog = c;
+        var box = $("plans");
+        box.innerHTML = "";
+        var formulas = c.formulas || [];
+        var feats = { onsite_agents: "Agents GoEvent à l'entrée", track_link: "Suivi des arrivées en direct", team_sends: "Envoi des pass par notre équipe" };
+        formulas.forEach(function (f, idx) {
+          var packs = (c.packs || []).filter(function (p) { return p.formula_id === f.id; }).sort(function (a, b) { return a.size - b.size; });
+          if (!packs.length) return;
+          var priced = packs.filter(function (p) { return !p.on_quote && p.price_fcfa != null; });
+          var card = el("article", "plan" + (f.badge ? " feat" : ""));
+          var head = el("div", "plan-head");
+          head.appendChild(el("h3", "", f.name));
+          if (f.badge) head.appendChild(el("span", "badge", f.badge));
+          card.appendChild(head);
+          if (priced.length) {
+            var from = el("p", "from", "À partir de ");
+            from.appendChild(el("b", "", fcfa(Math.min.apply(null, priced.map(function (p) { return p.price_fcfa; })))));
+            card.appendChild(from);
+          }
+          if (f.description) card.appendChild(el("p", "lead", f.description));
+          // Puces « inclus » du catalogue ; à défaut, les comportements de la formule
+          var items = (f.included || []).slice();
+          if (!items.length) Object.keys(feats).forEach(function (k) { if (f[k]) items.push(feats[k]); });
+          if (items.length) {
+            var ul = el("ul", "incl");
+            items.forEach(function (t) { ul.appendChild(el("li", "", t)); });
+            card.appendChild(ul);
+          }
+          var list = el("div", "packs");
+          packs.forEach(function (p) {
+            var row = el("div", "pk");
+            var l = el("div", "pk-l");
+            l.appendChild(el("b", "", p.name ? p.name : nf(p.size) + " personnes"));
+            var sub = p.name ? nf(p.size) + " personnes" : "";
+            if (p.valid_until) sub += (sub ? " · " : "") + "offre valable jusqu'au " + new Date(p.valid_until + (/[zZ]$/.test(p.valid_until) ? "" : "Z")).toLocaleDateString("fr-FR", { timeZone: "Africa/Bangui", day: "numeric", month: "long" });
+            if (sub) l.appendChild(el("small", "", sub));
+            l.appendChild(el("span", "pk-p", p.on_quote || p.price_fcfa == null ? "Sur devis" : fcfa(p.price_fcfa)));
+            row.appendChild(l);
+            var a = el("a", "pk-a", "Demander ce pack");
+            a.setAttribute("data-formula", f.name);
+            a.setAttribute("data-pack-size", String(p.size));
+            a.setAttribute("target", "_blank");
+            a.setAttribute("rel", "noopener");
+            row.appendChild(a);
+            list.appendChild(row);
+          });
+          card.appendChild(list);
+          box.appendChild(card);
+        });
+        if (!box.children.length) { box.classList.add("hidden"); $("plans-error").classList.remove("hidden"); }
+        var opts = c.options || [];
+        if (opts.length) {
+          var ob = $("options");
+          ob.innerHTML = "";
+          var names = {};
+          formulas.forEach(function (f) { names[f.id] = f.name; });
+          opts.forEach(function (o) {
+            var r = el("div", "opt");
+            var l = el("div", "");
+            l.appendChild(el("strong", "", o.name));
+            var meta = (o.description ? o.description + " · " : "") + (o.formula_ids || []).map(function (id) { return names[id]; }).filter(Boolean).join(", ");
+            if (meta) l.appendChild(el("span", "", meta));
+            r.appendChild(l);
+            r.appendChild(el("b", "", fcfa(o.price_fcfa) + " " + unitLabel(o)));
+            ob.appendChild(r);
+          });
+          $("options-box").classList.remove("hidden");
+        }
+        var v = c.vat || {};
+        $("vat-note").textContent = v.enabled ? (v.prices_include_vat ? "Prix TTC." : "Prix HT, TVA " + String(v.rate).replace(".", ",") + " % en sus.") : "";
+        refreshLinks();
+      }
+      function fail() {
+        $("plans").innerHTML = "";
+        $("plans").classList.add("hidden");
+        $("plans-error").classList.remove("hidden");
+      }
+      var ctrl = window.AbortController ? new AbortController() : null;
+      var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, 10000) : null;
+      fetch(API + "/invitations/catalog", { credentials: "omit", signal: ctrl ? ctrl.signal : undefined })
+        .then(function (r) { if (timer) clearTimeout(timer); if (!r.ok) throw new Error("http"); return r.json(); })
+        .then(render).catch(fail);
+
+      // FAQ : une question remplacée par « - » dans le back-office est masquée (5 questions maximum)
+      function tidyFaq() {
+        var items = document.querySelectorAll("#faq details");
+        for (var i = 0; i < items.length; i++) {
+          var q = items[i].querySelector("summary"), t = q ? q.textContent.trim() : "";
+          items[i].classList.toggle("hidden", !t || t === "-" || t === "—");
+        }
+      }
+      if (window.MutationObserver) new MutationObserver(tidyFaq).observe($("faq"), { childList: true, subtree: true, characterData: true });
+      refreshLinks();
+      tidyFaq();
+    })();
+  </script>
+</body>
+</html>

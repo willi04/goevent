@@ -411,6 +411,7 @@ function btNavbar(activePage) {
     { label: "Accueil", href: "index.html", key: "accueil" },
     { label: "Événements", href: "event.html", key: "evenements" },
     { label: "Follow", href: "follow.html", key: "follow" },
+    { label: "Invitations", href: "invitations.html", key: "invitations" },
     { label: "Partenaire", href: "partenaire.html", key: "partenaire" },
     { label: "À propos", href: "a_propos.html", key: "apropos" },
   ];
@@ -501,6 +502,7 @@ function btFooter() {
     '<li><a href="index.html" class="hover:text-primary transition-colors">Accueil</a></li>' +
     '<li><a href="event.html" class="hover:text-primary transition-colors">Événements</a></li>' +
     '<li><a href="follow.html" class="hover:text-primary transition-colors">Follow</a></li>' +
+    '<li><a href="invitations.html" class="hover:text-primary transition-colors">Invitations digitales</a></li>' +
     '<li><a href="a_propos.html" class="hover:text-primary transition-colors">À propos</a></li>' +
     "</ul>" +
     "</div>" +
@@ -751,6 +753,10 @@ function btMobileDrawerSections() {
 
   return (
     '<div class="space-y-1">' +
+      '<a href="invitations.html" class="flex items-center gap-3 p-3 rounded-2xl text-gray-700 font-semibold hover:bg-primary/5 hover:text-primary transition-all text-sm">' +
+        '<span class="material-symbols-outlined text-base text-gray-500">qr_code_2</span>' +
+        'Invitations digitales (mariages, dots…)' +
+      '</a>' +
       '<a href="centre_aide.html" class="flex items-center gap-3 p-3 rounded-2xl text-gray-700 font-semibold hover:bg-primary/5 hover:text-primary transition-all text-sm">' +
         '<span class="material-symbols-outlined text-base text-gray-500">help</span>' +
         'Aide & FAQ' +

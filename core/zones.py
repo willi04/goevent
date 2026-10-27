@@ -32,6 +32,12 @@ CARD_ICONS = ("search", "payments", "qr_code_2", "confirmation_number", "event",
 
 ZONES = [
     # clé, page, libellé, description, mode, types autorisés, vide par défaut, format tarif
+    # Bandeau d'annonce d'une ligne en haut des pages publiques (liste blanche dans web/cms.js).
+    # Non vendable : pas de format tarifaire, jamais d'encart « emplacement disponible ».
+    {"key": "global.top", "page": "global", "label": "Toutes les pages · bandeau d'annonce en haut",
+     "description": "Une ligne en haut des pages publiques (accueil, événements, fiches, partenaire, aide, légal, connexion…). "
+                    "Mobile : titre seul ; ordinateur : titre + texte. Le visiteur peut le fermer (7 jours).",
+     "mode": "stack", "kinds": ["announcement"], "empty": "hide", "format": None},
     {"key": "home.after_featured", "page": "index", "label": "Accueil · entre « En vedette » et « À venir »",
      "description": "Bandeau pleine largeur entre les deux listes d'événements.",
      "mode": "rotate", "kinds": ["image", "banner", "announcement"], "empty": "hide", "format": "home_banner"},
@@ -61,7 +67,8 @@ ZONES = [
      "mode": "rotate", "kinds": ["image", "banner", "announcement"], "empty": "hide", "format": "fan_space"},
 ]
 
-ZONE_PAGES = {"index": "Accueil", "event": "Événements", "event_detail": "Fiche événement", "fan": "Espace fan"}
+ZONE_PAGES = {"global": "Toutes les pages", "index": "Accueil", "event": "Événements", "event_detail": "Fiche événement",
+              "fan": "Espace fan"}
 ZONE_BY_KEY = {z["key"]: z for z in ZONES}
 
 

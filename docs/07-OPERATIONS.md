@@ -237,6 +237,16 @@ bout en bout sans intervention, 1 retrait réussi, analyse des
   (copie exacte dans `core/migrations.py`, entrée « invitation_packs (commande
   figée) ») ; les tables du catalogue sont créées au démarrage et la reprise
   (Autonome / Accompagné, 7 tailles, prix en vigueur) est automatique.
+- **Page publique Invitations** (`goevent.africa/invitations`) : textes dans
+  Contenu du site → « Invitations (page publique) » ; numéro WhatsApp des
+  devis : champ `invitations.contact.whatsapp` (vide = numéro support).
+  FAQ : remplacer une question par « - » la masque. Lien commercial :
+  `goevent.africa/invitations?ref=CODE` (le code apparaît en fin de message
+  WhatsApp). Prix : uniquement le catalogue.
+- **Bandeau d'annonce** : Contenu du site → Emplacements → « Toutes les
+  pages ». Une annonce = une ligne (titre seul sur mobile) ; dates et
+  statistiques comme les autres emplacements ; modifier le texte la refait
+  apparaître chez ceux qui l'avaient fermée.
 - **Catalogue** : Invitations → « Catalogue des packs » (admin : modifier ;
   commercial : lire + devis). Prix, options, codes de remise et TVA changent
   sans redéploiement ; une commande activée ne change jamais. Pack offert :

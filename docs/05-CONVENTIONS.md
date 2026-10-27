@@ -409,6 +409,13 @@ malveillant si l'organisateur est hostile.
 - **Emplacements** : une nouvelle zone = une entrée dans `core/zones.py` +
   un `<div data-zone="…" class="hidden">` dans la page. Ne jamais renommer
   une clé de zone en production (ses blocs deviendraient invisibles).
+  Bandeau `global.top` : une nouvelle page publique qui doit l'afficher est
+  ajoutée à `TOPBAR_PAGES` (`web/cms.js`) ; ne jamais y mettre une page de
+  paiement, de scan, de pass ou un tableau de bord.
+- **Pages autonomes** (`invitation.html`, `suivi.html`, `invitations.html`) :
+  pas de Tailwind CDN ni de police externe ; une modification du menu
+  principal (`btNavbar`) se reporte aussi dans l'en-tête de
+  `invitations.html`.
 - **Événements privés** : toute nouvelle requête publique sur `Event`
   (liste, recherche, fiche, achat, promo, partage, recommandations) filtre
   `Event.visibility == "public"`. Les invités ne vont jamais dans `tickets`.

@@ -13,6 +13,7 @@ Back-office :
 """
 import base64
 import json
+import zlib
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -112,7 +113,10 @@ def _image_url(b: ZoneBlock) -> Optional[str]:
 def _public_block(b: ZoneBlock) -> dict:
     return {"id": b.id, "kind": b.kind, "title": b.title, "body": b.body, "image": _image_url(b),
             "link_url": b.link_url, "link_label": b.link_label, "sponsor": b.sponsor, "theme": b.theme,
-            "items": json.loads(b.items) if b.items else []}
+            "items": json.loads(b.items) if b.items else [],
+            # version du CONTENU (pas updated_at, que les compteurs d'affichage modifient) :
+            # une annonce modifiée réapparaît même si le visiteur l'avait fermée
+            "rev": zlib.crc32(json.dumps([b.kind, b.title, b.body, b.link_url, b.link_label, b.theme]).encode())}
 
 
 def _admin_block(b: ZoneBlock, now: datetime) -> dict:

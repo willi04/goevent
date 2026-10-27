@@ -13,6 +13,9 @@
  *   data-zone="clé"           → emplacement : blocs (affiches, bannières, annonces, cartes)
  *                               ou encart « emplacement disponible » (cf. core/zones.py)
  *   data-zone-infeed="clé"    → grille : cartes sponsorisées insérées (btZonesInfeed)
+ *   Bandeau global « global.top » : injecté en haut des pages publiques de la
+ *   liste blanche TOPBAR_PAGES (jamais admin, scanner, paiement, tableaux de bord,
+ *   pass /i/, suivi /suivi/, invitations.html).
  *   data-price="groupe.clé"   → prix en vigueur (GET /pricing, source unique des tarifs)
  * Sans réseau / API en panne : la page garde son contenu statique.
  * Autonome (pas de dépendance à bt-api.js) : utilisé aussi par /simulateur/.
@@ -116,6 +119,10 @@
       el.innerHTML = p.body_html; // nettoyé par bleach côté serveur (liste blanche)
       var dates = document.querySelectorAll("[data-cms-page-date]");
       for (var i = 0; i < dates.length; i++) dates[i].textContent = "Dernière mise à jour : " + frDate(p.updated_at);
+      // Lien vers une section (#invitations…) : le texte vient d'être remplacé, on y revient
+      var id = decodeURIComponent((location.hash || "").slice(1));
+      var target = id && /^[A-Za-z0-9_-]{1,40}$/.test(id) ? document.getElementById(id) : null;
+      if (target && target.scrollIntoView) target.scrollIntoView();
     });
   }
 
@@ -382,9 +389,97 @@
     fresh.forEach(function (id) { seen[id] = 1; });
     beacon("i", fresh);
   }
+  // ── Bandeau d'annonce global (zone global.top) ─────────────────
+  var TOPBAR_PAGES = ["", "index", "event", "event_detail", "follow", "partenaire", "a_propos", "centre_aide", "cgu",
+                      "confidentialite", "remboursements", "feedback", "login", "signup", "simulateur"];
+  var TOPBAR_DAYS = 7;
+  function topbarAllowed() {
+    var p = location.pathname.replace(/\/+$/, "");
+    if (/^\/e\/[^/]+$/.test(p)) return true;                        // fiche événement /e/<slug>
+    if (/\/simulateur(\/index\.html)?$/.test(p)) return true;
+    return TOPBAR_PAGES.indexOf(p.split("/").pop().replace(/\.html$/, "")) >= 0;
+  }
+  function topbarKey(b) { return "goevent_topbar_closed:" + b.id + ":" + (b.rev || 0); }
+  function topbarClosed(b) {
+    try { var t = parseInt(localStorage.getItem(topbarKey(b)) || "0", 10); return t > Date.now(); } catch (e) { return false; }
+  }
+  var shifted = [], bodyPad = null;
+  function topbarShift(h0) {
+    // Les en-têtes fixes / collants du haut descendent sous le bandeau (pas les tiroirs plein écran)
+    shifted.forEach(function (s) { s.el.style.top = s.top; });
+    shifted = [];
+    if (bodyPad === null) bodyPad = { inline: document.body.style.paddingTop, px: parseFloat(getComputedStyle(document.body).paddingTop) || 0 };
+    document.body.style.paddingTop = h0 ? (bodyPad.px + h0) + "px" : bodyPad.inline;
+    if (!h0) return;
+    var cands = document.querySelectorAll("body > *, #navbar > *, header, nav");
+    for (var i = 0; i < cands.length; i++) {
+      var n = cands[i];
+      if (n.id === "goevent-topbar" || n.closest("#goevent-topbar")) continue;
+      var cs = getComputedStyle(n);
+      if ((cs.position !== "fixed" && cs.position !== "sticky") || cs.display === "none") continue;
+      if (parseFloat(cs.top) !== 0 || n.getBoundingClientRect().height > window.innerHeight * 0.5) continue;
+      shifted.push({ el: n, top: n.style.top });
+      n.style.top = h0 + "px";
+    }
+  }
+  function renderTopbar(el, blocks) {
+    var b = blocks.filter(function (x) { return !topbarClosed(x); })[0];
+    el.innerHTML = "";
+    if (!b) { el.classList.add("hidden"); topbarShift(0); return; }
+    var theme = { green: ["#00502c", "#fff", "#fff", "#00502c"], dark: ["#111827", "#fff", "#fecb00", "#111827"],
+                  light: ["#fff", "#111827", "#00502c", "#fff"], gold: ["#fecb00", "#111827", "#111827", "#fecb00"] }[b.theme] ||
+                ["#00502c", "#fff", "#fff", "#00502c"];
+    var bar = h("div", "");
+    bar.id = "goevent-topbar";
+    bar.setAttribute("role", "region");
+    bar.setAttribute("aria-label", "Annonce");
+    bar.setAttribute("style", "position:fixed;top:0;left:0;right:0;z-index:1001;background:" + theme[0] + ";color:" + theme[1] +
+      ";font:600 13px/1.3 'Plus Jakarta Sans',Manrope,system-ui,sans-serif;display:flex;align-items:center;gap:8px;" +
+      "min-height:38px;padding:0 6px 0 16px;box-shadow:0 1px 0 rgba(0,0,0,.08)" + (b.theme === "light" ? ";border-bottom:1px solid #e5e7eb" : ""));
+    var line = h("span", "");
+    line.setAttribute("style", "flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;line-height:20px");
+    line.appendChild(h("strong", "", b.title || ""));
+    if (b.body) {
+      var more = h("span", "goevent-topbar-more", (b.title ? " — " : "") + b.body.replace(/\s+/g, " "));
+      more.style.fontWeight = "500";
+      line.appendChild(more);
+    }
+    if (b.link_url && b.link_label) {
+      var chip = h("span", "goevent-topbar-more", b.link_label + " →");
+      chip.setAttribute("style", "display:inline-block;margin-left:10px;padding:0 10px;line-height:20px;border-radius:999px;font-weight:800;background:" + theme[2] + ";color:" + theme[3]);
+      line.appendChild(chip);
+    }
+    var body = linkWrap(b, line, "");
+    body.setAttribute("style", "flex:1;min-width:0;display:flex;color:inherit;text-decoration:none;padding:9px 0");
+    var x = h("button", "", "×");
+    x.setAttribute("type", "button");
+    x.setAttribute("aria-label", "Fermer l'annonce");
+    x.setAttribute("style", "flex:none;width:32px;height:32px;border:0;border-radius:999px;background:transparent;color:inherit;" +
+      "font:400 22px/1 system-ui,sans-serif;cursor:pointer");
+    x.addEventListener("click", function (e) {
+      e.preventDefault();
+      try { localStorage.setItem(topbarKey(b), String(Date.now() + TOPBAR_DAYS * 86400000)); } catch (err) {}
+      renderTopbar(el, blocks);
+    });
+    bar.appendChild(body);
+    bar.appendChild(x);
+    if (!document.getElementById("goevent-topbar-css")) {
+      var css = h("style", "");
+      css.id = "goevent-topbar-css";
+      css.textContent = "@media (max-width:639px){#goevent-topbar .goevent-topbar-more{display:none}}";
+      document.head.appendChild(css);
+    }
+    el.appendChild(bar);
+    el.classList.remove("hidden");
+    var place = function () { topbarShift(bar.getBoundingClientRect().height); };
+    place();
+    if (!el._topbarResize) { el._topbarResize = true; window.addEventListener("resize", function () { if (el.firstChild) place(); }); }
+    if (!PREVIEW) markSeen([b.id]);
+  }
   function renderZone(el, key) {
     var z = zonesData && zonesData.zones[key];
     if (!z || z.mode === "infeed") return;
+    if (key === "global.top" && (z.blocks || []).length && !PREVIEW) return renderTopbar(el, z.blocks);
     var narrow = el.getAttribute("data-zone-layout") === "narrow";
     var blocks = z.blocks || [];
     if (!blocks.length) {
@@ -464,6 +559,12 @@
   }
 
   function start() {
+    if (topbarAllowed() && !document.querySelector('[data-zone="global.top"]')) {
+      var tb = document.createElement("div");
+      tb.setAttribute("data-zone", "global.top");
+      tb.className = "hidden";
+      document.body.insertBefore(tb, document.body.firstChild);
+    }
     var pages = pagesInDom();
     var cacheKey = "goevent_cms:" + pages + ":" + bust();
     var cached = load(cacheKey);

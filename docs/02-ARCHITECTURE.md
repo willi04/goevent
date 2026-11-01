@@ -285,7 +285,7 @@ Les textes, images et liens des pages publiques sont modifiables depuis
 - **Page publique** `invitations.html` (`/invitations`, lot 3) : même charte
   que les autres pages (Tailwind, menu partagé `btNavbar("invitations")`,
   tiroir, pied de page, barre mobile), textes `data-cms` (page « invitations »),
-  tarifs lus sur `GET /invitations/catalog`, devis = lien `wa.me` vers
+  tarifs lus sur `GET /invitations/catalog`, devis = lien `api.whatsapp.com/send` vers
   `invitations.contact.whatsapp` (à défaut `global.contact.whatsapp`) avec
   message prérempli ; `?ref=<CODE>` (commercial, `[A-Za-z0-9-]{1,20}`) ajouté
   en fin de message, sans cookie ni stockage. Image de partage statique
@@ -302,7 +302,7 @@ Les textes, images et liens des pages publiques sont modifiables depuis
   futur tableau de bord orga « autonome ») ; routes : `api/invitations.py`.
 - **Pass** : jeton aléatoire 32 caractères ; QR = URL
   `goevent.africa/i/<jeton>` (rewrite Vercel → `invitation.html`, page
-  autonome sans script tiers, `no-referrer`). Envoi : lien `wa.me` ouvert par
+  autonome sans script tiers, `no-referrer`). Envoi : lien `api.whatsapp.com/send?phone=…&text=…` ouvert par
   l'équipe (un clic par invité), message modifiable par événement.
 - **Catalogue** (lot 2.2, `core/invitation_catalog.py`, `api/invitation_catalog.py`) :
   formules (comportements : agents GoEvent sur place + 1 agent / N invités,

@@ -261,9 +261,11 @@ def render_message(ev: Event, st: PrivateEventSettings, g: EventGuest) -> str:
 
 
 def wa_url(phone: Optional[str], text: str) -> Optional[str]:
+    # api.whatsapp.com/send et non wa.me : la redirection wa.me abîme les émojis
+    # (🌸, 🎟️…) sur Android, ils arrivent en « � ». wa.me reste pour les liens sans texte.
     if not phone:
         return None
-    return "https://wa.me/%s?text=%s" % (phone.lstrip("+"), quote(text, safe=""))
+    return "https://api.whatsapp.com/send?phone=%s&text=%s" % (phone.lstrip("+"), quote(text, safe=""))
 
 
 def check_template(tpl: Optional[str]) -> Optional[str]:

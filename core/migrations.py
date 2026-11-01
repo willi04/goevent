@@ -211,6 +211,12 @@ MIGRATIONS = [
         "ADD COLUMN IF NOT EXISTS deactivated_by INTEGER",
     ),
     (
+        "tickets : tarif, bénéficiaire, envoi (achat multiple, lot 5.5)",
+        "ALTER TABLE tickets ADD COLUMN IF NOT EXISTS tier_name VARCHAR(80), "
+        "ADD COLUMN IF NOT EXISTS holder_label VARCHAR(40), "
+        "ADD COLUMN IF NOT EXISTS shared_at TIMESTAMP",
+    ),
+    (
         "ix_events_public_date",
         "CREATE INDEX IF NOT EXISTS ix_events_public_date ON events (event_date) WHERE visibility = 'public'",
     ),

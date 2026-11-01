@@ -147,7 +147,12 @@ Billets réservés ou payés par les fans.
 Colonnes essentielles :
 
 - `qr_hash` (unique) : UUID généré à la création, sert de contenu du QR
-  code scanné à l'entrée.
+  code scanné à l'entrée. Peut être régénéré par l'acheteur (« Nouveau
+  lien ») tant que le billet n'est pas scanné.
+- `payment_ref` : order_id NGSER, **partagé par les N billets d'une même
+  commande** (lot 5.5) ; `FREE-…` pour les billets gratuits.
+- `tier_name` (tarif acheté), `holder_label` (« Pour : … », facultatif,
+  jamais contrôlé), `shared_at` (envoyé depuis « Mes billets ») — lot 5.5.
 - `payment_status` : voir cycle de vie ci-dessous.
 - `payment_ref` : référence de la transaction (`EVT-...` pour un paiement
   NGSER, `FREE-XXXXXXXX` pour un événement gratuit, vide pour du cash).

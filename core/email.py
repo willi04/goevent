@@ -47,6 +47,7 @@ _BILLET_HTML = """
 
             <p style="color: #666; font-size: 12px; margin-top: 25px; margin-bottom: 8px;">Accès à votre billet à tout moment :</p>
             <a href="{lien_magique}" style="display: inline-block; background: #00502c; color: white; text-decoration: none; padding: 12px 28px; border-radius: 12px; font-weight: bold; font-size: 13px;">🎫 Voir mon billet</a>
+            {autres_billets}
             <p style="color: #aaa; font-size: 10px; margin-top: 15px;">Conservez cet email — il est votre preuve de billet.</p>
 
             <div style="background-color: #fff4f4; border-left: 4px solid #ba1a1a; padding: 10px; margin-top: 25px; text-align: left;">
@@ -59,17 +60,38 @@ _BILLET_HTML = """
     """
 
 
-def construire_billet_email(email_client, ticket, event, amount):
-    """Message MIME du billet (séparé de l'envoi pour être testable)."""
+def _lien_billet(t):
+    return f"https://goevent.africa/ticket_view.html?qr_hash={t.qr_hash}"
+
+
+def construire_billet_email(email_client, ticket, event, amount, tickets=None):
+    """Message MIME du billet (séparé de l'envoi pour être testable).
+    Commande de N billets (lot 5.5) : QR du 1er billet + un lien par billet,
+    à transmettre aux personnes concernées."""
+    tickets = list(tickets or [ticket])
+    n = len(tickets)
     msg = MIMEMultipart("related")
     msg["From"] = f"GoEvent <{settings.SENDER_EMAIL}>"
     msg["To"] = email_client
-    msg["Subject"] = f"🎟️ Confirmation & Billet : {event.title}"
-    lien_magique = f"https://goevent.africa/ticket_view.html?qr_hash={ticket.qr_hash}"
+    msg["Subject"] = f"🎟️ Confirmation & Billet{'s' if n > 1 else ''} : {event.title}" + (f" ({n} billets)" if n > 1 else "")
+    lien_magique = _lien_billet(ticket)
     label_prix = "🎟️ ENTRÉE GRATUITE" if amount <= 0 else f"💰 Montant : {amount} FCFA"
+    if n > 1:
+        label_prix += f" · {n} billets"
     id_court = ticket.qr_hash[:8].upper() if ticket.qr_hash else ""
+    autres = ""
+    if n > 1:
+        lignes = "".join(
+            f'<p style="margin:6px 0;"><a href="{_lien_billet(t)}" style="color:#00502c;font-weight:bold;">🎫 Billet {i} sur {n}</a></p>'
+            for i, t in enumerate(tickets, 1))
+        autres = ('<div style="background:#f0fdf4;border-radius:12px;padding:12px;margin-top:20px;text-align:left;">'
+                  '<p style="color:#00502c;font-size:12px;font-weight:bold;margin:0 0 6px 0;">Vos billets — un lien par personne :</p>'
+                  + lignes +
+                  '<p style="color:#666;font-size:11px;margin:8px 0 0 0;">Chaque lien est un billet unique : envoyez-le à la personne concernée '
+                  '(ou depuis « Mes billets » sur goevent.africa).</p></div>')
     html_body = _BILLET_HTML.format(title=_esc(event.title), location=_esc(event.location),
-                                    label_prix=label_prix, id_court=id_court, lien_magique=lien_magique)
+                                    label_prix=label_prix, id_court=id_court, lien_magique=lien_magique,
+                                    autres_billets=autres)
     msg.attach(MIMEText(html_body, "html"))
     img = MIMEImage(qr_png(ticket.qr_hash), "png")
     img.add_header("Content-ID", "<qr-billet>")
@@ -82,12 +104,12 @@ def _esc(s):
     return escape(str(s or ""))
 
 
-def envoyer_billet_email(email_client, nom_client, ticket, event, amount):
+def envoyer_billet_email(email_client, nom_client, ticket, event, amount, tickets=None):
     if not settings.SENDER_EMAIL or not settings.SENDER_PASSWORD:
         print("⚠️ Email credentials missing, skipping email")
         return
 
-    msg = construire_billet_email(email_client, ticket, event, amount)
+    msg = construire_billet_email(email_client, ticket, event, amount, tickets=tickets)
 
     try:
         server = smtplib.SMTP("smtp.gmail.com", 587, timeout=10)

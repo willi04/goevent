@@ -56,10 +56,12 @@ async def reconcile_pending_payments(db: Session) -> dict:
         .all()
     )
 
+    seen_orders = set()   # commande de N billets (lot 5.5) : un seul appel NGSER
     for ticket in pending_tickets:
         order_id = ticket.payment_ref
-        if not order_id:
+        if not order_id or order_id in seen_orders:
             continue
+        seen_orders.add(order_id)
 
         summary["checked"] += 1
 
@@ -228,15 +230,23 @@ async def expire_old_orphans(db: Session, hours: int = 24) -> dict:
         .all()
     )
 
+    checked = {}   # commande de N billets (lot 5.5) : un seul appel NGSER par order_id
     for ticket in orphan_tickets:
         # Dernier check NGSER AVANT libération : un fan débité dont le webhook
         # ET les 24h de reconcile ont raté ne doit pas perdre son billet.
-        try:
-            _, data = await check_payment_status(ticket.payment_ref)
-            last_code = str(data.get("code", ""))
-        except Exception as e:
-            print(f"⚠️ Orphelin #{ticket.id} : NGSER injoignable, report ({e})")
-            continue
+        if ticket.payment_ref in checked:
+            data = checked[ticket.payment_ref]
+            if data is None:
+                continue
+        else:
+            try:
+                _, data = await check_payment_status(ticket.payment_ref)
+            except Exception as e:
+                print(f"⚠️ Orphelin #{ticket.id} : NGSER injoignable, report ({e})")
+                checked[ticket.payment_ref] = None
+                continue
+            checked[ticket.payment_ref] = data
+        last_code = str(data.get("code", ""))
         if last_code == "1":
             inner = data.get("data") or {}
             process_ngser_response(db, ticket.payment_ref, "1", inner.get("transaction_amount"))
@@ -257,9 +267,9 @@ async def expire_old_orphans(db: Session, hours: int = 24) -> dict:
                 continue
             payment_record = (
                 db.query(Payment)
-                .filter(Payment.transaction_id == ticket.payment_ref)
+                .filter(Payment.transaction_id == ticket.payment_ref, Payment.ticket_id == ticket.id)
                 .first()
-            )
+            ) or db.query(Payment).filter(Payment.transaction_id == ticket.payment_ref).first()
             ticket.payment_status = "expire_abandonne"
             if payment_record:
                 payment_record.status = "expired"

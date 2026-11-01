@@ -36,6 +36,7 @@
             const t = await btApi.get(`/ticket/view?qr_hash=${encodeURIComponent(qrHash)}`);
             const dateStr = t.event_date
                 ? new Date(t.event_date).toLocaleDateString("fr-FR", {
+                    timeZone: "Africa/Bangui", weekday: "long",
                     day: "numeric", month: "long", year: "numeric",
                     hour: "2-digit", minute: "2-digit"
                   })
@@ -47,13 +48,14 @@
             container.innerHTML = `
                 <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
                     <div class="bg-gradient-to-br from-emerald-900 to-emerald-700 text-white p-6 text-center">
-                        <p class="text-[10px] font-bold uppercase tracking-widest opacity-70">GoEvent</p>
+                        <p class="text-[10px] font-bold uppercase tracking-widest opacity-70">GoEvent${t.order_size > 1 ? " · Billet " + t.order_index + " sur " + t.order_size : ""}</p>
+                        ${t.holder_label ? `<p class="text-sm font-bold mt-2 text-yellow-300">Pass de ${_escapeHtml(t.holder_label)}</p>` : ""}
                         <h1 class="text-2xl font-black mt-2 leading-tight">${_escapeHtml(t.event_title || "Billet")}</h1>
                         <p class="text-sm mt-2 opacity-90">📍 ${_escapeHtml(t.event_location || "")}</p>
                         <p class="text-sm mt-1 font-semibold">${dateStr}</p>
                     </div>
                     <div class="p-6 text-center">
-                        <div class="mb-4">${statutBadge}</div>
+                        <div class="mb-4">${statutBadge}${t.tier_name ? ` <span class="inline-block px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 text-xs font-bold">${_escapeHtml(t.tier_name)}</span>` : ""}</div>
                         <img data-bt-qr="${_escapeHtml(t.qr_hash)}" data-bt-qr-size="512"
                              alt="QR Code" class="mx-auto rounded-2xl border-4 border-gray-50 w-64 h-64" />
                         <p class="text-[10px] text-gray-400 mt-3 tracking-widest">ID: ${t.qr_hash.substring(0, 8).toUpperCase()}</p>
@@ -61,7 +63,11 @@
                             <p class="text-xs font-bold text-yellow-900">⚠️ Faites une capture d'écran</p>
                             <p class="text-[11px] text-yellow-800 mt-1">Gardez ce QR accessible même sans connexion.</p>
                         </div>
-                        <a href="index.html" class="inline-block mt-6 text-sm text-gray-500 hover:text-primary">← Retour à l'accueil</a>
+                        <div class="grid grid-cols-2 gap-2 mt-6">
+                            ${t.event_location ? `<a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(t.event_location + ", Centrafrique")}" class="py-3 rounded-xl bg-gray-100 text-sm font-bold text-gray-700">Itinéraire ↗</a>` : "<span></span>"}
+                            ${t.event_slug ? `<a href="/e/${encodeURIComponent(t.event_slug)}" class="py-3 rounded-xl bg-gray-100 text-sm font-bold text-gray-700">Voir l'événement</a>` : ""}
+                        </div>
+                        <p class="text-[11px] text-gray-400 mt-4">Un billet = une entrée. Ne transférez pas ce lien à plusieurs personnes.</p>
                     </div>
                 </div>`;
         } catch (err) {

@@ -278,6 +278,17 @@ bout en bout sans intervention, 1 retrait réussi, analyse des
   `invitation_track_link_created|revoked`, `invitation_agent_assigned|removed`,
   `invitation_purge`.
 
+## Achat de plusieurs billets (lot 5.5)
+
+- **Avant le déploiement** : `tickets` est lue par le scan et le paiement →
+  exécuter à la main sur Neon l'ALTER `tier_name / holder_label / shared_at`
+  (entrée « tickets : tarif, bénéficiaire, envoi » de `core/migrations.py`)
+  AVANT le push.
+- Plafonds : 5 billets payants par commande, 10 par compte et par événement,
+  3 billets gratuits par compte (`core/orders.py`).
+- Support : un fan a envoyé un billet à la mauvaise personne → « Nouveau
+  lien » dans « Mes billets » (journal `ticket_reissued`).
+
 ## Événements : désactivation et catégories (lot 5)
 
 - **Avant le déploiement** : `events` est lue par toutes les routes →

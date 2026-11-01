@@ -111,87 +111,87 @@ def _process_payout(db, order_id, code, transaction_amount=None):
     return {"action": "pending", "payout_id": payout.id, "code": code}
 
 def _process_ticket(db, order_id, code, transaction_amount=None):
-    ticket = (
+    """Commande de 1 à N billets (lot 5.5) : tous les billets du même order_id
+    sont validés ou libérés ENSEMBLE, contre UN montant NGSER (somme des Payment)."""
+    tickets = (
         db.query(Ticket)
         .filter(Ticket.payment_ref == order_id)
+        .order_by(Ticket.id)
         .with_for_update()
-        .first()
+        .all()
     )
-    if not ticket:
+    if not tickets:
         return {"action": "no_ticket"}
 
-    if ticket.payment_status != "en_attente_om":
-        return {"action": "skipped", "current_status": ticket.payment_status}
+    pending = [t for t in tickets if t.payment_status == "en_attente_om"]
+    if not pending:
+        return {"action": "skipped", "current_status": tickets[0].payment_status}
 
-    payment_record = db.query(Payment).filter(Payment.transaction_id == order_id).first()
+    ids = [t.id for t in pending]
+    payments = db.query(Payment).filter(Payment.transaction_id == order_id).all()
+    by_ticket = {p.ticket_id: p for p in payments}
+
+    def release(status, failure_reason=None):
+        for t in pending:
+            t.payment_status = status
+            if failure_reason:
+                t.failure_reason = failure_reason
+            p = by_ticket.get(t.id)
+            if p:
+                p.status = "failed"
+            release_promo_usage(db, t.id)
+        ev = lock_event_for_release(db, pending[0].event_id)
+        if ev:
+            ev.seats_sold = max(0, ev.seats_sold - len(pending))
 
     if code == "1":
-        if transaction_amount is not None and payment_record is not None:
+        if transaction_amount is not None and payments:
             try:
                 recu = float(transaction_amount)
-                attendu = float(payment_record.amount)
+                attendu = float(sum(float(p.amount or 0) for p in payments))
                 if abs(recu - attendu) > 1:
-                    ticket.payment_status = "echec_paiement"
-                    payment_record.status = "failed"
-                    ev = lock_event_for_release(db, ticket.event_id)
-                    if ev:
-                        ev.seats_sold = max(0, ev.seats_sold - 1)
-                    release_promo_usage(db, ticket.id)
+                    release("echec_paiement")
                     db.commit()
                     print(f"🚨 process_ngser : montant incohérent {order_id} reçu={recu} attendu={attendu}.")
                     return {"action": "rejected_amount", "received": recu, "expected": attendu}
             except (TypeError, ValueError):
-                ticket.payment_status = "echec_paiement"
-                if payment_record:
-                    payment_record.status = "failed"
-                ev = lock_event_for_release(db, ticket.event_id)
-                if ev:
-                    ev.seats_sold = max(0, ev.seats_sold - 1)
-                release_promo_usage(db, ticket.id)
+                release("echec_paiement")
                 db.commit()
                 return {"action": "rejected_amount", "reason": "unreadable"}
 
-        ticket.payment_status = "paye"
-        if payment_record:
-            payment_record.status = "completed"
-        confirm_promo_usage(db, ticket.id)
+        for t in pending:
+            t.payment_status = "paye"
+            p = by_ticket.get(t.id)
+            if p:
+                p.status = "completed"
+            confirm_promo_usage(db, t.id)
         db.commit()
-        print(f"✅ process_ngser : billet {ticket.id} validé ({order_id}).")
+        print(f"✅ process_ngser : {len(pending)} billet(s) validé(s) ({order_id}).")
 
         try:
             from core.email import envoyer_billet_email
-            user = db.query(User).filter(User.id == ticket.user_id).first()
-            event = db.query(Event).filter(Event.id == ticket.event_id).first()
+            user = db.query(User).filter(User.id == pending[0].user_id).first()
+            event = db.query(Event).filter(Event.id == pending[0].event_id).first()
             if user and user.email and event:
-                amount = payment_record.amount if payment_record else 0
+                amount = sum(float(p.amount or 0) for p in payments)
                 envoyer_billet_email(
                     email_client=user.email,
                     nom_client=user.full_name or "Client",
-                    ticket=ticket,
+                    ticket=pending[0],
                     event=event,
                     amount=int(amount),
+                    tickets=pending,
                 )
         except Exception as e:
             print(f"⚠️ Envoi email billet échoué (non bloquant) : {e}")
 
-        return {"action": "validated", "ticket_id": ticket.id}
+        return {"action": "validated", "ticket_id": ids[0], "ticket_ids": ids}
 
     if code in ("0", "2", "4", "5", "6"):
-        ticket.payment_status = "echec_paiement"
-        if payment_record:
-            payment_record.status = "failed"
-        if code == "2":
-            ticket.failure_reason = "insufficient_balance"
-        elif code == "0":
-            ticket.failure_reason = "cancelled"
-        else:
-            ticket.failure_reason = "rejected"
-        ev = lock_event_for_release(db, ticket.event_id)
-        if ev:
-            ev.seats_sold = max(0, ev.seats_sold - 1)
-        release_promo_usage(db, ticket.id)
+        reason = "insufficient_balance" if code == "2" else "cancelled" if code == "0" else "rejected"
+        release("echec_paiement", reason)
         db.commit()
-        print(f"❌ process_ngser : paiement échoué {order_id} (code={code}).")
+        print(f"❌ process_ngser : paiement échoué {order_id} (code={code}, {len(pending)} billet(s)).")
         return {"action": "failed", "code": code}
 
     return {"action": "pending", "code": code}

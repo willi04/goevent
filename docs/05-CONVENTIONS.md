@@ -346,6 +346,21 @@ Les fonctions publiques exposées par `bt-api.js` sont en `camelCase`
 préfixées `bt` (`btApi.post`, `btToast`, `btMobileBottomNav`) — le
 préfixe signale l'origine et évite les collisions avec le code inline.
 
+**Navigation** : les liens du menu du haut (`btNavbar`) et du tiroir mobile
+(`btMobileDrawerLinks`) viennent du seul tableau `BT_NAV_LINKS` de `bt-api.js`.
+Une page publique ne contient plus de liens de menu en dur : elle déclare
+`<nav id="mobile-drawer-links">` dans son tiroir et appelle au chargement
+`btMobileDrawerLinks("<clé>")`, `btMobileBottomNav("<clé>")` et
+`btNavbar("<clé>")` (clés : `accueil`, `evenements`, `invitations`, `follow`,
+`partenaire`, `apropos`, ou `""`). Barre du bas : 5 onglets fixes (Accueil,
+Events, Invitations, Partenaires, Connexion / Espace).
+
+**Version des scripts partagés** : les pages chargent `bt-api.js?v=AAAAMMJJ`.
+Toute modification de `bt-api.js` change ce paramètre dans **toutes** les
+pages et dans `APP_SHELL` de `web/sw.js` (+ `APP_VERSION`). Sans cela, le
+service worker (stale-while-revalidate) sert l'ancien `bt-api.js` à une page
+neuve au premier chargement après déploiement.
+
 ### Garde d'authentification
 
 Les fonctions `requireAuth([roles])` et `requireGuest()` doivent

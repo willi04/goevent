@@ -264,43 +264,13 @@
       <div class="absolute inset-0" onclick="toggleMobileMenu()"></div>
       <div
         id="mobile-drawer"
-        class="absolute right-0 top-0 bottom-0 w-[50%] max-w-sm min-w-[280px] bg-white shadow-2xl transform translate-x-full transition-transform duration-[400ms] ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col p-5"
+        class="absolute right-0 top-0 bottom-0 w-[86%] max-w-[340px] rounded-l-3xl bg-white shadow-2xl transform translate-x-full transition-transform duration-[400ms] ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col px-4 py-4 overflow-y-auto overscroll-contain"
       >
         <!-- Header drawer : carte user (connecté) OU mini logo GoEvent (guest) -->
-        <div id="mobile-drawer-header" class="p-4 border-b border-gray-100 flex items-center gap-3">
+        <div id="mobile-drawer-header" class="px-1 pb-4 border-b border-gray-100 flex items-center gap-3">
           <!-- Peuplé par btMobileDrawerHeader() dans DOMContentLoaded -->
         </div>
-        <!-- CTAs auth guest : injectés uniquement si non connecté -->
-        <div id="mobile-drawer-auth-cta" class="px-4 pt-4"></div>
-        <nav class="space-y-1 flex-1 overflow-y-auto">
-          <a
-            href="index.html"
-            class="flex items-center gap-3 p-4 bg-primary/10 rounded-2xl text-primary font-bold"
-            ><span class="material-symbols-outlined">home</span> Accueil</a
-          >
-          <a
-            href="event.html"
-            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
-            ><span class="material-symbols-outlined">stadium</span>
-            Événements</a
-          >
-          <a
-            href="follow.html"
-            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
-            ><span class="material-symbols-outlined">favorite</span> Follow</a
-          >
-          <a
-            href="partenaire.html"
-            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
-            ><span class="material-symbols-outlined">handshake</span>
-            Partenaires</a
-          >
-          <a
-            href="a_propos.html"
-            class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"
-            ><span class="material-symbols-outlined">info</span> À propos</a
-          >
-        </nav>
+        <nav id="mobile-drawer-links" class="flex-1" aria-label="Menu principal"></nav>
 
         <!-- Sections drawer (Aide + Support WhatsApp + Inviter un ami) -->
         <div id="mobile-drawer-sections" class="mt-4 pt-4 border-t border-gray-100"></div>
@@ -570,7 +540,7 @@
     <!-- ✅ BOTTOM NAV MOBILE (md:hidden gérée dans la fonction) -->
     <div id="bottom-nav-mobile"></div>
 
-    <script src="bt-api.js"></script>
+    <script src="bt-api.js?v=20261101"></script>
     <script>
       // 0. Style Netflix Infini (3 événements sur desktop)
       const netflixStyle = document.createElement("style");
@@ -600,6 +570,11 @@
       if (typeof btMobileBottomNav === "function") {
         var bnEl = document.getElementById("bottom-nav-mobile");
         if (bnEl) bnEl.innerHTML = btMobileBottomNav("accueil"); // ← clé adaptée par page
+      }
+      // Liens du tiroir (composant centralisé bt-api.js, même liste que la navbar)
+      if (typeof btMobileDrawerLinks === "function") {
+        var dlEl = document.getElementById("mobile-drawer-links");
+        if (dlEl) dlEl.innerHTML = btMobileDrawerLinks("accueil");
       }
       // Promo simulateur (composant centralisé bt-api.js)
       if (typeof btSimulatorPromo === "function") {

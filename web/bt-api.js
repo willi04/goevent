@@ -400,67 +400,117 @@ function btInitials(name) {
   document.head.appendChild(s);
 })();
 
-// ── NAVBAR — Design fidèle Stitch ─────────────────────────────
+// ── NAVIGATION PARTAGÉE (menu du haut + tiroir mobile) ────────
+// Source unique des liens : même ordre et mêmes libellés partout.
+// Nouvelle page dans le menu = une ligne ici (clé = celle passée par la page).
+var BT_NAV_LINKS = [
+  { key: "accueil",     label: "Accueil",     href: "index.html",       icon: "home" },
+  { key: "evenements",  label: "Événements",  href: "event.html",       icon: "stadium" },
+  { key: "invitations", label: "Invitations", href: "invitations.html", icon: "qr_code_2", hint: "Mariages, dots, galas" },
+  { key: "follow",      label: "Follow",      href: "follow.html",      icon: "favorite" },
+  { key: "partenaire",  label: "Partenaires", href: "partenaire.html",  icon: "handshake" },
+  { key: "apropos",     label: "À propos",    href: "a_propos.html",    icon: "info" },
+];
+var BT_ROLE_LABELS = {
+  fan: "Membre", organizer: "Organisateur", agent: "Agent de contrôle",
+  staff: "Équipe GoEvent", admin: "Administrateur", partner: "Partenaire",
+};
+function _btUserName(user) {
+  return String((user && (user.full_name || user.name)) || "").trim() || "Membre GoEvent";
+}
+// « Mireille Ndakala » → « Mireille N. »
+function _btShortName(name) {
+  var p = String(name || "").trim().split(/\s+/);
+  return p.length < 2 ? p[0] || "" : p[0] + " " + p[p.length - 1].charAt(0).toUpperCase() + ".";
+}
+function _btIcon(name, size, color, filled) {
+  return '<span class="material-symbols-outlined" aria-hidden="true" style="font-size:' + size + "px" +
+    (color ? ";color:" + color : "") + (filled ? ";font-variation-settings:'FILL' 1" : "") + '">' + name + "</span>";
+}
+
+// ── NAVBAR (ordinateur) ───────────────────────────────────────
 function btNavbar(activePage) {
   activePage = activePage || "";
   var user = btAuth.getUser();
   var isLogged = btAuth.isLogged();
-  var role = user && user.role;
 
-  var links = [
-    { label: "Accueil", href: "index.html", key: "accueil" },
-    { label: "Événements", href: "event.html", key: "evenements" },
-    { label: "Follow", href: "follow.html", key: "follow" },
-    { label: "Invitations", href: "invitations.html", key: "invitations" },
-    { label: "Partenaire", href: "partenaire.html", key: "partenaire" },
-    { label: "À propos", href: "a_propos.html", key: "apropos" },
-  ];
+  var navLinks = BT_NAV_LINKS.map(function (l) {
+    var on = activePage === l.key;
+    return '<a href="' + l.href + '"' + (on ? ' aria-current="page"' : "") +
+      ' class="px-3 xl:px-4 py-2 rounded-full text-sm xl:text-[15px] whitespace-nowrap transition-colors ' +
+      (on ? "bg-[#e3f4e9] text-primary font-extrabold" : "text-neutral-600 font-semibold hover:bg-neutral-100 hover:text-primary") +
+      '">' + l.label + "</a>";
+  }).join("");
 
-  var navLinks = links
-    .map(function (l) {
-      var isActive = activePage === l.key;
-      // Onglet actif = pill verte comme le bouton S'inscrire
-      var cls = isActive
-        ? "px-6 py-2.5 rounded-full text-sm font-bold bg-gradient-to-r from-primary to-primary-container text-white shadow-md shadow-primary/20 transition-all"
-        : "text-neutral-600 hover:text-emerald-700 transition-colors font-medium text-sm";
-      return '<a href="' + l.href + '" class="' + cls + '">' + l.label + "</a>";
-    })
-    .join("");
-
-  var authBtns;
+  var right;
   if (isLogged) {
-    var initials = btInitials(user && user.name);
-    var dashUrl = btDashRoute(role);
-    authBtns =
-      '<a href="' +
-      dashUrl +
-      '" class="px-5 py-2.5 text-emerald-900 font-semibold hover:bg-surface-container-low rounded-full transition-all text-sm">' +
-      initials +
-      " — Mon espace</a>" +
-      '<button onclick="btAuth.logout()" class="px-5 py-2.5 text-red-600 font-semibold hover:bg-red-50 rounded-full transition-all text-sm">Déconnexion</button>';
+    var name = _btUserName(user);
+    var role = BT_ROLE_LABELS[user && user.role] || "Membre";
+    var org = user && user.role === "organizer" && user.org_name ? " · " + user.org_name : "";
+    right =
+      '<div class="relative" id="bt-account">' +
+        '<button type="button" id="bt-account-btn" onclick="btToggleAccountMenu(event)" aria-haspopup="menu" aria-expanded="false" aria-controls="bt-account-menu" ' +
+          'class="flex items-center gap-2.5 pl-1.5 pr-2 lg:pr-3 py-1.5 rounded-full border border-neutral-200 bg-white hover:border-emerald-700/40 transition-colors">' +
+          '<span class="w-9 h-9 rounded-full bg-primary text-white flex items-center justify-center font-extrabold text-sm">' + _btEscapeHtml(btInitials(name)) + "</span>" +
+          '<span class="hidden lg:inline font-bold text-sm text-neutral-900 max-w-[160px] truncate">' + _btEscapeHtml(_btShortName(name)) + "</span>" +
+          _btIcon("expand_more", 20, "#5b6660") +
+        "</button>" +
+        '<div id="bt-account-menu" role="menu" aria-labelledby="bt-account-btn" class="hidden absolute right-0 top-full mt-2 w-72 bg-white border border-neutral-200 rounded-2xl shadow-xl shadow-emerald-950/10 p-2">' +
+          '<div class="px-3 pt-3 pb-3.5 mb-1.5 border-b border-neutral-100">' +
+            '<p class="font-extrabold text-[15px] text-neutral-900 truncate">' + _btEscapeHtml(name) + "</p>" +
+            '<p class="text-[13px] text-neutral-500 mt-0.5 truncate">' + _btEscapeHtml(role + org) + "</p>" +
+          "</div>" +
+          '<a role="menuitem" href="' + btDashRoute(user && user.role) + '" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-neutral-900 hover:bg-neutral-100">' + _btIcon("space_dashboard", 20, "#00502c") + "Mon espace</a>" +
+          '<a role="menuitem" href="centre_aide.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-neutral-900 hover:bg-neutral-100">' + _btIcon("help", 20, "#00502c") + "Centre d'aide</a>" +
+          '<div class="h-px bg-neutral-100 my-1.5 mx-1"></div>' +
+          '<button type="button" role="menuitem" onclick="btAuth.logout()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-red-700 hover:bg-red-50 text-left">' + _btIcon("logout", 20) + "Déconnexion</button>" +
+        "</div>" +
+      "</div>";
   } else {
-    authBtns =
-      '<a href="login.html" class="px-5 py-2.5 rounded-full text-sm font-bold text-emerald-900 hover:bg-surface-container-low transition-all">Se connecter</a>' +
-      '<a href="signup.html" class="px-6 py-2.5 rounded-full text-sm font-bold bg-gradient-to-r from-primary to-primary-container text-white shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all">S\'inscrire</a>';
+    right =
+      '<div class="flex items-center gap-2">' +
+        '<a href="login.html" class="hidden lg:inline-flex px-4 py-2.5 rounded-full text-sm font-bold text-primary hover:bg-neutral-100 transition-colors">Se connecter</a>' +
+        '<a href="signup.html" class="px-5 py-2.5 rounded-full text-sm font-extrabold bg-primary text-white shadow-md shadow-primary/20 hover:bg-primary-container transition-colors whitespace-nowrap">' +
+          '<span class="lg:hidden">S\'inscrire</span><span class="hidden lg:inline">Créer un compte</span></a>' +
+      "</div>";
   }
 
   return (
-    '<nav class="fixed top-0 w-full z-50 bg-white/70 backdrop-blur-xl shadow-sm shadow-emerald-900/5 h-20 px-8 flex justify-between items-center max-w-full">' +
-    '<div class="flex items-center gap-12">' +
-    '<a href="index.html" class="flex items-center gap-2 transition-opacity">' +
-    '<img src="icons/event.png" alt="Logo" class="w-10 h-10 rounded-3xl shadow-sm" />' +
-    '<span class="text-2xl font-bold tracking-tight bg-gradient-to-r from-emerald-900 to-emerald-700 bg-clip-text text-transparent font-headline">GoEvent</span>' +
-    "</a>" +
-    '<div class="hidden md:flex items-center gap-6 font-headline">' +
-    navLinks +
-    "</div>" +
-    "</div>" +
-    '<div class="flex items-center gap-3">' +
-    authBtns +
-    "</div>" +
+    '<nav class="fixed top-0 w-full z-50 bg-white border-b border-neutral-200/80 h-20 px-5 lg:px-10 flex justify-between items-center gap-4 max-w-full">' +
+      '<a href="index.html" class="flex items-center gap-2.5 shrink-0">' +
+        '<img src="icons/event.png" alt="GoEvent" class="w-9 h-9 rounded-[10px]" />' +
+        '<span class="hidden lg:inline text-[22px] font-extrabold tracking-tight text-primary font-headline">GoEvent</span>' +
+      "</a>" +
+      '<div class="hidden md:flex items-center gap-0.5 xl:gap-1 font-body">' + navLinks + "</div>" +
+      right +
     "</nav>"
   );
 }
+
+// Menu du compte (navbar) : ouverture au clic, fermeture au clic extérieur et sur Échap
+function btToggleAccountMenu(e) {
+  if (e) e.stopPropagation();
+  var menu = document.getElementById("bt-account-menu");
+  var btn = document.getElementById("bt-account-btn");
+  if (!menu || !btn) return;
+  var open = menu.classList.toggle("hidden") === false;
+  btn.setAttribute("aria-expanded", open ? "true" : "false");
+  if (open) { var first = menu.querySelector("[role=menuitem]"); if (first) first.focus(); }
+}
+(function () {
+  function close(refocus) {
+    var menu = document.getElementById("bt-account-menu");
+    if (!menu || menu.classList.contains("hidden")) return;
+    menu.classList.add("hidden");
+    var btn = document.getElementById("bt-account-btn");
+    if (btn) { btn.setAttribute("aria-expanded", "false"); if (refocus) btn.focus(); }
+  }
+  document.addEventListener("click", function (e) {
+    var box = document.getElementById("bt-account");
+    if (box && !box.contains(e.target)) close(false);
+  });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") close(true); });
+})();
 
 // Lien social du footer : masqué si la valeur CMS est vide (cms.js retire .hidden)
 function _btFooterSocial(key, prefix, label) {
@@ -612,107 +662,100 @@ function btEventCard(e) {
     "</div>"
   );
 }
-// ── BOTTOM NAV MOBILE — Persistante sur pages publiques ───────
+// ── BOTTOM NAV MOBILE — persistante sur les pages publiques ──
+// 5 onglets : Accueil · Events · Invitations · Partenaires · Connexion / Espace.
+// Onglet actif : icône pleine sur pastille verte. Hauteur 60 px (les pages
+// réservent pb-[60px]), zone sûre iOS incluse.
 function btMobileBottomNav(activePage) {
   activePage = activePage || "";
   var user = btAuth.getUser();
-  var isLogged = btAuth.isLogged();
-
-  // 3 onglets fixes orientés business : Accueil, Events, Partenaires (recrutement orgas/annonceurs)
-  // + 1 contextualisé selon état auth
   var tabs = [
-    { key: "accueil",     href: "index.html",      icon: "home",      label: "Accueil" },
-    { key: "evenements",  href: "event.html",      icon: "stadium",   label: "Events" },
-    { key: "partenaire",  href: "partenaire.html", icon: "handshake", label: "Partenaires" },
+    { key: "accueil",     href: "index.html",       icon: "home",      label: "Accueil" },
+    { key: "evenements",  href: "event.html",       icon: "stadium",   label: "Events" },
+    { key: "invitations", href: "invitations.html", icon: "qr_code_2", label: "Invitations" },
+    { key: "partenaire",  href: "partenaire.html",  icon: "handshake", label: "Partenaires" },
+    btAuth.isLogged()
+      ? { key: "compte", href: btDashRoute(user && user.role), icon: "person", label: "Espace" }
+      : { key: "login",  href: "login.html",                    icon: "login",  label: "Connexion" },
   ];
-
-  if (isLogged) {
-    tabs.push({
-      key: "compte",
-      href: btDashRoute(user && user.role),
-      icon: "person",
-      label: "Espace",
-    });
-  } else {
-    tabs.push({
-      key: "login",
-      href: "login.html",
-      icon: "login",
-      label: "Connexion",
-    });
-  }
-
-  var tabsHtml = tabs
-    .map(function (t) {
-      var isActive = activePage === t.key;
-      var colorCls = isActive ? "text-primary" : "text-gray-500";
-      var fillStyle = isActive ? "font-variation-settings:'FILL' 1;" : "";
-      return (
-        '<a href="' +
-        t.href +
-        '" class="flex flex-col items-center justify-center gap-0.5 flex-1 active:scale-95 transition-transform">' +
-        '<span class="material-symbols-outlined ' +
-        colorCls +
-        '" style="font-size:24px;' +
-        fillStyle +
-        '">' +
-        t.icon +
+  var tabsHtml = tabs.map(function (t) {
+    var on = activePage === t.key;
+    return (
+      '<a href="' + t.href + '"' + (on ? ' aria-current="page"' : "") +
+        ' class="flex flex-col items-center justify-center gap-1 flex-1 min-w-0 active:scale-95 transition-transform">' +
+        '<span class="flex items-center justify-center w-14 h-7 rounded-full' + (on ? " bg-[#9df6b9]" : "") + '">' +
+          _btIcon(t.icon, 24, on ? "#00210f" : "#4a554e", on) +
         "</span>" +
-        '<span class="text-[10px] font-bold ' +
-        colorCls +
-        '">' +
-        t.label +
-        "</span>" +
-        "</a>"
-      );
-    })
-    .join("");
-
+        '<span class="text-[11px] leading-none whitespace-nowrap ' + (on ? "font-extrabold text-primary" : "font-bold text-[#4a554e]") + '">' + t.label + "</span>" +
+      "</a>"
+    );
+  }).join("");
   return (
-    '<nav class="md:hidden fixed bottom-0 left-0 right-0 z-[90] bg-white/95 backdrop-blur border-t border-gray-100 flex items-stretch h-[60px]" style="padding-bottom:env(safe-area-inset-bottom)">' +
-    tabsHtml +
+    '<nav aria-label="Navigation mobile" class="md:hidden fixed bottom-0 left-0 right-0 z-[90] bg-white/95 backdrop-blur border-t border-gray-200/80 shadow-[0_-6px_20px_rgba(13,20,17,0.05)] flex items-stretch h-[60px] px-1" style="padding-bottom:env(safe-area-inset-bottom)">' +
+      tabsHtml +
     "</nav>"
   );
 }
-// ── DRAWER MOBILE : HEADER (carte user connecté ou mini logo guest) ──
-// Remplace l'ancien titre "Menu" (redondant : cliquer sur hamburger implique menu).
-// Optimisation : récupère 60-80px verticaux pour la nav.
+// ── DRAWER MOBILE : EN-TÊTE ───────────────────────────────────
+// Visiteur : logo + accroche. Connecté : carte verte (initiales, nom, rôle) → espace.
 function btMobileDrawerHeader() {
   var closeBtn =
-    '<button onclick="toggleMobileMenu()" class="p-2 text-gray-500 hover:text-red-500 rounded-full hover:bg-red-50 transition-colors shrink-0">' +
-      '<span class="material-symbols-outlined">close</span>' +
-    '</button>';
+    '<button type="button" onclick="toggleMobileMenu()" aria-label="Fermer le menu" class="w-11 h-11 shrink-0 rounded-full bg-gray-100 text-gray-700 flex items-center justify-center hover:bg-gray-200 transition-colors">' +
+      _btIcon("close", 22) +
+    "</button>";
 
   if (!btAuth.isLogged()) {
-    // Guest : mini logo GoEvent + tagline court
     return (
-      '<img src="icons/event.png" alt="GoEvent" class="w-9 h-9 rounded-xl shadow-sm shrink-0" />' +
+      '<img src="icons/event.png" alt="" class="w-10 h-10 rounded-[11px] shrink-0" />' +
       '<div class="flex-1 min-w-0">' +
-        '<p class="font-black text-sm bg-gradient-to-r from-emerald-900 to-emerald-700 bg-clip-text text-transparent font-headline">GoEvent</p>' +
-        '<p class="text-[11px] text-gray-500 truncate">Billetterie mobile RCA</p>' +
-      '</div>' +
+        '<p class="font-headline font-extrabold text-lg leading-tight text-primary">GoEvent</p>' +
+        '<p class="text-xs text-gray-500 truncate">Billetterie &amp; invitations digitales</p>' +
+      "</div>" +
       closeBtn
     );
   }
-
-  // Connecté : carte cliquable → dashboard
   var user = btAuth.getUser() || {};
-  var name = _btEscapeHtml(user.full_name || user.name || "Membre GoEvent");
-  var email = _btEscapeHtml(user.email || user.phone_number || "");
-  var initial = (name.trim().charAt(0) || "?").toUpperCase();
-  var dashUrl = (typeof btDashRoute === "function") ? btDashRoute(user.role) : "user_dashboard.html";
-
+  var name = _btUserName(user);
+  var role = BT_ROLE_LABELS[user.role] || "Membre";
   return (
-    '<a href="' + dashUrl + '" class="flex items-center gap-3 flex-1 min-w-0 rounded-xl -m-1 p-1 hover:bg-gray-50 active:scale-[0.98] transition-all">' +
-      '<div class="w-11 h-11 rounded-full bg-primary text-white flex items-center justify-center font-bold text-base shrink-0">' + initial + '</div>' +
-      '<div class="flex-1 min-w-0">' +
-        '<p class="font-bold text-sm text-gray-900 truncate">' + name + '</p>' +
-        (email ? '<p class="text-[11px] text-gray-500 truncate">' + email + '</p>' : '') +
-      '</div>' +
-    '</a>' +
+    '<a href="' + btDashRoute(user.role) + '" aria-label="Mon espace" class="flex items-center gap-3 flex-1 min-w-0 p-3 rounded-2xl bg-primary text-white active:scale-[0.98] transition-transform">' +
+      '<span class="w-10 h-10 shrink-0 rounded-full bg-[#9df6b9] text-[#00210f] flex items-center justify-center font-extrabold text-sm">' + _btEscapeHtml(btInitials(name)) + "</span>" +
+      '<span class="flex-1 min-w-0">' +
+        '<span class="block font-extrabold text-sm leading-tight line-clamp-2 break-words">' + _btEscapeHtml(name) + "</span>" +
+        '<span class="flex items-center gap-0.5 text-xs font-bold text-emerald-100 mt-0.5">' + _btEscapeHtml(role) + _btIcon("chevron_right", 16) + "</span>" +
+      "</span>" +
+    "</a>" +
     closeBtn
   );
 }
+// ── DRAWER MOBILE : LIENS (même tableau que la navbar) ────────
+// <nav id="mobile-drawer-links"> dans chaque page publique, rempli au chargement :
+//   btMobileDrawerLinks("accueil" | "evenements" | "invitations" | "follow" | "partenaire" | "apropos" | "")
+function btMobileDrawerLinks(activePage) {
+  activePage = activePage || "";
+  var cta = btAuth.isLogged() ? '<div class="pt-3"></div>' :
+    '<div class="grid grid-cols-2 gap-2 px-1 pt-4 pb-4 mb-3 border-b border-gray-100">' +
+      '<a href="login.html" class="h-11 rounded-full border-[1.5px] border-[#c9d3cd] flex items-center justify-center font-extrabold text-sm text-primary active:scale-95 transition-transform">Se connecter</a>' +
+      '<a href="signup.html" class="h-11 rounded-full bg-primary flex items-center justify-center font-extrabold text-sm text-white active:scale-95 transition-transform">Créer un compte</a>' +
+    "</div>";
+  var rows = BT_NAV_LINKS.map(function (l) {
+    var on = activePage === l.key;
+    var label = l.hint
+      ? '<span class="flex-1 min-w-0"><span class="block text-[15px]">' + l.label + "</span>" +
+        '<span class="block text-xs font-semibold ' + (on ? "text-[#2f6a48]" : "text-gray-500") + '">' + l.hint + "</span></span>"
+      : '<span class="text-[15px]">' + l.label + "</span>";
+    return (
+      '<a href="' + l.href + '"' + (on ? ' aria-current="page"' : "") + ' class="flex items-center gap-3 px-2.5 py-2 rounded-2xl transition-colors ' +
+        (on ? "bg-[#e3f4e9] text-primary font-extrabold" : "text-gray-800 font-bold hover:bg-gray-50") + '">' +
+        '<span class="w-9 h-9 shrink-0 rounded-[10px] flex items-center justify-center ' + (on ? "bg-[#9df6b9]" : "bg-gray-100") + '">' +
+          _btIcon(l.icon, 22, on ? "#00210f" : "#3f4943", on) +
+        "</span>" + label +
+      "</a>"
+    );
+  }).join("");
+  return cta + '<div class="space-y-0.5">' + rows + "</div>";
+}
+
 // ── Modal générique ───────────────────────────────────────────
 function btModal(contentHtml) {
   var ov = document.createElement("div");
@@ -731,46 +774,40 @@ function btMobileAuthSection() {
   return "";
 }
 
-// ── DRAWER MOBILE : SECTIONS DU BAS (Aide + Support + Inviter) ─
+// ── DRAWER MOBILE : SECTIONS DU BAS (aide, support, inviter, déconnexion, légal) ─
 function btMobileDrawerSections() {
-  var supportPhone = "23672259398";
+  // Numéro réel = valeur CMS global.contact.whatsapp (cms.js remplace le href) ;
+  // celui-ci ne sert que si le CMS ne répond pas.
+  var supportPhone = "23670066852";
   var inviteText = encodeURIComponent(
     "Salut ! Je viens de découvrir GoEvent, la plateforme de billetterie en RCA. " +
     "Tu peux acheter tes billets en ligne via Orange Money. " +
     "Découvre : https://goevent.africa"
   );
-
-  var logoutBlock = "";
-  if (btAuth.isLogged()) {
-    logoutBlock =
-      '<div class="mt-3 pt-3 border-t border-gray-100">' +
-        '<button onclick="btAuth.logout(); window.location.reload();" class="flex items-center justify-center gap-2 w-full py-3 rounded-2xl text-red-600 bg-red-50 font-bold text-sm active:scale-95 transition-all hover:bg-red-100">' +
-          '<span class="material-symbols-outlined text-base">power_settings_new</span>' +
-          'Déconnexion' +
-        '</button>' +
-      '</div>';
-  }
-
+  var row = function (href, icon, color, label, extra) {
+    return '<a href="' + href + '"' + (extra || "") + ' class="flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-sm font-bold text-gray-800 hover:bg-gray-50 transition-colors">' +
+      _btIcon(icon, 20, color) + label + "</a>";
+  };
+  var logoutBlock = btAuth.isLogged()
+    ? '<button type="button" onclick="btAuth.logout()" class="mt-4 flex items-center justify-center gap-2 w-full h-11 rounded-full text-red-700 bg-red-50 font-extrabold text-sm active:scale-95 transition-all hover:bg-red-100">' +
+        _btIcon("logout", 20) + "Déconnexion</button>"
+    : "";
   return (
-    '<div class="space-y-1">' +
-      '<a href="invitations.html" class="flex items-center gap-3 p-3 rounded-2xl text-gray-700 font-semibold hover:bg-primary/5 hover:text-primary transition-all text-sm">' +
-        '<span class="material-symbols-outlined text-base text-gray-500">qr_code_2</span>' +
-        'Invitations digitales (mariages, dots…)' +
-      '</a>' +
-      '<a href="centre_aide.html" class="flex items-center gap-3 p-3 rounded-2xl text-gray-700 font-semibold hover:bg-primary/5 hover:text-primary transition-all text-sm">' +
-        '<span class="material-symbols-outlined text-base text-gray-500">help</span>' +
-        'Aide & FAQ' +
-      '</a>' +
-      '<a href="https://wa.me/' + supportPhone + '" target="_blank" rel="noopener" data-cms-href="global.contact.whatsapp" data-cms-href-prefix="https://wa.me/" class="flex items-center gap-3 p-3 rounded-2xl text-gray-700 font-semibold hover:bg-green-50 hover:text-green-700 transition-all text-sm">' +
-        '<span class="material-symbols-outlined text-base text-green-600">chat</span>' +
-        'Support WhatsApp' +
-      '</a>' +
-      '<a href="https://api.whatsapp.com/send?text=' + inviteText + '" target="_blank" rel="noopener" class="flex items-center gap-3 p-3 rounded-2xl text-gray-700 font-semibold hover:bg-primary/5 hover:text-primary transition-all text-sm">' +
-        '<span class="material-symbols-outlined text-base text-gray-500">person_add</span>' +
-        'Inviter un ami' +
-      '</a>' +
-    '</div>' +
-    logoutBlock
+    '<p class="text-[11px] font-extrabold tracking-[.12em] uppercase text-gray-500 px-2.5 pb-1.5">Besoin d\'aide ?</p>' +
+    '<div class="space-y-0.5">' +
+      row("centre_aide.html", "help", "#3f4943", "Centre d'aide &amp; FAQ") +
+      row("https://wa.me/" + supportPhone, "chat", "#1a7f45", "Support WhatsApp",
+          ' target="_blank" rel="noopener" data-cms-href="global.contact.whatsapp" data-cms-href-prefix="https://wa.me/"') +
+      row("https://api.whatsapp.com/send?text=" + inviteText, "person_add", "#3f4943", "Inviter un ami", ' target="_blank" rel="noopener"') +
+    "</div>" +
+    logoutBlock +
+    '<div class="mt-4 pt-3 px-2.5 border-t border-gray-100">' +
+      '<div class="flex flex-wrap gap-x-3.5 gap-y-1 text-xs font-bold">' +
+        '<a href="cgu.html" class="text-gray-500 hover:text-primary">CGU</a>' +
+        '<a href="confidentialite.html" class="text-gray-500 hover:text-primary">Confidentialité</a>' +
+      "</div>" +
+      '<p class="text-[11px] text-gray-500 mt-1.5">© 2026 GoEvent SARLU · Bangui</p>' +
+    "</div>"
   );
 }
 

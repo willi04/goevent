@@ -254,9 +254,11 @@ Les textes, images et liens des pages publiques sont modifiables depuis
   espace fan (2), et `global.top` : bandeau d'annonce d'une ligne injecté par
   `cms.js` en haut des pages publiques d'une LISTE BLANCHE (`TOPBAR_PAGES` :
   accueil, événements, fiches, follow, partenaire, à propos, aide, légal,
-  feedback, connexion, inscription, simulateur ; jamais admin, scanner,
-  paiement, tableaux de bord, billet, `/i/`, `/suivi/`, invitations.html).
-  Une ligne, première annonce non fermée, fermeture mémorisée 7 jours par
+  feedback, connexion, inscription, simulateur, invitations ; jamais admin,
+  scanner, paiement, tableaux de bord, billet, `/i/`, `/suivi/`).
+  Une ligne : texte court centré et fixe, texte long en défilement continu
+  (~60 px/s, pause au survol / appui maintenu, fixe si « réduire les
+  animations »). Première annonce non fermée, fermeture mémorisée 7 jours par
   version de contenu (`rev`), en-têtes fixes décalés. Non vendable. Le design
   reste maîtrisé : on n'ajoute pas de zone depuis l'admin, on la déclare dans
   le code.

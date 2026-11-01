@@ -355,9 +355,9 @@ Une page publique ne contient plus de liens de menu en dur : elle déclare
 `partenaire`, `apropos`, ou `""`). Barre du bas : 5 onglets fixes (Accueil,
 Events, Invitations, Partenaires, Connexion / Espace).
 
-**Version des scripts partagés** : les pages chargent `bt-api.js?v=AAAAMMJJ`.
-Toute modification de `bt-api.js` change ce paramètre dans **toutes** les
-pages et dans `APP_SHELL` de `web/sw.js` (+ `APP_VERSION`). Sans cela, le
+**Version des scripts partagés** : les pages chargent `bt-api.js?v=AAAAMMJJ`
+et `cms.js?v=AAAAMMJJ`. Toute modification de l'un d'eux change ce paramètre
+dans **toutes** les pages (simulateur compris) et dans `APP_SHELL` de `web/sw.js` (+ `APP_VERSION`). Sans cela, le
 service worker (stale-while-revalidate) sert l'ancien `bt-api.js` à une page
 neuve au premier chargement après déploiement.
 

@@ -15,7 +15,7 @@
  *   data-zone-infeed="clé"    → grille : cartes sponsorisées insérées (btZonesInfeed)
  *   Bandeau global « global.top » : injecté en haut des pages publiques de la
  *   liste blanche TOPBAR_PAGES (jamais admin, scanner, paiement, tableaux de bord,
- *   pass /i/, suivi /suivi/, invitations.html).
+ *   pass /i/, suivi /suivi/). Texte long : défilement continu ; court : fixe.
  *   data-price="groupe.clé"   → prix en vigueur (GET /pricing, source unique des tarifs)
  * Sans réseau / API en panne : la page garde son contenu statique.
  * Autonome (pas de dépendance à bt-api.js) : utilisé aussi par /simulateur/.
@@ -391,7 +391,7 @@
   }
   // ── Bandeau d'annonce global (zone global.top) ─────────────────
   var TOPBAR_PAGES = ["", "index", "event", "event_detail", "follow", "partenaire", "a_propos", "centre_aide", "cgu",
-                      "confidentialite", "remboursements", "feedback", "login", "signup", "simulateur"];
+                      "confidentialite", "remboursements", "feedback", "login", "signup", "simulateur", "invitations"];
   var TOPBAR_DAYS = 7;
   function topbarAllowed() {
     var p = location.pathname.replace(/\/+$/, "");
@@ -422,9 +422,31 @@
       n.style.top = h0 + "px";
     }
   }
+  // Texte trop long : défilement continu de droite à gauche (~60 px/s, deux copies
+  // dans une piste, aucune coupure) ; texte court : centré et fixe. Pause au survol
+  // et pendant un appui maintenu (un appui court ouvre le lien). « Réduire les
+  // animations » : affichage fixe tronqué (titre seul sur mobile), comme avant.
+  var TOPBAR_SPEED = 60, TOPBAR_GAP = 60;
+  var TOPBAR_CSS =
+    "#goevent-topbar .gt-view{flex:1;min-width:0;overflow:hidden;display:flex;justify-content:center;line-height:20px}" +
+    "#goevent-topbar .gt-track{display:flex;flex:none}" +
+    "#goevent-topbar .gt-copy{display:block;flex:none;white-space:nowrap}" +
+    "#goevent-topbar.gt-run .gt-view{justify-content:flex-start;" +
+      "-webkit-mask-image:linear-gradient(90deg,transparent,#000 20px,#000 calc(100% - 20px),transparent);" +
+      "mask-image:linear-gradient(90deg,transparent,#000 20px,#000 calc(100% - 20px),transparent)}" +
+    "#goevent-topbar.gt-run .gt-copy{padding-right:" + TOPBAR_GAP + "px}" +
+    "#goevent-topbar.gt-run .gt-track{animation:goevent-topbar-scroll var(--gt-dur,20s) linear infinite;will-change:transform}" +
+    "#goevent-topbar.gt-run:hover .gt-track,#goevent-topbar.gt-paused .gt-track{animation-play-state:paused}" +
+    "@keyframes goevent-topbar-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}" +
+    "#goevent-topbar.gt-trunc .gt-track,#goevent-topbar.gt-trunc .gt-copy{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis}" +
+    "@media (max-width:639px){#goevent-topbar.gt-trunc .goevent-topbar-more{display:none}}";
+  function reducedMotion() {
+    try { return window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; }
+  }
   function renderTopbar(el, blocks) {
     var b = blocks.filter(function (x) { return !topbarClosed(x); })[0];
     el.innerHTML = "";
+    el._topbarLayout = null;
     if (!b) { el.classList.add("hidden"); topbarShift(0); return; }
     var theme = { green: ["#00502c", "#fff", "#fff", "#00502c"], dark: ["#111827", "#fff", "#fecb00", "#111827"],
                   light: ["#fff", "#111827", "#00502c", "#fff"], gold: ["#fecb00", "#111827", "#111827", "#fecb00"] }[b.theme] ||
@@ -434,46 +456,82 @@
     bar.setAttribute("role", "region");
     bar.setAttribute("aria-label", "Annonce");
     bar.setAttribute("style", "position:fixed;top:0;left:0;right:0;z-index:1001;background:" + theme[0] + ";color:" + theme[1] +
-      ";font:600 13px/1.3 'Plus Jakarta Sans',Manrope,system-ui,sans-serif;display:flex;align-items:center;gap:8px;" +
-      "min-height:38px;padding:0 6px 0 16px;box-shadow:0 1px 0 rgba(0,0,0,.08)" + (b.theme === "light" ? ";border-bottom:1px solid #e5e7eb" : ""));
-    var line = h("span", "");
-    line.setAttribute("style", "flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;line-height:20px");
-    line.appendChild(h("strong", "", b.title || ""));
+      ";font:600 13px/1.3 'Plus Jakarta Sans',Manrope,system-ui,sans-serif;display:flex;align-items:center;" +
+      "min-height:38px;padding:0 0 0 12px;box-shadow:0 1px 0 rgba(0,0,0,.08)" + (b.theme === "light" ? ";border-bottom:1px solid #e5e7eb" : ""));
+    var copy = h("span", "gt-copy");
+    copy.appendChild(h("strong", "", b.title || ""));
     if (b.body) {
       var more = h("span", "goevent-topbar-more", (b.title ? " — " : "") + b.body.replace(/\s+/g, " "));
       more.style.fontWeight = "500";
-      line.appendChild(more);
+      copy.appendChild(more);
     }
     if (b.link_url && b.link_label) {
       var chip = h("span", "goevent-topbar-more", b.link_label + " →");
       chip.setAttribute("style", "display:inline-block;margin-left:10px;padding:0 10px;line-height:20px;border-radius:999px;font-weight:800;background:" + theme[2] + ";color:" + theme[3]);
-      line.appendChild(chip);
+      copy.appendChild(chip);
     }
-    var body = linkWrap(b, line, "");
+    var track = h("span", "gt-track");
+    track.appendChild(copy);
+    var view = h("span", "gt-view");
+    view.appendChild(track);
+    var body = linkWrap(b, view, "");
     body.setAttribute("style", "flex:1;min-width:0;display:flex;color:inherit;text-decoration:none;padding:9px 0");
     var x = h("button", "", "×");
     x.setAttribute("type", "button");
     x.setAttribute("aria-label", "Fermer l'annonce");
-    x.setAttribute("style", "flex:none;width:32px;height:32px;border:0;border-radius:999px;background:transparent;color:inherit;" +
-      "font:400 22px/1 system-ui,sans-serif;cursor:pointer");
+    x.setAttribute("style", "flex:none;align-self:stretch;width:44px;margin-left:6px;border:0;border-left:1px solid " +
+      (b.theme === "light" ? "#e5e7eb" : b.theme === "gold" ? "rgba(0,0,0,.12)" : "rgba(255,255,255,.18)") +
+      ";background:transparent;color:inherit;font:400 22px/1 system-ui,sans-serif;cursor:pointer");
     x.addEventListener("click", function (e) {
       e.preventDefault();
       try { localStorage.setItem(topbarKey(b), String(Date.now() + TOPBAR_DAYS * 86400000)); } catch (err) {}
       renderTopbar(el, blocks);
     });
+    // Appui maintenu (mobile) : pause ; un appui court reste un clic sur le lien
+    var pause = function () { bar.classList.add("gt-paused"); };
+    var resume = function () { bar.classList.remove("gt-paused"); };
+    body.addEventListener("pointerdown", pause);
+    ["pointerup", "pointercancel", "pointerleave"].forEach(function (ev) { body.addEventListener(ev, resume); });
     bar.appendChild(body);
     bar.appendChild(x);
     if (!document.getElementById("goevent-topbar-css")) {
       var css = h("style", "");
       css.id = "goevent-topbar-css";
-      css.textContent = "@media (max-width:639px){#goevent-topbar .goevent-topbar-more{display:none}}";
+      css.textContent = TOPBAR_CSS;
       document.head.appendChild(css);
     }
     el.appendChild(bar);
     el.classList.remove("hidden");
+
+    var layout = function () {
+      var clone = track.querySelector("[aria-hidden]");
+      if (clone) track.removeChild(clone);
+      bar.classList.remove("gt-run", "gt-trunc");
+      if (reducedMotion()) { bar.classList.add("gt-trunc"); return; }
+      if (copy.scrollWidth <= view.clientWidth) return;            // tient : centré, fixe
+      bar.classList.add("gt-run");
+      var dup = copy.cloneNode(true);
+      dup.setAttribute("aria-hidden", "true");
+      track.appendChild(dup);
+      bar.style.setProperty("--gt-dur", Math.max(copy.offsetWidth / TOPBAR_SPEED, 4).toFixed(2) + "s");
+    };
+    el._topbarLayout = layout;
+    layout();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if (el._topbarLayout === layout) layout(); });
     var place = function () { topbarShift(bar.getBoundingClientRect().height); };
     place();
-    if (!el._topbarResize) { el._topbarResize = true; window.addEventListener("resize", function () { if (el.firstChild) place(); }); }
+    if (!el._topbarResize) {
+      el._topbarResize = true;
+      var t = null;
+      window.addEventListener("resize", function () {
+        clearTimeout(t);
+        t = setTimeout(function () {
+          if (el._topbarLayout) el._topbarLayout();
+          var cur = document.getElementById("goevent-topbar");
+          if (cur) topbarShift(cur.getBoundingClientRect().height);
+        }, 150);
+      });
+    }
     if (!PREVIEW) markSeen([b.id]);
   }
   function renderZone(el, key) {

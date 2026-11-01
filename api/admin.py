@@ -105,10 +105,8 @@ def admin_global_stats(db: Session = Depends(get_db),
 # ── USERS ───────────────────────────────────────────────────────
 @router.get("/admin/users")
 def admin_list_users(db: Session = Depends(get_db),
-                     current_user: User = Depends(get_current_admin_or_staff)):
-    # Admin voit tout. Commercial uniquement (besoin métier : démarche orgas).
-    if current_user.role == "staff" and current_user.staff_function != "commercial":
-        raise HTTPException(403, "Réservé aux commerciaux")
+                     current_user: User = Depends(get_current_admin)):
+    # Admin uniquement (lot 4.5) : liste complète des comptes (téléphones, e-mails).
     users = db.query(User).order_by(User.created_at.desc()).all()
     return [{
         "id": u.id, "name": u.full_name, "phone": u.phone_number,
@@ -184,7 +182,7 @@ def admin_update_partner(request: Request, partner_id: int, data: dict, db: Sess
 # ── RETRAITS (PAYOUTS) ──────────────────────────────────────────
 @router.get("/admin/payouts")
 async def get_all_payouts(db: Session = Depends(get_db),
-                          current_user: User = Depends(require_staff_function("commercial"))):
+                          current_user: User = Depends(get_current_admin)):
     payouts = db.query(PayoutRequest).order_by(PayoutRequest.created_at.desc()).all()
 
     # Résolution des organisateurs en UNE requête (anti N+1)

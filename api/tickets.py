@@ -14,6 +14,7 @@ from core.email import envoyer_billet_email
 from fastapi import Request
 from core.limiter import PUBLIC_IP_CEILING, limiter, qr_hash_key, user_key
 
+from utils.serializers import utc_iso
 from utils.locks import lock_event_for_booking
 from utils.promo import lock_promo_for_use, compute_discount
 from core import invitations
@@ -43,7 +44,7 @@ def my_tickets(db: Session = Depends(get_db), current_user: User = Depends(get_c
         "payment_status": t.payment_status,
         "payment_method": t.payment_method,
         "event_title": t.event.title if t.event else "",
-        "event_date": t.event.event_date if t.event else None,
+        "event_date": utc_iso(t.event.event_date) if t.event else None,
         "event_location": t.event.location if t.event else "",
         "price": t.cash_amount if t.cash_amount else (t.event.price if t.event else 0),
         "is_used": t.is_used,
@@ -63,7 +64,7 @@ def my_paid_tickets(db: Session = Depends(get_db), current_user: User = Depends(
     return [{
         "ticket_id": t.id, "qr_hash": t.qr_hash,
         "event_title": t.event.title if t.event else "",
-        "event_date": t.event.event_date if t.event else None,
+        "event_date": utc_iso(t.event.event_date) if t.event else None,
         "event_location": t.event.location if t.event else "",
         "price": t.event.price if t.event else 0,
         "is_used": t.is_used,
@@ -175,7 +176,7 @@ def reserve_free_ticket(request: Request,
         "qr_hash": new_ticket.qr_hash,
         "amount_to_pay": 0,
         "event_title": event.title,
-        "event_date": event.event_date.isoformat(),
+        "event_date": utc_iso(event.event_date),
         "instructions": "Présentez ce QR code à l'entrée de l'événement.",
     }
 
@@ -331,7 +332,7 @@ def view_ticket_public(request: Request, qr_hash: str, db: Session = Depends(get
     return {
         "qr_hash": ticket.qr_hash,
         "event_title": event.title if event else None,
-        "event_date": event.event_date.isoformat() if event and event.event_date else None,
+        "event_date": utc_iso(event.event_date) if event else None,
         "event_location": event.location if event else None,
         "is_used": ticket.is_used,
         "used_at": ticket.used_at.isoformat() if ticket.used_at else None,

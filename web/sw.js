@@ -3,7 +3,7 @@
 //  Cache offline, sync background, notifications push
 // ============================================================
 
-const APP_VERSION = "v1.2.2"; // À incrémenter à chaque changement de ce fichier ou de l'App Shell
+const APP_VERSION = "v1.2.3"; // À incrémenter à chaque changement de ce fichier ou de l'App Shell
 const CACHE_STATIC = "goevent-static-" + APP_VERSION;
 const CACHE_API = "goevent-api-" + APP_VERSION;
 // API de prod + API locale (dev). Seules les lectures publiques de la liste
@@ -28,7 +28,7 @@ const APP_SHELL = [
   "/scanner.html",
   "/ticket_view.html",
   "/invitation.html",
-  "/bt-api.js",
+  "/bt-api.js?v=20261101", // même URL que les balises <script> des pages (à aligner à chaque montée de version)
   "/auth-guard.js",
   "/vendor/qrcode-generator-2.0.4.js",
   "/vendor/html5-qrcode-2.3.8.min.js",
@@ -221,7 +221,15 @@ async function staleWhileRevalidate(request) {
       return null;
     });
 
-  return cached || fetchPromise;
+  if (cached) return cached;
+  // Hors ligne et version demandée absente (ex. bt-api.js?v=… après une montée de
+  // version) : on sert la dernière version en cache plutôt qu'une erreur
+  // (le scanner doit pouvoir s'ouvrir sans réseau).
+  return fetchPromise.then(function (res) {
+    return res || cache.match(request, { ignoreSearch: true }).then(function (old) {
+      return old || new Response("", { status: 503, statusText: "Hors ligne" });
+    });
+  });
 }
 
 function fetchWithTimeout(request, ms) {

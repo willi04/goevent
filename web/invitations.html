@@ -120,16 +120,9 @@
 
     <div id="mobile-menu" class="fixed inset-0 bg-gray-900/60 z-[200] hidden opacity-0 transition-opacity duration-300">
       <div class="absolute inset-0" onclick="toggleMobileMenu()"></div>
-      <div id="mobile-drawer" class="absolute right-0 top-0 bottom-0 w-[50%] max-w-sm min-w-[280px] bg-white shadow-2xl transform translate-x-full transition-transform duration-[400ms] ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col p-5">
-        <div id="mobile-drawer-header" class="p-4 border-b border-gray-100 flex items-center gap-3"></div>
-        <div id="mobile-drawer-auth-cta" class="px-4 pt-4"></div>
-        <nav class="space-y-1 flex-1 overflow-y-auto">
-          <a href="index.html" class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"><span class="material-symbols-outlined">home</span> Accueil</a>
-          <a href="event.html" class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"><span class="material-symbols-outlined">stadium</span> Événements</a>
-          <a href="invitations.html" class="flex items-center gap-3 p-4 bg-primary/10 rounded-2xl text-primary font-bold"><span class="material-symbols-outlined">qr_code_2</span> Invitations</a>
-          <a href="partenaire.html" class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"><span class="material-symbols-outlined">handshake</span> Partenaires</a>
-          <a href="a_propos.html" class="flex items-center gap-3 p-4 text-gray-600 font-bold hover:bg-gray-50 rounded-2xl transition-colors"><span class="material-symbols-outlined">info</span> À propos</a>
-        </nav>
+      <div id="mobile-drawer" class="absolute right-0 top-0 bottom-0 w-[86%] max-w-[340px] rounded-l-3xl bg-white shadow-2xl transform translate-x-full transition-transform duration-[400ms] ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col px-4 py-4 overflow-y-auto overscroll-contain">
+        <div id="mobile-drawer-header" class="px-1 pb-4 border-b border-gray-100 flex items-center gap-3"></div>
+        <nav id="mobile-drawer-links" class="flex-1" aria-label="Menu principal"></nav>
         <div id="mobile-drawer-sections" class="mt-4 pt-4 border-t border-gray-100"></div>
       </div>
     </div>
@@ -328,15 +321,15 @@
     <a id="wa-inv" class="hidden" href="#" data-cms-href="invitations.contact.whatsapp" data-cms-href-prefix="https://wa.me/" aria-hidden="true" tabindex="-1"></a>
     <a id="wa-global" class="hidden" href="https://wa.me/23672259398" data-cms-href="global.contact.whatsapp" data-cms-href-prefix="https://wa.me/" aria-hidden="true" tabindex="-1"></a>
 
-    <script src="bt-api.js"></script>
+    <script src="bt-api.js?v=20261101"></script>
     <script src="pwa.js"></script>
     <script>
       // Composants partagés (même menu, tiroir, pied de page et barre mobile que les autres pages)
       document.getElementById("navbar").innerHTML = btNavbar("invitations");
       if (typeof btMobileDrawerHeader === "function") document.getElementById("mobile-drawer-header").innerHTML = btMobileDrawerHeader();
-      if (typeof btMobileAuthSection === "function") document.getElementById("mobile-drawer-auth-cta").innerHTML = btMobileAuthSection();
       if (typeof btMobileDrawerSections === "function") document.getElementById("mobile-drawer-sections").innerHTML = btMobileDrawerSections();
-      if (typeof btMobileBottomNav === "function") document.getElementById("bottom-nav-mobile").innerHTML = btMobileBottomNav("");
+      if (typeof btMobileBottomNav === "function") document.getElementById("bottom-nav-mobile").innerHTML = btMobileBottomNav("invitations");
+      if (typeof btMobileDrawerLinks === "function") document.getElementById("mobile-drawer-links").innerHTML = btMobileDrawerLinks("invitations");
       document.getElementById("footer").innerHTML = btFooter();
       function toggleMobileMenu() {
         var menu = document.getElementById("mobile-menu"), drawer = document.getElementById("mobile-drawer");

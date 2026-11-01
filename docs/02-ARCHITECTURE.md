@@ -354,7 +354,7 @@ Les textes, images et liens des pages publiques sont modifiables depuis
   texte WhatsApp, à partir du PIN affiché une seule fois (le serveur vérifie
   le PIN contre le hash avant de produire la fiche). Tant que
   `must_change_pin` est vrai, toutes les dépendances du back-office
-  répondent 403 `PIN_CHANGE_REQUIRED` ; `admin-login.html` impose le
+  répondent 403 `PIN_CHANGE_REQUIRED` ; `admin.html` impose le
   changement (PIN trivial refusé).
 - **Portefeuille** : `owner_id` sur `invitation_quotes` et
   `private_event_settings` (NULL = maison / admin). Un commercial ne voit que

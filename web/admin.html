@@ -1131,6 +1131,26 @@
           </div>
         </div>
         
+        <!-- PIN provisoire à remplacer (1re connexion / PIN réinitialisé) : fenêtre bloquante -->
+        <div id="force-pin" class="hidden fixed inset-0 z-[100] bg-gray-900/80 items-center justify-center p-4">
+          <form id="force-pin-form" class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6" autocomplete="off">
+            <div class="w-14 h-14 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-3 text-amber-600">
+              <span class="material-symbols-outlined text-3xl">lock_reset</span>
+            </div>
+            <h3 class="text-lg font-black text-gray-900 text-center mb-1">Choisissez votre code PIN</h3>
+            <p class="text-xs text-gray-500 text-center mb-5">Votre code actuel est provisoire. Choisissez 6 chiffres que vous seul connaissez (pas de suite comme 123456, pas de chiffres répétés).</p>
+            <label for="fp-old" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">PIN provisoire reçu</label>
+            <input type="password" id="fp-old" inputmode="numeric" maxlength="6" required autocomplete="current-password" class="w-full border border-gray-200 rounded-xl py-3 px-4 mb-3 tracking-[0.4em]" />
+            <label for="fp-new" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Nouveau code PIN</label>
+            <input type="password" id="fp-new" inputmode="numeric" maxlength="6" required autocomplete="new-password" class="w-full border border-gray-200 rounded-xl py-3 px-4 mb-3 tracking-[0.4em]" />
+            <label for="fp-new2" class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Confirmez le code PIN</label>
+            <input type="password" id="fp-new2" inputmode="numeric" maxlength="6" required autocomplete="new-password" class="w-full border border-gray-200 rounded-xl py-3 px-4 tracking-[0.4em]" />
+            <p id="fp-error" class="text-red-600 text-xs mt-3 min-h-4"></p>
+            <button type="submit" id="fp-btn" class="action-btn btn-primary w-full py-3 mt-2">Enregistrer mon code PIN</button>
+            <button type="button" onclick="btAuth.logout()" class="w-full text-xs text-gray-500 font-bold mt-3 hover:underline">Se déconnecter</button>
+          </form>
+        </div>
+
         <!-- Modal : PIN temporaire généré -->
         <div id="pin-modal" class="modal-overlay hidden">
           <div class="modal-box">
@@ -1438,9 +1458,9 @@
               window.location.href = "login.html";
               return;
           }
-          // PIN provisoire pas encore remplacé : retour à l'écran de connexion (changement obligatoire)
+          // PIN provisoire pas encore remplacé : changement obligatoire avant tout accès
           if (user.must_change_pin) {
-              window.location.href = "admin-login.html?pin=1";
+              showForcedPinChange();
               return;
           }
       
@@ -1451,6 +1471,11 @@
           try {
               currentPermissions = await btApi.get("/admin/staff/me/permissions");
           } catch (err) {
+              // PIN réinitialisé pendant une session ouverte : le serveur exige le changement
+              if (err && /PIN provisoire/.test(err.message || "")) {
+                  showForcedPinChange();
+                  return;
+              }
               console.error("Impossible de charger les permissions :", err);
               btToast("Erreur de chargement des permissions. Veuillez vous reconnecter.", "error");
               setTimeout(() => btAuth.logout(), 2000);
@@ -2218,6 +2243,36 @@
               btToast(r.quotes + " devis et " + r.events + " événement(s) transférés", "success");
           } catch (e) { btToast(e.message || "Erreur", "error"); }
       }
+      // ── Changement obligatoire du PIN provisoire (connexion via login.html → admin.html) ──
+      function showForcedPinChange() {
+          const box = document.getElementById("force-pin");
+          box.classList.remove("hidden");
+          box.classList.add("flex");
+          document.getElementById("fp-old").focus();
+          document.getElementById("force-pin-form").onsubmit = async (e) => {
+              e.preventDefault();
+              const oldPin = document.getElementById("fp-old").value.trim();
+              const p1 = document.getElementById("fp-new").value.trim();
+              const p2 = document.getElementById("fp-new2").value.trim();
+              const err = document.getElementById("fp-error");
+              const btn = document.getElementById("fp-btn");
+              err.textContent = "";
+              if (!/^\d{6}$/.test(p1)) { err.textContent = "Le code PIN doit contenir 6 chiffres."; return; }
+              if (p1 !== p2) { err.textContent = "Les deux codes ne sont pas identiques."; return; }
+              btn.disabled = true;
+              try {
+                  await btApi.put("/auth/pin", { old_pin: oldPin, new_pin: p1 });
+                  const u = btAuth.getUser() || {};
+                  u.must_change_pin = false;
+                  try { localStorage.setItem("bt_user", JSON.stringify(u)); } catch (ex) {}
+                  window.location.reload();
+              } catch (ex) {
+                  err.textContent = ex.message || "Erreur";
+                  btn.disabled = false;
+              }
+          };
+      }
+
       function closePinModal() {
           document.getElementById("pin-modal").classList.add("hidden");
           document.getElementById("pin-modal-code").textContent = "----";

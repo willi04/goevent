@@ -202,6 +202,18 @@ MIGRATIONS = [
         "uq_commissions_source",
         "CREATE UNIQUE INDEX IF NOT EXISTS uq_commissions_source ON commissions (source_type, source_id)",
     ),
+    # ── Lot 5 — événements : désactivation motivée + index de la liste publique.
+    # events est lue partout : ALTER exécuté À LA MAIN sur Neon AVANT le push (docs/07).
+    (
+        "events.deactivated_* (désactivation motivée)",
+        "ALTER TABLE events ADD COLUMN IF NOT EXISTS deactivated_reason VARCHAR(300), "
+        "ADD COLUMN IF NOT EXISTS deactivated_at TIMESTAMP, "
+        "ADD COLUMN IF NOT EXISTS deactivated_by INTEGER",
+    ),
+    (
+        "ix_events_public_date",
+        "CREATE INDEX IF NOT EXISTS ix_events_public_date ON events (event_date) WHERE visibility = 'public'",
+    ),
 ]
 
 

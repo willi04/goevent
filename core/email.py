@@ -222,3 +222,37 @@ def envoyer_mail_annulation(email_client, nom_client, event_title, amount, is_re
         print(f"📧 Email annulation envoyé à {email_client}")
     except Exception as e:
         print(f"❌ Erreur envoi email annulation : {e}")
+
+
+def envoyer_mail_desactivation(email_orga, nom_orga, event_title, motif):
+    """Prévient l'organisateur qu'un événement a été retiré du site par l'équipe (lot 5)."""
+    if not settings.SENDER_EMAIL or not settings.SENDER_PASSWORD:
+        print("⚠️ Email credentials missing, skipping email")
+        return
+    msg = MIMEMultipart()
+    msg["From"] = f"GoEvent <{settings.SENDER_EMAIL}>"
+    msg["To"] = email_orga
+    msg["Subject"] = f"Événement retiré du site : {event_title}"
+    html_body = f"""
+    <html><body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
+      <div style="background:#ffffff; max-width:500px; margin:0 auto; padding:30px; border-radius:20px; border:1px solid #e2e2e2;">
+        <h2 style="color:#00502c; margin:0 0 5px 0;">GoEvent</h2>
+        <p style="color:#1a1c1c; font-size:15px;">Bonjour {_esc(nom_orga) or "cher organisateur"},</p>
+        <p style="color:#4b5563; font-size:14px; line-height:1.6;">Votre événement <strong>{_esc(event_title)}</strong> a été retiré du site par l'équipe GoEvent.</p>
+        <div style="background:#fef2f2; border-left:4px solid #b91c1c; padding:12px 15px; margin:20px 0;">
+          <p style="color:#b91c1c; font-size:12px; font-weight:bold; margin:0;">MOTIF</p>
+          <p style="color:#1a1c1c; font-size:14px; margin:6px 0 0 0;">{_esc(motif)}</p>
+        </div>
+        <p style="color:#4b5563; font-size:14px; line-height:1.6;">Les billets déjà payés restent valables. Pour toute question, répondez à cet e-mail ou contactez le support WhatsApp.</p>
+      </div>
+    </body></html>
+    """
+    msg.attach(MIMEText(html_body, "html"))
+    try:
+        server = smtplib.SMTP("smtp.gmail.com", 587, timeout=10)
+        server.starttls()
+        server.login(settings.SENDER_EMAIL, settings.SENDER_PASSWORD)
+        server.send_message(msg)
+        server.quit()
+    except Exception as e:
+        print(f"❌ Erreur e-mail désactivation : {e}")

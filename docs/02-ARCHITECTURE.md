@@ -344,6 +344,24 @@ Les textes, images et liens des pages publiques sont modifiables depuis
 - **Purge J+30** : `purge_due()` (cron reconcile + bouton admin) anonymise
   noms, numéros et jetons ; seuls les chiffres restent.
 
+### Flux 7 bis : Listes d'événements (lot 5)
+
+- **Public** `GET /events` : `page` 1-500, `limit` 1-24, recherche `q` /
+  `location` en « contient » (jokers échappés, `core/event_query.like`),
+  `categories` (libellés canoniques + variantes sans accent),
+  `when` = today | weekend | month à l'heure de Bangui
+  (`core/event_query.window`), `free_only`. `GET /categories` : événements
+  publics à venir seulement, variantes fusionnées ; `GET /categories/all` :
+  liste fermée.
+- **Admin** `GET /admin/events` (`api/admin_events.py`) : événements publics
+  seulement. Sans `page` : tableau léger (ancienne interface). Avec `page` :
+  statut calculé (à venir / en cours = début + 6 h / complet / passé /
+  désactivé), compteurs par statut en une requête, indicateurs (à venir,
+  billets et recettes brutes 30 j, « à surveiller » = complets ou < 10 % à
+  J-7), recettes par événement (prix des billets, hors frais acheteur).
+  `POST /admin/events/{id}/deactivate` (motif 5-300, e-mail facultatif à
+  l'organisateur) et `/reactivate` : admin seul, journalisés.
+
 ### Flux 8 : Équipe commerciale — devis numérotés, portefeuilles, commissions (lot 4.5)
 
 - **Comptes** (`api/staff.py`, `core/sales.py`) : l'admin crée l'employé sans

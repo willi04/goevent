@@ -278,6 +278,52 @@ bout en bout sans intervention, 1 retrait réussi, analyse des
   `invitation_track_link_created|revoked`, `invitation_agent_assigned|removed`,
   `invitation_purge`.
 
+## Équipe commerciale (lot 4.5)
+
+- **Avant le déploiement** : `users`, `private_event_settings`,
+  `invitation_packs` et `commissions` sont lues par des routes chaudes →
+  exécuter à la main sur Neon, AVANT le push, les ALTER / index du lot 4.5
+  (copie exacte des entrées « Lot 4.5 » de `core/migrations.py`, index en
+  `CONCURRENTLY`). Les tables `invitation_quotes` et
+  `invitation_quote_counters` sont créées au démarrage.
+- **Créer un commercial** : Équipe → Nouvel employé, fonction Commercial,
+  taux de commission. Le code `COM-PRENOM` est proposé (modifiable avant
+  la première vente). Le PIN provisoire s'affiche UNE fois : « Fiche de
+  bienvenue (PDF) » ou « Copier le texte WhatsApp », à remettre en main
+  propre / message privé. À la première connexion, le commercial choisit
+  son PIN (obligatoire). PIN perdu : « Reset PIN » (nouvelle
+  fiche).
+- **Circuit d'une vente** : le commercial crée le devis (numéro
+  automatique, prix figé 15 j), l'envoie (PDF ou WhatsApp), le marque
+  accepté. Sur mesure ou remise manuelle : l'admin valide d'abord (filtre
+  « À valider »). Le client paie GoEvent SARLU ; l'admin fait « Créer
+  l'événement depuis ce devis » puis active le pack (montant du devis,
+  référence de paiement unique). Le dossier reste dans le portefeuille du
+  commercial.
+- **Conflit** : un même téléphone client chez deux commerciaux est refusé
+  au second (message générique) tant que le premier devis est protégé
+  (validité + 30 j) ou que l'événement est à venir. L'admin peut forcer
+  avec un motif (`invitation_quote_conflict_forced`). Nom / entreprise
+  proche à ± 30 j : alerte « Conflits / doublons » côté admin, à trancher
+  (réaffecter si besoin).
+- **Clôture mensuelle** : Invitations → Ventes & commissions, mois M (mois
+  des événements) → « Clôturer AAAA-MM » (`pending` → `approved`) après la
+  fin du mois ; verser au plus tard le 5 de M+1, puis « Marquer comme versée »
+  par commercial (date + référence). Relevé CSV par commercial ou global.
+  Un pack annulé après versement affiche un avertissement : régulariser à
+  la main sur le versement suivant.
+- **Départ / fin d'essai d'un commercial** : Équipe → « Transférer » (devis
+  non convertis et événements vers un autre commercial ou l'admin), puis
+  désactiver le compte. Les commissions déjà acquises restent dues.
+- **Purge prospects** : devis non convertis anonymisés 12 mois après la fin
+  de validité (cron `/admin/reconcile`, résumé `quotes_anonymized`).
+- Traçabilité : `staff_created`, `staff_pin_reset`, `staff_pin_changed`,
+  `staff_welcome_pdf`, `invitation_quote_created|updated|sent|accepted|refused|validated|converted|pdf`,
+  `invitation_quote_owner_changed`, `invitation_quote_conflict`,
+  `invitation_quote_conflict_forced`, `invitation_event_owner_changed`,
+  `sales_portfolio_transferred`, `commission_month_closed`,
+  `commission_paid`.
+
 ## Monitoring
 
 ### Logs à surveiller (Render)

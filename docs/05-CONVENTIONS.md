@@ -129,6 +129,17 @@ propriété via une clé non éditable par l'utilisateur :
   librement via `PUT /auth/me`.
 - Ressource d'un autre propriétaire → 404 (pas 403) quand l'id est
   énumérable, pour ne pas servir d'oracle d'existence.
+- **Portefeuille commercial (lot 4.5)** : devis, événements privés, packs
+  et commissions portent `owner_id`. Toute route qui les lit ou les modifie
+  charge la ressource via un helper qui filtre sur le propriétaire
+  (`core/quotes.get_quote`, `api/invitations._load` / `_guest` / `_scope`)
+  sauf si `core.permissions.sees_all_sales(user)` ; jamais de requête
+  directe `db.get(...)` suivie d'un test. Ressource d'un autre commercial →
+  404. Les champs réservés à l'admin (`possible_duplicate_of`, conflits,
+  commissions des autres) ne sont jamais sérialisés pour un commercial.
+- **Montants commerciaux** : un devis, une activation et une commission
+  partent du même calcul (`core/invitation_catalog.price()` / `replay()`),
+  en entiers FCFA. Jamais de recalcul côté front.
 
 ### Vérifications d'accès
 

@@ -33,7 +33,9 @@ définies dans `core/migrations.py` et exécutées au démarrage du backend.
 | `refund_requests` | `refund.py` | Demandes de remboursement fan |
 | `promo_codes` | `promo.py` | Codes promotionnels créés par les organisateurs |
 | `promo_usages` | `promo.py` | Traces d'utilisation des codes promo |
-| `commissions` | `commission.py` | Commissions dues à l'équipe interne (post-lancement) |
+| `commissions` | `commission.py` | Commissions des commerciaux (packs invitations, lot 4.5) |
+| `invitation_quotes` | `invitation_quote.py` | Devis numérotés des commerciaux (lot 4.5) |
+| `invitation_quote_counters` | `invitation_quote.py` | Compteur annuel des numéros de devis |
 | `boost_orders` | `promotion.py` | Boosts d'événements achetés par les organisateurs |
 | `fb_ad_packages` | `promotion.py` | Packs Facebook Ads gérés pour les organisateurs |
 | `homepage_content` | `cms.py` | Slides publicitaires et éditoriaux de la page d'accueil |
@@ -76,6 +78,11 @@ Colonnes essentielles :
   organisateurs, distinct du `phone_number` de connexion.
 - `agent_event_id` : pour les comptes agent, événement auquel ils sont
   rattachés (accès scanner limité à cet event).
+- `sales_code` (lot 4.5) : code de référence d'un commercial (`COM-PRENOM`),
+  unique sans casse (`uq_users_sales_code`), figé dès qu'il est porté par un
+  devis, un dossier, un pack ou une commission.
+- `must_change_pin` (lot 4.5) : PIN provisoire généré par le serveur ; tant
+  qu'il est vrai, le back-office répond 403 `PIN_CHANGE_REQUIRED`.
 - `failed_login_attempts` et `locked_until` : verrouillage temporaire
   après 5 tentatives échouées.
 - `two_factor_secret` et `is_2fa_enabled` : colonnes historiques d'une
@@ -287,10 +294,14 @@ ou `en_attente_lancement` (pack FB).
 
 ### `commissions`
 
-Table de suivi des commissions dues à l'équipe interne (commercial
-notamment). Alimentée post-lancement. Les colonnes `beneficiary_user_id`,
-`source_type`, `source_id` permettent de tracer chaque commission jusqu'à
-sa source (paiement, retrait, contrat pub).
+Commissions dues à l'équipe interne. Alimentée depuis le lot 4.5 par
+l'activation des packs invitations (`source_type = 'invitation_pack'`,
+`source_id` = id du pack ; **unique (`source_type`, `source_id`)**).
+`base_amount_fcfa` et `amount_fcfa` en **entiers FCFA** (arrondi à l'unité,
+`core/sales.commission_amount`), `rate_applied` = taux figé à l'activation.
+Statuts : `pending` → `approved` (clôture du mois, `period` = `AAAA-MM` du
+mois de l'événement) → `paid` (`paid_at`, `paid_ref`) ; `cancelled` si le
+pack est annulé.
 
 ### `security_logs`
 
@@ -364,6 +375,26 @@ rétroactivement.
   (JSONB), `amount_ht`, `amount_vat`, `vat_rate_bp`, `snapshot` (JSONB :
   lignes d'options, motifs, TVA). Pas de FK vers le catalogue (ajoutées par
   ALTER avant création des tables).
+- Lot 4.5 : `private_event_settings.owner_id` (FK users, NULL = maison /
+  admin ; clé du cloisonnement commercial) + `source_quote_id` ;
+  `invitation_packs.quote_id` (**unique partiel**, un devis = au plus un
+  pack), `owner_id`, `commission_base_fcfa`, `commission_rate_bp` (figés à
+  l'activation).
+- `invitation_quotes` : `number` (`DEV-AAAA-NNNN`, unique), `year`, `seq`,
+  `owner_id`, `sales_code`, `status` (`brouillon|envoye|accepte|refuse|converti` ;
+  `expire` est calculé, jamais stocké), client (`client_name`,
+  `client_company`, `client_phone` E.164) et clés de comparaison
+  (`phone_norm`, `name_norm`, `company_norm`), événement prévu
+  (`event_type`, `event_date`, `location`, `guests_count`), `formula_id`,
+  `snapshot` (JSONB : résultat complet de `price()`), `total_fcfa`,
+  `pack_amount_fcfa`, `needs_admin` / `validated_by|at`, `valid_until`,
+  horodatages de statut, `event_id` / `pack_id` / `converted_at`,
+  `conflict_with_quote_id` (passage forcé admin), `possible_duplicate_of`
+  (alerte nom proche), `purge_after` (validité + 12 mois) / `purged_at`.
+  Index : (`owner_id`, `status`), `phone_norm`, `event_date`.
+- `invitation_quote_counters` (`year` PK, `last`) : incrémenté par
+  `INSERT … ON CONFLICT DO UPDATE … RETURNING` dans la transaction du devis
+  → numéros sans trou ni doublon, même en concurrence.
 - Catalogue : `inv_formulas` (code unique immuable, comportements,
   `agents_step`), `inv_packs` (**index unique partiel (formula_id, size)
   WHERE status = 'active'**), `inv_options` + `inv_option_formulas`,

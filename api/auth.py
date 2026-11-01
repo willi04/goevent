@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from core.config import settings
 from core.database import get_db
-from core.limiter import hit_or_429, limiter
+from core.limiter import hit_or_429, limiter, user_key
 from core.security import (
     hash_pin, verify_pin,
     create_access_token, create_refresh_token,
@@ -152,6 +152,7 @@ def login(request: Request, data: UserLogin, db: Session = Depends(get_db)):
         "phone_number": user.phone_number,
         "staff_function": user.staff_function,  # nouveau — utilisé par admin.html
         "org_name": user.org_name,              # nouveau — déjà attendu par d'autres pages
+        "must_change_pin": bool(user.must_change_pin),  # PIN provisoire (staff) : écran de changement
     },
 }
 
@@ -198,6 +199,8 @@ def me(current_user: User = Depends(get_current_user)):
         "org_type": current_user.org_type,
         "staff_function": current_user.staff_function,
         "commission_rate": current_user.commission_rate,
+        "sales_code": current_user.sales_code,
+        "must_change_pin": bool(current_user.must_change_pin),
         "is_active": current_user.is_active,
         "created_at": current_user.created_at,
     }
@@ -227,14 +230,24 @@ def update_profile(data: UserUpdate, db: Session = Depends(get_db),
 
 
 @router.put("/auth/pin")
-def change_pin(data: PinChange, db: Session = Depends(get_db),
+@limiter.limit("10/minute", key_func=user_key)
+def change_pin(request: Request, data: PinChange, db: Session = Depends(get_db),
                current_user: User = Depends(get_current_user)):
     if not verify_pin(data.old_pin, current_user.pin_hash):
         raise HTTPException(400, "Ancien PIN incorrect")
     if len(data.new_pin) != 6 or not data.new_pin.isdigit():
         raise HTTPException(400, "Le nouveau PIN doit être 6 chiffres")
+    if data.new_pin == data.old_pin:
+        raise HTTPException(400, "Choisissez un code PIN différent de l'ancien.")
+    from core.sales import is_trivial_pin
+    if current_user.role in ("staff", "admin") and is_trivial_pin(data.new_pin):
+        raise HTTPException(400, "Code PIN trop simple (suite ou chiffres répétés) : choisissez-en un autre.")
     current_user.pin_hash = hash_pin(data.new_pin)
+    was_provisional = bool(current_user.must_change_pin)
+    current_user.must_change_pin = False
     db.commit()
+    if was_provisional:
+        log_security_event(db, "staff_pin_changed", request, current_user.id, "PIN provisoire remplacé")
     return {"message": "PIN modifié avec succès"}
 
 

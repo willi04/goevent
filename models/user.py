@@ -28,6 +28,9 @@ class User(Base):
     referred_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     commission_rate     = Column(Float, nullable=True)       # ex: 0.25 = 25%
     staff_function      = Column(String(50), nullable=True)  # commercial | cm | designer
+    # ─── Équipe commerciale (lot 4.5) ───
+    sales_code          = Column(String(20), nullable=True)  # COM-ALINE : lien ?ref=, devis, commissions (unique, cf. migrations)
+    must_change_pin     = Column(Boolean, nullable=False, default=False, server_default="false")  # PIN provisoire
     
     events    = relationship("Event", back_populates="organizer_user", foreign_keys="[Event.organizer_id]")
     tickets   = relationship("Ticket", back_populates="owner", foreign_keys="Ticket.user_id")

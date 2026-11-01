@@ -8,25 +8,20 @@ from core.permissions import STAFF_FUNCTIONS_VALIDES
 
 
 class StaffCreate(BaseModel):
-    """Création d'un employé staff par l'admin."""
+    """Création d'un employé staff par l'admin. Le PIN provisoire est généré par le serveur
+    (lot 4.5) et renvoyé une seule fois ; changement obligatoire à la première connexion."""
     full_name: str = Field(..., min_length=2, max_length=100)
     phone_number: str
     email: Optional[EmailStr] = None
-    pin_code: str
     staff_function: str
     commission_rate: Optional[float] = Field(None, ge=0, le=1)  # 0.0 à 1.0 (0% à 100%)
+    sales_code: Optional[str] = Field(None, max_length=20)     # vide = proposé automatiquement (commercial)
 
     @field_validator("phone_number")
     @classmethod
     def validate_phone(cls, v):
         if not re.match(r"^\+236\d{8}$", v):
             raise ValueError("Le numéro doit être au format RCA (+236XXXXXXXX)")
-        return v
-
-    @field_validator("pin_code")
-    def pin_must_be_6_digits(cls, v):
-        if not re.match(r"^\d{6}$", v):
-            raise ValueError("Le code PIN doit contenir exactement 6 chiffres")
         return v
 
     @field_validator("staff_function")
@@ -44,6 +39,7 @@ class StaffUpdate(BaseModel):
     staff_function: Optional[str] = None
     commission_rate: Optional[float] = Field(None, ge=0, le=1)
     is_active: Optional[bool] = None
+    sales_code: Optional[str] = Field(None, max_length=20)
 
     @field_validator("staff_function")
     @classmethod
@@ -63,9 +59,25 @@ class StaffOut(BaseModel):
     commission_rate: Optional[float]
     is_active: bool
     created_at: datetime
+    sales_code: Optional[str] = None
+    must_change_pin: bool = False
 
     class Config:
         from_attributes = True
+
+
+class StaffCreatedOut(StaffOut):
+    """Réponse de création / réinitialisation : PIN provisoire renvoyé UNE seule fois."""
+    temporary_pin: str
+    welcome_text: str
+
+
+class WelcomePdfIn(BaseModel):
+    pin: str = Field(..., min_length=6, max_length=6)
+
+
+class TransferIn(BaseModel):
+    to_user_id: Optional[int] = None   # None = l'administration (« maison »)
 
 
 class PermissionsOut(BaseModel):

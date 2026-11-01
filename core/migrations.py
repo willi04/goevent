@@ -152,6 +152,56 @@ MIGRATIONS = [
         "ADD COLUMN IF NOT EXISTS vat_rate_bp INTEGER, "
         "ADD COLUMN IF NOT EXISTS snapshot JSONB",
     ),
+    # ── Lot 4.5 — équipe commerciale. users / private_event_settings / invitation_packs
+    # sont lues par des routes chaudes : ces ALTER sont exécutés À LA MAIN sur Neon AVANT
+    # le push (docs/07) ; ici ils ne servent qu'aux bases neuves (no-op en prod).
+    (
+        "users.sales_code + must_change_pin",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS sales_code VARCHAR(20), "
+        "ADD COLUMN IF NOT EXISTS must_change_pin BOOLEAN NOT NULL DEFAULT false",
+    ),
+    (
+        "uq_users_sales_code",
+        "CREATE UNIQUE INDEX IF NOT EXISTS uq_users_sales_code ON users (upper(sales_code)) WHERE sales_code IS NOT NULL",
+    ),
+    (
+        "private_event_settings.owner_id (portefeuille)",
+        "ALTER TABLE private_event_settings ADD COLUMN IF NOT EXISTS owner_id INTEGER REFERENCES users(id), "
+        "ADD COLUMN IF NOT EXISTS source_quote_id INTEGER",
+    ),
+    (
+        "ix_private_event_settings_owner_id",
+        "CREATE INDEX IF NOT EXISTS ix_private_event_settings_owner_id ON private_event_settings (owner_id)",
+    ),
+    (
+        "invitation_packs (devis + commission figés)",
+        "ALTER TABLE invitation_packs ADD COLUMN IF NOT EXISTS quote_id INTEGER, "
+        "ADD COLUMN IF NOT EXISTS owner_id INTEGER REFERENCES users(id), "
+        "ADD COLUMN IF NOT EXISTS commission_base_fcfa INTEGER, "
+        "ADD COLUMN IF NOT EXISTS commission_rate_bp INTEGER",
+    ),
+    (
+        "uq_invitation_packs_quote",
+        "CREATE UNIQUE INDEX IF NOT EXISTS uq_invitation_packs_quote ON invitation_packs (quote_id) WHERE quote_id IS NOT NULL",
+    ),
+    (
+        "commissions : montants en entiers FCFA",
+        "DO $$ BEGIN "
+        "IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'commissions' "
+        "AND column_name = 'amount_fcfa' AND data_type <> 'integer') THEN "
+        "ALTER TABLE commissions ALTER COLUMN base_amount_fcfa TYPE INTEGER USING round(base_amount_fcfa)::int, "
+        "ALTER COLUMN amount_fcfa TYPE INTEGER USING round(amount_fcfa)::int; "
+        "END IF; END $$",
+    ),
+    (
+        "commissions.period + paid_ref",
+        "ALTER TABLE commissions ADD COLUMN IF NOT EXISTS period VARCHAR(7), "
+        "ADD COLUMN IF NOT EXISTS paid_ref VARCHAR(80)",
+    ),
+    (
+        "uq_commissions_source",
+        "CREATE UNIQUE INDEX IF NOT EXISTS uq_commissions_source ON commissions (source_type, source_id)",
+    ),
 ]
 
 

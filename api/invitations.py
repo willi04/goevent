@@ -26,14 +26,14 @@ from core import invitation_catalog as cat
 from core import invitations as inv
 from core.database import get_db
 from core.limiter import PUBLIC_IP_CEILING, limiter, path_token_key, user_key
-from core.permissions import get_current_admin, is_admin, normalize_role, require_staff_function
+from core.permissions import get_current_admin, is_admin, normalize_role, require_staff_function, sees_all_sales
 from core.security import get_current_user, hash_pin, log_security_event
 from models.event import Event
 from models.invitation import EventGuest, GuestCheckin, InvitationPack, PrivateEventSettings
 from models.invitation_catalog import InvFormula
 from models.user import User
 from schemas.invitation import (
-    AgentIn, AgentManualIn, GuestImportIn, GuestPatch, ManualCheckinIn, PackCancelIn, PrivateEventIn,
+    AgentIn, AgentManualIn, GuestImportIn, GuestPatch, ManualCheckinIn, OwnerIn, PackCancelIn, PrivateEventIn,
     PrivateEventPatch, SyncIn,
 )
 from schemas.invitation_catalog import OrderIn
@@ -83,11 +83,16 @@ def _pack_out(p: InvitationPack) -> dict:
             "options": snap.get("options") or [], "options_total": p.options_total or 0,
             "discount": snap.get("discount"), "discount_amount": p.discount_amount or 0,
             "agents_included": cat.order_agents(p), "features": cat.order_features(p),
-            "vat": snap.get("vat"), "amount_ht": p.amount_ht, "amount_vat": p.amount_vat}
+            "vat": snap.get("vat"), "amount_ht": p.amount_ht, "amount_vat": p.amount_vat,
+            "quote_id": p.quote_id, "owner_id": p.owner_id, "commission_base_fcfa": p.commission_base_fcfa,
+            "commission_rate_bp": p.commission_rate_bp}
 
 
-def _event_summary(db: Session, ev: Event, st: PrivateEventSettings) -> dict:
+def _event_summary(db: Session, ev: Event, st: PrivateEventSettings, owners: Optional[dict] = None) -> dict:
+    o = (owners or {}).get(st.owner_id) if st.owner_id else None
     return {"id": ev.id, "title": ev.title, "event_date": _iso(ev.event_date),
+            "owner_id": st.owner_id, "owner_name": o.full_name if o else None,
+            "owner_code": o.sales_code if o else None, "source_quote_id": st.source_quote_id,
             "event_date_label": inv.fmt_date_fr(ev.event_date), "location": ev.location,
             "client_name": st.client_name, "service_level": st.service_level,
             "formula_name": cat.formula_label(db, st.service_level),
@@ -96,19 +101,28 @@ def _event_summary(db: Session, ev: Event, st: PrivateEventSettings) -> dict:
             "purged": bool(st.purged_at)}
 
 
-def _load(db: Session, event_id: int, lock: bool = False):
+def _scope(user: User, st: PrivateEventSettings) -> None:
+    """Portefeuille (lot 4.5) : un commercial n'accède qu'aux événements dont il est propriétaire ;
+    l'admin voit tout. Ressource d'autrui = 404 (pas d'énumération)."""
+    if not sees_all_sales(user) and st.owner_id != user.id:
+        raise HTTPException(404, "Événement privé introuvable")
+
+
+def _load(db: Session, event_id: int, user: User, lock: bool = False):
     ev = inv.get_private_event(db, event_id, lock=lock)
-    return ev, inv.get_settings(db, ev.id)
+    st = inv.get_settings(db, ev.id)
+    _scope(user, st)
+    return ev, st
 
 
-def _guest(db: Session, guest_id: int, lock: bool = False):
+def _guest(db: Session, guest_id: int, user: User, lock: bool = False):
     q = db.query(EventGuest).filter(EventGuest.id == guest_id)
     if lock:
         q = q.with_for_update()
     g = q.first()
     if not g:
         raise HTTPException(404, "Invité introuvable")
-    ev, st = _load(db, g.event_id)
+    ev, st = _load(db, g.event_id, user)
     if st.purged_at:
         raise HTTPException(400, "Liste supprimée (conservation de 30 jours dépassée).")
     return g, ev, st
@@ -121,6 +135,20 @@ def _service(db: Session, v: Optional[str], current: Optional[str] = None) -> Op
     if not db.query(InvFormula.id).filter(InvFormula.code == v, InvFormula.status == "active").first():
         raise HTTPException(400, "Formule inconnue ou archivée.")
     return v
+
+
+def _owner_for_new(db: Session, user: User, requested: Optional[int]) -> Optional[int]:
+    """Propriétaire d'un nouveau dossier : le commercial lui-même ; l'admin peut choisir un
+    commercial actif (None = maison)."""
+    from core.sales import is_seller
+    if not sees_all_sales(user):
+        return user.id
+    if not requested:
+        return None
+    o = db.query(User).filter(User.id == requested, User.is_active == True).first()  # noqa: E712
+    if not o or not is_seller(o):
+        raise HTTPException(400, "Propriétaire invalide : choisissez un commercial actif.")
+    return o.id
 
 
 def _phone(v: Optional[str]) -> Optional[str]:
@@ -145,44 +173,66 @@ def admin_meta(db: Session = Depends(get_db), user: User = Depends(manager)):
 
 
 @router.get("/admin/invitations/events")
-def admin_list_events(db: Session = Depends(get_db), user: User = Depends(manager)):
-    rows = (db.query(Event, PrivateEventSettings)
-            .join(PrivateEventSettings, PrivateEventSettings.event_id == Event.id)
-            .filter(Event.visibility == "private", Event.is_active == True)  # noqa: E712
-            .order_by(Event.event_date.desc()).limit(300).all())
-    return {"events": [_event_summary(db, ev, st) for ev, st in rows], "summary": cat.revenue_summary(db)}
+def admin_list_events(owner_id: Optional[int] = None, db: Session = Depends(get_db), user: User = Depends(manager)):
+    """Admin : tous les événements (filtre ?owner_id=, 0 = maison). Commercial : les siens uniquement."""
+    q = (db.query(Event, PrivateEventSettings)
+         .join(PrivateEventSettings, PrivateEventSettings.event_id == Event.id)
+         .filter(Event.visibility == "private", Event.is_active == True))  # noqa: E712
+    if not sees_all_sales(user):
+        q = q.filter(PrivateEventSettings.owner_id == user.id)
+    elif owner_id is not None:
+        q = q.filter(PrivateEventSettings.owner_id == owner_id if owner_id else PrivateEventSettings.owner_id.is_(None))
+    rows = q.order_by(Event.event_date.desc()).limit(300).all()
+    owners = {u.id: u for u in db.query(User).filter(User.id.in_({st.owner_id for _, st in rows if st.owner_id})).all()}
+    return {"events": [_event_summary(db, ev, st, owners) for ev, st in rows],
+            "summary": cat.revenue_summary(db, None if sees_all_sales(user) else user.id)}
+
+
+def create_private_event(db: Session, user: User, request: Request, *, title: str, event_date: datetime, location: str,
+                         description: Optional[str], client_name: str, client_phone: Optional[str],
+                         host_label: Optional[str], service_level: Optional[str], message_template: Optional[str],
+                         owner_id: Optional[int], source_quote_id: Optional[int] = None) -> Event:
+    """Création d'un événement privé (formulaire ou conversion d'un devis). Commit inclus."""
+    date = inv.naive_utc(event_date)
+    if date < inv.utcnow() - timedelta(days=1):
+        raise HTTPException(400, "La date de l'événement est déjà passée.")
+    house = inv.get_house_organizer(db)
+    ev = Event(title=title.strip(), description=(description or "").strip(), location=location.strip(),
+               category="Privé", event_date=date, price=0, total_seats=0, seats_sold=0, ticket_tiers=[],
+               is_active=True, visibility="private", organizer_id=house.id)
+    db.add(ev)
+    db.flush()
+    st = PrivateEventSettings(event_id=ev.id, client_name=client_name.strip(), client_phone=_phone(client_phone),
+                              host_label=(host_label or "").strip() or None,
+                              message_template=inv.check_template(message_template),
+                              service_level=_service(db, service_level), purge_after=inv.purge_after_for(date),
+                              created_by=user.id, owner_id=owner_id, source_quote_id=source_quote_id)
+    db.add(st)
+    db.commit()
+    log_security_event(db, "invitation_event_created", request, user.id, "event %d « %s » (%s)%s" % (
+        ev.id, ev.title[:60], st.client_name[:40], " depuis le devis #%d" % source_quote_id if source_quote_id else ""))
+    return ev
 
 
 @router.post("/admin/invitations/events")
 @limiter.limit("30/minute")
 def admin_create_event(request: Request, data: PrivateEventIn, db: Session = Depends(get_db),
                        user: User = Depends(manager)):
-    date = inv.naive_utc(data.event_date)
-    if date < inv.utcnow() - timedelta(days=1):
-        raise HTTPException(400, "La date de l'événement est déjà passée.")
-    house = inv.get_house_organizer(db)
-    ev = Event(title=data.title.strip(), description=(data.description or "").strip(), location=data.location.strip(),
-               category="Privé", event_date=date, price=0, total_seats=0, seats_sold=0, ticket_tiers=[],
-               is_active=True, visibility="private", organizer_id=house.id)
-    db.add(ev)
-    db.flush()
-    st = PrivateEventSettings(event_id=ev.id, client_name=data.client_name.strip(), client_phone=_phone(data.client_phone),
-                              host_label=(data.host_label or "").strip() or None,
-                              message_template=inv.check_template(data.message_template),
-                              service_level=_service(db, data.service_level), purge_after=inv.purge_after_for(date),
-                              created_by=user.id)
-    db.add(st)
-    db.commit()
-    log_security_event(db, "invitation_event_created", request, user.id, "event %d « %s » (%s)" % (ev.id, ev.title[:60], st.client_name[:40]))
+    ev = create_private_event(db, user, request, title=data.title, event_date=data.event_date, location=data.location,
+                              description=data.description, client_name=data.client_name,
+                              client_phone=data.client_phone, host_label=data.host_label,
+                              service_level=data.service_level, message_template=data.message_template,
+                              owner_id=_owner_for_new(db, user, data.owner_id))
     return admin_get_event(ev.id, db, user)
 
 
 @router.get("/admin/invitations/events/{event_id}")
 def admin_get_event(event_id: int, db: Session = Depends(get_db), user: User = Depends(manager)):
-    ev, st = _load(db, event_id)
+    ev, st = _load(db, event_id, user)
     packs = db.query(InvitationPack).filter(InvitationPack.event_id == ev.id).order_by(InvitationPack.id).all()
     agents = db.query(User).filter(User.role == "agent", User.agent_event_id == ev.id, User.is_active == True).all()  # noqa: E712
-    out = _event_summary(db, ev, st)
+    owners = {st.owner_id: db.get(User, st.owner_id)} if st.owner_id else {}
+    out = _event_summary(db, ev, st, owners)
     out.update({"description": ev.description, "client_phone": st.client_phone, "host_label": st.host_label,
                 "message_template": st.message_template, "message_is_default": st.message_template is None,
                 "track_url": inv.track_url(st.track_token) if st.track_token else None,
@@ -196,7 +246,7 @@ def admin_get_event(event_id: int, db: Session = Depends(get_db), user: User = D
 @limiter.limit("60/minute")
 def admin_update_event(request: Request, event_id: int, data: PrivateEventPatch, db: Session = Depends(get_db),
                        user: User = Depends(manager)):
-    ev, st = _load(db, event_id)
+    ev, st = _load(db, event_id, user)
     f = data.model_fields_set
     if "title" in f and data.title:
         ev.title = data.title.strip()
@@ -225,12 +275,27 @@ def admin_update_event(request: Request, event_id: int, data: PrivateEventPatch,
     return admin_get_event(ev.id, db, user)
 
 
+@router.post("/admin/invitations/events/{event_id}/owner")
+@limiter.limit("30/minute")
+def admin_event_owner(request: Request, event_id: int, data: OwnerIn, db: Session = Depends(get_db),
+                      user: User = Depends(get_current_admin)):
+    """Réaffecte un événement privé (admin) : commercial actif ou maison (owner_id vide).
+    Les ventes et commissions déjà créées restent au vendeur d'origine."""
+    ev, st = _load(db, event_id, user, lock=True)
+    old = st.owner_id
+    st.owner_id = _owner_for_new(db, user, data.owner_id)
+    db.commit()
+    log_security_event(db, "invitation_event_owner_changed", request, user.id,
+                       "event %d : %s → %s" % (ev.id, old or "maison", st.owner_id or "maison"))
+    return admin_get_event(ev.id, db, user)
+
+
 # ── invités ──────────────────────────────────────────────────────────
 @router.get("/admin/invitations/events/{event_id}/guests")
 def admin_guests(event_id: int, q: Optional[str] = Query(None, max_length=80),
                  status: Optional[str] = Query(None, max_length=20), page: int = Query(1, ge=1),
                  limit: int = Query(50, ge=1, le=200), db: Session = Depends(get_db), user: User = Depends(manager)):
-    ev, st = _load(db, event_id)
+    ev, st = _load(db, event_id, user)
     query = db.query(EventGuest).filter(EventGuest.event_id == ev.id)
     if q:
         like = "%%%s%%" % q.strip()
@@ -271,7 +336,7 @@ def admin_guests(event_id: int, q: Optional[str] = Query(None, max_length=80),
 
 @router.get("/admin/invitations/guests/{guest_id}")
 def admin_guest(guest_id: int, db: Session = Depends(get_db), user: User = Depends(manager)):
-    g, ev, st = _guest(db, guest_id)
+    g, ev, st = _guest(db, guest_id, user)
     return _guest_out(ev, st, g)
 
 
@@ -279,7 +344,7 @@ def admin_guest(guest_id: int, db: Session = Depends(get_db), user: User = Depen
 @limiter.limit("30/minute")
 def admin_import(request: Request, event_id: int, data: GuestImportIn, db: Session = Depends(get_db),
                  user: User = Depends(manager)):
-    ev, st = _load(db, event_id, lock=not data.dry_run)   # verrou : deux imports simultanés ne dépassent pas le quota
+    ev, st = _load(db, event_id, user, lock=not data.dry_run)   # verrou : deux imports simultanés ne dépassent pas le quota
     if st.purged_at:
         raise HTTPException(400, "Liste supprimée (conservation de 30 jours dépassée).")
     return inv.import_guests(db, ev, [r.model_dump() for r in data.rows], user, data.dry_run, request)
@@ -290,7 +355,7 @@ def admin_import(request: Request, event_id: int, data: GuestImportIn, db: Sessi
 async def admin_read_file(request: Request, event_id: int, file: UploadFile = File(...), db: Session = Depends(get_db),
                           user: User = Depends(manager)):
     """Lit un .xlsx / .docx et renvoie son contenu tabulé (rien n'est importé ni stocké)."""
-    inv.get_private_event(db, event_id)
+    _load(db, event_id, user)
     data = await file.read(inv.MAX_FILE_BYTES + 1)
     return inv.file_to_text(file.filename, data)
 
@@ -299,7 +364,7 @@ async def admin_read_file(request: Request, event_id: int, file: UploadFile = Fi
 @limiter.limit("120/minute")
 def admin_update_guest(request: Request, guest_id: int, data: GuestPatch, db: Session = Depends(get_db),
                        user: User = Depends(manager)):
-    g, ev, st = _guest(db, guest_id, lock=True)
+    g, ev, st = _guest(db, guest_id, user, lock=True)
     f = data.model_fields_set
     if "full_name" in f and data.full_name:
         g.full_name = data.full_name.strip()
@@ -330,7 +395,7 @@ def admin_update_guest(request: Request, guest_id: int, data: GuestPatch, db: Se
 @router.post("/admin/invitations/guests/{guest_id}/revoke")
 @limiter.limit("120/minute")
 def admin_revoke(request: Request, guest_id: int, db: Session = Depends(get_db), user: User = Depends(manager)):
-    g, ev, st = _guest(db, guest_id, lock=True)
+    g, ev, st = _guest(db, guest_id, user, lock=True)
     if not g.revoked_at:
         g.revoked_at = inv.utcnow()
         db.commit()
@@ -341,7 +406,7 @@ def admin_revoke(request: Request, guest_id: int, db: Session = Depends(get_db),
 @router.post("/admin/invitations/guests/{guest_id}/restore")
 @limiter.limit("120/minute")
 def admin_restore(request: Request, guest_id: int, db: Session = Depends(get_db), user: User = Depends(manager)):
-    g, ev, st = _guest(db, guest_id, lock=True)
+    g, ev, st = _guest(db, guest_id, user, lock=True)
     if g.revoked_at:
         q = inv.quota(db, ev.id)
         if q and inv.seats_listed(db, ev.id) + g.seats > q:
@@ -358,7 +423,7 @@ def admin_restore(request: Request, guest_id: int, db: Session = Depends(get_db)
 @router.post("/admin/invitations/guests/{guest_id}/regenerate")
 @limiter.limit("60/minute")
 def admin_regenerate(request: Request, guest_id: int, db: Session = Depends(get_db), user: User = Depends(manager)):
-    g, ev, st = _guest(db, guest_id, lock=True)
+    g, ev, st = _guest(db, guest_id, user, lock=True)
     tok = inv.new_token()
     g.token, g.token_hash, g.sent_at, g.sent_by = tok, inv.token_hash(tok), None, None
     db.commit()
@@ -369,7 +434,7 @@ def admin_regenerate(request: Request, guest_id: int, db: Session = Depends(get_
 @router.post("/admin/invitations/guests/{guest_id}/sent")
 @limiter.limit("600/minute")
 def admin_mark_sent(request: Request, guest_id: int, db: Session = Depends(get_db), user: User = Depends(manager)):
-    g, ev, st = _guest(db, guest_id, lock=True)
+    g, ev, st = _guest(db, guest_id, user, lock=True)
     inv.require_active(db, ev.id)
     if g.revoked_at:
         raise HTTPException(400, "Pass annulé.")
@@ -381,7 +446,7 @@ def admin_mark_sent(request: Request, guest_id: int, db: Session = Depends(get_d
 @router.delete("/admin/invitations/guests/{guest_id}")
 @limiter.limit("120/minute")
 def admin_delete_guest(request: Request, guest_id: int, db: Session = Depends(get_db), user: User = Depends(manager)):
-    g, ev, st = _guest(db, guest_id, lock=True)
+    g, ev, st = _guest(db, guest_id, user, lock=True)
     if g.seats_used > 0:
         raise HTTPException(400, "Cet invité est déjà entré : annulez le pass plutôt que de le supprimer.")
     db.query(GuestCheckin).filter(GuestCheckin.guest_id == g.id).delete(synchronize_session=False)
@@ -395,7 +460,7 @@ def admin_delete_guest(request: Request, guest_id: int, db: Session = Depends(ge
 @limiter.limit("120/minute", key_func=user_key)
 def admin_manual_checkin(request: Request, guest_id: int, data: ManualCheckinIn, db: Session = Depends(get_db),
                          user: User = Depends(manager)):
-    g, ev, st = _guest(db, guest_id)
+    g, ev, st = _guest(db, guest_id, user)
     inv.require_active(db, ev.id)
     g = inv.manual_checkin(db, user, g, data.count, data.reason.strip(), request)
     return _guest_out(ev, st, g)
@@ -407,7 +472,7 @@ def admin_paper_pdf(request: Request, event_id: int, scope: str = Query("paper",
                     db: Session = Depends(get_db), user: User = Depends(manager)):
     """PDF A4 des pass à imprimer (8 par page, découpables). scope : paper (pass papier), pending
     (pass papier pas encore imprimés), all (tous les pass actifs). Les pass papier inclus sont marqués remis."""
-    ev, st = _load(db, event_id)
+    ev, st = _load(db, event_id, user)
     if st.purged_at:
         raise HTTPException(400, "Liste supprimée.")
     inv.require_active(db, ev.id)
@@ -431,7 +496,7 @@ def admin_paper_pdf(request: Request, event_id: int, scope: str = Query("paper",
 
 @router.get("/admin/invitations/events/{event_id}/arrivals")
 def admin_arrivals(event_id: int, db: Session = Depends(get_db), user: User = Depends(manager)):
-    ev, st = _load(db, event_id)
+    ev, st = _load(db, event_id, user)
     rows = (db.query(GuestCheckin, EventGuest.full_name, EventGuest.table_label)
             .join(EventGuest, EventGuest.id == GuestCheckin.guest_id)
             .filter(GuestCheckin.event_id == ev.id).order_by(GuestCheckin.scanned_at.desc()).limit(30).all())
@@ -444,7 +509,7 @@ def admin_arrivals(event_id: int, db: Session = Depends(get_db), user: User = De
 @router.post("/admin/invitations/events/{event_id}/track-link")
 @limiter.limit("30/minute")
 def admin_track_link(request: Request, event_id: int, db: Session = Depends(get_db), user: User = Depends(manager)):
-    ev, st = _load(db, event_id)
+    ev, st = _load(db, event_id, user)
     if not inv.quota(db, ev.id) or not cat.event_features(db, ev.id, st.service_level)["track_link"]:
         raise HTTPException(400, "Le lien de suivi n'est inclus dans aucun pack actif de cet événement.")
     st.track_token, st.track_created_at = secrets.token_urlsafe(24), inv.utcnow()
@@ -456,7 +521,7 @@ def admin_track_link(request: Request, event_id: int, db: Session = Depends(get_
 @router.delete("/admin/invitations/events/{event_id}/track-link")
 @limiter.limit("30/minute")
 def admin_track_revoke(request: Request, event_id: int, db: Session = Depends(get_db), user: User = Depends(manager)):
-    ev, st = _load(db, event_id)
+    ev, st = _load(db, event_id, user)
     st.track_token = None
     db.commit()
     log_security_event(db, "invitation_track_link_revoked", request, user.id, "event %d" % ev.id)
@@ -468,7 +533,7 @@ def admin_track_revoke(request: Request, event_id: int, db: Session = Depends(ge
 @limiter.limit("30/minute")
 def admin_add_agent(request: Request, event_id: int, data: AgentIn, db: Session = Depends(get_db),
                     user: User = Depends(manager)):
-    ev, st = _load(db, event_id)
+    ev, st = _load(db, event_id, user)
     if not data.pin_code.isdigit():
         raise HTTPException(400, "Le PIN doit contenir 6 chiffres.")
     phone = _phone(data.phone_number)
@@ -496,7 +561,7 @@ def admin_add_agent(request: Request, event_id: int, data: AgentIn, db: Session 
 @limiter.limit("30/minute")
 def admin_remove_agent(request: Request, event_id: int, agent_id: int, db: Session = Depends(get_db),
                        user: User = Depends(manager)):
-    ev, st = _load(db, event_id)
+    ev, st = _load(db, event_id, user)
     u = db.query(User).filter(User.id == agent_id, User.role == "agent", User.agent_event_id == ev.id).first()
     if not u:
         raise HTTPException(404, "Agent introuvable")
@@ -512,10 +577,24 @@ def admin_remove_agent(request: Request, event_id: int, agent_id: int, db: Sessi
 def admin_activate_pack(request: Request, event_id: int, data: OrderIn, db: Session = Depends(get_db),
                         user: User = Depends(get_current_admin)):
     """Commande figée : même calcul que le devis (cat.quote). Montant reçu ≥ total, ou « Pack offert »."""
-    ev, st = _load(db, event_id, lock=True)
+    ev, st = _load(db, event_id, user, lock=True)
     if st.purged_at:
         raise HTTPException(400, "Liste supprimée.")
-    p = cat.activate(db, ev, user, True, data.model_dump(), inv.channels(), request)
+    quote_obj = None
+    if data.quote_id:
+        from core import quotes as qt
+        quote_obj = qt.get_quote(db, data.quote_id, user, lock=True)
+        if quote_obj.status == "converti" or quote_obj.pack_id:
+            raise HTTPException(409, "Ce devis a déjà été converti.")
+        if quote_obj.event_id and quote_obj.event_id != ev.id:
+            raise HTTPException(400, "Ce devis est rattaché à un autre événement.")
+        if quote_obj.needs_admin and not quote_obj.validated_at:
+            raise HTTPException(400, "Devis à valider par l'administrateur avant l'activation.")
+        if quote_obj.status not in ("envoye", "accepte") or qt.effective_status(quote_obj) == "expire":
+            raise HTTPException(400, "Devis non activable (%s) : il doit être envoyé ou accepté, et valide."
+                                % qt.STATUS_LABELS.get(qt.effective_status(quote_obj), quote_obj.status))
+    owner = db.get(User, st.owner_id) if st.owner_id else None
+    p = cat.activate(db, ev, user, True, data.model_dump(), inv.channels(), request, quote_obj=quote_obj, owner=owner)
     return _pack_out(p)
 
 
@@ -527,10 +606,23 @@ def admin_cancel_pack(request: Request, pack_id: int, data: PackCancelIn, db: Se
     if not p or p.status != "actif":
         raise HTTPException(404, "Pack actif introuvable")
     p.status, p.cancelled_by, p.cancelled_at, p.cancel_reason = "annule", user.id, inv.utcnow(), data.reason.strip()
+    from core.sales import COMMISSION_SOURCE
+    from models.commission import Commission
+    com = (db.query(Commission).filter(Commission.source_type == COMMISSION_SOURCE, Commission.source_id == p.id)
+           .with_for_update().first())
+    paid_warning = None
+    if com and com.status in ("pending", "approved"):
+        com.status = "cancelled"
+        com.note = ("Pack annulé : %s" % data.reason.strip())[:500]
+    elif com and com.status == "paid":
+        paid_warning = "Commission déjà versée (%d FCFA) : à régulariser avec le commercial." % com.amount_fcfa
     db.commit()
     log_security_event(db, "invitation_pack_cancelled", request, user.id,
-                       "pack %d (event %d) : %s" % (p.id, p.event_id, data.reason[:150]))
-    return _pack_out(p)
+                       "pack %d (event %d) : %s%s" % (p.id, p.event_id, data.reason[:150],
+                                                       " · " + paid_warning if paid_warning else ""))
+    out = _pack_out(p)
+    out["commission_warning"] = paid_warning
+    return out
 
 
 @router.post("/admin/invitations/purge")
@@ -636,10 +728,13 @@ def public_track(request: Request, token: str, db: Session = Depends(get_db)):
 def _scanner_event(db: Session, event_id: int, user: User) -> Event:
     from api.tickets import _can_operate_event
     ev = inv.get_private_event(db, event_id)
-    if not (_can_operate_event(user, ev) or normalize_role(user.role) == "admin"
-            or (normalize_role(user.role) == "staff" and user.staff_function == "commercial")):
-        raise HTTPException(403, "Accès réservé aux agents de cet événement.")
-    return ev
+    if _can_operate_event(user, ev) or normalize_role(user.role) == "admin":
+        return ev
+    # Commercial : uniquement les événements de son portefeuille (lot 4.5)
+    if normalize_role(user.role) == "staff" and user.staff_function == "commercial" and not user.must_change_pin:
+        if inv.get_settings(db, ev.id).owner_id == user.id:
+            return ev
+    raise HTTPException(403, "Accès réservé aux agents de cet événement.")
 
 
 @router.get("/invitations/events/{event_id}/search")

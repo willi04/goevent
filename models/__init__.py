@@ -16,6 +16,7 @@ from models.audience_log import AudienceExportLog
 from models.site_content import SiteContent, SitePageRevision, FaqItem, ZoneBlock, SiteSetting
 from models.invitation import PrivateEventSettings, EventGuest, GuestCheckin, InvitationPack
 from models.invitation_catalog import InvFormula, InvPack, InvOption, InvDiscountCode, InvCatalogLog
+from models.invitation_quote import InvitationQuote, InvitationQuoteCounter
 
 
 __all__ = [
@@ -35,4 +36,5 @@ __all__ = [
     "SiteContent", "SitePageRevision", "FaqItem", "ZoneBlock", "SiteSetting",
     "PrivateEventSettings", "EventGuest", "GuestCheckin", "InvitationPack",
     "InvFormula", "InvPack", "InvOption", "InvDiscountCode", "InvCatalogLog",
+    "InvitationQuote", "InvitationQuoteCounter",
 ]

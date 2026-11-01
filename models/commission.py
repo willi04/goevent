@@ -24,16 +24,16 @@ class Commission(Base):
     beneficiary_user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
 
     # Source polymorphe : quel événement métier a généré cette commission
-    # source_type ∈ {'ticket', 'ad_contract', 'boost_visibility', 'fb_ads_pack'}
+    # source_type ∈ {'invitation_pack' (lot 4.5), 'ticket', 'ad_contract', 'boost_visibility', 'fb_ads_pack'}
     # source_id = id de la table correspondante (tickets.id, ad_contracts.id, etc.)
     # NB : pas de FK contrainte car polymorphe — l'intégrité est gérée applicativement.
     source_type = Column(String(50), nullable=False, index=True)
     source_id   = Column(Integer, nullable=False)
 
     # Montants
-    base_amount_fcfa   = Column(Float, nullable=False)  # montant brut sur lequel se calcule la commission
-    rate_applied       = Column(Float, nullable=False)  # taux appliqué (ex: 0.25 = 25%)
-    amount_fcfa        = Column(Float, nullable=False)  # commission effective = base × rate
+    base_amount_fcfa   = Column(Integer, nullable=False)  # montant (FCFA entiers) sur lequel se calcule la commission
+    rate_applied       = Column(Float, nullable=False)    # taux appliqué (ex: 0.25 = 25%)
+    amount_fcfa        = Column(Integer, nullable=False)  # commission effective = arrondi(base × rate)
 
     # Cycle de vie
     # status ∈ {'pending', 'approved', 'paid', 'cancelled'}
@@ -50,6 +50,8 @@ class Commission(Base):
     approved_by  = Column(Integer, ForeignKey("users.id"), nullable=True)
     paid_at      = Column(DateTime, nullable=True)
     paid_by      = Column(Integer, ForeignKey("users.id"), nullable=True)
+    period       = Column(String(7), nullable=True)       # AAAA-MM : mois de l'événement, posé à la clôture (lot 4.5)
+    paid_ref     = Column(String(80), nullable=True)      # référence du versement (Orange Money, reçu…)
 
     # Relations
     beneficiary = relationship("User", foreign_keys=[beneficiary_user_id])
@@ -60,4 +62,5 @@ class Commission(Base):
     __table_args__ = (
         Index("idx_commission_user_status", "beneficiary_user_id", "status"),
         Index("idx_commission_source", "source_type", "source_id"),
+        Index("uq_commissions_source", "source_type", "source_id", unique=True),  # une commission par vente
     )

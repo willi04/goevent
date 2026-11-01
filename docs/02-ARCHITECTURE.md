@@ -361,6 +361,14 @@ Les textes, images et liens des pages publiques sont modifiables depuis
   J-7), recettes par événement (prix des billets, hors frais acheteur).
   `POST /admin/events/{id}/deactivate` (motif 5-300, e-mail facultatif à
   l'organisateur) et `/reactivate` : admin seul, journalisés.
+- **Pages** (lot 5) : `event.html` (liste à vignette sur téléphone, grille sur
+  ordinateur, « À la une » via `/events?boosted_only=true`, liste en
+  `boost_first=false`, pub latérale à gauche ≥ 1280 px si un bloc est en
+  ligne) ; `event_detail.html` (barre « Réserver » + panneau sur téléphone,
+  agenda .ics, itinéraire, `GET /organizers/{id}/card` + Suivre,
+  `GET /events/{id}/related` : même organisateur → boost → même catégorie →
+  plus proches). Dates : l'API envoie `event_date` avec « +00:00 »
+  (`utils/serializers.utc_iso`), affichage à l'heure de Bangui.
 
 ### Flux 8 : Équipe commerciale — devis numérotés, portefeuilles, commissions (lot 4.5)
 

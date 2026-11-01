@@ -78,6 +78,26 @@ def get_organizers(db: Session = Depends(get_db), current_user: User = Depends(g
     return result
 
 
+@router.get("/organizers/{org_id}/card")
+def organizer_card(org_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_optional_user)):
+    """Bloc « Organisé par » de la fiche événement (lot 5) : une seule ligne, sans la liste complète."""
+    org = db.query(User).filter(User.id == org_id, User.role == "organizer").first()
+    if not org:
+        raise HTTPException(404, "Organisateur introuvable")
+    name = org.org_name or org.full_name or "Organisateur"
+    public = db.query(Event).filter(Event.organizer_id == org.id, Event.visibility == "public", Event.is_active == True)
+    return {
+        "id": org.id,
+        "name": name,
+        "initials": "".join(w[0] for w in name.split()[:2]).upper() or "GO",
+        "events_count": public.count(),
+        "upcoming_count": public.filter(Event.event_date >= datetime.utcnow()).count(),
+        "followers_count": db.query(Follower).filter(Follower.organizer_id == org.id).count(),
+        "is_followed": bool(current_user and db.query(Follower).filter(
+            Follower.user_id == current_user.id, Follower.organizer_id == org.id).first()),
+    }
+
+
 @router.post("/organizers/{org_id}/follow")
 def follow_organizer(org_id: int, db: Session = Depends(get_db),
                      current_user: User = Depends(get_current_user)):

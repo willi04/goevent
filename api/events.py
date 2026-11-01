@@ -192,6 +192,40 @@ def my_events(db: Session = Depends(get_db), current_user: User = Depends(get_cu
     } for e in events]
 
 
+@router.get("/events/{event_id}/related")
+def related_events(event_id: int, limit: int = Query(6, ge=1, le=12), db: Session = Depends(get_db)):
+    """« À découvrir aussi » (fiche, lot 5) : à venir uniquement, hors événement courant.
+    Ordre : même organisateur → mis en avant (boost) → même catégorie → les plus proches."""
+    from sqlalchemy.orm import joinedload
+    from models.promotion import BoostOrder
+    ev = db.query(Event).filter(Event.id == event_id, Event.visibility == "public").first()
+    if not ev:
+        raise HTTPException(404, "Événement introuvable")
+    now = datetime.utcnow()
+    base = (db.query(Event).options(joinedload(Event.organizer_user))
+            .filter(Event.visibility == "public", Event.is_active == True,
+                    Event.event_date >= now, Event.id != ev.id))
+    boosted = {r[0] for r in db.query(BoostOrder.event_id).filter(
+        BoostOrder.status == "actif", BoostOrder.ends_at > now).all()}
+    out, seen = [], set()
+
+    def take(query, reason):
+        for e in query.order_by(Event.event_date.asc()).limit(limit).all():
+            if len(out) < limit and e.id not in seen:
+                seen.add(e.id)
+                out.append((e, reason))
+
+    if ev.organizer_id:
+        take(base.filter(Event.organizer_id == ev.organizer_id), "organizer")
+    if boosted:
+        take(base.filter(Event.id.in_(boosted)), "boost")
+    label = canonical(ev.category)
+    if label:
+        take(base.filter(Event.category.in_(variants(label))), "category")
+    take(base, "soon")
+    return [dict(_event_dict(e, is_boosted=e.id in boosted), related_reason=r) for e, r in out]
+
+
 @router.get("/events/by-slug/{slug}")
 def get_event_by_slug(slug: str, db: Session = Depends(get_db)):
     from utils.slugs import slug_to_event_id

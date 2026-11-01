@@ -672,7 +672,7 @@ function btMobileBottomNav(activePage) {
   var user = btAuth.getUser();
   var tabs = [
     { key: "accueil",     href: "index.html",       icon: "home",      label: "Accueil" },
-    { key: "evenements",  href: "event.html",       icon: "stadium",   label: "Events" },
+    { key: "evenements",  href: "event.html",       icon: "stadium",   label: "Événements" },
     { key: "invitations", href: "invitations.html", icon: "qr_code_2", label: "Invitations" },
     { key: "partenaire",  href: "partenaire.html",  icon: "handshake", label: "Partenaires" },
     btAuth.isLogged()

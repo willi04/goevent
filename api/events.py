@@ -25,8 +25,9 @@ router = APIRouter()
 @router.get("/events")
 def list_events(
     # Bornes (lot 5) : page 0 → OFFSET négatif (500), limit libre → table entière.
+    # 50 max : l'accueil demande 50 événements, l'espace fan 30.
     page: int = Query(1, ge=1, le=500),
-    limit: int = Query(6, ge=1, le=24),
+    limit: int = Query(6, ge=1, le=50),   # accueil : 50, espace fan : 30
     sort_by: Optional[str] = "date_asc",
     q: Optional[str] = Query(None, max_length=80),
     categories: Optional[str] = Query(None, max_length=300),

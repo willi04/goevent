@@ -522,7 +522,7 @@
               <div class="relative h-48 overflow-hidden shrink-0">
                 <img class="w-full h-full object-cover ${isPast ? '' : 'transition-transform duration-500 group-hover:scale-110'}" src="${_btEscapeHtml(e.cover_image_url || "https://via.placeholder.com/600x400?text=GoEvent")}" onerror="this.src='https://via.placeholder.com/600x400?text=GoEvent'" alt="${_btEscapeHtml(e.title)}" />
                 <div class="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-primary shadow-sm">
-                  ${e.category || "Événement"}
+                  ${_btEscapeHtml(e.category || "Événement")}
                 </div>
                 ${boostBadge}
                 ${freeBadge}

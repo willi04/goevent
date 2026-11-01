@@ -244,7 +244,8 @@ bout en bout sans intervention, 1 retrait réussi, analyse des
   `goevent.africa/invitations?ref=CODE` (le code apparaît en fin de message
   WhatsApp). Prix : uniquement le catalogue.
 - **Bandeau d'annonce** : Contenu du site → Emplacements → « Toutes les
-  pages ». Une annonce = une ligne (titre seul sur mobile) ; dates et
+  pages ». Une annonce = une ligne ; trop longue pour l'écran, elle défile
+  (titre, texte et bouton, y compris sur mobile) ; dates et
   statistiques comme les autres emplacements ; modifier le texte la refait
   apparaître chez ceux qui l'avaient fermée.
 - **Catalogue** : Invitations → « Catalogue des packs » (admin : modifier ;

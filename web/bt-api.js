@@ -579,6 +579,7 @@ function btFooter() {
     "<div>" +
     '<h4 class="font-headline text-xs font-bold tracking-widest uppercase text-emerald-900 mb-6">Légal</h4>' +
     '<ul class="space-y-3 text-sm text-neutral-500 mb-6">' +
+    '<li><a href="mentions.html" class="hover:text-primary transition-colors">Mentions légales</a></li>' +
     '<li><a href="cgu.html" class="hover:text-primary transition-colors">Conditions Générales</a></li>' +
     '<li><a href="confidentialite.html" class="hover:text-primary transition-colors">Confidentialité</a></li>' +
     '<li><a href="remboursements.html" class="hover:text-primary transition-colors">Remboursements</a></li>' +
@@ -803,6 +804,7 @@ function btMobileDrawerSections() {
     logoutBlock +
     '<div class="mt-4 pt-3 px-2.5 border-t border-gray-100">' +
       '<div class="flex flex-wrap gap-x-3.5 gap-y-1 text-xs font-bold">' +
+        '<a href="mentions.html" class="text-gray-500 hover:text-primary">Mentions légales</a>' +
         '<a href="cgu.html" class="text-gray-500 hover:text-primary">CGU</a>' +
         '<a href="confidentialite.html" class="text-gray-500 hover:text-primary">Confidentialité</a>' +
       "</div>" +

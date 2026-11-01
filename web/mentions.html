@@ -1,0 +1,268 @@
+<!doctype html>
+<html class="light" lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+      name="viewport"
+    />
+    <title>Mentions légales — GoEvent</title>
+    <meta name="description" content="Mentions légales du site goevent.africa : éditeur (GoEvent SARLU), directeur de la publication, hébergement, propriété intellectuelle." />
+    <link rel="icon" type="image/png" href="icons/favicon.png" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#00502c" />
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              background: "#f9f9f9",
+              primary: "#00502c",
+              "primary-container": "#006b3c",
+              "surface-container-low": "#f3f3f3",
+              "surface-container": "#eeeeee",
+            },
+            fontFamily: {
+              display: ["Plus Jakarta Sans", "sans-serif"],
+              body: ["Manrope", "sans-serif"],
+              headline: ["Plus Jakarta Sans", "sans-serif"],
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      body {
+        font-family: "Manrope", sans-serif;
+        background: #f9f9f9;
+        color: #1a1c1c;
+      }
+      .legal-content h2 {
+        font-family: "Plus Jakarta Sans", sans-serif;
+        font-weight: 800;
+        font-size: 1.5rem;
+        color: #00502c;
+        margin-top: 2.5rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e8f5ee;
+      }
+      .legal-content h3 {
+        font-family: "Plus Jakarta Sans", sans-serif;
+        font-weight: 700;
+        font-size: 1.125rem;
+        color: #1a1c1c;
+        margin-top: 1.5rem;
+        margin-bottom: 0.75rem;
+      }
+      .legal-content p {
+        line-height: 1.7;
+        color: #3f4941;
+        margin-bottom: 1rem;
+      }
+      .legal-content ul {
+        list-style: disc;
+        padding-left: 1.5rem;
+        margin-bottom: 1rem;
+      }
+      .legal-content ul li {
+        line-height: 1.7;
+        color: #3f4941;
+        margin-bottom: 0.5rem;
+      }
+      .legal-content strong {
+        color: #00502c;
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body class="pt-14 md:pt-0 pb-24 md:pb-0">
+    <div id="navbar" class="hidden md:block shrink-0 z-40" ></div>
+    <!-- ============ HEADER MOBILE + DRAWER (composants centralisés bt-api.js) ============ -->
+    <header
+      class="md:hidden fixed top-0 left-0 right-0 h-14 bg-white/95 backdrop-blur border-b border-gray-100 z-40 flex items-center justify-between px-4 shadow-sm"
+    >
+      <a href="index.html" class="flex items-center gap-2 transition-opacity"
+        ><img
+          src="icons/event.png"
+          alt="Logo"
+          class="w-8 h-8 rounded-2xl shadow-sm"
+        /><span
+          class="text-xl font-bold tracking-tight bg-gradient-to-r from-emerald-900 to-emerald-700 bg-clip-text text-transparent font-headline"
+          >GoEvent</span
+        ></a
+      >
+      <button
+        onclick="toggleMobileMenu()"
+        class="p-2 text-gray-500 hover:text-primary rounded-full hover:bg-gray-50 transition-colors"
+      >
+        <span class="material-symbols-outlined" style="font-size: 32px">menu</span>
+      </button>
+    </header>
+
+    <!-- Drawer mobile -->
+    <div id="mobile-menu" class="md:hidden fixed inset-0 z-50 hidden opacity-0 transition-opacity duration-300">
+      <div class="absolute inset-0" onclick="toggleMobileMenu()"></div>
+      <div
+        id="mobile-drawer"
+        class="absolute right-0 top-0 bottom-0 w-[86%] max-w-[340px] rounded-l-3xl bg-white shadow-2xl transform translate-x-full transition-transform duration-[400ms] ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col px-4 py-4 overflow-y-auto overscroll-contain"
+      >
+        <!-- Header drawer : carte user (connecté) OU mini logo GoEvent (guest) -->
+        <div id="mobile-drawer-header" class="px-1 pb-4 border-b border-gray-100 flex items-center gap-3">
+          <!-- Peuplé par btMobileDrawerHeader() dans DOMContentLoaded -->
+        </div>
+
+        <nav id="mobile-drawer-links" class="flex-1" aria-label="Menu principal"></nav>
+
+        <div id="mobile-drawer-sections" class="mt-4 pt-4 border-t border-gray-100"></div>
+      </div>
+    </div>
+
+    <!-- Bottom nav mobile (composant centralisé bt-api.js) -->
+    <div id="bottom-nav-mobile"></div>
+
+    <main class="pt-28 pb-16 px-4 md:px-8 max-w-4xl mx-auto">
+      <!-- Hero -->
+      <div class="text-center mb-12">
+        <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-emerald-50 rounded-full mb-6">
+          <span class="material-symbols-outlined text-primary text-base">gavel</span>
+          <span class="text-xs font-bold text-primary uppercase tracking-wider" data-cms="mentions.001">Document légal</span>
+        </div>
+        <h1 class="text-4xl md:text-5xl font-black text-primary font-headline mb-4" data-cms="mentions.002">
+          Mentions légales
+        </h1>
+        <p class="text-neutral-500 text-sm" data-cms-page-date>
+          Dernière mise à jour : 1er novembre 2026
+        </p>
+      </div>
+
+      <!-- Contenu légal (remplacé par la version publiée depuis le back-office → Pages légales) -->
+      <div class="legal-content bg-white rounded-3xl p-8 md:p-12 shadow-sm" data-cms-page="mentions">
+        <h2>1. Éditeur du site</h2>
+        <p>
+          Le site goevent.africa et l'application GoEvent sont édités par <strong>GoEvent SARLU</strong>,
+          société à responsabilité limitée unipersonnelle au capital de 150&nbsp;000&nbsp;FCFA, immatriculée au
+          Registre du Commerce et du Crédit Mobilier de Bangui sous le numéro CA/BG/2026B2593, NIU en
+          cours d'attribution. Siège social : Avenue D. Dacko, à proximité du marché de Bimbo,
+          Bangui-Fleuve, République Centrafricaine. E-mail : goevent.africa@gmail.com · WhatsApp :
+          +236&nbsp;70&nbsp;06&nbsp;68&nbsp;52.
+        </p>
+
+        <h2>2. Directeur de la publication</h2>
+        <p>Monsieur Emmanuel MADOUKOU, gérant.</p>
+
+        <h2>3. Hébergement</h2>
+        <p>
+          Site web : Vercel Inc. (vercel.com). Serveur de l'application : Render Services, Inc.
+          (render.com). Base de données : Neon, Inc. (neon.tech), serveurs situés dans l'Union
+          européenne (Francfort, Allemagne).
+        </p>
+
+        <h2>4. Propriété intellectuelle</h2>
+        <p>
+          La marque GoEvent, le logo, les textes, le design et le code de la plateforme sont la
+          propriété de GoEvent SARLU. Toute reproduction sans autorisation écrite est interdite.
+        </p>
+
+        <h2>5. Données personnelles</h2>
+        <p>Voir la <a href="confidentialite.html" class="text-primary underline">Politique de Confidentialité</a>.</p>
+
+        <h2>6. Conditions d'utilisation</h2>
+        <p>Voir les <a href="cgu.html" class="text-primary underline">CGU</a>.</p>
+
+        <div class="mt-12 pt-8 border-t border-neutral-200 text-center">
+          <p class="text-xs text-neutral-400 italic">Version du 1er novembre 2026.</p>
+        </div>
+      </div>
+
+      <!-- Boutons retour -->
+      <div class="mt-10 flex flex-wrap gap-4 justify-center">
+        <a
+          href="cgu.html"
+          class="px-6 py-3 bg-white border-2 border-primary text-primary rounded-full font-bold text-sm hover:bg-emerald-50 transition-all"
+         data-cms="mentions.003">
+          → Conditions Générales d'Utilisation
+        </a>
+        <a
+          href="confidentialite.html"
+          class="px-6 py-3 bg-white border-2 border-primary text-primary rounded-full font-bold text-sm hover:bg-emerald-50 transition-all"
+         data-cms="mentions.004">
+          → Politique de Confidentialité
+        </a>
+        <a
+          href="index.html"
+          class="px-6 py-3 bg-gradient-to-r from-primary to-primary-container text-white rounded-full font-bold text-sm hover:scale-105 transition-all shadow-lg shadow-primary/20"
+         data-cms="mentions.005">
+          ← Retour à l'accueil
+        </a>
+      </div>
+    </main>
+
+    <div id="footer"></div>
+
+    <script src="bt-api.js?v=20261101"></script>
+    <script>
+      // Composants desktop
+      if (document.getElementById("navbar")) {
+        document.getElementById("navbar").innerHTML = btNavbar("");
+      }
+      if (document.getElementById("footer")) {
+        document.getElementById("footer").innerHTML = btFooter();
+      }
+
+      // Composants mobiles centralisés (bt-api.js)
+      if (typeof btMobileDrawerHeader === "function") {
+        var hdrEl = document.getElementById("mobile-drawer-header");
+        if (hdrEl) hdrEl.innerHTML = btMobileDrawerHeader();
+      }
+      if (typeof btMobileAuthSection === "function") {
+        var ctaEl = document.getElementById("mobile-drawer-auth-cta");
+        if (ctaEl) ctaEl.innerHTML = btMobileAuthSection();
+      }
+      if (typeof btMobileDrawerSections === "function") {
+        var drawerSecEl = document.getElementById("mobile-drawer-sections");
+        if (drawerSecEl) drawerSecEl.innerHTML = btMobileDrawerSections();
+      }
+      if (typeof btMobileBottomNav === "function") {
+        var bnEl = document.getElementById("bottom-nav-mobile");
+        if (bnEl) bnEl.innerHTML = btMobileBottomNav("");
+      }
+      // Liens du tiroir (composant centralisé bt-api.js, même liste que la navbar)
+      if (typeof btMobileDrawerLinks === "function") {
+        var dlEl = document.getElementById("mobile-drawer-links");
+        if (dlEl) dlEl.innerHTML = btMobileDrawerLinks("");
+      }
+
+      // Toggle drawer mobile
+      function toggleMobileMenu() {
+        const menu = document.getElementById("mobile-menu");
+        const drawer = document.getElementById("mobile-drawer");
+        if (menu.classList.contains("hidden")) {
+          menu.classList.remove("hidden");
+          setTimeout(() => {
+            menu.classList.remove("opacity-0");
+            drawer.classList.remove("translate-x-full");
+          }, 10);
+        } else {
+          menu.classList.add("opacity-0");
+          drawer.classList.add("translate-x-full");
+          setTimeout(() => {
+            menu.classList.add("hidden");
+          }, 300);
+        }
+      }
+    </script>
+      <!-- Contenu éditable depuis le back-office (après bt-api.js : réutilise BT_API) -->
+    <script src="cms.js?v=20261101" defer></script>
+</body>
+</html>

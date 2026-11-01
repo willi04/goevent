@@ -6,7 +6,7 @@
  *  • FAQ : questions/réponses du centre d'aide.
  *  • Emplacements : blocs (affiches, bannières partenaires, annonces, cartes)
  *    des zones fixes du site (core/zones.py), dates de diffusion, statistiques.
- *  • Pages légales (admin) : CGU, confidentialité, remboursements, avec historique.
+ *  • Pages légales (admin) : mentions légales, CGU, confidentialité, remboursements, avec historique.
  *  • Tarifs (admin) : source unique des prix affichés ET facturés (core/pricing.py).
  * Accès : capability content_manage (admin + CM) ; pages légales, tarifs et
  * montants affichés (FCFA) : admin uniquement (gardes serveur api/cms.py, api/zones.py).
@@ -21,9 +21,10 @@
     checkout: "event.html", a_propos: "a_propos.html", partenaire: "partenaire.html",
     centre_aide: "centre_aide.html", feedback: "feedback.html", follow: "follow.html",
     login: "login.html", signup: "signup.html", simulateur: "simulateur/",
-    cgu: "cgu.html", confidentialite: "confidentialite.html", remboursements: "remboursements.html",
+    mentions: "mentions.html", cgu: "cgu.html", confidentialite: "confidentialite.html", remboursements: "remboursements.html",
   };
   var LEGAL = [
+    { slug: "mentions", title: "Mentions légales" },
     { slug: "cgu", title: "Conditions Générales d'Utilisation" },
     { slug: "confidentialite", title: "Politique de Confidentialité" },
     { slug: "remboursements", title: "Politique de Remboursements" },

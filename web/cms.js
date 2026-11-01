@@ -391,7 +391,7 @@
   }
   // ── Bandeau d'annonce global (zone global.top) ─────────────────
   var TOPBAR_PAGES = ["", "index", "event", "event_detail", "follow", "partenaire", "a_propos", "centre_aide", "cgu",
-                      "confidentialite", "remboursements", "feedback", "login", "signup", "simulateur", "invitations"];
+                      "confidentialite", "remboursements", "mentions", "feedback", "login", "signup", "simulateur", "invitations"];
   var TOPBAR_DAYS = 7;
   function topbarAllowed() {
     var p = location.pathname.replace(/\/+$/, "");

@@ -619,6 +619,16 @@
 
         // Pré-remplissage depuis user connecté
         const user = btAuth.getUser();
+        // Achat réservé aux comptes fan (et admin) : l'API refuse les autres comptes (403)
+        if (user && ["fan", "admin"].indexOf(user.role) < 0) {
+          const form = document.getElementById("payment-form");
+          if (form) form.innerHTML = '<div class="bg-amber-50 border border-amber-200 rounded-2xl p-6 text-amber-900">' +
+            '<p class="font-black text-lg mb-2">Compte fan requis</p>' +
+            '<p class="text-sm">Les billets s\'achètent avec un compte fan. Votre compte actuel est un compte de travail ' +
+            '(organisateur, agent ou équipe). Déconnectez-vous puis connectez-vous avec votre compte fan, ou créez-en un.</p>' +
+            '<button type="button" onclick="btAuth.logout()" class="mt-4 px-5 py-3 rounded-xl bg-primary text-white font-bold">Me déconnecter</button></div>';
+          return;
+        }
         if (user) {
           if (nameInput && !nameInput.value) nameInput.value = user.full_name || user.name || "";
           if (emailInput && !emailInput.value) emailInput.value = user.email || "";

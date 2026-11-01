@@ -15,7 +15,7 @@ from fastapi import Request
 from core.limiter import PUBLIC_IP_CEILING, limiter, qr_hash_key, user_key
 
 from utils.serializers import utc_iso
-from core.orders import MAX_FREE_PER_ACCOUNT, assert_account_limit, assert_capacity
+from core.orders import MAX_FREE_PER_ACCOUNT, assert_account_limit, assert_can_buy, assert_capacity, assert_not_started
 from utils.locks import lock_event_for_booking
 from utils.promo import lock_promo_for_use, compute_discount
 from core import invitations
@@ -156,11 +156,10 @@ def reserve_free_ticket(request: Request,
                         background_tasks: BackgroundTasks,
                         db: Session = Depends(get_db),
                         current_user: User = Depends(get_current_user)):
+    assert_can_buy(current_user)          # comptes fan (et admin) uniquement
     # Verrou pessimiste + check quota atomique (anti-survente)
     event = lock_event_for_booking(db, data.event_id)
-
-    if event.event_date < datetime.utcnow():
-        raise HTTPException(400, "Événement déjà passé")
+    assert_not_started(event)
 
     # Anti-accaparement des places gratuites : 3 billets max par compte et par event
     # (lot 5.5 : jusqu'à 3 en une seule demande).

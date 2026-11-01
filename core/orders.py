@@ -7,6 +7,8 @@ par billet (remboursements et recettes restent calculés billet par billet).
 Montant : chaque billet = int(prix + frais) ; total = N × ce montant
 → le montant affiché au fan = montant envoyé à NGSER = somme des Payment.
 """
+from datetime import datetime
+
 from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -18,6 +20,22 @@ MAX_PER_ORDER = 5           # billets payants par commande
 MAX_PER_ACCOUNT = 10        # billets payants par compte et par événement (anti-revente)
 MAX_FREE_PER_ACCOUNT = 3    # billets gratuits par compte et par événement
 HELD = ("paye", "paye_cash", "en_attente_om")   # billets qui comptent dans les plafonds
+# Seuls les comptes fan achètent des billets (décision CTO 01/11/2026) ; admin : support.
+# Organisateurs, agents du scanner, staff : comptes de travail, jamais acheteurs
+# (ventes gonflées, « Complet » artificiel, mélange travail / achats).
+BUYER_ROLES = ("fan", "admin")
+NOT_A_BUYER = "Les billets s'achètent avec un compte fan. Connectez-vous avec votre compte fan (ou créez-en un) pour réserver."
+
+
+def assert_can_buy(user) -> None:
+    if (getattr(user, "role", None) or "") not in BUYER_ROLES:
+        raise HTTPException(403, NOT_A_BUYER)
+
+
+def assert_not_started(event: Event) -> None:
+    """Billetterie fermée dès l'heure de début (même règle que la fiche événement)."""
+    if event.event_date is None or event.event_date <= datetime.utcnow():
+        raise HTTPException(400, "Cet événement a déjà commencé : la billetterie est fermée.")
 
 
 def assert_capacity(event: Event, quantity: int) -> None:

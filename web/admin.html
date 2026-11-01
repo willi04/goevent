@@ -529,41 +529,8 @@
         </section>
 
         <!-- ── SECTION ÉVÉNEMENTS ── -->
-        <section id="section-events" class="section-hidden">
-          <div class="flex justify-between items-center mb-5">
-            <h2 class="text-xl font-black text-gray-900">
-              Gestion des événements
-            </h2>
-            <span id="events-count" class="badge badge-gray">0 événements</span>
-          </div>
-          <div class="card overflow-hidden">
-            <div class="overflow-x-auto">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Événement</th>
-                    <th>Organisateur</th>
-                    <th>Date</th>
-                    <th>Places</th>
-                    <th>Statut</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="events-tbody">
-                  <tr>
-                    <td colspan="6">
-                      <div class="empty-state">
-                        <span class="material-symbols-outlined"
-                          >hourglass_empty</span
-                        >Chargement...
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
+        <!-- ── SECTION ÉVÉNEMENTS (rendue par admin-events.js) ── -->
+        <section id="section-events" class="section-hidden"></section>
 
         <!-- ── SECTION UTILISATEURS ── -->
         <section id="section-users" class="section-hidden">
@@ -1685,64 +1652,8 @@
       }
 
       // ── ÉVÉNEMENTS ──────────────────────────────────────────────
-      async function loadEvents() {
-        const tbody = document.getElementById("events-tbody");
-        try {
-          const res = await btApi.get("/admin/events");
-          document.getElementById("events-count").textContent =
-            `${res.length} événements`;
-          if (!res.length) {
-            tbody.innerHTML =
-              '<tr><td colspan="6"><div class="empty-state"><span class="material-symbols-outlined">stadium</span>Aucun événement</div></td></tr>';
-            return;
-          }
-          tbody.innerHTML = res
-            .map(
-              (e) => `
-          <tr>
-            <td>
-              <p class="font-bold text-gray-900 max-w-[180px] truncate">${_btEscapeHtml(e.title)}</p>
-              <p class="text-[11px] text-gray-400">${_btEscapeHtml(e.category)}</p>
-            </td>
-            <td><span class="text-xs">${_btEscapeHtml(e.organizer) || "—"}</span></td>
-            <td><span class="text-xs">${e.event_date ? new Date(e.event_date).toLocaleDateString("fr-FR") : "—"}</span></td>
-            <td>
-              <span class="text-xs font-bold">${e.seats_sold}/${e.total_seats}</span>
-              <div class="w-16 h-1 bg-gray-100 rounded-full mt-1">
-                <div class="h-1 bg-green-500 rounded-full" style="width:${Math.min(100, (e.seats_sold / e.total_seats) * 100)}%"></div>
-              </div>
-            </td>
-            <td><span class="badge ${e.is_active ? "badge-green" : "badge-gray"}">${e.is_active ? "Actif" : "Inactif"}</span></td>
-            <td>
-              <div class="flex gap-2">
-                <button onclick="toggleEvent(${e.id}, ${e.is_active})" class="action-btn ${e.is_active ? "btn-danger" : "btn-success"} text-xs">
-                  ${e.is_active ? "Désactiver" : "Activer"}
-                </button>
-              </div>
-            </td>
-          </tr>
-        `,
-            )
-            .join("");
-        } catch (e) {
-          tbody.innerHTML =
-            '<tr><td colspan="6" class="text-center text-red-500 py-8 text-sm">Erreur de chargement</td></tr>';
-        }
-      }
-
-      async function toggleEvent(id, isActive) {
-        const action = isActive ? "désactiver" : "activer";
-        if (!confirm(`Confirmer : ${action} cet événement ?`)) return;
-        try {
-          await btApi.put(`/admin/events/${id}`, { is_active: !isActive });
-          btToast(
-            `Événement ${action === "désactiver" ? "désactivé" : "activé"}`,
-            "success",
-          );
-          loadEvents();
-        } catch (e) {
-          btToast(e.message, "error");
-        }
+      function loadEvents() {
+          if (window.adminEvents) window.adminEvents.load();
       }
 
       // ── UTILISATEURS ────────────────────────────────────────────
@@ -3532,5 +3443,6 @@
       <!-- Back-office « Contenu du site » (textes, images, FAQ, pages légales) -->
     <script src="admin-cms.js"></script>
     <script src="admin-invitations.js"></script>
+    <script src="admin-events.js?v=20261102"></script>
 </body>
 </html>

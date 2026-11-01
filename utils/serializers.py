@@ -3,7 +3,17 @@ utils/serializers.py
 Sérialiseurs partagés entre routeurs : transforment les objets SQLAlchemy
 en dicts JSON propres et légers pour le frontend.
 """
+from datetime import timezone
+
 from utils.slugs import event_id_to_slug
+
+
+def utc_iso(dt):
+    """Date stockée en UTC naïf → ISO avec fuseau (« +00:00 »).
+    Sans fuseau, le navigateur la lisait comme heure locale : 1 h d'avance perdue à Bangui."""
+    if dt is None:
+        return None
+    return (dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)).isoformat()
 
 
 def _event_dict(e, include_organizer=True, is_boosted=False):
@@ -35,7 +45,7 @@ def _event_dict(e, include_organizer=True, is_boosted=False):
         "location": e.location,
         "category": e.category,
         "visibility": getattr(e, "visibility", "public") or "public",
-        "event_date": e.event_date,
+        "event_date": utc_iso(e.event_date),
         "price": e.price,
         "total_seats": e.total_seats,
         "seats_available": e.total_seats - e.seats_sold,

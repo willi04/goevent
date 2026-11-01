@@ -78,7 +78,7 @@ class Settings(BaseSettings):
     SENDER_PASSWORD: str = ""
 
     # ── INVITATIONS ─────────────────────────────────────────────
-    # Canaux de paiement actifs (Ecobank : à ajouter à l'ouverture du compte)
+    # Canaux de paiement actifs (BPMC : à ajouter à l'ouverture du compte)
     INVITATION_CHANNELS_ACTIVE: str = "especes_recu,orange_money_goevent"
     # Domaine des liens de pass (QR) et de suivi
     PUBLIC_SITE_URL: str = "https://goevent.africa"

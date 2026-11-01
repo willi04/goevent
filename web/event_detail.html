@@ -976,9 +976,9 @@
               return `
                   <div onclick="window.location.href='event_detail.html?id=${e.id}'" class="bg-white rounded-[2rem] p-3 shadow-sm border border-gray-100 hover:shadow-xl hover:border-primary/30 transition-all duration-300 cursor-pointer group flex flex-col">
                       <div class="relative h-48 rounded-2xl overflow-hidden mb-4 shrink-0">
-                          <img src="${imgUrl}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                          <img src="${_btEscapeHtml(imgUrl)}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                           <div class="absolute top-3 left-3 bg-white/95 backdrop-blur px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-primary shadow-sm">
-                              ${e.category || "Événement"}
+                              ${_btEscapeHtml(e.category || "Événement")}
                           </div>
                           ${soldOutBadge}
                       </div>

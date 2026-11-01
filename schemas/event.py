@@ -1,6 +1,22 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from pydantic import BaseModel, Field, field_validator
+import re
+
+# Rendus tels quels dans les cartes publiques (accueil, événements, fiche) :
+# aucun caractère HTML dans la catégorie, aucune sortie d'attribut dans l'URL d'image.
+_CATEGORY_BAD = re.compile(r"[<>\"'`&\\]")
+_IMAGE_HTTP = re.compile(r"^https?://[^\s\"'<>`\\]+$")
+_IMAGE_DATA = re.compile(r"^data:image/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=\r\n]+$")
+
+
+def _clean_category(v):
+    if v is None:
+        return v
+    v = v.strip()
+    if not v or _CATEGORY_BAD.search(v):
+        raise ValueError("Catégorie invalide")
+    return v
 
 
 class EventCreate(BaseModel):
@@ -31,9 +47,14 @@ class EventCreate(BaseModel):
     def validate_image_url(cls, v):
         if v is None:
             return v
-        if not v.startswith(("https://", "http://", "data:image/")):
+        if not (_IMAGE_HTTP.match(v) or _IMAGE_DATA.match(v)):
             raise ValueError("Format image invalide")
         return v
+
+    @field_validator("category")
+    @classmethod
+    def validate_category(cls, v):
+        return _clean_category(v)
 
     @field_validator("description")
     @classmethod
@@ -96,3 +117,8 @@ class EventUpdate(BaseModel):
     @classmethod
     def validate_image_url(cls, v):
         return EventCreate.validate_image_url(v)
+
+    @field_validator("category")
+    @classmethod
+    def validate_category(cls, v):
+        return _clean_category(v)

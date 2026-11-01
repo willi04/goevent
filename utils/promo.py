@@ -52,6 +52,7 @@ def lock_promo_for_use(
     tier_name: Optional[str],
     code: str,
     organizer_id: int,
+    quantity: int = 1,
 ) -> PromoCode:
     """
     Verrou pessimiste + revalidation atomique des 7 checks.
@@ -79,8 +80,11 @@ def lock_promo_for_use(
     _assert_promo_applicable(promo, event_id, tier_name)
 
     # Quota global (revalidé à l'intérieur du verrou)
-    if promo.max_uses_global is not None and promo.used_count >= promo.max_uses_global:
-        raise HTTPException(409, "Ce code promo est épuisé")
+    if promo.max_uses_global is not None and promo.used_count + quantity > promo.max_uses_global:
+        left = max(0, promo.max_uses_global - promo.used_count)
+        if not left:
+            raise HTTPException(409, "Ce code promo est épuisé")
+        raise HTTPException(409, "Ce code promo ne couvre plus que %d billet(s) : réduisez la quantité." % left)
 
     # Quota par user : count des usages reserved/confirmed (pas released)
     used_by_user = (
@@ -92,8 +96,11 @@ def lock_promo_for_use(
         )
         .scalar()
     ) or 0
-    if used_by_user >= promo.max_uses_per_user:
-        raise HTTPException(409, "Vous avez déjà utilisé ce code promo")
+    if used_by_user + quantity > promo.max_uses_per_user:
+        left = max(0, promo.max_uses_per_user - used_by_user)
+        if not left:
+            raise HTTPException(409, "Vous avez déjà utilisé ce code promo")
+        raise HTTPException(409, "Ce code promo est limité à %d billet(s) pour vous : réduisez la quantité." % left)
 
     return promo
 

@@ -1148,6 +1148,46 @@
           .join("");
       }
 
+      // Lot 5.5 : actions sur un billet (prénom, envoi WhatsApp, nouveau lien) — liaison unique
+      function bindTicketActions(container) {
+        if (container._ticketActions) return;
+        container._ticketActions = true;
+        const find = (id) => (window._mesBillets || []).find((x) => String(x.ticket_id) === String(id));
+        container.addEventListener("change", async (ev) => {
+          const input = ev.target.closest("[data-holder]");
+          if (!input) return;
+          try {
+            const r = await btApi.patch(`/tickets/${input.dataset.holder}/holder`, { holder_label: input.value });
+            const t = find(input.dataset.holder); if (t) t.holder_label = r.holder_label;
+            btToast(r.holder_label ? `Billet attribué à ${r.holder_label}` : "Prénom retiré", "success");
+          } catch (e) { btToast(e.message || "Erreur", "error"); }
+        });
+        container.addEventListener("click", async (ev) => {
+          const send = ev.target.closest("[data-send]");
+          const re = ev.target.closest("[data-reissue]");
+          if (send) {
+            const t = find(send.dataset.send); if (!t) return;
+            const link = `https://goevent.africa/ticket_view.html?qr_hash=${encodeURIComponent(t.qr_hash)}`;
+            const when = t.event_date ? new Date(t.event_date).toLocaleString("fr-FR", { timeZone: "Africa/Bangui", weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }).replace(":", "h") : "";
+            const msg = (t.holder_label ? `Bonjour ${t.holder_label} !\n` : "") +
+              `🎟️ Ton billet pour ${t.event_title}\n` + (when ? `📅 ${when}\n` : "") + (t.event_location ? `📍 ${t.event_location}\n` : "") +
+              `\n${link}\n\nOuvre le lien et présente le QR code à l'entrée. Ne le transfère pas : un billet = une entrée.`;
+            window.open("https://api.whatsapp.com/send?text=" + encodeURIComponent(msg), "_blank", "noopener");
+            try { await btApi.post(`/tickets/${t.ticket_id}/shared`, {}); t.shared_at = new Date().toISOString(); } catch (e) { /* l'envoi reste possible */ }
+            const card = container.querySelector(`[data-ticket="${t.ticket_id}"] span.rounded-full`);
+            if (card && !t.is_used) { card.textContent = "Envoyé"; card.className = "bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shrink-0"; }
+          } else if (re) {
+            if (!window.confirm("Créer un nouveau lien pour ce billet ?\n\nL'ancien lien (et son QR code) ne permettra plus d'entrer. Utile si le billet a été envoyé à la mauvaise personne.")) return;
+            re.disabled = true;
+            try {
+              await btApi.post(`/tickets/${re.dataset.reissue}/reissue`, {});
+              btToast("Nouveau lien créé : l'ancien ne fonctionne plus. Renvoyez le billet.", "success");
+              chargerMesBillets();
+            } catch (e) { btToast(e.message || "Erreur", "error"); re.disabled = false; }
+          }
+        });
+      }
+
       async function chargerMesBillets() {
         const container = document.getElementById("tickets-container");
         if (!container) return;
@@ -1174,69 +1214,77 @@
             return;
           }
 
+          // Lot 5.5 : billets regroupés par commande ; chaque billet s'envoie à la personne concernée
+          const TZ = "Africa/Bangui";
+          const dateLabel = (iso) => iso ? new Date(iso).toLocaleString("fr-FR", { timeZone: TZ, weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).replace(":", "h") : "";
+          const nb = (n) => String(Math.round(n || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+          let lastOrder = null;
           container.innerHTML = billetsActifs
             .map((b) => {
-              // 🔧 Reconnaître tous les statuts qui doivent afficher un QR
               const isPaidOnline = b.payment_status === "paye";
               const isPaidCash = b.payment_status === "paye_cash";
               const showQrCode = isPaidOnline || isPaidCash;
-      
               // QR généré localement (bt-api.js → btRenderQr) : le qr_hash ne part chez aucun tiers
               const qrValue = showQrCode ? _btEscapeHtml(b.qr_hash) : "";
-      
-              // 🔧 Badge selon le statut
-              let badgeClass = "bg-gray-100 text-gray-700";
-              let badgeText = "Inconnu";
-              let qrCaption = "Présentez ce code à l'entrée";
-              let qrHeader = "";
-      
-              if (isPaidOnline) {
-                badgeClass = "bg-green-100 text-green-700";
-                badgeText = "Billet Valide";
-                qrCaption = "Présentez ce code à l'entrée";
-              } else if (isPaidCash) {
-                badgeClass = "bg-green-100 text-green-700";
-                badgeText = "Payé Cash";
-                qrCaption = "Cash encaissé. Présentez ce code à l'entrée";
+              const multi = (b.order_size || 1) > 1;
+              let header = "";
+              if (multi && b.order_ref !== lastOrder) {
+                header = `<div class="mb-3 mt-2 px-1">
+                    <p class="text-[11px] font-black uppercase tracking-widest text-primary">Commande de ${b.order_size} billets</p>
+                    <p class="text-xs text-gray-500">Un billet = une entrée : envoyez chaque billet à la personne concernée.</p>
+                  </div>`;
               }
-      
-              return `
-                <div class="bg-white p-6 rounded-[2.5rem] mb-6 border border-gray-100 shadow-sm relative overflow-hidden">
-                  <div class="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 class="font-black text-xl text-gray-900">${_btEscapeHtml(b.event_title)}</h3>
-                      <p class="text-sm font-bold text-gray-500 mt-1">📍 ${_btEscapeHtml(b.event_location) || "Lieu à confirmer"}</p>
+              lastOrder = b.order_ref;
+              const state = !showQrCode ? ["Paiement en cours", "bg-orange-100 text-orange-700"]
+                : b.is_used ? ["Scanné à l'entrée", "bg-gray-900 text-white"]
+                : b.shared_at ? ["Envoyé", "bg-blue-100 text-blue-800"]
+                : multi ? ["À envoyer", "bg-amber-100 text-amber-800"] : ["Billet valide", "bg-green-100 text-green-700"];
+              const label = [multi ? `Billet ${b.order_index} sur ${b.order_size}` : "", b.tier_name || ""].filter(Boolean).join(" · ");
+              const actions = showQrCode && !b.is_used ? `
+                  <div class="mt-4 space-y-2">
+                    <label class="flex items-center gap-2 bg-gray-50 rounded-2xl px-3 py-2 border border-gray-100">
+                      <span class="text-xs font-bold text-gray-500 shrink-0">Pour :</span>
+                      <input type="text" maxlength="40" value="${_btEscapeHtml(b.holder_label || "")}" placeholder="prénom (facultatif)"
+                        data-holder="${b.ticket_id}" class="flex-1 min-w-0 bg-transparent border-none p-0 text-sm font-bold focus:ring-0" />
+                    </label>
+                    <div class="grid grid-cols-2 gap-2">
+                      <button type="button" data-send="${b.ticket_id}" class="py-3 rounded-2xl bg-[#25D366] text-white font-bold text-sm flex items-center justify-center gap-1.5">
+                        <span class="material-symbols-outlined text-base">send</span> Envoyer
+                      </button>
+                      <button type="button" data-reissue="${b.ticket_id}" class="py-3 rounded-2xl bg-gray-100 text-gray-700 font-bold text-xs">
+                        Nouveau lien
+                      </button>
                     </div>
-                    <span class="${badgeClass} px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
-                      ${badgeText}
-                    </span>
+                  </div>` : "";
+              return `${header}
+                <div class="bg-white p-6 rounded-[2.5rem] mb-4 border ${multi ? "border-primary/20" : "border-gray-100"} shadow-sm relative overflow-hidden" data-ticket="${b.ticket_id}">
+                  <div class="flex justify-between items-start gap-3 mb-3">
+                    <div class="min-w-0">
+                      <h3 class="font-black text-xl text-gray-900 leading-tight">${_btEscapeHtml(b.event_title)}</h3>
+                      <p class="text-sm font-bold text-gray-500 mt-1">📍 ${_btEscapeHtml(b.event_location) || "Lieu à confirmer"}</p>
+                      <p class="text-xs font-bold text-primary mt-1">${_btEscapeHtml(dateLabel(b.event_date))}</p>
+                    </div>
+                    <span class="${state[1]} px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shrink-0">${state[0]}</span>
                   </div>
-      
-                  <div class="flex items-center gap-3 text-gray-900 font-black text-lg mb-6">
-                    <span class="material-symbols-outlined text-gray-400">payments</span>
-                    ${b.price.toLocaleString("fr-FR")} FCFA
+                  <div class="flex items-center justify-between text-gray-900 mb-4">
+                    <span class="text-sm font-bold text-gray-500">${_btEscapeHtml(label)}</span>
+                    <span class="font-black">${nb(b.price)} FCFA</span>
                   </div>
-      
-                  ${qrHeader}
-      
                   ${showQrCode
-                    ? `
-                      <div class="bg-gray-50 rounded-3xl p-6 flex flex-col items-center border border-dashed border-gray-200">
+                    ? `<div class="bg-gray-50 rounded-3xl p-6 flex flex-col items-center border border-dashed border-gray-200">
                         <img data-bt-qr="${qrValue}" data-bt-qr-size="320" class="w-40 h-40 mb-4 rounded-xl shadow-inner bg-white p-2" alt="QR Code" />
                         <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">ID: ${b.qr_hash.substring(0, 8)}</p>
-                        <p class="text-xs font-bold text-primary mt-2">${qrCaption}</p>
-                      </div>
-                    `
-                    : `
-                      <div class="bg-orange-50/50 rounded-3xl p-8 text-center border border-dashed border-orange-200">
+                        <p class="text-xs font-bold text-primary mt-2">${b.holder_label ? "Pass de " + _btEscapeHtml(b.holder_label) : "Présentez ce code à l'entrée"}</p>
+                      </div>`
+                    : `<div class="bg-orange-50/50 rounded-3xl p-8 text-center border border-dashed border-orange-200">
                         <p class="text-sm font-bold text-gray-800">Finalisez votre achat pour obtenir votre QR Code</p>
-                      </div>
-                    `
-                  }
-                </div>
-              `;
+                      </div>`}
+                  ${actions}
+                </div>`;
             })
             .join("");
+          window._mesBillets = billetsActifs;
+          bindTicketActions(container);
         } catch (e) {
           container.innerHTML = `<div class="bg-red-50 p-4 rounded-xl text-red-600 font-bold text-sm text-center">Erreur de chargement</div>`;
         }

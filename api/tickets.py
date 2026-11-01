@@ -5,7 +5,7 @@ Paiement en ligne uniquement (Orange Money via api/payments.py) — le flux
 cash payant (réservation / encaissement / annulation) est supprimé (oct. 2026).
 """
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -15,6 +15,7 @@ from fastapi import Request
 from core.limiter import PUBLIC_IP_CEILING, limiter, qr_hash_key, user_key
 
 from utils.serializers import utc_iso
+from core.orders import MAX_FREE_PER_ACCOUNT, assert_account_limit, assert_capacity
 from utils.locks import lock_event_for_booking
 from utils.promo import lock_promo_for_use, compute_discount
 from core import invitations
@@ -24,7 +25,8 @@ from models.event import Event
 from models.ticket import Ticket
 from models.user import User
 from models.promo import PromoUsage
-from schemas.ticket import ScanTicket, CashReservation
+from schemas.ticket import ScanTicket, CashReservation, HolderIn
+from utils.slugs import event_id_to_slug
 
 router = APIRouter()
 
@@ -35,22 +37,92 @@ def my_tickets(db: Session = Depends(get_db), current_user: User = Depends(get_c
     tickets = (
         db.query(Ticket)
         .filter(Ticket.user_id == current_user.id)
-        .order_by(Ticket.purchased_at.desc())
+        .order_by(Ticket.purchased_at.desc(), Ticket.id)
         .all()
     )
+    # Commande de N billets (lot 5.5) : rang « 2 sur 4 » au sein du même payment_ref
+    orders = {}
+    for t in sorted(tickets, key=lambda x: x.id):
+        orders.setdefault(t.payment_ref or "t%d" % t.id, []).append(t.id)
     return [{
         "ticket_id": t.id,
         "qr_hash": t.qr_hash,
         "payment_status": t.payment_status,
         "payment_method": t.payment_method,
+        "event_id": t.event_id,
         "event_title": t.event.title if t.event else "",
         "event_date": utc_iso(t.event.event_date) if t.event else None,
         "event_location": t.event.location if t.event else "",
         "price": t.cash_amount if t.cash_amount else (t.event.price if t.event else 0),
         "is_used": t.is_used,
+        "used_at": t.used_at,
         "purchased_at": t.purchased_at,
         "failure_reason": t.failure_reason,
+        "order_ref": t.payment_ref,
+        "order_size": len(orders[t.payment_ref or "t%d" % t.id]),
+        "order_index": orders[t.payment_ref or "t%d" % t.id].index(t.id) + 1,
+        "tier_name": t.tier_name,
+        "holder_label": t.holder_label,
+        "shared_at": t.shared_at,
     } for t in tickets]
+
+
+# ── ENVOI DES BILLETS D'UNE COMMANDE (lot 5.5) ──────────────────
+def _my_ticket(db: Session, ticket_id: int, user: User, lock: bool = False) -> Ticket:
+    q = db.query(Ticket).filter(Ticket.id == ticket_id, Ticket.user_id == user.id)
+    if lock:
+        q = q.with_for_update()
+    t = q.first()
+    if not t:
+        raise HTTPException(404, "Billet introuvable")
+    return t
+
+
+@router.patch("/tickets/{ticket_id}/holder")
+@limiter.limit("60/minute", key_func=user_key)
+def set_ticket_holder(request: Request, ticket_id: int, data: HolderIn, db: Session = Depends(get_db),
+                      current_user: User = Depends(get_current_user)):
+    """Prénom facultatif « Pour : … » (affiché sur le pass, jamais contrôlé à l'entrée)."""
+    t = _my_ticket(db, ticket_id, current_user, lock=True)
+    label = " ".join("".join(ch for ch in (data.holder_label or "") if ord(ch) >= 32).split())[:40]
+    t.holder_label = label or None
+    db.commit()
+    return {"ticket_id": t.id, "holder_label": t.holder_label}
+
+
+@router.post("/tickets/{ticket_id}/shared")
+@limiter.limit("60/minute", key_func=user_key)
+def mark_ticket_shared(request: Request, ticket_id: int, db: Session = Depends(get_db),
+                       current_user: User = Depends(get_current_user)):
+    """Marque le billet « envoyé » (bouton WhatsApp de « Mes billets »)."""
+    t = _my_ticket(db, ticket_id, current_user, lock=True)
+    if t.payment_status not in ("paye", "paye_cash"):
+        raise HTTPException(409, "Billet non validé : rien à envoyer.")
+    t.shared_at = datetime.utcnow()
+    db.commit()
+    return {"ticket_id": t.id, "shared_at": t.shared_at}
+
+
+@router.post("/tickets/{ticket_id}/reissue")
+@limiter.limit("10/minute", key_func=user_key)
+def reissue_ticket(request: Request, ticket_id: int, db: Session = Depends(get_db),
+                   current_user: User = Depends(get_current_user)):
+    """« Renvoyer un nouveau lien » : nouveau QR, l'ancien lien ne permet plus d'entrer.
+    Seulement si le billet est payé, pas encore scanné et l'événement pas terminé."""
+    t = _my_ticket(db, ticket_id, current_user, lock=True)
+    if t.payment_status not in ("paye", "paye_cash"):
+        raise HTTPException(409, "Billet non validé.")
+    if t.is_used:
+        raise HTTPException(409, "Billet déjà scanné à l'entrée : impossible de le remplacer.")
+    if t.event and t.event.event_date and t.event.event_date < datetime.utcnow() - timedelta(hours=6):
+        raise HTTPException(409, "Événement terminé.")
+    old = t.qr_hash
+    t.qr_hash = str(uuid.uuid4())
+    t.shared_at = None
+    db.commit()
+    log_security_event(db, "ticket_reissued", request, current_user.id,
+                       "billet #%d · ancien QR %s… remplacé" % (t.id, (old or "")[:8]))
+    return {"ticket_id": t.id, "qr_hash": t.qr_hash}
 
 
 @router.get("/tickets/paid")
@@ -90,14 +162,11 @@ def reserve_free_ticket(request: Request,
     if event.event_date < datetime.utcnow():
         raise HTTPException(400, "Événement déjà passé")
 
-    # Anti-accaparement des places gratuites : 3 billets max par compte et par event.
-    nb_billets = db.query(Ticket).filter(
-        Ticket.user_id == current_user.id,
-        Ticket.event_id == event.id,
-        Ticket.payment_status.in_(["paye", "paye_cash"]),
-    ).count()
-    if nb_billets >= 3:
-        raise HTTPException(400, "Vous avez atteint la limite de 3 billets pour cet événement.")
+    # Anti-accaparement des places gratuites : 3 billets max par compte et par event
+    # (lot 5.5 : jusqu'à 3 en une seule demande).
+    qty = data.quantity
+    assert_capacity(event, qty)
+    assert_account_limit(db, current_user.id, event.id, qty, MAX_FREE_PER_ACCOUNT, ("paye", "paye_cash"))
 
     prix_base = float(event.price)
     if data.tier_name and event.ticket_tiers:
@@ -120,6 +189,7 @@ def reserve_free_ticket(request: Request,
             tier_name=data.tier_name,
             code=data.promo_code,
             organizer_id=event.organizer_id,
+            quantity=qty,
         )
         discount_fcfa = compute_discount(promo_obj, prix_base)
         prix_base = max(0.0, prix_base - discount_fcfa)
@@ -132,33 +202,38 @@ def reserve_free_ticket(request: Request,
     if data.email and not current_user.email:
         current_user.email = data.email
 
-    new_ticket = Ticket(
+    order_ref = f"FREE-{uuid.uuid4().hex[:8].upper()}"
+    tickets = [Ticket(
         event_id=event.id,
         user_id=current_user.id,
         payment_status="paye",
         payment_method="gratuit",
-        payment_ref=f"FREE-{uuid.uuid4().hex[:8].upper()}",
+        payment_ref=order_ref,
         cash_amount=0,
-    )
-    db.add(new_ticket)
-    event.seats_sold += 1  # sous verrou lock_event_for_booking
-    db.flush()  # new_ticket.id avant la PromoUsage
+        tier_name=data.tier_name if data.tier_name and event.ticket_tiers else None,
+    ) for _ in range(qty)]
+    db.add_all(tickets)
+    event.seats_sold += qty  # sous verrou lock_event_for_booking
+    db.flush()  # ids avant les PromoUsage
 
     if promo_obj:
-        db.add(PromoUsage(
-            promo_id=promo_obj.id,
-            user_id=current_user.id,
-            ticket_id=new_ticket.id,
-            discount_fcfa=discount_fcfa,
-            status="confirmed",
-        ))
-        promo_obj.used_count += 1
+        for t in tickets:
+            db.add(PromoUsage(
+                promo_id=promo_obj.id,
+                user_id=current_user.id,
+                ticket_id=t.id,
+                discount_fcfa=discount_fcfa,
+                status="confirmed",
+            ))
+        promo_obj.used_count += qty
 
     db.commit()
-    db.refresh(new_ticket)
+    for t in tickets:
+        db.refresh(t)
+    new_ticket = tickets[0]
 
     log_security_event(db, "free_ticket", None, current_user.id,
-                       f"Billet gratuit événement {event.id}" + (f" (promo {promo_obj.id})" if promo_obj else ""))
+                       f"{qty} billet(s) gratuit(s) événement {event.id}" + (f" (promo {promo_obj.id})" if promo_obj else ""))
     if current_user.email:
         background_tasks.add_task(
             envoyer_billet_email,
@@ -167,12 +242,15 @@ def reserve_free_ticket(request: Request,
             ticket=new_ticket,
             event=event,
             amount=0,
+            tickets=tickets,
         )
 
     return {
         "success": True,
         "message": "Billet gratuit confirmé.",
         "ticket_id": new_ticket.id,
+        "ticket_ids": [t.id for t in tickets],
+        "quantity": qty,
         "qr_hash": new_ticket.qr_hash,
         "amount_to_pay": 0,
         "event_title": event.title,
@@ -329,8 +407,16 @@ def view_ticket_public(request: Request, qr_hash: str, db: Session = Depends(get
 
     event = db.query(Event).filter(Event.id == ticket.event_id).first()
 
+    same = [x[0] for x in db.query(Ticket.id).filter(Ticket.payment_ref == ticket.payment_ref).order_by(Ticket.id).all()] \
+        if ticket.payment_ref else [ticket.id]
     return {
         "qr_hash": ticket.qr_hash,
+        "event_id": event.id if event else None,
+        "event_slug": event_id_to_slug(event.id) if event else None,
+        "tier_name": ticket.tier_name,
+        "holder_label": ticket.holder_label,
+        "order_index": same.index(ticket.id) + 1 if ticket.id in same else 1,
+        "order_size": len(same),
         "event_title": event.title if event else None,
         "event_date": utc_iso(event.event_date) if event else None,
         "event_location": event.location if event else None,

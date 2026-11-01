@@ -12,6 +12,7 @@ from core.limiter import limiter
 
 from utils.locks import lock_event_for_booking, lock_event_for_release
 from utils.promo import lock_promo_for_use, compute_discount, release_promo_usage
+from core.orders import MAX_PER_ACCOUNT, assert_account_limit, assert_capacity, unit_total
 from core.database import get_db
 from core.security import get_current_user
 from core.ngser import create_payment_session, check_payment_status
@@ -35,29 +36,37 @@ async def initiate_ngser_payment(
     current_user: User = Depends(get_current_user),
 ):
     """
-    1. Verrou pessimiste + check quota + PRÉ-RÉSERVATION (seats_sold += 1)
-    2. Création ticket 'en_attente_om' + payment 'pending'
-    3. Appel NGSER pour le lien de paiement
-    4. Si NGSER échoue → libère la place
-    Note : si l'utilisateur abandonne sans payer, la place reste réservée
-    jusqu'au cron de réconciliation (P1) qui libère les en_attente_om > 15min.
+    Commande de N billets (1 à MAX_PER_ORDER, lot 5.5), UN seul paiement NGSER.
+    1. Verrou pessimiste + check quota N places + plafond par compte
+    2. N tickets 'en_attente_om' + N payments 'pending', même order_id (payment_ref)
+    3. PRÉ-RÉSERVATION : seats_sold += N avant l'appel NGSER
+    4. Si NGSER échoue → libère les N places
+    Abandon sans payer : places libérées par la réconciliation (> 15 min / 24 h).
     """
+    qty = data.quantity
     # 1. Verrou + check quota atomique (P0 anti-survente)
     event = lock_event_for_booking(db, data.event_id)
+    assert_capacity(event, qty)
+    assert_account_limit(db, current_user.id, event.id, qty, MAX_PER_ACCOUNT)
 
-   # 2. Prix (tier éventuel)
+    # 2. Prix (tier éventuel ; un tarif inconnu n'est plus remplacé en silence)
     prix_base = float(event.price)
+    tier_name = None
     if data.tier_name and event.ticket_tiers:
         tier = next((t for t in event.ticket_tiers if t.get("name") == data.tier_name), None)
-        if tier:
+        if not tier:
+            raise HTTPException(400, "Catégorie de billet invalide")
+        try:
             prix_base = float(tier.get("price", event.price))
+        except (ValueError, TypeError):
+            raise HTTPException(400, "Catégorie de billet invalide")
+        tier_name = tier.get("name")
 
     if prix_base <= 0:
         raise HTTPException(400, "Prix invalide pour un paiement Orange Money")
 
-    # 2.bis APPLICATION CODE PROMO (Chantier 19.A)
-    # La promo s'applique UNIQUEMENT sur prix_base, jamais sur les frais GoEvent (4% + 7%).
-    # Verrou pessimiste + revalidation atomique des 7 checks dans lock_promo_for_use.
+    # 2.bis CODE PROMO (Chantier 19.A) : une utilisation par billet de la commande.
+    # La promo s'applique UNIQUEMENT sur prix_base, jamais sur les frais GoEvent.
     promo_obj = None
     discount_fcfa = 0
     if data.promo_code:
@@ -68,6 +77,7 @@ async def initiate_ngser_payment(
             tier_name=data.tier_name,
             code=data.promo_code,
             organizer_id=event.organizer_id,
+            quantity=qty,
         )
         discount_fcfa = compute_discount(promo_obj, prix_base)
         prix_base = max(0.0, prix_base - discount_fcfa)
@@ -80,94 +90,109 @@ async def initiate_ngser_payment(
                 "Le code promo rend ce billet gratuit : rechargez la page pour l'obtenir directement."
             )
 
-    frais_acheteur = prix_base * COMMISSION_BUYER_RATE
-    total_a_payer = prix_base + frais_acheteur
+    # Montants PAR BILLET en FCFA entiers : total commande = qty × montant_billet,
+    # identique à l'affichage (checkout.html) et à la somme des Payment.amount.
+    montant_billet = unit_total(prix_base, COMMISSION_BUYER_RATE)
+    frais_acheteur = montant_billet - prix_base
     frais_organisateur = prix_base * COMMISSION_ORGANIZER_RATE
     solde_orga = prix_base - frais_organisateur
     tes_benefices = frais_acheteur + frais_organisateur
+    total_commande = montant_billet * qty
 
     if data.email and not current_user.email:
         current_user.email = data.email
 
     order_id = f"EVT{event.id}-{uuid.uuid4().hex[:10].upper()}"
 
-    new_ticket = Ticket(
-        event_id=event.id,
-        user_id=current_user.id,
-        payment_status="en_attente_om",
-        payment_method="orange_money",
-        payment_ref=order_id,
-        cash_amount=prix_base,
-    )
-    db.add(new_ticket)
+    tickets = []
+    for _ in range(qty):
+        t = Ticket(
+            event_id=event.id,
+            user_id=current_user.id,
+            payment_status="en_attente_om",
+            payment_method="orange_money",
+            payment_ref=order_id,
+            cash_amount=prix_base,
+            tier_name=tier_name,
+        )
+        db.add(t)
+        tickets.append(t)
     db.flush()
 
-    payment = Payment(
-        user_id=current_user.id,
-        ticket_id=new_ticket.id,
-        amount=total_a_payer,
-        base_price=prix_base,
-        platform_fee=tes_benefices,
-        organizer_amount=solde_orga,
-        status="pending",
-        transaction_id=order_id,
-    )
-    db.add(payment)
-
-    # Insertion PromoUsage en 'reserved' + incrément used_count (Chantier 19.A)
-    # Le verrou with_for_update sur promo_obj (via lock_promo_for_use) est encore actif jusqu'au commit.
-    if promo_obj:
-        db.add(PromoUsage(
-            promo_id=promo_obj.id,
+    for t in tickets:
+        db.add(Payment(
             user_id=current_user.id,
-            ticket_id=new_ticket.id,
-            discount_fcfa=discount_fcfa,
-            status="reserved",
+            ticket_id=t.id,
+            amount=montant_billet,
+            base_price=prix_base,
+            platform_fee=tes_benefices,
+            organizer_amount=solde_orga,
+            status="pending",
+            transaction_id=order_id,
         ))
-        promo_obj.used_count += 1
+        # PromoUsage 'reserved' par billet + incrément used_count (Chantier 19.A)
+        # Le verrou with_for_update sur promo_obj est encore actif jusqu'au commit.
+        if promo_obj:
+            db.add(PromoUsage(
+                promo_id=promo_obj.id,
+                user_id=current_user.id,
+                ticket_id=t.id,
+                discount_fcfa=discount_fcfa,
+                status="reserved",
+            ))
+    if promo_obj:
+        promo_obj.used_count += qty
 
-    # 3. PRÉ-RÉSERVATION : la place est comptée AVANT l'appel NGSER.
-    #    Le verrou pessimiste garantit l'atomicité avec d'autres workers.
-    event.seats_sold += 1
+    # 3. PRÉ-RÉSERVATION : les N places sont comptées AVANT l'appel NGSER.
+    event.seats_sold += qty
     db.commit()
-    db.refresh(new_ticket)
+    ticket_ids = [t.id for t in tickets]
 
     # 4. Appel NGSER (verrou relâché par le commit)
     try:
         status_code, response_data = await create_payment_session(
             order_id=order_id,
-            amount=int(total_a_payer),
+            amount=int(total_commande),
         )
         if status_code == 200 and "payment_url" in response_data:
             return {
                 "status": "success",
                 "payment_url": response_data["payment_url"],
-                "ticket_id": new_ticket.id,
+                "ticket_id": ticket_ids[0],
+                "ticket_ids": ticket_ids,
+                "order_ref": order_id,
+                "quantity": qty,
+                "amount": int(total_commande),
             }
         else:
             print(f"❌ Erreur API NGSER : HTTP {status_code} | {response_data}")
-            _libere_place_init_echouee(db, new_ticket.id, event.id)
+            _libere_place_init_echouee(db, ticket_ids, event.id)
             raise HTTPException(400, "Impossible d'initialiser le paiement avec Orange Money.")
     except HTTPException:
         raise
     except Exception as e:
         print(f"❌ Erreur Serveur NGSER : {str(e)}")
-        _libere_place_init_echouee(db, new_ticket.id, event.id)
+        _libere_place_init_echouee(db, ticket_ids, event.id)
         raise HTTPException(503, "Le service de paiement est temporairement indisponible.")
 
 
-def _libere_place_init_echouee(db: Session, ticket_id: int, event_id: int):
-    """Libère la pré-réservation si l'appel NGSER initial a échoué."""
+def _libere_place_init_echouee(db: Session, ticket_ids, event_id: int):
+    """Libère la pré-réservation (N places) si l'appel NGSER initial a échoué."""
+    if isinstance(ticket_ids, int):
+        ticket_ids = [ticket_ids]
     try:
-        ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
-        if ticket and ticket.payment_status == "en_attente_om":
+        # Même ordre de verrous que process_ngser_response : billets, puis événement
+        tickets = (db.query(Ticket).filter(Ticket.id.in_(ticket_ids), Ticket.payment_status == "en_attente_om")
+                   .order_by(Ticket.id).with_for_update().all())
+        event = lock_event_for_release(db, event_id) if tickets else None
+        for ticket in tickets:
             ticket.payment_status = "echec_init_ngser"
-            event = lock_event_for_release(db, event_id)
-            if event:
-                event.seats_sold = max(0, event.seats_sold - 1)
-            # Libération de l'éventuelle promo associée (Chantier 19.A)
-            release_promo_usage(db, ticket_id)
-            db.commit()
+            release_promo_usage(db, ticket.id)   # Chantier 19.A
+        if event and tickets:
+            event.seats_sold = max(0, event.seats_sold - len(tickets))
+        db.query(Payment).filter(Payment.ticket_id.in_(ticket_ids), Payment.status == "pending").update(
+            {"status": "failed"}, synchronize_session=False)
+        db.commit()
     except Exception as e:
         print(f"⚠️ Erreur libération place après échec init NGSER : {e}")
         db.rollback()

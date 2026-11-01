@@ -26,3 +26,8 @@ class CashReservation(BaseModel):
     tier_name: Optional[str] = None
     email: Optional[str] = None
     promo_code: Optional[str] = None
+    quantity: int = Field(1, ge=1, le=3)   # billets gratuits : 3 par compte et par événement
+
+
+class HolderIn(BaseModel):
+    holder_label: Optional[str] = Field(None, max_length=40)

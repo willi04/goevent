@@ -446,6 +446,8 @@
       let selectedPaymentMethod = "orange_money"; 
       let currentEventPrice = 0; 
       let isFreeEvent = false;
+      // Lot 5.5 : nombre de billets (fiche événement → ?qty=) ; 5 payants, 3 gratuits max
+      let orderQty = Math.max(1, Math.min(5, parseInt(new URLSearchParams(location.search).get("qty") || "1", 10) || 1));
       let promoCode = null;          // Chantier 19.A
       let promoDiscount = 0;         // Chantier 19.A
 
@@ -529,11 +531,13 @@
         const btnText = document.getElementById("btn-text");
         const btnIcon = document.getElementById("btn-icon");
 
+        const sumTier = document.getElementById("summary-tier");
+        if (sumTier) sumTier.textContent = (orderQty > 1 ? orderQty + " × " : "") + (new URLSearchParams(location.search).get("tier") || "Standard");
         if (isFreeEvent) {
           if (sumFee) sumFee.textContent = "0 FCFA";
           if (sumFeeLabel) sumFeeLabel.textContent = "Frais de service";
           if (sumTot) sumTot.textContent = "Gratuit";
-          if (btnText) btnText.innerHTML = "Obtenir mon billet gratuit";
+          if (btnText) btnText.innerHTML = orderQty > 1 ? "Obtenir mes " + orderQty + " billets gratuits" : "Obtenir mon billet gratuit";
           if (btnIcon) btnIcon.textContent = "confirmation_number";
           return;
         }
@@ -541,8 +545,10 @@
         // Frais acheteur en vigueur (GET /pricing) ; même calcul que l'API :
         // total = int(prix + prix × taux) (api/payments.py) → montant affiché = montant débité.
         const pct = (window.btPricingCache && window.btPricingCache.commission) ? window.btPricingCache.commission.buyer_pct : 4;
-        const total = Math.trunc(currentEventPrice + currentEventPrice * (pct / 100));
-        const fee = total - currentEventPrice;
+        // Par billet, puis × quantité (api/payments.py : total = N × int(prix + frais))
+        const unit = Math.trunc(currentEventPrice + currentEventPrice * (pct / 100));
+        const total = unit * orderQty;
+        const fee = total - currentEventPrice * orderQty;
 
         if (sumFee) sumFee.textContent = fee.toLocaleString("fr-FR") + " FCFA";
         if (sumFeeLabel) sumFeeLabel.textContent = "Frais de service (" + String(pct).replace(".", ",") + "%)";
@@ -691,6 +697,7 @@
           
           // BRANCHE GRATUITE vs PAYANTE
           isFreeEvent = currentEventPrice === 0;
+          if (isFreeEvent) orderQty = Math.min(orderQty, 3);
           if (isFreeEvent) {
             // Cacher Orange Money fields, afficher message gratuit
             const orangeFields = document.getElementById("orange-money-fields");
@@ -748,6 +755,7 @@
             email: document.getElementById("buyer-email") ? document.getElementById("buyer-email").value : null
           };
           if (promoCode) payload.promo_code = promoCode;
+          payload.quantity = orderQty;   // Lot 5.5 : un seul paiement pour N billets
 
           if (isFreeEvent) {
             // FLUX GRATUIT : billet 0 FCFA (NGSER refuse montant 0) — event gratuit ou promo -100 %

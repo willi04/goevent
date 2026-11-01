@@ -246,6 +246,30 @@ valide le code promo avant l'achat : si le prix final est nul, il appelle
 directement `POST /tickets/reserve-free` (flux 3). Si un client appelle
 quand même `initiate-ngser` avec ce code, la route répond 400.
 
+### Commande de plusieurs billets (lot 5.5)
+
+- `initiate-ngser` accepte `quantity` (1-5, `core/orders.MAX_PER_ORDER`).
+  Sous le verrou de l'événement : `seats_sold + N <= total_seats`, et au plus
+  10 billets payés ou en attente par compte et par événement
+  (`MAX_PER_ACCOUNT`). N tickets + N `payments`, **même `payment_ref` =
+  order_id**, UN seul appel NGSER.
+- Montant : chaque billet = `int(prix + prix × frais)`, total = N × ce
+  montant = somme des `Payment.amount` = montant affiché dans `checkout.html`.
+- Code promo : une utilisation par billet (quota global et par personne
+  vérifiés pour N, message « ne couvre plus que X billet(s) »).
+- `process_ngser_response` verrouille **tous** les billets de l'order_id :
+  validés ou libérés ensemble (seats_sold −N, promos libérées), montant NGSER
+  comparé à la somme des paiements. Réconciliation et orphelins : un seul
+  appel NGSER par order_id.
+- Billets gratuits : `reserve-free` accepte `quantity` (1-3), plafond 3 par
+  compte et par événement (`MAX_FREE_PER_ACCOUNT`).
+- E-mail : un message par commande (QR du 1er billet + un lien par billet).
+- « Mes billets » : prénom facultatif (`PATCH /tickets/{id}/holder`), envoi
+  WhatsApp (`POST /tickets/{id}/shared`), « Nouveau lien »
+  (`POST /tickets/{id}/reissue` : nouveau `qr_hash`, l'ancien lien ne permet
+  plus d'entrer ; refusé si scanné ou événement terminé ; journalisé
+  `ticket_reissued`).
+
 ## Flux 2 : Réservation cash — SUPPRIMÉ (oct. 2026)
 
 Le paiement en espèces à l'entrée n'existe plus : tout billet payant

@@ -283,6 +283,18 @@
               </div>
             </div>
             <!-- Chantier 19.A : saisie manuelle code promo (fan qui reçoit le code sans lien) -->
+            <!-- Lot 5.5 : plusieurs billets en une commande (un pass QR par billet) -->
+            <div id="qty-wrap" class="hidden mb-6 flex items-center justify-between gap-3">
+              <div class="min-w-0">
+                <p class="font-bold text-sm text-gray-900">Nombre de billets</p>
+                <p id="qty-hint" class="text-[11px] text-gray-500">Un pass QR par billet, à envoyer à chacun.</p>
+              </div>
+              <div class="flex items-center gap-3 shrink-0" role="group" aria-label="Nombre de billets">
+                <button id="qty-minus" type="button" class="w-10 h-10 rounded-full border-2 border-gray-200 text-xl font-bold text-gray-700 disabled:opacity-40" aria-label="Un billet de moins">−</button>
+                <b id="qty-val" class="text-lg w-5 text-center" aria-live="polite">1</b>
+                <button id="qty-plus" type="button" class="w-10 h-10 rounded-full bg-primary text-white text-xl font-bold disabled:opacity-40" aria-label="Un billet de plus">+</button>
+              </div>
+            </div>
             <div id="promo-input-wrap" class="mb-6">
               <label for="promo-code-input" class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-2 block" data-cms="event_detail.007">Vous avez un code promo ?</label>
               <div class="flex gap-2">
@@ -377,6 +389,7 @@
       let availableTiers = []; // NOUVEAU : Va stocker uniquement les billets disponibles
       let selectedTierIndex = null;
       let appliedPromo = null;        // Chantier 19.A : code promo validé
+      let qty = 1;                    // Lot 5.5 : nombre de billets de la commande
       let promoFromUrl = null;        // Chantier 19.A : code lu depuis ?promo=
 
       // 1. Menu Mobile
@@ -864,6 +877,28 @@
         renderTiers();
       }
 
+      // Lot 5.5 : 5 billets payants par commande, 3 gratuits par compte ; jamais plus que les places restantes
+      function maxQty() {
+        if (!currentEvent || !availableTiers.length) return 1;
+        const t = selectedTierIndex !== null ? availableTiers[selectedTierIndex] : availableTiers[0];
+        const free = computeDiscountedPrice(Number(t.price) || 0) === 0;
+        const left = typeof currentEvent.seats_available === "number" ? currentEvent.seats_available : 99;
+        return Math.max(1, Math.min(free ? 3 : 5, left));
+      }
+      function renderQty() {
+        const wrap = document.getElementById("qty-wrap");
+        if (!wrap || !currentEvent) return;
+        const isPast = new Date(currentEvent.event_date) < new Date();
+        const m = maxQty();
+        if (qty > m) qty = m;
+        wrap.classList.toggle("hidden", isPast || !availableTiers.length || m < 2);
+        document.getElementById("qty-val").textContent = qty;
+        document.getElementById("qty-minus").disabled = qty <= 1;
+        document.getElementById("qty-plus").disabled = qty >= m;
+        document.getElementById("qty-hint").textContent = m + " maximum · un pass QR par billet, à envoyer à chacun.";
+      }
+      function changeQty(d) { qty = Math.max(1, Math.min(maxQty(), qty + d)); renderQty(); updateReserveButton(); }
+
       // 4. Mettre à jour le bouton de réservation
       function updateReserveButton() {
         const btn = document.getElementById("btn-reserve");
@@ -892,9 +927,11 @@
           btn.disabled = false;
           btn.className =
             "w-full py-4 md:py-5 rounded-2xl bg-primary text-white font-bold text-sm transition-all hover:bg-primary-container shadow-lg shadow-primary/20 active:scale-95";
+          renderQty();
           btn.innerHTML = finalPrice === 0
-            ? `<span class="material-symbols-outlined align-middle text-base">confirmation_number</span> Obtenir mon billet gratuit`
-            : `Réserver • ${edN(finalPrice)} FCFA`;
+            ? `<span class="material-symbols-outlined align-middle text-base">confirmation_number</span> ` +
+              (qty > 1 ? `Obtenir mes ${qty} billets gratuits` : `Obtenir mon billet gratuit`)
+            : (qty > 1 ? `Réserver ${qty} billets • ${edN(finalPrice * qty)} FCFA` : `Réserver • ${edN(finalPrice)} FCFA`);
         }
       }
 
@@ -915,6 +952,7 @@
         urlParams.append("title", currentEvent.title);
         urlParams.append("tier", selected.name);
         urlParams.append("price", selected.price);
+        if (qty > 1) urlParams.append("qty", qty);   // Lot 5.5
         // Chantier 19.A : propagation du code promo (UNIQUEMENT s'il a été validé)
         if (appliedPromo && appliedPromo.code) {
           urlParams.append("promo", appliedPromo.code);
@@ -1031,6 +1069,9 @@
           else { lab.textContent = minPrice > 0 ? "À partir de" : "Entrée"; pr.textContent = edPrice(minPrice); bb.onclick = function () { edTix(true); }; }
         }
         document.getElementById("tix-close").onclick = function () { edTix(false); };
+        document.getElementById("qty-minus").onclick = function () { changeQty(-1); };
+        document.getElementById("qty-plus").onclick = function () { changeQty(1); };
+        renderQty();
         document.getElementById("tix-backdrop").onclick = function () { edTix(false); };
         document.addEventListener("keydown", function (ev) { if (ev.key === "Escape") edTix(false); });
       }

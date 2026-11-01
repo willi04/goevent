@@ -10,6 +10,11 @@ class Ticket(Base):
     __tablename__ = "tickets"
     id             = Column(Integer, primary_key=True, index=True)
     qr_hash        = Column(String, unique=True, index=True, default=lambda: str(uuid.uuid4()))
+    # Lot 5.5 (achat multiple) : une commande = N billets partageant payment_ref.
+    # tickets est lue par le scan et le paiement → ALTER à la main sur Neon AVANT le push.
+    tier_name      = Column(String(80), nullable=True)    # tarif acheté (affiché sur le pass)
+    holder_label   = Column(String(40), nullable=True)    # « Pour : Awa » (facultatif, jamais contrôlé)
+    shared_at      = Column(DateTime, nullable=True)      # envoyé par WhatsApp depuis « Mes billets »
     payment_status = Column(String, default="attente")
     payment_ref    = Column(String, default="")
     is_used        = Column(Boolean, default=False)

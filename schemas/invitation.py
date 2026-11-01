@@ -15,6 +15,7 @@ class PrivateEventIn(BaseModel):
     host_label: Optional[str] = Field(None, max_length=120)
     service_level: str = Field("accompagne", max_length=20)
     message_template: Optional[str] = Field(None, max_length=1000)
+    owner_id: Optional[int] = None          # admin : commercial propriétaire (vide = maison)
 
 
 class PrivateEventPatch(BaseModel):
@@ -91,3 +92,7 @@ class SyncItem(BaseModel):
 class SyncIn(BaseModel):
     device_id: Optional[str] = Field(None, max_length=64)
     items: List[SyncItem] = Field(..., max_length=500)
+
+
+class OwnerIn(BaseModel):
+    owner_id: Optional[int] = None      # commercial actif ; None = maison (administration)

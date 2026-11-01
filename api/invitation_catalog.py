@@ -506,7 +506,10 @@ def delete_discount(request: Request, discount_id: int, db: Session = Depends(ge
 @limiter.limit("120/minute")
 def admin_quote(request: Request, event_id: int, data: QuoteIn, db: Session = Depends(get_db),
                 user: User = Depends(reader)):
+    from core.permissions import sees_all_sales
     ev = inv.get_private_event(db, event_id)
+    if not sees_all_sales(user) and inv.get_settings(db, ev.id).owner_id != user.id:
+        raise HTTPException(404, "Événement privé introuvable")
     return cat.quote(db, ev, is_admin(user), data.model_dump())
 
 

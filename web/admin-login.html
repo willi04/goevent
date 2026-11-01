@@ -118,6 +118,29 @@
           Accéder au tableau de bord
         </button>
       </form>
+
+      <!-- Premier accès / PIN réinitialisé : le PIN provisoire doit être remplacé -->
+      <form id="pin-change-form" class="space-y-5 hidden">
+        <div class="bg-[#00d65b]/10 border border-[#00d65b]/30 text-gray-200 text-sm p-4 rounded-xl">
+          <p class="font-bold text-white mb-1">Choisissez votre code PIN</p>
+          <p>Votre code actuel est provisoire. Choisissez un code à 6 chiffres que vous seul connaissez (pas de suite comme 123456, pas de chiffres répétés).</p>
+        </div>
+        <div>
+          <label for="new-pin" class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Nouveau code PIN</label>
+          <input type="password" id="new-pin" inputmode="numeric" maxlength="6" required autocomplete="new-password"
+            class="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 text-white focus:ring-2 focus:ring-[#00d65b] focus:border-transparent outline-none placeholder-gray-600" placeholder="••••••" />
+        </div>
+        <div>
+          <label for="new-pin2" class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Confirmez le code PIN</label>
+          <input type="password" id="new-pin2" inputmode="numeric" maxlength="6" required autocomplete="new-password"
+            class="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 text-white focus:ring-2 focus:ring-[#00d65b] focus:border-transparent outline-none placeholder-gray-600" placeholder="••••••" />
+        </div>
+        <div id="pin-error" class="hidden bg-red-500/10 border border-red-500/20 text-red-400 text-sm p-3 rounded-xl"></div>
+        <button type="submit" id="pin-btn"
+          class="w-full bg-[#00d65b] text-[#012212] font-black py-4 rounded-xl hover:bg-white active:scale-95 transition-all mt-2">
+          Enregistrer mon code PIN
+        </button>
+      </form>
     </div>
 
     <script>
@@ -152,6 +175,10 @@
               res.user.role === "commercial"
             ) {
               btAuth.save(res.access_token, res.refresh_token, res.user);
+              if (res.user.must_change_pin) {
+                showPinChange(pin_code);
+                return;
+              }
               window.location.href = "admin.html";
             } else {
               errText.textContent =
@@ -166,6 +193,43 @@
             btn.disabled = false;
           }
         });
+      // ── Changement obligatoire du PIN provisoire ──
+      let provisionalPin = null;
+      function showPinChange(oldPin) {
+        provisionalPin = oldPin;
+        document.getElementById("admin-login-form").classList.add("hidden");
+        document.getElementById("pin-change-form").classList.remove("hidden");
+        document.getElementById("new-pin").focus();
+      }
+      if (/[?&]pin=1/.test(location.search)) {
+        const box = document.getElementById("error-msg");
+        document.getElementById("error-text").textContent = "Reconnectez-vous avec votre code PIN provisoire pour choisir votre propre code.";
+        box.classList.remove("hidden");
+        try { localStorage.removeItem("bt_token"); localStorage.removeItem("bt_refresh_token"); localStorage.removeItem("bt_user"); } catch (e) {}
+      }
+      document.getElementById("pin-change-form").addEventListener("submit", async function (e) {
+        e.preventDefault();
+        const p1 = document.getElementById("new-pin").value.trim();
+        const p2 = document.getElementById("new-pin2").value.trim();
+        const err = document.getElementById("pin-error");
+        const btn = document.getElementById("pin-btn");
+        err.classList.add("hidden");
+        if (!/^\d{6}$/.test(p1)) { err.textContent = "Le code PIN doit contenir 6 chiffres."; err.classList.remove("hidden"); return; }
+        if (p1 !== p2) { err.textContent = "Les deux codes ne sont pas identiques."; err.classList.remove("hidden"); return; }
+        btn.disabled = true;
+        try {
+          await btApi.put("/auth/pin", { old_pin: provisionalPin, new_pin: p1 });
+          const u = btAuth.getUser() || {};
+          u.must_change_pin = false;
+          localStorage.setItem("bt_user", JSON.stringify(u));
+          provisionalPin = null;
+          window.location.href = "admin.html";
+        } catch (ex) {
+          err.textContent = ex.message || "Erreur";
+          err.classList.remove("hidden");
+          btn.disabled = false;
+        }
+      });
     </script>
   </body>
 </html>

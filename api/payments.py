@@ -260,5 +260,8 @@ async def trigger_reconcile(
     # Données personnelles : listes d'invités anonymisées 30 j après l'événement
     from core.invitations import purge_due
     summary["invitations_anonymized"] = purge_due(db)
+    # Prospects : devis non convertis anonymisés 12 mois après leur date de validité (lot 4.5)
+    from core.quotes import purge_due as purge_quotes
+    summary["quotes_anonymized"] = purge_quotes(db)
     print(f"🔄 Réconciliation terminée : {summary}")
     return {"status": "success", "summary": summary}

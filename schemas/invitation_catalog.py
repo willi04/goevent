@@ -119,3 +119,4 @@ class OrderIn(QuoteIn):
     amount_received: Optional[int] = Field(None, ge=0, le=MAX_PRICE * 2)
     confirmed_goevent_account: bool = False
     note: Optional[str] = Field(None, max_length=300)
+    quote_id: Optional[int] = None   # devis numéroté : son instantané est rejoué (lot 4.5)

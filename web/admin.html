@@ -998,6 +998,7 @@
                     <th>Nom</th>
                     <th>Téléphone</th>
                     <th>Fonction</th>
+                    <th>Code</th>
                     <th>Commission</th>
                     <th>Email</th>
                     <th>Créé le</th>
@@ -1113,11 +1114,12 @@
                 <input id="staff-rate" type="number" min="0" max="100" step="1" class="input-field" placeholder="ex: 25" />
                 <p class="text-[10px] text-gray-400 mt-1">Pourcentage sur les revenus générés. Laisser vide si non applicable.</p>
               </div>
-              <div id="staff-pin-wrapper">
-                <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">PIN initial (6 chiffres)</label>
-                <input id="staff-pin" type="password" maxlength="6" class="input-field" placeholder="XXXXXX" />
-                <p class="text-[10px] text-gray-400 mt-1">L'employé devra le changer à sa première connexion.</p>
+              <div id="staff-code-wrapper">
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Code commercial</label>
+                <input id="staff-code" type="text" maxlength="20" class="input-field uppercase" placeholder="Proposé automatiquement (COM-PRÉNOM)" />
+                <p id="staff-code-hint" class="text-[10px] text-gray-400 mt-1">Même code que le lien goevent.africa/invitations?ref=CODE. Définitif dès qu'un devis ou une vente le porte.</p>
               </div>
+              <p id="staff-pin-wrapper" class="text-[11px] text-gray-500 bg-gray-50 rounded-xl p-3">Un code PIN provisoire est généré automatiquement et affiché une seule fois avec la fiche de bienvenue. L'employé le remplace à sa première connexion.</p>
             </div>
         
             <p id="staff-error" class="text-red-500 text-xs mt-3 min-h-4"></p>
@@ -1136,8 +1138,8 @@
               <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4 text-amber-600">
                 <span class="material-symbols-outlined text-3xl">key</span>
               </div>
-              <h3 class="text-lg font-black text-gray-900 mb-2">PIN temporaire généré</h3>
-              <p class="text-xs text-gray-500 mb-6">Transmettez ce code à l'employé. Il devra le changer immédiatement.</p>
+              <h3 class="text-lg font-black text-gray-900 mb-2" id="pin-modal-title">PIN provisoire généré</h3>
+              <p class="text-xs text-gray-500 mb-6">Affiché une seule fois. Transmettez la fiche à l'employé : il devra remplacer ce code à sa première connexion.</p>
         
               <div class="bg-gray-50 rounded-2xl p-6 mb-4 border-2 border-dashed border-gray-200">
                 <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1" id="pin-modal-name">—</p>
@@ -1145,6 +1147,14 @@
                 <p id="pin-modal-code" class="text-4xl font-black tracking-[0.5em] text-gray-900 mb-2">----</p>
                 <button onclick="copyPin()" class="text-xs text-primary font-bold hover:underline">
                   <span class="material-symbols-outlined text-sm align-middle">content_copy</span> Copier
+                </button>
+              </div>
+              <div class="grid grid-cols-2 gap-2 mb-3">
+                <button onclick="copyWelcome()" class="action-btn text-xs py-3" style="background:#dcfce7;color:#166534">
+                  <span class="material-symbols-outlined text-sm align-middle">chat</span> Copier le texte WhatsApp
+                </button>
+                <button id="pin-modal-pdf" onclick="downloadWelcomePdf()" class="action-btn text-xs py-3" style="background:#ede9fe;color:#5b21b6">
+                  <span class="material-symbols-outlined text-sm align-middle">picture_as_pdf</span> Fiche de bienvenue (PDF)
                 </button>
               </div>
         
@@ -1426,6 +1436,11 @@
           // Garde locale supplémentaire (requireAuth fait déjà le job, ceinture + bretelles)
           if (!user || (user.role !== "admin" && user.role !== "staff")) {
               window.location.href = "login.html";
+              return;
+          }
+          // PIN provisoire pas encore remplacé : retour à l'écran de connexion (changement obligatoire)
+          if (user.must_change_pin) {
+              window.location.href = "admin-login.html?pin=1";
               return;
           }
       
@@ -1972,7 +1987,7 @@
           try {
               const list = await btApi.get("/admin/staff");
               if (!list.length) {
-                  tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><span class="material-symbols-outlined">badge</span><p class="font-bold text-gray-400 mt-2">Aucun employé créé</p><p class="text-sm text-gray-400 mt-1">Cliquez sur "Nouvel employé" pour commencer.</p></div></td></tr>';
+                  tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><span class="material-symbols-outlined">badge</span><p class="font-bold text-gray-400 mt-2">Aucun employé créé</p><p class="text-sm text-gray-400 mt-1">Cliquez sur "Nouvel employé" pour commencer.</p></div></td></tr>';
                   return;
               }
       
@@ -1994,7 +2009,8 @@
                           </div>
                       </td>
                       <td><span class="text-xs font-mono">${_btEscapeHtml(s.phone_number)}</span></td>
-                      <td>${labelFn(s.staff_function)}</td>
+                      <td>${labelFn(s.staff_function)}${s.must_change_pin ? ' <span class="badge" style="background:#fef3c7;color:#854d0e" title="PIN provisoire pas encore remplacé">PIN provisoire</span>' : ''}</td>
+                      <td><span class="text-xs font-mono font-bold">${_btEscapeHtml(s.sales_code) || "—"}</span></td>
                       <td><span class="text-xs font-bold">${s.commission_rate !== null && s.commission_rate !== undefined ? Math.round(s.commission_rate * 100) + ' %' : '—'}</span></td>
                       <td><span class="text-xs text-gray-500">${_btEscapeHtml(s.email) || "—"}</span></td>
                       <td><span class="text-xs text-gray-400">${new Date(s.created_at).toLocaleDateString("fr-FR")}</span></td>
@@ -2003,13 +2019,14 @@
                           <div class="flex gap-2 flex-wrap">
                               <button onclick="openStaffModal(${s.id})" class="action-btn text-xs" style="background:#f3f4f6;color:#374151">Modifier</button>
                               <button onclick="resetStaffPin(${Number(s.id)}, ${_btEscapeHtml(JSON.stringify(s.full_name || ""))}, ${_btEscapeHtml(JSON.stringify(s.phone_number || ""))})" class="action-btn text-xs" style="background:#fef3c7;color:#854d0e">Reset PIN</button>
+                              ${s.staff_function === "commercial" ? `<button onclick="transferStaff(${Number(s.id)}, ${_btEscapeHtml(JSON.stringify(s.full_name || ""))})" class="action-btn text-xs" style="background:#e0f2fe;color:#075985">Transférer</button>` : ""}
                               ${s.is_active ? `<button onclick="toggleStaff(${s.id}, true)" class="action-btn btn-danger text-xs">Désactiver</button>` : `<button onclick="toggleStaff(${s.id}, false)" class="action-btn btn-success text-xs">Réactiver</button>`}
                           </div>
                       </td>
                   </tr>
               `).join("");
           } catch (e) {
-              tbody.innerHTML = `<tr><td colspan="8" class="text-center text-red-500 py-8 text-sm">${e.message || 'Erreur de chargement'}</td></tr>`;
+              tbody.innerHTML = `<tr><td colspan="9" class="text-center text-red-500 py-8 text-sm">${_btEscapeHtml(e.message || 'Erreur de chargement')}</td></tr>`;
           }
       }
       
@@ -2025,9 +2042,10 @@
           document.getElementById("staff-email").value = "";
           document.getElementById("staff-function").value = "commercial";
           document.getElementById("staff-rate").value = "";
-          document.getElementById("staff-pin").value = "";
+          document.getElementById("staff-code").value = "";
+          syncStaffCode();
       
-          // En édition : phone et PIN désactivés/masqués
+          // En édition : phone désactivé, PIN géré par « Reset PIN »
           const pinWrapper = document.getElementById("staff-pin-wrapper");
           if (id) {
               document.getElementById("staff-phone").disabled = true;
@@ -2041,6 +2059,8 @@
                   document.getElementById("staff-email").value = s.email || "";
                   document.getElementById("staff-function").value = s.staff_function || "commercial";
                   document.getElementById("staff-rate").value = s.commission_rate !== null && s.commission_rate !== undefined ? Math.round(s.commission_rate * 100) : "";
+                  document.getElementById("staff-code").value = s.sales_code || "";
+                  syncStaffCode();
               });
           } else {
               document.getElementById("staff-phone").disabled = false;
@@ -2049,6 +2069,15 @@
       
           document.getElementById("staff-modal").classList.remove("hidden");
       }
+      
+      function syncStaffCode() {
+          const fn = document.getElementById("staff-function").value;
+          document.getElementById("staff-code-wrapper").style.display = fn === "commercial" ? "" : "none";
+      }
+      document.addEventListener("DOMContentLoaded", () => {
+          const f = document.getElementById("staff-function");
+          if (f) f.addEventListener("change", syncStaffCode);
+      });
       
       function closeStaffModal() {
           document.getElementById("staff-modal").classList.add("hidden");
@@ -2065,6 +2094,8 @@
           const fn = document.getElementById("staff-function").value;
           const rateRaw = document.getElementById("staff-rate").value.trim();
           const rate = rateRaw === "" ? null : parseFloat(rateRaw) / 100;
+          const code = document.getElementById("staff-code").value.trim().toUpperCase();
+          if (code && !/^[A-Z0-9-]{1,20}$/.test(code)) { errEl.textContent = "Code commercial : lettres, chiffres et tirets (20 max)"; return; }
       
           if (!name || name.length < 2) { errEl.textContent = "Nom requis (2 caractères min)"; return; }
           if (rate !== null && (isNaN(rate) || rate < 0 || rate > 1)) { errEl.textContent = "Commission entre 0 et 100"; return; }
@@ -2083,23 +2114,23 @@
                       staff_function: fn,
                       commission_rate: rate,
                   };
+                  if (fn === "commercial") body.sales_code = code || null;
                   await btApi.patch(`/admin/staff/${staffEditId}`, body);
                   btToast("Employé mis à jour", "success");
               } else {
                   // Création (POST)
-                  const pin = document.getElementById("staff-pin").value.trim();
                   if (!phone.match(/^\+236\d{8}$/)) { errEl.textContent = "Téléphone au format +236XXXXXXXX"; btn.disabled = false; btn.textContent = origText; return; }
-                  if (!pin.match(/^\d{6}$/)) { errEl.textContent = "PIN = 6 chiffres"; btn.disabled = false; btn.textContent = origText; return; }
                   const body = {
                       full_name: name,
                       phone_number: phone,
                       email: email || null,
-                      pin_code: pin,
                       staff_function: fn,
                       commission_rate: rate,
+                      sales_code: fn === "commercial" ? (code || null) : null,
                   };
-                  await btApi.post("/admin/staff", body);
+                  const created = await btApi.post("/admin/staff", body);
                   btToast("Employé créé", "success");
+                  showPinModal(created.id, created.full_name, created.phone_number, created.temporary_pin, created.welcome_text, "Compte créé : PIN provisoire");
               }
               closeStaffModal();
               loadStaff();
@@ -2113,7 +2144,8 @@
       
       async function toggleStaff(id, isActive) {
           const action = isActive ? "désactiver" : "réactiver";
-          if (!confirm(`Confirmer : ${action} cet employé ?`)) return;
+          const hint = isActive ? "\n\nCommercial : transférez d'abord son portefeuille (bouton « Transférer ») ; ses commissions acquises restent dues." : "";
+          if (!confirm(`Confirmer : ${action} cet employé ?${hint}`)) return;
           try {
               if (isActive) {
                   await btApi.delete(`/admin/staff/${id}`);
@@ -2131,18 +2163,66 @@
           if (!confirm(`Générer un nouveau PIN pour ${name} ?\nL'ancien PIN ne fonctionnera plus.`)) return;
           try {
               const resp = await btApi.post(`/admin/staff/${id}/reset-pin`, {});
-              document.getElementById("pin-modal-name").textContent = name;
-              document.getElementById("pin-modal-phone").textContent = phone;
-              document.getElementById("pin-modal-code").textContent = resp.temporary_pin;
-              document.getElementById("pin-modal").classList.remove("hidden");
+              showPinModal(id, name, phone, resp.temporary_pin, resp.welcome_text, "PIN provisoire généré");
           } catch (e) {
               btToast(e.message || "Erreur", "error");
           }
       }
       
+      // PIN provisoire + fiche de bienvenue : gardés en mémoire le temps de la modale, jamais stockés
+      let pinModalState = null;
+      function showPinModal(id, name, phone, pin, welcome, title) {
+          pinModalState = { id: id, pin: pin, welcome: welcome || "" };
+          document.getElementById("pin-modal-title").textContent = title || "PIN provisoire généré";
+          document.getElementById("pin-modal-name").textContent = name;
+          document.getElementById("pin-modal-phone").textContent = phone;
+          document.getElementById("pin-modal-code").textContent = pin;
+          document.getElementById("pin-modal").classList.remove("hidden");
+      }
+      function copyWelcome() {
+          if (!pinModalState) return;
+          navigator.clipboard.writeText(pinModalState.welcome).then(() => btToast("Texte copié : collez-le dans WhatsApp", "success"))
+              .catch(() => window.prompt("Copiez :", pinModalState.welcome));
+      }
+      async function downloadWelcomePdf() {
+          if (!pinModalState) return;
+          const btn = document.getElementById("pin-modal-pdf");
+          btn.disabled = true;
+          try {
+              const res = await fetch(BT_API + "/admin/staff/" + pinModalState.id + "/welcome.pdf", {
+                  method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + btAuth.getToken() },
+                  body: JSON.stringify({ pin: pinModalState.pin }),
+              });
+              if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.detail || "Erreur " + res.status); }
+              const url = URL.createObjectURL(await res.blob());
+              const a = document.createElement("a");
+              a.href = url; a.download = "goevent-bienvenue.pdf"; document.body.appendChild(a); a.click(); a.remove();
+              setTimeout(() => URL.revokeObjectURL(url), 2000);
+          } catch (e) {
+              btToast(e.message || "Erreur", "error");
+          } finally {
+              btn.disabled = false;
+          }
+      }
+      async function transferStaff(id, name) {
+          let sellers = [];
+          try { sellers = (await btApi.get("/admin/sales/sellers")).sellers.filter(x => x.id !== id && x.is_active); } catch (e) {}
+          const choices = ["0 — Administration (vous)"].concat(sellers.map(x => x.id + " — " + x.full_name + (x.sales_code ? " (" + x.sales_code + ")" : "")));
+          const pick = window.prompt("Transférer le portefeuille de " + name + " (devis non convertis et événements privés) vers :\n" + choices.join("\n") + "\n\nTapez le numéro :", "0");
+          if (pick === null) return;
+          const toId = parseInt(pick, 10);
+          if (isNaN(toId) || (toId !== 0 && !sellers.some(x => x.id === toId))) { btToast("Choix invalide", "error"); return; }
+          if (!confirm("Confirmer le transfert ? Les ventes déjà réalisées et leurs commissions restent à " + name + ".")) return;
+          try {
+              const r = await btApi.post("/admin/staff/" + id + "/transfer", { to_user_id: toId || null });
+              btToast(r.quotes + " devis et " + r.events + " événement(s) transférés", "success");
+          } catch (e) { btToast(e.message || "Erreur", "error"); }
+      }
       function closePinModal() {
           document.getElementById("pin-modal").classList.add("hidden");
           document.getElementById("pin-modal-code").textContent = "----";
+          pinModalState = null;
+          loadStaff();
       }
       
       function copyPin() {

@@ -352,11 +352,19 @@ def formula_label(db: Session, code: Optional[str]) -> Optional[str]:
     return f.name if f else code
 
 
-def revenue_summary(db: Session) -> dict:
-    """Encaissé = commandes actives PAYÉES ; les packs offerts sont comptés à part (jamais en recette)."""
-    paid = db.query(func.count(InvitationPack.id), func.coalesce(func.sum(InvitationPack.amount_fcfa), 0)).filter(
+def revenue_summary(db: Session, owner_id: Optional[int] = None) -> dict:
+    """Encaissé = commandes actives PAYÉES ; les packs offerts sont comptés à part (jamais en recette).
+    owner_id : limité aux événements de ce commercial (portefeuille, lot 4.5)."""
+    from models.invitation import PrivateEventSettings
+
+    def scoped(q):
+        if owner_id is None:
+            return q
+        return q.join(PrivateEventSettings, PrivateEventSettings.event_id == InvitationPack.event_id).filter(
+            PrivateEventSettings.owner_id == owner_id)
+    paid = scoped(db.query(func.count(InvitationPack.id), func.coalesce(func.sum(InvitationPack.amount_fcfa), 0))).filter(
         InvitationPack.status == "actif", InvitationPack.offered == False).one()  # noqa: E712
-    offered = db.query(func.count(InvitationPack.id)).filter(
+    offered = scoped(db.query(func.count(InvitationPack.id))).filter(
         InvitationPack.status == "actif", InvitationPack.offered == True).scalar() or 0  # noqa: E712
     return {"paid_count": int(paid[0]), "paid_total_fcfa": int(paid[1]), "offered_count": int(offered)}
 
@@ -389,11 +397,14 @@ def vat_breakdown(total: int, st: dict) -> dict:
     return {"enabled": True, "rate_bp": bp, "prices_include_vat": False, "ht": total, "vat": vat, "ttc": total + vat}
 
 
-def quote(db: Session, ev, admin: bool, data: dict, lock_code: bool = False) -> dict:
-    """data : formula_id, pack_id | custom {size, price_fcfa, reason}, options [{option_id, qty}],
-    discount_code | manual_discount {kind, value, reason}, offered (bool) + offered_reason."""
-    from core.invitations import quota, seats_listed
+def price(db: Session, admin: bool, data: dict, lock_code: bool = False, draft: bool = False) -> dict:
+    """Calcul UNIQUE (devis numérotés, aperçu, activation), sans événement.
+    data : formula_id, pack_id | custom {size, price_fcfa, reason}, options [{option_id, qty}],
+    discount_code | manual_discount {kind, value, reason}, offered (bool) + offered_reason.
+    draft=True (devis préparé par un commercial) : sur mesure et remise manuelle acceptés mais
+    marqués needs_admin (l'admin valide avant tout envoi ; jamais activable tel quel)."""
     now = utcnow()
+    needs_admin = False
     st = get_settings(db)
     f = db.query(InvFormula).filter(InvFormula.id == data.get("formula_id")).first()
     if not f or f.status != "active":
@@ -402,8 +413,9 @@ def quote(db: Session, ev, admin: bool, data: dict, lock_code: bool = False) -> 
     offered = bool(data.get("offered"))
     pack = None
     if custom:
-        if not admin:
+        if not admin and not draft:
             raise HTTPException(403, "Pack sur mesure : réservé à l'administrateur.")
+        needs_admin = needs_admin or not admin
         size = _int(custom.get("size"), 1, MAX_SIZE, "Taille")
         unit_price = _int(custom.get("price_fcfa"), 0, MAX_PRICE, "Prix")
         custom_reason = _reason(custom.get("reason"), "pack sur mesure")
@@ -467,8 +479,9 @@ def quote(db: Session, ev, admin: bool, data: dict, lock_code: bool = False) -> 
         discount = {"kind": "code", "code_id": dc.id, "code": dc.code, "type": dc.kind, "value": dc.value,
                     "amount": min(amount, unit_price), "reason": None}
     elif manual:
-        if not admin:
+        if not admin and not draft:
             raise HTTPException(403, "Remise manuelle : réservée à l'administrateur.")
+        needs_admin = needs_admin or not admin
         kind = manual.get("kind")
         if kind not in ("pct", "fixed"):
             raise HTTPException(400, "Remise manuelle : pourcentage ou montant.")
@@ -493,6 +506,22 @@ def quote(db: Session, ev, admin: bool, data: dict, lock_code: bool = False) -> 
 
     features = {k: bool(getattr(f, k)) for k in FEATURES}
     agents_inc = agents_for(f, size) + extra_agents
+    return {
+        "formula": {"id": f.id, "code": f.code, "name": f.name},
+        "pack": {"id": pack.id if pack else None, "name": pack_name, "size": size, "unit_price": unit_price,
+                 "custom": bool(custom), "custom_reason": custom_reason},
+        "options": lines, "options_total": options_total, "discount": discount,
+        "subtotal": subtotal, "total": total, "vat": vat, "amount_due": vat["ttc"],
+        "offered": offered, "offered_reason": offered_reason, "features": features,
+        "agents_included": agents_inc, "needs_admin": needs_admin,
+    }
+
+
+def event_context(db: Session, ev, q: dict) -> dict:
+    """Ajoute au calcul ce qui dépend de l'événement : agents déjà assignés, quota, liste (avertissements)."""
+    from core.invitations import quota, seats_listed
+    q = dict(q)
+    features, agents_inc, size = q["features"], q["agents_included"], q["pack"]["size"]
     existing_agents = agents_included_total(db, ev.id)
     assigned = agents_assigned(db, ev.id)
     listed, quota_now = seats_listed(db, ev.id), quota(db, ev.id)
@@ -507,23 +536,46 @@ def quote(db: Session, ev, admin: bool, data: dict, lock_code: bool = False) -> 
     if quota_now + size < listed:
         blocking.append("Pack trop petit : %d personnes déjà dans la liste (quota après activation : %d)."
                         % (listed, quota_now + size))
-    return {
-        "formula": {"id": f.id, "code": f.code, "name": f.name},
-        "pack": {"id": pack.id if pack else None, "name": pack_name, "size": size, "unit_price": unit_price,
-                 "custom": bool(custom), "custom_reason": custom_reason},
-        "options": lines, "options_total": options_total, "discount": discount,
-        "subtotal": subtotal, "total": total, "vat": vat, "amount_due": vat["ttc"],
-        "offered": offered, "offered_reason": offered_reason, "features": features,
-        "agents_included": agents_inc, "agents_included_total": total_inc, "agents_assigned": assigned,
-        "listed": listed, "quota_after": quota_now + size, "warnings": warnings, "blocking": blocking,
-    }
+    q.update({"agents_included_total": total_inc, "agents_assigned": assigned, "listed": listed,
+              "quota_after": quota_now + size, "warnings": warnings, "blocking": blocking})
+    return q
 
 
-def activate(db: Session, ev, user, admin: bool, data: dict, channels: list, request=None) -> InvitationPack:
+def quote(db: Session, ev, admin: bool, data: dict, lock_code: bool = False) -> dict:
+    """Aperçu / activation pour un événement : price() + contexte de l'événement."""
+    return event_context(db, ev, price(db, admin, data, lock_code=lock_code))
+
+
+def replay(db: Session, ev, snapshot: dict, lock_code: bool = False) -> dict:
+    """Activation depuis un devis numéroté : rejoue l'instantané (même prix, même remise, même si le
+    catalogue a changé depuis). Seul le plafond d'utilisations du code de remise est revérifié."""
+    q = {k: snapshot[k] for k in ("formula", "pack", "options", "options_total", "discount", "subtotal", "total",
+                                   "vat", "amount_due", "offered", "offered_reason", "features", "agents_included")}
+    q["needs_admin"] = False
+    d = q.get("discount") or None
+    if d and d.get("kind") == "code" and d.get("code_id"):
+        qd = db.query(InvDiscountCode).filter(InvDiscountCode.id == d["code_id"])
+        dc = (qd.with_for_update() if lock_code else qd).first()
+        if not dc:
+            raise HTTPException(400, "Le code de remise de ce devis n'existe plus : faites un nouveau devis.")
+        if dc.max_uses and code_uses(db, dc.id) >= dc.max_uses:
+            raise HTTPException(409, "Le code de remise « %s » a atteint son nombre maximal d'utilisations : "
+                                     "dupliquez le devis sans ce code ou appliquez une remise manuelle." % dc.code)
+    return event_context(db, ev, q)
+
+
+def activate(db: Session, ev, user, admin: bool, data: dict, channels: list, request=None,
+             quote_obj=None, owner=None) -> InvitationPack:
     """Activation = commande figée. L'événement est verrouillé par la route ; le code de remise est
-    verrouillé ici (FOR UPDATE) pour que deux activations simultanées ne dépassent pas max_uses."""
+    verrouillé ici (FOR UPDATE) pour que deux activations simultanées ne dépassent pas max_uses.
+    quote_obj (devis numéroté, verrouillé par la route) : l'instantané du devis est rejoué tel quel.
+    owner : commercial propriétaire de l'événement → crédité de la vente (commission figée)."""
     import re
-    q = quote(db, ev, admin, data, lock_code=True)
+    from core import sales
+    if quote_obj is not None:
+        q = replay(db, ev, quote_obj.snapshot, lock_code=True)
+    else:
+        q = quote(db, ev, admin, data, lock_code=True)
     if q["blocking"]:
         raise HTTPException(400, q["blocking"][0])
     if q["offered"]:
@@ -566,6 +618,14 @@ def activate(db: Session, ev, user, admin: bool, data: dict, channels: list, req
         discount_code_id=d["code_id"] if d else None, discount_amount=d["amount"] if d else 0,
         agents_included=q["agents_included"], features=q["features"], amount_ht=q["vat"]["ht"],
         amount_vat=q["vat"]["vat"], vat_rate_bp=q["vat"]["rate_bp"], snapshot=snapshot)
+    # Vente créditée au commercial propriétaire de l'événement (pas de commission sur un pack offert)
+    seller = owner if sales.is_seller(owner) else None
+    if seller:
+        p.owner_id = seller.id
+        p.commission_base_fcfa = sales.commission_base(snapshot)
+        p.commission_rate_bp = sales.rate_bp(seller)
+    if quote_obj is not None:
+        p.quote_id = quote_obj.id
     db.add(p)
     # Éléments du catalogue désormais « utilisés » : archivables, plus supprimables
     db.query(InvFormula).filter(InvFormula.id == q["formula"]["id"]).update({InvFormula.used: True})
@@ -576,6 +636,16 @@ def activate(db: Session, ev, user, admin: bool, data: dict, channels: list, req
             {InvOption.used: True}, synchronize_session=False)
     if d and d["code_id"]:
         db.query(InvDiscountCode).filter(InvDiscountCode.id == d["code_id"]).update({InvDiscountCode.used: True})
+    db.flush()
+    if seller and not q["offered"] and p.commission_rate_bp:
+        from models.commission import Commission
+        db.add(Commission(beneficiary_user_id=seller.id, source_type=sales.COMMISSION_SOURCE, source_id=p.id,
+                          base_amount_fcfa=p.commission_base_fcfa, rate_applied=p.commission_rate_bp / 10000,
+                          amount_fcfa=sales.commission_amount(p.commission_base_fcfa, p.commission_rate_bp),
+                          status="pending"))
+    if quote_obj is not None:
+        quote_obj.status, quote_obj.pack_id, quote_obj.event_id = "converti", p.id, ev.id
+        quote_obj.converted_at = quote_obj.updated_at = utcnow()
     db.commit()
     db.refresh(p)
     parts = ["event %d : %s %d pers." % (ev.id, q["formula"]["name"], q["pack"]["size"])]
@@ -586,6 +656,10 @@ def activate(db: Session, ev, user, admin: bool, data: dict, channels: list, req
     if d:
         parts.append("remise %s -%d FCFA%s" % (d["code"] or "manuelle", d["amount"],
                                                 " (%s)" % d["reason"][:80] if d["reason"] else ""))
+    if quote_obj is not None:
+        parts.append("devis %s" % quote_obj.number)
+    if seller:
+        parts.append("vendeur %s" % (seller.sales_code or seller.id))
     if q["offered"]:
         parts.append("OFFERT : %s" % q["offered_reason"][:100])
     else:

@@ -10,6 +10,10 @@
  * Catalogue (formules, packs, options, codes, réglages, historique) : lecture
  * admin + commercial, modification admin seul. Devis = même calcul serveur que
  * l'activation (POST …/packs/quote) : affiché = facturé.
+ * Lot 4.5 — équipe commerciale : portefeuilles (un commercial ne voit que ses
+ * événements et devis ; l'admin voit tout, filtre et réaffecte), devis numérotés
+ * DEV-AAAA-NNNN (création, PDF, WhatsApp, statuts, conversion en événement,
+ * activation au même montant), Ventes & commissions (clôture mensuelle, versement).
  * Dépend de bt-api.js (btApi, btToast, _btEscapeHtml) et de hasCapability().
  * ════════════════════════════════════════════════════════════════ */
 (function () {
@@ -89,20 +93,30 @@
   // ════════════════════════════════════════════════════════════════
   // LISTE DES ÉVÉNEMENTS PRIVÉS
   // ════════════════════════════════════════════════════════════════
+  var EVF = { owner: "" };
   function loadList() {
     stopTimer();
     S.view = "list";
     var root = sec();
     root.innerHTML = '<div class="card p-6 empty-state">Chargement…</div>';
-    btApi.get("/admin/invitations/events").then(function (d) {
+    loadSellers().then(function () {
+      return btApi.get("/admin/invitations/events" + (EVF.owner !== "" ? "?owner_id=" + EVF.owner : ""));
+    }).then(function (d) {
       root.innerHTML = "";
+      root.appendChild(navTabs("events"));
       root.appendChild(el("div", { class: "flex flex-wrap justify-between items-start gap-3 mb-5" }, [
         el("div", {}, [
           el("h2", { class: "text-xl font-black text-gray-900", text: "Invitations digitales" }),
           el("p", { class: "text-xs text-gray-500 mt-1", text: "Événements privés (mariages, dots, galas…) : liste d'invités, pass QR nominatifs envoyés par WhatsApp, contrôle à l'entrée, suivi des arrivées." }),
         ]),
-        el("div", { class: "flex flex-wrap gap-2" }, [
-          el("button", { class: "action-btn", style: "background:#ede9fe;color:#5b21b6", text: "Catalogue des packs", onclick: function () { openCatalog("formulas"); } }),
+        el("div", { class: "flex flex-wrap gap-2 items-center" }, [
+          canActivate() ? (function () {
+            var ow = el("select", { class: "input-field", style: "max-width:220px" }, [el("option", { value: "", text: "Tous les dossiers" }), el("option", { value: "0", text: "Administration (maison)" })]
+              .concat((S.sellers || []).map(function (x) { return el("option", { value: String(x.id), text: x.full_name }); })));
+            ow.value = EVF.owner;
+            ow.addEventListener("change", function () { EVF.owner = ow.value; loadList(); });
+            return ow;
+          })() : null,
           el("button", { class: "action-btn btn-primary", text: "+ Nouvel événement privé", onclick: eventModal }),
         ]),
       ]));
@@ -125,7 +139,8 @@
             el("span", { class: "text-[10px] font-black px-2 py-0.5 rounded-full " + (e.quota ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"), text: packTxt }),
           ]),
           el("p", { class: "text-xs text-gray-500 mt-1", text: e.event_date_label + " · " + (e.location || "") }),
-          el("p", { class: "text-xs text-gray-500", text: "Client : " + e.client_name + (e.purged ? " · liste supprimée" : "") }),
+          el("p", { class: "text-xs text-gray-500", text: "Client : " + e.client_name + (e.purged ? " · liste supprimée" : "") +
+            (canActivate() ? " · " + (e.owner_name ? e.owner_name + (e.owner_code ? " (" + e.owner_code + ")" : "") : "Maison") : "") }),
           el("p", { class: "text-sm font-bold text-gray-800 mt-2", text: s.entered + " / " + s.expected + " entrés · " + s.passes_sent + "/" + s.passes + " pass envoyés" }),
         ]));
       });
@@ -147,6 +162,7 @@
       })),
       desc: el("textarea", { class: "input-field", rows: "2", maxlength: "2000", placeholder: "Note interne (facultatif)" }),
     };
+    var ownerSel = canActivate() && !ev ? ownerSelect(null, true) : null;
     if (ev) {
       f.title.value = ev.title; f.date.value = toLocalInput(ev.event_date); f.location.value = ev.location || "";
       f.client.value = ev.client_name; f.phone.value = ev.client_phone || ""; f.host.value = ev.host_label || "";
@@ -161,6 +177,7 @@
       field("Titre", f.title), el("div", { class: "grid sm:grid-cols-2 gap-3" }, [field("Date et heure", f.date), field("Lieu", f.location)]),
       el("div", { class: "grid sm:grid-cols-2 gap-3" }, [field("Client", f.client), field("Téléphone du client", f.phone)]),
       field("Hôte affiché sur le pass", f.host, "Vide = nom du client."), field("Formule prévue", f.service, "Le pack réellement payé (activation) fait foi."), field("Description", f.desc),
+      ownerSel ? field("Commercial propriétaire", ownerSel, "Le commercial voit et gère ce dossier ; la vente lui est attribuée.") : null,
     ]);
     modal(ev ? "Modifier l'événement" : "Nouvel événement privé", body, function (close) {
       var b = el("button", { class: "action-btn btn-primary", text: ev ? "Enregistrer" : "Créer", onclick: function () {
@@ -168,6 +185,7 @@
         var payload = { title: f.title.value.trim(), event_date: new Date(f.date.value).toISOString(), location: f.location.value.trim(),
           client_name: f.client.value.trim(), client_phone: f.phone.value.trim() || null, host_label: f.host.value.trim() || null,
           service_level: f.service.value, description: f.desc.value.trim() || null };
+        if (ownerSel && ownerSel.value) payload.owner_id = parseInt(ownerSel.value, 10);
         b.disabled = true;
         (ev ? btApi.patch("/admin/invitations/events/" + ev.id, payload) : btApi.post("/admin/invitations/events", payload))
           .then(function (r) { close(); toast(ev ? "Événement enregistré." : "Événement privé créé.", "success"); openEvent(r.id); })
@@ -212,8 +230,25 @@
         el("h2", { class: "text-xl font-black text-gray-900", text: ev.title }),
         el("p", { class: "text-xs text-gray-500 mt-1", text: ev.event_date_label + " · " + (ev.location || "") + " · Client : " + ev.client_name +
           (ev.client_phone ? " (" + ev.client_phone + ")" : "") + " · " + (ev.formula_name || ev.service_level) }),
+        canActivate() ? el("p", { class: "text-xs text-gray-500", text: "Dossier : " + (ev.owner_name ? ev.owner_name + (ev.owner_code ? " (" + ev.owner_code + ")" : "") : "Administration (maison)") }) : null,
       ]),
-      el("button", { class: "action-btn text-xs", style: "background:#ede9fe;color:#5b21b6", text: "Modifier", onclick: function () { eventModal(ev); } }),
+      el("div", { class: "flex flex-wrap gap-2" }, [
+        canActivate() ? el("button", { class: "action-btn text-xs", style: "background:#e0f2fe;color:#075985", text: "Réaffecter", onclick: function () {
+          loadSellers().then(function () {
+            var sel = ownerSelect(ev.owner_id, true);
+            modal("Réaffecter l'événement", el("div", { class: "space-y-2" }, [field("Commercial propriétaire", sel, "Les ventes et commissions déjà acquises restent au vendeur d'origine.")]), function (close) {
+              var b = el("button", { class: "action-btn btn-primary", text: "Réaffecter", onclick: function () {
+                b.disabled = true;
+                btApi.post("/admin/invitations/events/" + ev.id + "/owner", { owner_id: sel.value ? parseInt(sel.value, 10) : null })
+                  .then(function () { close(); toast("Événement réaffecté.", "success"); reloadEvent(); })
+                  .catch(function (e) { b.disabled = false; toast(e.message || "Erreur", "error"); });
+              } });
+              return [b];
+            });
+          });
+        } }) : null,
+        el("button", { class: "action-btn text-xs", style: "background:#ede9fe;color:#5b21b6", text: "Modifier", onclick: function () { eventModal(ev); } }),
+      ]),
     ]));
     if (ev.purged) {
       root.appendChild(el("div", { class: "card p-4 mb-4 bg-gray-50 text-sm text-gray-600", text: "Liste d'invités supprimée (conservation de " + S.meta.retention_days + " jours dépassée) : seuls les chiffres restent." }));
@@ -288,18 +323,36 @@
     });
     var actions = el("div", { class: "flex flex-wrap gap-2" });
     if (canActivate()) actions.appendChild(el("button", { class: "action-btn btn-primary text-xs", text: "Activer un pack (paiement reçu)", onclick: function () { orderModal(true); } }));
-    actions.appendChild(el("button", { class: "action-btn text-xs", style: "background:#ede9fe;color:#5b21b6", text: "Préparer un devis", onclick: function () { orderModal(false); } }));
+    actions.appendChild(el("button", { class: "action-btn text-xs", style: "background:#ede9fe;color:#5b21b6", text: "Préparer un devis numéroté", onclick: function () { quoteModal(null, { event: S.ev }); } }));
     items.push(actions);
+    // Devis numérotés de cet événement (ouvrir, activer au même montant)
+    var qbox = el("div", { class: "mt-3" });
+    items.push(qbox);
+    btApi.get("/admin/invitations/quotes?event_id=" + ev.id + "&limit=20").then(function (d) {
+      if (!d.quotes.length) return;
+      qbox.appendChild(lbl("Devis de cet événement"));
+      d.quotes.forEach(function (q) {
+        qbox.appendChild(el("button", { class: "w-full text-left flex flex-wrap items-center gap-2 p-2 rounded-xl hover:bg-gray-50 text-sm", onclick: function () { openQuote(q.id); } }, [
+          el("span", { class: "font-mono font-bold", text: q.number }), qChip(q.status),
+          el("span", { class: "text-gray-600", text: fcfa(q.total_fcfa) + " · valable jusqu'au " + isoDay(q.valid_until) }),
+        ]));
+      });
+    }).catch(function () {});
     if (!canActivate()) items.push(el("p", { class: "text-[11px] text-gray-500 mt-2", text: "L'activation d'un pack est réservée à l'administrateur, après réception du paiement." }));
     return block("Pack & paiement", items);
   }
 
-  // Devis (commercial + admin) et activation (admin) : le récapitulatif vient du serveur (même calcul)
-  function orderModal(activate) {
-    var m = S.meta, admin = canActivate();
+  // ── Sélecteur formule / pack / options / remise : UN composant pour l'activation, le devis
+  // d'un événement et les devis numérotés. Le récapitulatif vient TOUJOURS du serveur (même calcul).
+  //   o.priceUrl   : POST de calcul (…/packs/quote ou /admin/invitations/quotes/price)
+  //   o.draft      : devis préparé par un commercial (sur mesure / remise manuelle « à valider »)
+  //   o.serviceCode, o.initial (saisie d'un devis existant), o.activate (pré-remplit le montant reçu)
+  function orderForm(o) {
+    var m = S.meta, admin = canActivate(), advanced = admin || !!o.draft, init = o.initial || {};
     var formula = el("select", { class: "input-field" }), pack = el("select", { class: "input-field" });
     (m.formulas || []).forEach(function (fo) { formula.appendChild(el("option", { value: String(fo.id), text: fo.name })); });
-    var cur = (m.formulas || []).filter(function (fo) { return fo.code === S.ev.service_level; })[0];
+    var cur = init.formula_id ? (m.formulas || []).filter(function (fo) { return fo.id === init.formula_id; })[0]
+      : (m.formulas || []).filter(function (fo) { return fo.code === (o.serviceCode || "accompagne"); })[0];
     if (cur) formula.value = String(cur.id);
     var cSize = el("input", { class: "input-field", type: "number", min: "1", max: "5000", placeholder: "Personnes" });
     var cPrice = el("input", { class: "input-field", type: "number", min: "0", placeholder: "FCFA" });
@@ -307,7 +360,7 @@
     var customBox = el("div", { class: "hidden grid sm:grid-cols-3 gap-3 p-3 rounded-xl bg-gray-50" }, [field("Taille", cSize), field("Prix du pack", cPrice), field("Motif (obligatoire)", cReason)]);
     var optBox = el("div", { class: "space-y-2" }), optInputs = [];
     var dMode = el("select", { class: "input-field" }, [el("option", { value: "", text: "Aucune remise" }), el("option", { value: "code", text: "Code de remise" })]
-      .concat(admin ? [el("option", { value: "manual", text: "Remise manuelle (admin)" })] : []));
+      .concat(advanced ? [el("option", { value: "manual", text: admin ? "Remise manuelle (admin)" : "Remise manuelle (à valider par l'admin)" })] : []));
     var dCode = el("input", { class: "input-field uppercase", maxlength: "40", placeholder: "Ex. PIONNIER" });
     var mKind = el("select", { class: "input-field" }, [el("option", { value: "pct", text: "%" }), el("option", { value: "fixed", text: "FCFA" })]);
     var mValue = el("input", { class: "input-field", type: "number", min: "1" }), mReason = el("input", { class: "input-field", maxlength: "300", placeholder: "Motif (obligatoire)" });
@@ -316,17 +369,18 @@
     var offered = el("input", { type: "checkbox" }), offeredReason = el("input", { class: "input-field", maxlength: "300", placeholder: "Ex. partenariat, mariage du personnel" });
     var offeredBox = el("div", { class: "hidden" }, [field("Motif du pack offert (obligatoire)", offeredReason)]);
     var recap = el("div", { class: "p-3 rounded-xl bg-gray-50 text-sm" }, [el("p", { class: "text-gray-400", text: "Choisissez un pack…" })]);
-    var channel = el("select", { class: "input-field" }), ref = el("input", { class: "input-field", maxlength: "80" }), refLbl = lbl("Référence");
-    var amount = el("input", { class: "input-field", type: "number", min: "0" }), note = el("input", { class: "input-field", maxlength: "300", placeholder: "Facultatif" });
-    var confirm = el("input", { type: "checkbox" });
-    var active = (m.channels || []).filter(function (c) { return c.active; });
-    active.forEach(function (c) { channel.appendChild(el("option", { value: c.code, text: c.label })); });
-    var payBox = el("div", { class: "space-y-3" }, [
-      el("div", { class: "p-3 rounded-xl bg-amber-50 text-xs text-amber-900", text: "N'activez un pack qu'après avoir reçu le paiement sur un moyen AU NOM DE GoEvent SARLU. La référence ne pourra plus servir à activer un autre pack." }),
-      field("Moyen de paiement", channel), el("div", {}, [refLbl, ref]), field("Montant reçu (FCFA)", amount, "Au moins le total à payer."), field("Note", note),
-      el("label", { class: "flex items-start gap-2 text-sm font-semibold text-gray-800" }, [confirm, "Je confirme que ce paiement a été reçu sur un moyen de paiement au nom de GoEvent SARLU."]),
-    ]);
-    var lastQuote = null, timer = null;
+    var lastQuote = null, timer = null, sizeHint = 0;
+    // Pack proposé d'après le nombre d'invités : le plus petit pack qui couvre la liste (tant que
+    // l'utilisateur n'a pas choisi lui-même)
+    function suggest(n) {
+      sizeHint = n || 0;
+      if (!n || pack.dataset.touched || pack.value === "custom") return;
+      var fid = parseInt(formula.value, 10);
+      var list = (m.packs || []).filter(function (p) { return p.formula_id === fid && !p.on_quote; }).sort(function (a, b) { return a.size - b.size; });
+      if (!list.length) return;
+      var pick = list.filter(function (p) { return p.size >= n; })[0] || list[list.length - 1];
+      if (String(pick.id) !== pack.value) { pack.value = String(pick.id); sync(); schedule(); }
+    }
 
     function fillPacks() {
       var fid = parseInt(formula.value, 10);
@@ -334,16 +388,16 @@
       (m.packs || []).filter(function (p) { return p.formula_id === fid; }).forEach(function (p) {
         pack.appendChild(el("option", { value: String(p.id), text: p.size + " pers." + (p.name ? " · " + p.name : "") + " · " + (p.on_quote ? "sur devis" : fcfa(p.price_fcfa)) }));
       });
-      if (admin) pack.appendChild(el("option", { value: "custom", text: "Sur mesure (taille et prix libres)…" }));
+      if (advanced) pack.appendChild(el("option", { value: "custom", text: admin ? "Sur mesure (taille et prix libres)…" : "Sur mesure (à valider par l'admin)…" }));
       optBox.innerHTML = ""; optInputs = [];
-      var opts = (m.options || []).filter(function (o) { return o.formula_ids.indexOf(fid) >= 0; });
+      var opts = (m.options || []).filter(function (op) { return op.formula_ids.indexOf(fid) >= 0; });
       if (!opts.length) optBox.appendChild(el("p", { class: "text-[11px] text-gray-400", text: "Aucune option pour cette formule." }));
-      opts.forEach(function (o) {
-        var input = o.unit === "flat" ? el("input", { type: "checkbox" }) : el("input", { class: "input-field", type: "number", min: "0", max: String(o.max_qty), value: "0", style: "max-width:90px" });
+      opts.forEach(function (op) {
+        var input = op.unit === "flat" ? el("input", { type: "checkbox" }) : el("input", { class: "input-field", type: "number", min: "0", max: String(op.max_qty), value: "0", style: "max-width:90px" });
         input.addEventListener("input", schedule); input.addEventListener("change", schedule);
-        optInputs.push({ o: o, input: input });
+        optInputs.push({ o: op, input: input });
         optBox.appendChild(el("label", { class: "flex items-center gap-2 text-sm" }, [input,
-          el("span", { text: o.name + " — " + fcfa(o.price_fcfa) + (o.unit === "flat" ? " (forfait)" : " / " + (o.unit_label || (o.unit === "per_page" ? "page" : "unité")) + ", max " + o.max_qty) })]));
+          el("span", { text: op.name + " — " + fcfa(op.price_fcfa) + (op.unit === "flat" ? " (forfait)" : " / " + (op.unit_label || (op.unit === "per_page" ? "page" : "unité")) + ", max " + op.max_qty) })]));
       });
     }
     function payload() {
@@ -359,25 +413,20 @@
       else if (dMode.value === "manual") body.manual_discount = { kind: mKind.value, value: parseInt(mValue.value, 10) || 0, reason: mReason.value.trim() };
       return body;
     }
-    function row(label, value, cls) { return el("div", { class: "flex justify-between gap-3 " + (cls || "") }, [el("span", { text: label }), el("span", { class: "font-bold whitespace-nowrap", text: value })]); }
     function renderQuote(q) {
-      lastQuote = q; recap.innerHTML = "";
-      recap.appendChild(row((q.formula.name) + " · " + (q.pack.name ? "« " + q.pack.name + " » " : "") + q.pack.size + " pers.", fcfa(q.pack.unit_price)));
-      q.options.forEach(function (o) { recap.appendChild(row(o.name + (o.unit === "flat" ? "" : " × " + o.qty), fcfa(o.total), "text-gray-600")); });
-      if (q.discount) recap.appendChild(row("Remise " + (q.discount.kind === "code" ? q.discount.code : "manuelle") + (q.discount.type === "pct" ? " (−" + q.discount.value + " % du pack)" : ""), "−" + fcfa(q.discount.amount), "text-green-700"));
-      if (q.offered) recap.appendChild(row("Pack offert", "−" + fcfa(q.subtotal), "text-purple-700"));
-      if (q.vat.enabled) { recap.appendChild(row("Total HT", fcfa(q.vat.ht), "text-gray-600")); recap.appendChild(row("TVA " + (q.vat.rate_bp / 100).toString().replace(".", ",") + " %", fcfa(q.vat.vat), "text-gray-600")); }
-      recap.appendChild(row(q.vat.enabled ? "Total TTC à payer" : "Total à payer", fcfa(q.amount_due), "text-base border-t border-gray-200 pt-2 mt-2"));
-      if (q.agents_included) recap.appendChild(el("p", { class: "text-[11px] text-gray-600 mt-2", text: q.agents_included + " agent(s) GoEvent inclus dans ce pack · " + q.agents_assigned + " déjà assigné(s) à l'événement" }));
-      q.warnings.forEach(function (w) { recap.appendChild(el("p", { class: "text-xs font-bold text-amber-800 bg-amber-50 rounded-lg p-2 mt-2", text: "⚠ " + w })); });
-      q.blocking.forEach(function (w) { recap.appendChild(el("p", { class: "text-xs font-bold text-red-700 bg-red-50 rounded-lg p-2 mt-2", text: "⛔ " + w })); });
-      if (activate && !amount.dataset.touched) amount.value = String(q.amount_due);
+      lastQuote = q;
+      recap.innerHTML = "";
+      quoteLines(q).forEach(function (n) { recap.appendChild(n); });
+      if (q.needs_admin) recap.appendChild(el("p", { class: "text-xs font-bold text-purple-800 bg-purple-50 rounded-lg p-2 mt-2", text: "Sur mesure ou remise manuelle : l'administrateur validera ce devis avant son envoi." }));
+      (q.warnings || []).forEach(function (w) { recap.appendChild(el("p", { class: "text-xs font-bold text-amber-800 bg-amber-50 rounded-lg p-2 mt-2", text: "⚠ " + w })); });
+      (q.blocking || []).forEach(function (w) { recap.appendChild(el("p", { class: "text-xs font-bold text-red-700 bg-red-50 rounded-lg p-2 mt-2", text: "⛔ " + w })); });
+      if (o.onQuote) o.onQuote(q);
     }
     function refresh() {
-      if (!pack.value) { recap.innerHTML = ""; recap.appendChild(el("p", { class: "text-gray-400", text: "Aucun pack disponible pour cette formule." })); return; }
+      if (!pack.value) { lastQuote = null; recap.innerHTML = ""; recap.appendChild(el("p", { class: "text-gray-400", text: "Aucun pack disponible pour cette formule." })); return; }
       if (pack.value === "custom" && (!cSize.value || cPrice.value === "")) { recap.innerHTML = ""; recap.appendChild(el("p", { class: "text-gray-400", text: "Indiquez la taille et le prix du pack sur mesure." })); lastQuote = null; return; }
-      btApi.post("/admin/invitations/events/" + S.eventId + "/packs/quote", payload()).then(renderQuote).catch(function (e) {
-        lastQuote = null; recap.innerHTML = ""; recap.appendChild(el("p", { class: "text-sm font-bold text-red-600", text: e.message || "Devis impossible" }));
+      btApi.post(o.priceUrl, payload()).then(renderQuote).catch(function (e) {
+        lastQuote = null; recap.innerHTML = ""; recap.appendChild(el("p", { class: "text-sm font-bold text-red-600", text: e.message || "Calcul impossible" }));
       });
     }
     function schedule() { clearTimeout(timer); timer = setTimeout(refresh, 300); }
@@ -387,18 +436,26 @@
       manualBox.classList.toggle("hidden", offered.checked || dMode.value !== "manual");
       dMode.disabled = offered.checked;
       offeredBox.classList.toggle("hidden", !offered.checked);
-      payBox.classList.toggle("hidden", !activate || offered.checked);
-      var c = active.filter(function (x) { return x.code === channel.value; })[0];
-      refLbl.textContent = c ? c.ref_label + " (obligatoire)" : "Référence";
+      if (o.onSync) o.onSync(offered.checked);
     }
-    formula.addEventListener("change", function () { fillPacks(); sync(); schedule(); });
-    [pack, dMode, offered, channel].forEach(function (x) { x.addEventListener("change", function () { sync(); schedule(); }); });
+    formula.addEventListener("change", function () { fillPacks(); if (sizeHint) suggest(sizeHint); sync(); schedule(); });
+    pack.addEventListener("change", function () { pack.dataset.touched = "1"; });
+    [pack, dMode, offered].forEach(function (x) { x.addEventListener("change", function () { sync(); schedule(); }); });
     [cSize, cPrice, cReason, dCode, mValue, mReason, offeredReason].forEach(function (x) { x.addEventListener("input", schedule); });
     mKind.addEventListener("change", schedule);
-    amount.addEventListener("input", function () { amount.dataset.touched = "1"; });
-    fillPacks(); sync(); refresh();
+    fillPacks();
+    // Reprise d'une saisie existante (modification d'un brouillon)
+    if (init.custom) { pack.value = "custom"; cSize.value = init.custom.size; cPrice.value = init.custom.price_fcfa; cReason.value = init.custom.reason || ""; }
+    else if (init.pack_id) pack.value = String(init.pack_id);
+    (init.options || []).forEach(function (l) {
+      optInputs.forEach(function (x) { if (x.o.id === l.option_id) { if (x.o.unit === "flat") x.input.checked = true; else x.input.value = String(l.qty); } });
+    });
+    if (init.discount_code) { dMode.value = "code"; dCode.value = init.discount_code; }
+    else if (init.manual_discount) { dMode.value = "manual"; mKind.value = init.manual_discount.kind; mValue.value = init.manual_discount.value; mReason.value = init.manual_discount.reason || ""; }
+    if (init.offered && admin) { offered.checked = true; offeredReason.value = init.offered_reason || ""; }
+    sync(); refresh();
 
-    var body = el("div", { class: "space-y-3" }, [
+    var node = el("div", { class: "space-y-3" }, [
       el("div", { class: "grid sm:grid-cols-2 gap-3" }, [field("Formule", formula), field("Pack", pack)]),
       customBox,
       el("div", {}, [lbl("Options"), optBox]),
@@ -407,36 +464,77 @@
       admin ? el("label", { class: "flex items-center gap-2 text-sm font-semibold text-purple-800" }, [offered, "Pack offert (total 0, sans paiement — admin, motif obligatoire)"]) : null,
       offeredBox,
       el("div", {}, [lbl("Récapitulatif"), recap]),
-      activate ? payBox : null,
     ]);
-    modal(activate ? "Activer un pack" : "Devis", body, function (close) {
-      if (!activate) return [el("button", { class: "action-btn btn-primary", text: "Copier le devis", onclick: function () {
-        if (!lastQuote) { toast("Devis incomplet.", "error"); return; }
-        var q = lastQuote, t = ["Devis GoEvent — Invitations digitales", S.ev.title + " (" + S.ev.event_date_label + ")", "",
-          q.formula.name + " — " + q.pack.size + " personnes : " + fcfa(q.pack.unit_price)];
-        q.options.forEach(function (o) { t.push(o.name + (o.unit === "flat" ? "" : " × " + o.qty) + " : " + fcfa(o.total)); });
-        if (q.discount) t.push("Remise : −" + fcfa(q.discount.amount));
-        if (q.vat.enabled) t.push("Total HT : " + fcfa(q.vat.ht) + " · TVA : " + fcfa(q.vat.vat));
-        t.push((q.vat.enabled ? "Total TTC : " : "Total : ") + fcfa(q.amount_due));
-        if (q.agents_included) t.push(q.agents_included + " agent(s) GoEvent inclus");
-        t.push("", "Paiement à GoEvent SARLU (espèces contre reçu ou Orange Money).");
-        copy(t.join("\n"), "Devis");
-      } })];
+    return { node: node, payload: payload, last: function () { return lastQuote; }, offered: function () { return offered.checked; }, suggest: suggest };
+  }
+
+  // Lignes d'un calcul (aperçu, devis enregistré, commande) — même rendu partout
+  function quoteLines(q) {
+    function row(label, value, cls) { return el("div", { class: "flex justify-between gap-3 " + (cls || "") }, [el("span", { text: label }), el("span", { class: "font-bold whitespace-nowrap", text: value })]); }
+    var out = [row(q.formula.name + " · " + (q.pack.name && q.pack.name !== "Sur mesure" ? "« " + q.pack.name + " » " : "") + q.pack.size + " pers." + (q.pack.custom ? " (sur mesure)" : ""), fcfa(q.pack.unit_price))];
+    (q.options || []).forEach(function (op) { out.push(row(op.name + (op.unit === "flat" ? "" : " × " + op.qty), fcfa(op.total), "text-gray-600")); });
+    if (q.discount) out.push(row("Remise " + (q.discount.kind === "code" ? q.discount.code : "manuelle") + (q.discount.type === "pct" ? " (−" + q.discount.value + " % du pack)" : ""), "−" + fcfa(q.discount.amount), "text-green-700"));
+    if (q.offered) out.push(row("Pack offert", "−" + fcfa(q.subtotal), "text-purple-700"));
+    if (q.vat && q.vat.enabled) { out.push(row("Total HT", fcfa(q.vat.ht), "text-gray-600")); out.push(row("TVA " + (q.vat.rate_bp / 100).toString().replace(".", ",") + " %", fcfa(q.vat.vat), "text-gray-600")); }
+    out.push(row(q.vat && q.vat.enabled ? "Total TTC à payer" : "Total à payer", fcfa(q.amount_due), "text-base border-t border-gray-200 pt-2 mt-2"));
+    if (q.agents_included) out.push(el("p", { class: "text-[11px] text-gray-600 mt-2", text: q.agents_included + " agent(s) GoEvent inclus dans ce pack" + (q.agents_assigned != null ? " · " + q.agents_assigned + " déjà assigné(s) à l'événement" : "") }));
+    return out;
+  }
+
+  // Activation (admin) : depuis le sélecteur, ou depuis un devis numéroté (instantané rejoué, non modifiable)
+  function orderModal(activate, fromQuote) {
+    if (!activate) { quoteModal(null, { event: S.ev }); return; }
+    var m = S.meta, form = null, quoteSnap = fromQuote ? fromQuote.snapshot : null;
+    var channel = el("select", { class: "input-field" }), ref = el("input", { class: "input-field", maxlength: "80" }), refLbl = lbl("Référence");
+    var amount = el("input", { class: "input-field", type: "number", min: "0" }), note = el("input", { class: "input-field", maxlength: "300", placeholder: "Facultatif" });
+    var confirm = el("input", { type: "checkbox" });
+    var active = (m.channels || []).filter(function (c) { return c.active; });
+    active.forEach(function (c) { channel.appendChild(el("option", { value: c.code, text: c.label })); });
+    var payBox = el("div", { class: "space-y-3" }, [
+      el("div", { class: "p-3 rounded-xl bg-amber-50 text-xs text-amber-900", text: "N'activez un pack qu'après avoir reçu le paiement sur un moyen AU NOM DE GoEvent SARLU. La référence ne pourra plus servir à activer un autre pack." }),
+      field("Moyen de paiement", channel), el("div", {}, [refLbl, ref]), field("Montant reçu (FCFA)", amount, "Au moins le total à payer."), field("Note", note),
+      el("label", { class: "flex items-start gap-2 text-sm font-semibold text-gray-800" }, [confirm, "Je confirme que ce paiement a été reçu sur un moyen de paiement au nom de GoEvent SARLU."]),
+    ]);
+    function syncRef() { var c = active.filter(function (x) { return x.code === channel.value; })[0]; refLbl.textContent = c ? c.ref_label + " (obligatoire)" : "Référence"; }
+    channel.addEventListener("change", syncRef); syncRef();
+    amount.addEventListener("input", function () { amount.dataset.touched = "1"; });
+    var top;
+    if (quoteSnap) {
+      var recap = el("div", { class: "p-3 rounded-xl bg-gray-50 text-sm" }, quoteLines(quoteSnap));
+      top = el("div", { class: "space-y-2" }, [
+        el("p", { class: "text-xs font-bold text-primary", text: "Devis " + fromQuote.number + " — montant figé (le catalogue actuel ne s'applique pas)." }), recap]);
+      amount.value = String(quoteSnap.amount_due);
+      payBox.classList.toggle("hidden", !!quoteSnap.offered);
+    } else {
+      form = orderForm({ priceUrl: "/admin/invitations/events/" + S.eventId + "/packs/quote", serviceCode: S.ev.service_level, activate: true,
+        onQuote: function (q) { if (!amount.dataset.touched) amount.value = String(q.amount_due); },
+        onSync: function (off) { payBox.classList.toggle("hidden", off); } });
+      top = form.node;
+    }
+    var body = el("div", { class: "space-y-3" }, [top, payBox]);
+    modal(fromQuote ? "Activer le pack du devis " + fromQuote.number : "Activer un pack", body, function (close) {
       var b = el("button", { class: "action-btn btn-primary", text: "Activer", onclick: function () {
-        if (!lastQuote) { toast("Le récapitulatif doit être valide avant l'activation.", "error"); return; }
-        if (lastQuote.blocking.length) { toast(lastQuote.blocking[0], "error"); return; }
-        var body2 = payload();
-        if (!offered.checked) {
+        var body2, isOffered;
+        if (quoteSnap) {
+          body2 = Object.assign({}, (quoteSnap.input || { formula_id: quoteSnap.formula.id, pack_id: quoteSnap.pack.id, options: [] }), { quote_id: fromQuote.id });
+          isOffered = !!quoteSnap.offered;
+        } else {
+          var lq = form.last();
+          if (!lq) { toast("Le récapitulatif doit être valide avant l'activation.", "error"); return; }
+          if (lq.blocking.length) { toast(lq.blocking[0], "error"); return; }
+          body2 = form.payload(); isOffered = form.offered();
+        }
+        if (!isOffered) {
           if (!confirm.checked) { toast("Cochez la confirmation de réception du paiement.", "error"); return; }
           if (ref.value.trim().length < 3) { toast("Référence du paiement obligatoire.", "error"); return; }
           body2.payment_channel = channel.value; body2.payment_ref = ref.value.trim();
           body2.amount_received = parseInt(amount.value, 10) || 0; body2.confirmed_goevent_account = true;
         }
         body2.note = note.value.trim() || null;
-        if (offered.checked && !window.confirm("Activer ce pack OFFERT (total 0, aucune recette) ?")) return;
+        if (isOffered && !window.confirm("Activer ce pack OFFERT (total 0, aucune recette) ?")) return;
         b.disabled = true;
         btApi.post("/admin/invitations/events/" + S.eventId + "/packs", body2)
-          .then(function () { close(); toast(offered.checked ? "Pack offert activé." : "Pack activé.", "success"); reloadEvent(); })
+          .then(function () { close(); toast(isOffered ? "Pack offert activé." : "Pack activé.", "success"); reloadEvent(); })
           .catch(function (e) { b.disabled = false; toast(e.message || "Erreur", "error"); });
       } });
       return [b];
@@ -851,6 +949,398 @@
   }
 
   // ════════════════════════════════════════════════════════════════
+  // NAVIGATION INTERNE (Événements · Devis · Ventes & commissions · Catalogue)
+  // ════════════════════════════════════════════════════════════════
+  function navTabs(active) {
+    var tabs = [["events", "Événements", loadList], ["quotes", "Devis", openQuotes], ["sales", "Ventes & commissions", openSales],
+                ["catalog", "Catalogue", function () { openCatalog("formulas"); }]];
+    return el("div", { class: "flex flex-wrap gap-1 mb-5 p-1 bg-gray-100 rounded-2xl w-fit", role: "tablist" }, tabs.map(function (t) {
+      var on = t[0] === active;
+      return el("button", { role: "tab", "aria-selected": on ? "true" : "false",
+        class: "px-4 py-2 rounded-xl text-sm font-bold transition-colors " + (on ? "bg-white text-primary shadow-sm" : "text-gray-600 hover:text-primary"),
+        text: t[1], onclick: on ? null : t[2] });
+    }));
+  }
+  function loadSellers() {
+    if (!canActivate()) return Promise.resolve([]);
+    if (S.sellers) return Promise.resolve(S.sellers);
+    return btApi.get("/admin/sales/sellers").then(function (d) { S.sellers = d.sellers; return S.sellers; }).catch(function () { return []; });
+  }
+  function ownerSelect(current, allowHouse, houseLabel) {
+    var sel = el("select", { class: "input-field" });
+    sel.appendChild(el("option", { value: "", text: houseLabel || (allowHouse ? "Administration (maison)" : "Moi (administrateur)") }));
+    (S.sellers || []).filter(function (x) { return x.is_active || x.id === current; }).forEach(function (x) {
+      sel.appendChild(el("option", { value: String(x.id), text: x.full_name + (x.sales_code ? " · " + x.sales_code : "") + (x.is_active ? "" : " (désactivé)") }));
+    });
+    sel.value = current ? String(current) : "";
+    return sel;
+  }
+  var QSTATUS = { brouillon: ["Brouillon", "bg-gray-100 text-gray-700"], envoye: ["Envoyé", "bg-blue-100 text-blue-800"],
+                  accepte: ["Accepté", "bg-green-100 text-green-800"], refuse: ["Refusé", "bg-red-100 text-red-700"],
+                  converti: ["Converti", "bg-purple-100 text-purple-800"], expire: ["Expiré", "bg-amber-100 text-amber-800"] };
+  function qChip(st) { var x = QSTATUS[st] || [st, "bg-gray-100 text-gray-700"]; return el("span", { class: "text-[10px] font-black px-2 py-0.5 rounded-full whitespace-nowrap " + x[1], text: x[0] }); }
+  function isoDay(v) { return v ? new Date(v + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }) : "—"; }
+
+  // ════════════════════════════════════════════════════════════════
+  // DEVIS NUMÉROTÉS
+  // ════════════════════════════════════════════════════════════════
+  var QS = { status: "", owner: "", flag: "", q: "", page: 1 };
+  function openQuotes() {
+    stopTimer();
+    S.view = "quotes";
+    sec().innerHTML = '<div class="card p-6 empty-state">Chargement…</div>';
+    loadSellers().then(loadQuotes);
+  }
+  function loadQuotes() {
+    var qs = "?page=" + QS.page + "&limit=50" + (QS.status ? "&status=" + QS.status : "") + (QS.owner ? "&owner_id=" + QS.owner : "") +
+             (QS.flag ? "&flag=" + QS.flag : "") + (QS.q ? "&q=" + encodeURIComponent(QS.q) : "");
+    btApi.get("/admin/invitations/quotes" + qs).then(renderQuotes)
+      .catch(function (e) { sec().innerHTML = ""; sec().appendChild(el("div", { class: "card p-6 text-red-600 text-sm", text: e.message || "Erreur" })); });
+  }
+  function renderQuotes(d) {
+    var root = sec(), admin = canActivate();
+    root.innerHTML = "";
+    root.appendChild(navTabs("quotes"));
+    root.appendChild(el("div", { class: "flex flex-wrap justify-between items-start gap-3 mb-4" }, [
+      el("div", {}, [
+        el("h2", { class: "text-xl font-black text-gray-900", text: "Devis" }),
+        el("p", { class: "text-xs text-gray-500 mt-1", text: admin ? "Tous les devis de l'équipe. Numéro attribué automatiquement, prix figé, valable 15 jours."
+          : "Vos devis. Numéro attribué automatiquement, prix figé, valable 15 jours." }),
+      ]),
+      el("button", { class: "action-btn btn-primary", text: "+ Nouveau devis", onclick: function () { quoteModal(null, {}); } }),
+    ]));
+    if (admin && d.counts) {
+      var chips = [["", "Tous"], ["to_validate", "À valider (" + d.counts.to_validate + ")"], ["to_cash", "Acceptés — à encaisser (" + d.counts.to_cash + ")"],
+                   ["duplicate", "Conflits / doublons (" + d.counts.duplicate + ")"]];
+      root.appendChild(el("div", { class: "flex flex-wrap gap-2 mb-3" }, chips.map(function (c) {
+        var on = QS.flag === c[0];
+        return el("button", { class: "px-3 py-1.5 rounded-full text-xs font-bold border " + (on ? "bg-primary text-white border-primary" : "bg-white text-gray-700 border-gray-200 hover:border-primary"),
+          text: c[1], onclick: function () { QS.flag = c[0]; QS.page = 1; loadQuotes(); } });
+      })));
+    }
+    var search = el("input", { class: "input-field", placeholder: "N° de devis, nom, entreprise ou téléphone", value: QS.q });
+    var stSel = el("select", { class: "input-field" }, [["", "Tous les statuts"], ["brouillon", "Brouillon"], ["envoye", "Envoyé"], ["accepte", "Accepté"],
+      ["refuse", "Refusé"], ["converti", "Converti"], ["expire", "Expiré"]].map(function (x) { return el("option", { value: x[0], text: x[1] }); }));
+    stSel.value = QS.status;
+    var filters = [el("div", { class: "flex-1 min-w-[220px]" }, [search]), el("div", { class: "min-w-[160px]" }, [stSel])];
+    var owSel = null;
+    if (admin) {
+      owSel = el("select", { class: "input-field" }, [el("option", { value: "", text: "Tous les commerciaux" })].concat((S.sellers || []).map(function (x) {
+        return el("option", { value: String(x.id), text: x.full_name + (x.sales_code ? " · " + x.sales_code : "") });
+      })));
+      owSel.value = QS.owner;
+      filters.push(el("div", { class: "min-w-[180px]" }, [owSel]));
+    }
+    var t = null;
+    search.addEventListener("input", function () { clearTimeout(t); t = setTimeout(function () { QS.q = search.value.trim(); QS.page = 1; loadQuotes(); }, 350); });
+    stSel.addEventListener("change", function () { QS.status = stSel.value; QS.page = 1; loadQuotes(); });
+    if (owSel) owSel.addEventListener("change", function () { QS.owner = owSel.value; QS.page = 1; loadQuotes(); });
+    root.appendChild(el("div", { class: "flex flex-wrap gap-2 mb-4" }, filters));
+    if (!d.quotes.length) {
+      root.appendChild(el("div", { class: "card p-6 empty-state", text: QS.q || QS.status || QS.flag ? "Aucun devis ne correspond." : "Aucun devis pour l'instant : « + Nouveau devis » pour chiffrer un prospect." }));
+      return;
+    }
+    var list = el("div", { class: "card divide-y divide-gray-100" });
+    d.quotes.forEach(function (q) {
+      var flags = [];
+      if (q.needs_admin) flags.push(el("span", { class: "text-[10px] font-black px-2 py-0.5 rounded-full bg-purple-100 text-purple-800", text: "À valider" }));
+      if (admin && (q.possible_duplicate_of || q.conflict_with_quote_id)) flags.push(el("span", { class: "text-[10px] font-black px-2 py-0.5 rounded-full bg-orange-100 text-orange-800", text: q.conflict_with_quote_id ? "Conflit forcé" : "Doublon possible" }));
+      list.appendChild(el("button", { class: "w-full text-left p-4 hover:bg-gray-50 flex flex-wrap items-center gap-x-4 gap-y-1", onclick: function () { openQuote(q.id); } }, [
+        el("div", { class: "flex-1 min-w-[220px]" }, [
+          el("div", { class: "flex flex-wrap items-center gap-2" }, [el("span", { class: "font-mono font-black text-sm text-gray-900", text: q.number }), qChip(q.status)].concat(flags)),
+          el("p", { class: "text-sm font-bold text-gray-800 mt-1", text: q.client_name + (q.client_company ? " · " + q.client_company : "") }),
+          el("p", { class: "text-xs text-gray-500", text: [q.event_type, q.event_date ? isoDay(q.event_date) : null, q.formula_name ? q.formula_name + " " + (q.pack_size || "") + " pers." : null].filter(Boolean).join(" · ") }),
+        ]),
+        el("div", { class: "text-right" }, [
+          el("p", { class: "font-black text-gray-900", text: fcfa(q.total_fcfa) }),
+          el("p", { class: "text-[11px] text-gray-500", text: (admin ? (q.owner_name || "—") + " · " : "") + "valable jusqu'au " + isoDay(q.valid_until) }),
+        ]),
+      ]));
+    });
+    root.appendChild(list);
+    var pages = Math.ceil(d.total / d.limit);
+    if (pages > 1) root.appendChild(el("div", { class: "flex justify-center items-center gap-3 mt-4 text-sm" }, [
+      el("button", { class: "action-btn text-xs", text: "← Précédents", disabled: QS.page <= 1 ? "disabled" : null, onclick: function () { QS.page--; loadQuotes(); } }),
+      el("span", { class: "text-gray-500", text: "Page " + QS.page + " / " + pages }),
+      el("button", { class: "action-btn text-xs", text: "Suivants →", disabled: QS.page >= pages ? "disabled" : null, onclick: function () { QS.page++; loadQuotes(); } }),
+    ]));
+  }
+
+  // Création / modification d'un devis (brouillon). o.event : devis rattaché à un événement.
+  function quoteModal(q, o) {
+    o = o || {};
+    var admin = canActivate(), ev = o.event || null;
+    var input = q ? ((q.snapshot || {}).input || null) : null;
+    var f = {
+      name: el("input", { class: "input-field", maxlength: "120", placeholder: "Ex. Famille Ngaba, Mme Kossi" }),
+      company: el("input", { class: "input-field", maxlength: "120", placeholder: "Facultatif (gala, conférence…)" }),
+      phone: el("input", { class: "input-field", maxlength: "30", placeholder: "+236 …", type: "tel" }),
+      type: el("input", { class: "input-field", maxlength: "60", placeholder: "Mariage, dot, gala…", list: "inv-event-types" }),
+      date: el("input", { class: "input-field", type: "date" }),
+      location: el("input", { class: "input-field", maxlength: "200", placeholder: "Salle, quartier (facultatif)" }),
+      guests: el("input", { class: "input-field", type: "number", min: "1", placeholder: "Ex. 280" }),
+    };
+    var types = el("datalist", { id: "inv-event-types" }, ["Mariage", "Dot", "Anniversaire", "Baptême", "Gala", "Conférence", "Soirée d'entreprise"].map(function (x) { return el("option", { value: x }); }));
+    if (q) {
+      f.name.value = q.client_name; f.company.value = q.client_company || ""; f.phone.value = q.client_phone || "";
+      f.type.value = q.event_type || ""; f.date.value = q.event_date || ""; f.location.value = q.location || ""; f.guests.value = q.guests_count || "";
+    } else if (ev) {
+      f.name.value = ev.client_name || ""; f.phone.value = ev.client_phone || ""; f.location.value = ev.location || "";
+      f.date.value = ev.event_date ? dateInput(ev.event_date) : ""; f.type.value = "";
+    }
+    var owner = null;
+    if (admin && !q && !ev) owner = ownerSelect(null, false);
+    var form = orderForm({ priceUrl: "/admin/invitations/quotes/price", draft: !admin, initial: input, serviceCode: ev ? ev.service_level : null });
+    if (!input) f.guests.addEventListener("input", function () { form.suggest(parseInt(f.guests.value, 10) || 0); });
+    var body = el("div", { class: "space-y-3" }, [
+      types,
+      ev ? el("p", { class: "text-xs font-bold text-primary", text: "Devis rattaché à l'événement « " + ev.title + " »" }) : null,
+      el("div", { class: "grid sm:grid-cols-2 gap-3" }, [field("Client (obligatoire)", f.name), field("Entreprise / organisation", f.company)]),
+      el("div", { class: "grid sm:grid-cols-2 gap-3" }, [field("Téléphone du client", f.phone, "Sert au contrôle des doublons entre commerciaux."), field("Type d'événement", f.type)]),
+      el("div", { class: "grid sm:grid-cols-3 gap-3" }, [field("Date prévue", f.date), field("Lieu", f.location), field("Nombre d'invités", f.guests)]),
+      owner ? field("Commercial propriétaire", owner, "Le devis et la vente seront attribués à ce commercial.") : null,
+      el("hr", { class: "border-gray-100" }),
+      form.node,
+    ]);
+    modal(q ? "Modifier le devis " + q.number : "Nouveau devis", body, function (close) {
+      var b = el("button", { class: "action-btn btn-primary", text: q ? "Enregistrer" : "Créer le devis", onclick: function () { submit(null); } });
+      function submit(force) {
+        if (f.name.value.trim().length < 2) { toast("Nom du client obligatoire.", "error"); return; }
+        if (!form.last()) { toast("Le récapitulatif doit être valide.", "error"); return; }
+        var payload = { client_name: f.name.value.trim(), client_company: f.company.value.trim() || null, client_phone: f.phone.value.trim() || null,
+          event_type: f.type.value.trim() || null, event_date: f.date.value || null, location: f.location.value.trim() || null,
+          guests_count: parseInt(f.guests.value, 10) || null, order: form.payload() };
+        if (force) payload.force_reason = force;
+        if (!q) { if (ev) payload.event_id = ev.id; if (owner && owner.value) payload.owner_id = parseInt(owner.value, 10); }
+        b.disabled = true;
+        (q ? btApi.patch("/admin/invitations/quotes/" + q.id, payload) : btApi.post("/admin/invitations/quotes", payload))
+          .then(function (r) {
+            close();
+            toast(q ? "Devis enregistré." : "Devis " + r.number + " créé.", "success");
+            if (S.view === "quotes") loadQuotes();
+            openQuote(r.id);
+          })
+          .catch(function (e) {
+            b.disabled = false;
+            var msg = e.message || "Erreur";
+            if (admin && /motif pour passer outre/.test(msg)) {
+              var reason = window.prompt(msg + "\n\nMotif (obligatoire, journalisé) :");
+              if (reason && reason.trim().length >= 3) submit(reason.trim());
+              return;
+            }
+            toast(msg, "error");
+          });
+      }
+      return [b];
+    });
+  }
+
+  function openQuote(id) {
+    btApi.get("/admin/invitations/quotes/" + id).then(quoteDetail).catch(function (e) { toast(e.message || "Erreur", "error"); });
+  }
+  function quoteDetail(q) {
+    var admin = canActivate(), snap = q.snapshot || {}, closeFn = null;
+    function act(label, style, fn) { return el("button", { class: "action-btn text-xs", style: style, text: label, onclick: fn }); }
+    function after(r, msg) { if (msg) toast(msg, "success"); if (closeFn) closeFn(); if (S.view === "quotes") loadQuotes(); if (S.view === "event") reloadEvent(); if (r) quoteDetail(r); }
+    function call(promise, msg) { return promise.then(function (r) { after(r, msg); }).catch(function (e) { toast(e.message || "Erreur", "error"); }); }
+    var st = q.status, open = st === "brouillon" || st === "envoye" || st === "accepte", sendable = !q.needs_admin && !q.purged;
+    var info = el("div", { class: "space-y-1 text-sm" }, [
+      el("div", { class: "flex flex-wrap items-center gap-2" }, [qChip(st), q.needs_admin ? el("span", { class: "text-[10px] font-black px-2 py-0.5 rounded-full bg-purple-100 text-purple-800", text: "À valider par l'admin" }) : null]),
+      el("p", { class: "font-bold text-gray-900 mt-2", text: q.client_name + (q.client_company ? " · " + q.client_company : "") }),
+      el("p", { class: "text-xs text-gray-600", text: [q.client_phone, q.event_type, q.event_date ? isoDay(q.event_date) : null, q.location, q.guests_count ? q.guests_count + " invités" : null].filter(Boolean).join(" · ") || "—" }),
+      el("p", { class: "text-xs text-gray-500", text: "Créé le " + dt(q.created_at) + " · valable jusqu'au " + isoDay(q.valid_until) + (admin ? " · " + (q.owner_name || "—") + (q.sales_code ? " (" + q.sales_code + ")" : "") : "") }),
+      q.refused_reason ? el("p", { class: "text-xs text-red-600", text: "Refusé : " + q.refused_reason }) : null,
+      admin && q.possible_duplicate_of ? el("p", { class: "text-xs font-bold text-orange-700 bg-orange-50 rounded-lg p-2", text: "Doublon possible avec un devis d'un autre commercial (nom proche, date à ± 30 jours) : vérifiez avant de convertir." }) : null,
+      admin && q.conflict_with_quote_id ? el("p", { class: "text-xs font-bold text-orange-700 bg-orange-50 rounded-lg p-2", text: "Créé malgré un conflit de téléphone (motif journalisé)." }) : null,
+    ]);
+    var recap = snap.formula ? el("div", { class: "p-3 rounded-xl bg-gray-50 text-sm mt-3" }, quoteLines(snap)) : null;
+    var acts = el("div", { class: "flex flex-wrap gap-2 mt-4" });
+    if (sendable) {
+      acts.appendChild(act("Télécharger le PDF", "background:#ede9fe;color:#5b21b6", function () { downloadQuotePdf(q); }));
+      acts.appendChild(act("Copier le texte WhatsApp", "background:#dcfce7;color:#166534", function () {
+        btApi.get("/admin/invitations/quotes/" + q.id + "/whatsapp").then(function (r) {
+          copy(r.text, "Devis");
+          if (r.wa_url && window.confirm("Texte copié. Ouvrir WhatsApp vers " + q.client_phone + " ?")) window.open(r.wa_url, "_blank", "noopener");
+        }).catch(function (e) { toast(e.message || "Erreur", "error"); });
+      }));
+    }
+    if (st === "brouillon") acts.appendChild(act("Modifier", "background:#f3f4f6;color:#374151", function () { closeFn(); quoteModal(q, {}); }));
+    if (admin && q.needs_admin && st === "brouillon") acts.appendChild(act("Valider le devis", "background:#7c3aed;color:#fff", function () { call(btApi.post("/admin/invitations/quotes/" + q.id + "/validate"), "Devis validé."); }));
+    if (st === "brouillon" && sendable) acts.appendChild(act("Marquer envoyé", "background:#dbeafe;color:#1e40af", function () { call(btApi.post("/admin/invitations/quotes/" + q.id + "/sent"), "Devis marqué envoyé."); }));
+    if ((st === "envoye" || st === "brouillon") && sendable) acts.appendChild(act("Marquer accepté", "background:#dcfce7;color:#166534", function () { call(btApi.post("/admin/invitations/quotes/" + q.id + "/accepted"), "Devis accepté."); }));
+    if (open) acts.appendChild(act("Marquer refusé", "background:#fee2e2;color:#991b1b", function () {
+      var reason = window.prompt("Motif du refus (obligatoire) :");
+      if (!reason || reason.trim().length < 3) return;
+      call(btApi.post("/admin/invitations/quotes/" + q.id + "/refused", { reason: reason.trim() }), "Devis marqué refusé.");
+    }));
+    if (!q.purged) acts.appendChild(act("Dupliquer (prix du jour)", "background:#f3f4f6;color:#374151", function () {
+      btApi.post("/admin/invitations/quotes/" + q.id + "/duplicate").then(function (r) { toast("Nouveau devis " + r.number + ".", "success"); after(r); })
+        .catch(function (e) { toast(e.message || "Erreur", "error"); });
+    }));
+    if (admin && st !== "converti") acts.appendChild(act("Réaffecter", "background:#e0f2fe;color:#075985", function () {
+      var choices = (S.sellers || []).filter(function (x) { return x.is_active; });
+      var pick = window.prompt("Réaffecter le devis " + q.number + " à :\n0 — Moi (administrateur)\n" + choices.map(function (x) { return x.id + " — " + x.full_name; }).join("\n") + "\n\nTapez le numéro :", "0");
+      if (pick === null) return;
+      var id = parseInt(pick, 10);
+      if (isNaN(id) || (id && !choices.some(function (x) { return x.id === id; }))) { toast("Choix invalide.", "error"); return; }
+      call(btApi.post("/admin/invitations/quotes/" + q.id + "/owner", { owner_id: id || btAuth.getUser().id }), "Devis réaffecté.");
+    }));
+    if (q.event_id) acts.appendChild(act("Ouvrir l'événement", "background:#00502c;color:#fff", function () { closeFn(); openEvent(q.event_id); }));
+    else if (admin && (st === "envoye" || st === "accepte") && sendable) acts.appendChild(act("Créer l'événement depuis ce devis", "background:#00502c;color:#fff", function () { closeFn(); convertModal(q); }));
+    if (admin && q.event_id && !q.pack_id && (st === "envoye" || st === "accepte") && sendable) acts.appendChild(act("Activer le pack (paiement reçu)", "background:#047857;color:#fff", function () {
+      closeFn(); openEventAndActivate(q.event_id, q);
+    }));
+    var body = el("div", {}, [info, recap, acts,
+      !admin ? el("p", { class: "text-[11px] text-gray-500 mt-3", text: "Le client paie GoEvent SARLU (espèces contre reçu ou Orange Money GoEvent). L'activation est faite par l'administrateur à réception du paiement." }) : null]);
+    closeFn = modal("Devis " + q.number, body, function () { return []; });
+  }
+  function downloadQuotePdf(q) {
+    fetch(BT_API + "/admin/invitations/quotes/" + q.id + "/pdf", { headers: { Authorization: "Bearer " + btAuth.getToken() } })
+      .then(function (res) { if (!res.ok) return res.json().then(function (d) { throw new Error(d.detail || "Erreur " + res.status); }); return res.blob(); })
+      .then(function (b) {
+        var url = URL.createObjectURL(b), a = el("a", { href: url, download: q.number + ".pdf" });
+        document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+      }).catch(function (e) { toast(e.message || "PDF indisponible", "error"); });
+  }
+  function convertModal(q) {
+    var f = {
+      title: el("input", { class: "input-field", maxlength: "150", value: (q.event_type ? q.event_type + " — " : "") + q.client_name }),
+      date: el("input", { class: "input-field", type: "datetime-local", value: q.event_date ? q.event_date + "T18:00" : "" }),
+      location: el("input", { class: "input-field", maxlength: "200", value: q.location || "" }),
+      host: el("input", { class: "input-field", maxlength: "120", placeholder: "Ex. Paul & Marie (affiché « … vous invite »)" }),
+    };
+    var body = el("div", { class: "space-y-3" }, [
+      el("p", { class: "text-xs text-gray-600", text: "L'événement privé est créé au nom du client du devis " + q.number + (q.owner_name ? " et attribué à " + q.owner_name : "") + ". Vous activerez ensuite le pack au même montant (" + fcfa(q.total_fcfa) + "), après réception du paiement." }),
+      field("Titre", f.title), el("div", { class: "grid sm:grid-cols-2 gap-3" }, [field("Date et heure", f.date), field("Lieu", f.location)]),
+      field("Hôte affiché sur le pass", f.host, "Vide = nom du client."),
+    ]);
+    modal("Créer l'événement depuis " + q.number, body, function (close) {
+      var b = el("button", { class: "action-btn btn-primary", text: "Créer l'événement", onclick: function () {
+        if (!f.date.value || f.title.value.trim().length < 3 || f.location.value.trim().length < 2) { toast("Titre, date et lieu obligatoires.", "error"); return; }
+        b.disabled = true;
+        btApi.post("/admin/invitations/quotes/" + q.id + "/convert", { title: f.title.value.trim(), event_date: new Date(f.date.value).toISOString(),
+          location: f.location.value.trim(), host_label: f.host.value.trim() || null })
+          .then(function (r) { close(); toast("Événement créé : activez le pack à réception du paiement.", "success"); openEventAndActivate(r.event_id, r.quote); })
+          .catch(function (e) { b.disabled = false; toast(e.message || "Erreur", "error"); });
+      } });
+      return [b];
+    });
+  }
+  function openEventAndActivate(eventId, q) {
+    stopTimer();
+    S.view = "event"; S.eventId = eventId; S.q = ""; S.status = ""; S.page = 1; S.importRows = null;
+    sec().innerHTML = '<div class="card p-6 empty-state">Chargement…</div>';
+    btApi.get("/admin/invitations/events/" + eventId).then(function (ev) {
+      S.ev = ev; renderEvent(); loadGuests();
+      return btApi.get("/admin/invitations/quotes/" + q.id);
+    }).then(function (full) { orderModal(true, full); }).catch(function (e) { toast(e.message || "Erreur", "error"); });
+    S.timer = setInterval(function () { if (S.view === "event" && !document.hidden) refreshLive(); }, 30000);
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // VENTES & COMMISSIONS
+  // ════════════════════════════════════════════════════════════════
+  var SALES = { period: null, owner: "" };
+  var CSTATUS = { a_venir: ["À venir", "bg-gray-100 text-gray-700"], a_cloturer: ["À clôturer", "bg-amber-100 text-amber-800"],
+                  due: ["Due", "bg-blue-100 text-blue-800"], versee: ["Versée", "bg-green-100 text-green-800"], annulee: ["Annulée", "bg-red-100 text-red-700"] };
+  function thisPeriod() { return new Date().toLocaleDateString("fr-CA", { timeZone: TZ }).slice(0, 7); }
+  function openSales() {
+    stopTimer();
+    S.view = "sales";
+    SALES.period = SALES.period || thisPeriod();
+    sec().innerHTML = '<div class="card p-6 empty-state">Chargement…</div>';
+    loadSellers().then(loadSales);
+  }
+  function loadSales() {
+    btApi.get("/admin/sales/commissions?period=" + SALES.period + (SALES.owner ? "&owner_id=" + SALES.owner : "")).then(renderSales)
+      .catch(function (e) { sec().innerHTML = ""; sec().appendChild(navTabs("sales")); sec().appendChild(el("div", { class: "card p-6 text-red-600 text-sm", text: e.message || "Erreur" })); });
+  }
+  function renderSales(d) {
+    var root = sec(), admin = d.can_manage;
+    root.innerHTML = "";
+    root.appendChild(navTabs("sales"));
+    var month = el("input", { class: "input-field", type: "month", value: SALES.period, style: "max-width:180px" });
+    month.addEventListener("change", function () { if (month.value) { SALES.period = month.value; loadSales(); } });
+    var head = [month];
+    if (admin) {
+      var ow = el("select", { class: "input-field", style: "max-width:220px" }, [el("option", { value: "", text: "Tous les commerciaux" })].concat((S.sellers || []).map(function (x) {
+        return el("option", { value: String(x.id), text: x.full_name });
+      })));
+      ow.value = SALES.owner;
+      ow.addEventListener("change", function () { SALES.owner = ow.value; loadSales(); });
+      head.push(ow);
+    }
+    head.push(el("button", { class: "action-btn text-xs", style: "background:#f3f4f6;color:#374151", text: "Exporter (CSV)", onclick: function () {
+      fetch(BT_API + "/admin/sales/commissions/statement.csv?period=" + SALES.period + (SALES.owner ? "&owner_id=" + SALES.owner : ""), { headers: { Authorization: "Bearer " + btAuth.getToken() } })
+        .then(function (r) { if (!r.ok) throw new Error("Export impossible"); return r.blob(); })
+        .then(function (b) { var url = URL.createObjectURL(b), a = el("a", { href: url, download: "commissions-" + SALES.period + ".csv" }); document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 2000); })
+        .catch(function (e) { toast(e.message, "error"); });
+    } }));
+    if (admin) head.push(el("button", { class: "action-btn btn-primary text-xs", text: "Clôturer " + SALES.period, onclick: function () {
+      if (!window.confirm("Clôturer " + SALES.period + " ? Les commissions des packs actifs dont l'événement a eu lieu ce mois-ci deviennent dues.")) return;
+      btApi.post("/admin/sales/commissions/close?period=" + SALES.period).then(function (r) { toast(r.closed + " commission(s) clôturée(s) · " + fcfa(r.total_fcfa), "success"); loadSales(); })
+        .catch(function (e) { toast(e.message || "Erreur", "error"); });
+    } }));
+    root.appendChild(el("div", { class: "flex flex-wrap justify-between items-start gap-3 mb-4" }, [
+      el("div", {}, [
+        el("h2", { class: "text-xl font-black text-gray-900", text: admin ? "Ventes & commissions" : "Mes ventes & commissions" }),
+        el("p", { class: "text-xs text-gray-500 mt-1", text: "Commission = taux × prix du pack après remise (options exclues), pour les événements du mois. Versement au plus tard le " + isoDay(d.deadline) + "." }),
+      ]),
+      el("div", { class: "flex flex-wrap gap-2 items-center" }, head),
+    ]));
+    if (!d.totals.length) { root.appendChild(el("div", { class: "card p-6 empty-state", text: "Aucune vente avec commission pour ce mois." })); return; }
+    var cards = el("div", { class: "grid gap-3 md:grid-cols-2 xl:grid-cols-3 mb-4" });
+    d.totals.forEach(function (t) {
+      var items = [
+        el("div", { class: "flex justify-between items-start gap-2" }, [
+          el("div", {}, [el("p", { class: "font-black text-gray-900", text: t.owner_name }), el("p", { class: "text-[11px] text-gray-500", text: (t.sales_code || "") + " · " + t.sales + " vente(s)" })]),
+        ]),
+        el("div", { class: "grid grid-cols-2 gap-2 mt-3 text-xs" }, [
+          el("div", {}, [el("p", { class: "text-gray-500", text: "Due" }), el("p", { class: "font-black text-blue-800 text-base", text: fcfa(t.due) })]),
+          el("div", {}, [el("p", { class: "text-gray-500", text: "Versée" }), el("p", { class: "font-black text-green-800 text-base", text: fcfa(t.paid) })]),
+          el("div", {}, [el("p", { class: "text-gray-500", text: "À clôturer" }), el("p", { class: "font-bold text-amber-800", text: fcfa(t.to_close) })]),
+          el("div", {}, [el("p", { class: "text-gray-500", text: "À venir" }), el("p", { class: "font-bold text-gray-700", text: fcfa(t.upcoming) })]),
+        ]),
+      ];
+      if (admin && t.due > 0) items.push(el("button", { class: "action-btn btn-primary text-xs mt-3 w-full", text: "Marquer comme versée (" + fcfa(t.due) + ")", onclick: function () { payModal(t); } }));
+      cards.appendChild(el("div", { class: "card p-4" }, items));
+    });
+    root.appendChild(cards);
+    var tbl = el("div", { class: "card divide-y divide-gray-100" });
+    d.lines.forEach(function (l) {
+      var c = CSTATUS[l.status] || [l.status, "bg-gray-100 text-gray-700"];
+      tbl.appendChild(el("div", { class: "p-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm" }, [
+        el("div", { class: "flex-1 min-w-[220px]" }, [
+          el("p", { class: "font-bold text-gray-900", text: l.event_title }),
+          el("p", { class: "text-[11px] text-gray-500", text: dt(l.event_date) + (l.quote_number ? " · " + l.quote_number : "") + (admin ? " · " + l.owner_name : "") + (l.paid_ref ? " · versée le " + isoDay((l.paid_at || "").slice(0, 10)) + ", réf. " + l.paid_ref : "") }),
+        ]),
+        el("span", { class: "text-xs text-gray-600", text: fcfa(l.base_fcfa) + " × " + String(l.rate_pct).replace(".", ",") + " %" }),
+        el("span", { class: "font-black text-gray-900 min-w-[7.5rem] text-right whitespace-nowrap", text: fcfa(l.amount_fcfa) }),
+        el("span", { class: "text-[10px] font-black px-2 py-0.5 rounded-full " + c[1], text: c[0] }),
+      ]));
+    });
+    root.appendChild(tbl);
+  }
+  function payModal(t) {
+    var day = el("input", { class: "input-field", type: "date", value: new Date().toLocaleDateString("fr-CA", { timeZone: TZ }) });
+    var ref = el("input", { class: "input-field", maxlength: "80", placeholder: "ID de transaction Orange Money, n° de reçu…" });
+    var body = el("div", { class: "space-y-3" }, [
+      el("p", { class: "text-sm text-gray-700", text: t.owner_name + " · " + SALES.period + " · " + fcfa(t.due) }),
+      field("Date du versement", day), field("Référence (obligatoire)", ref),
+    ]);
+    modal("Commission versée", body, function (close) {
+      var b = el("button", { class: "action-btn btn-primary", text: "Enregistrer le versement", onclick: function () {
+        if (ref.value.trim().length < 3) { toast("Référence obligatoire.", "error"); return; }
+        b.disabled = true;
+        btApi.post("/admin/sales/commissions/pay?period=" + SALES.period + "&owner_id=" + t.owner_id, { paid_on: day.value, reference: ref.value.trim() })
+          .then(function (r) { close(); toast(r.paid + " commission(s) marquée(s) versée(s) · " + fcfa(r.total_fcfa), "success"); loadSales(); })
+          .catch(function (e) { b.disabled = false; toast(e.message || "Erreur", "error"); });
+      } });
+      return [b];
+    });
+  }
+
+  // ════════════════════════════════════════════════════════════════
   // CATALOGUE DES PACKS (lecture admin + commercial, modification admin)
   // ════════════════════════════════════════════════════════════════
   var CAT = { tab: "formulas", data: null, archived: false, packFormula: "" };
@@ -914,7 +1404,7 @@
   function renderCatalog() {
     var root = sec(), d = CAT.data;
     root.innerHTML = "";
-    root.appendChild(el("button", { class: "text-sm font-bold text-primary mb-3", text: "← Invitations", onclick: loadList }));
+    root.appendChild(navTabs("catalog"));
     root.appendChild(el("div", { class: "flex flex-wrap justify-between items-start gap-3 mb-3" }, [
       el("div", {}, [
         el("h2", { class: "text-xl font-black text-gray-900", text: "Catalogue des packs" }),
@@ -1230,7 +1720,13 @@
   // ENTRÉE (appelée par showTab('invitations'))
   // ════════════════════════════════════════════════════════════════
   window.invInit = function () {
-    var start = function () { if (S.view === "event" && S.eventId) openEvent(S.eventId); else if (S.view === "catalog") openCatalog(); else loadList(); };
+    var start = function () {
+      if (S.view === "event" && S.eventId) openEvent(S.eventId);
+      else if (S.view === "catalog") openCatalog();
+      else if (S.view === "quotes") openQuotes();
+      else if (S.view === "sales") openSales();
+      else loadList();
+    };
     if (S.meta) { start(); return; }
     sec().innerHTML = '<div class="card p-6 empty-state">Chargement…</div>';
     btApi.get("/admin/invitations/meta").then(function (m) { S.meta = m; start(); })

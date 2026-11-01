@@ -62,6 +62,16 @@ def normalize_role(role: Optional[str]) -> str:
 # HELPERS DE GARDE — utilisables en Depends() FastAPI
 # ════════════════════════════════════════════════════════════
 
+# PIN provisoire (création d'un compte staff, réinitialisation) : tant qu'il n'est pas
+# remplacé (PUT /auth/pin), aucune route du back-office n'est accessible.
+PIN_CHANGE_REQUIRED = "Code PIN provisoire : choisissez votre propre code PIN pour continuer."
+
+
+def _pin_ok(user: User) -> None:
+    if getattr(user, "must_change_pin", False):
+        raise HTTPException(403, PIN_CHANGE_REQUIRED)
+
+
 def get_current_admin(user: User = Depends(get_current_user)) -> User:
     """
     Garde stricte : admin uniquement.
@@ -69,6 +79,7 @@ def get_current_admin(user: User = Depends(get_current_user)) -> User:
     """
     if normalize_role(user.role) != "admin":
         raise HTTPException(403, "Réservé aux administrateurs")
+    _pin_ok(user)
     return user
 
 
@@ -80,6 +91,7 @@ def get_current_admin_or_staff(user: User = Depends(get_current_user)) -> User:
     """
     if normalize_role(user.role) not in ROLES_INTERNAL:
         raise HTTPException(403, "Accès réservé à l'équipe GoEvent")
+    _pin_ok(user)
     return user
 
 
@@ -97,9 +109,8 @@ def require_staff_function(*allowed_functions: str):
 
     def _checker(user: User = Depends(get_current_user)) -> User:
         role = normalize_role(user.role)
-        if role == "admin":
-            return user
-        if role == "staff" and user.staff_function in allowed_functions:
+        if role == "admin" or (role == "staff" and user.staff_function in allowed_functions):
+            _pin_ok(user)
             return user
         raise HTTPException(
             403,
@@ -112,6 +123,12 @@ def require_staff_function(*allowed_functions: str):
 def is_admin(user: User) -> bool:
     """Helper non-Depends pour usage dans le corps des routes."""
     return normalize_role(user.role) == "admin"
+
+
+def sees_all_sales(user: User) -> bool:
+    """Portefeuilles commerciaux (lot 4.5) : qui voit les dossiers de TOUS les commerciaux.
+    Aujourd'hui l'admin seul ; un futur « responsable commercial » s'ajoutera ici."""
+    return is_admin(user)
 
 
 def is_admin_or_staff(user: User, function: Optional[str] = None) -> bool:

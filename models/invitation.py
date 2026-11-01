@@ -35,6 +35,9 @@ class PrivateEventSettings(Base):
     purged_at        = Column(DateTime, nullable=True)
     created_by       = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at       = Column(DateTime, default=datetime.utcnow, nullable=False)
+    # Portefeuille (lot 4.5) : commercial propriétaire ; NULL = maison (admin)
+    owner_id         = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    source_quote_id  = Column(Integer, nullable=True)
 
 
 class EventGuest(Base):
@@ -119,6 +122,11 @@ class InvitationPack(Base):
     amount_vat                = Column(Integer, nullable=True)
     vat_rate_bp               = Column(Integer, nullable=True)        # taux en points de base (1925 = 19,25 %)
     snapshot                  = Column(JSONB, nullable=True)          # détail complet (lignes, motifs, noms)
+    # ── Équipe commerciale (lot 4.5) : devis d'origine et commission figés à l'activation
+    quote_id                  = Column(Integer, nullable=True)        # invitation_quotes.id (unique, cf. migrations)
+    owner_id                  = Column(Integer, ForeignKey("users.id"), nullable=True)  # commercial crédité
+    commission_base_fcfa      = Column(Integer, nullable=True)        # pack après remise (HT si TVA)
+    commission_rate_bp        = Column(Integer, nullable=True)        # 2500 = 25 %
 
     # Un même paiement (canal + référence) ne peut activer qu'un seul pack, même annulé.
     __table_args__ = (UniqueConstraint("payment_channel", "payment_ref", name="uq_invitation_pack_payment"),)

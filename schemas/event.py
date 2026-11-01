@@ -5,18 +5,17 @@ import re
 
 # Rendus tels quels dans les cartes publiques (accueil, événements, fiche) :
 # aucun caractère HTML dans la catégorie, aucune sortie d'attribut dans l'URL d'image.
-_CATEGORY_BAD = re.compile(r"[<>\"'`&\\]")
 _IMAGE_HTTP = re.compile(r"^https?://[^\s\"'<>`\\]+$")
 _IMAGE_DATA = re.compile(r"^data:image/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=\r\n]+$")
 
 
 def _clean_category(v):
+    # Liste fermée (lot 5, core/event_categories) : variantes sans accent ramenées
+    # au libellé canonique, valeur inconnue refusée (et donc aucun HTML possible).
     if v is None:
         return v
-    v = v.strip()
-    if not v or _CATEGORY_BAD.search(v):
-        raise ValueError("Catégorie invalide")
-    return v
+    from core.event_categories import normalize_category
+    return normalize_category(v)
 
 
 class EventCreate(BaseModel):
@@ -92,6 +91,19 @@ class EventCreate(BaseModel):
                 raise ValueError(f"Prix hors limites pour la catégorie {name}")
             out.append({**t, "name": name, "price": price})
         return out
+
+
+class EventDeactivateIn(BaseModel):
+    reason: str = Field(..., min_length=5, max_length=300)
+    notify_organizer: bool = False
+
+    @field_validator("reason")
+    @classmethod
+    def clean_reason(cls, v):
+        v = " ".join("".join(ch for ch in v if ord(ch) >= 32).split())
+        if len(v) < 5:
+            raise ValueError("Motif trop court")
+        return v
 
 
 class EventUpdate(BaseModel):

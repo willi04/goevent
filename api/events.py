@@ -15,6 +15,8 @@ from core.security import get_current_user
 from models.event import Event
 from models.user import User
 from schemas.event import EventCreate, EventUpdate
+from core.event_categories import CATEGORIES, canonical, variants
+from core.event_query import like, window
 from utils.serializers import _event_dict
 
 router = APIRouter()
@@ -22,15 +24,18 @@ router = APIRouter()
 
 @router.get("/events")
 def list_events(
-    page: int = 1,
-    limit: int = 6,
+    # Bornes (lot 5) : page 0 → OFFSET négatif (500), limit libre → table entière.
+    page: int = Query(1, ge=1, le=500),
+    limit: int = Query(6, ge=1, le=24),
     sort_by: Optional[str] = "date_asc",
-    q: Optional[str] = None,
-    categories: Optional[str] = None,
-    location: Optional[str] = None,
+    q: Optional[str] = Query(None, max_length=80),
+    categories: Optional[str] = Query(None, max_length=300),
+    location: Optional[str] = Query(None, max_length=80),
     max_price: Optional[float] = None,
     upcoming_only: bool = False,
     include_past_days: int = Query(0, ge=0, le=3650),
+    when: Optional[str] = Query(None, pattern="^(today|weekend|month)$"),
+    free_only: bool = False,
     db: Session = Depends(get_db),
 ):
     from models.promotion import BoostOrder
@@ -49,19 +54,33 @@ def list_events(
         cutoff = datetime.utcnow() - timedelta(days=include_past_days)
         query = query.filter(Event.event_date >= cutoff)
 
-    if q:
+    span = window(when) if when else None
+    if span:
+        query = query.filter(Event.event_date >= max(span[0], datetime.utcnow()), Event.event_date < span[1])
+
+    if q and q.strip():
+        pat = like(q.strip())
         query = query.filter(or_(
-            Event.title.ilike(f"%{q}%"),
-            Event.location.ilike(f"%{q}%"),
-            Event.description.ilike(f"%{q}%"),
+            Event.title.ilike(pat, escape="\\"),
+            Event.location.ilike(pat, escape="\\"),
+            Event.description.ilike(pat, escape="\\"),
         ))
     if categories:
-        cat_list = categories.split(",")
-        query = query.filter(Event.category.in_(cat_list))
-    if location and location != "Tous les lieux":
-        query = query.filter(Event.location == location)
+        # Libellés canoniques + variantes sans accent encore stockées (avant rattrapage)
+        wanted = set()
+        for c in categories.split(","):
+            label = canonical(c)
+            if label:
+                wanted |= variants(label)
+        if not wanted:
+            return {"total": 0, "page": page, "limit": limit, "events": []}
+        query = query.filter(Event.category.in_(wanted))
+    if location and location.strip() and location != "Tous les lieux":
+        query = query.filter(Event.location.ilike(like(location.strip()), escape="\\"))
     if max_price is not None:
         query = query.filter(Event.price <= max_price)
+    if free_only:
+        query = query.filter(Event.price <= 0)
 
     # Tri secondaire (utilisateur)
     if sort_by == "price_asc":
@@ -125,13 +144,26 @@ def list_events(
 
 @router.get("/categories")
 def get_categories(db: Session = Depends(get_db)):
+    # Catégories des événements PUBLICS à venir (jamais « Privé »), variantes
+    # fusionnées sur le libellé canonique, triées par nombre d'événements.
     cats = (
         db.query(Event.category, func.count(Event.id).label("count"))
-        .filter(Event.is_active == True)
+        .filter(Event.is_active == True, Event.visibility == "public",
+                Event.event_date >= datetime.utcnow())
         .group_by(Event.category)
         .all()
     )
-    return [{"category": c, "count": n} for c, n in cats]
+    merged = {}
+    for c, n in cats:
+        label = canonical(c) or "Autre"
+        merged[label] = merged.get(label, 0) + n
+    return [{"category": c, "count": n} for c, n in sorted(merged.items(), key=lambda x: (-x[1], x[0]))]
+
+
+@router.get("/categories/all")
+def all_categories():
+    """Liste fermée (formulaire organisateur, filtres) — aucune donnée en base."""
+    return list(CATEGORIES)
 
 
 @router.get("/my-events")
@@ -220,6 +252,9 @@ def delete_event(
     ).first()
     if not event:
         raise HTTPException(404, "Événement introuvable ou non autorisé")
-    event.is_active = False
+    if event.is_active:
+        event.is_active = False
+        event.deactivated_reason = "Retiré par l'organisateur"
+        event.deactivated_at, event.deactivated_by = datetime.utcnow(), current_user.id
     db.commit()
     return {"message": "Événement supprimé"}

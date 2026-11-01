@@ -21,7 +21,7 @@ from api import ads as ads_router
 from api import (
     auth, events, tickets, agent, social,
     organizer, dashboard, admin, payments, promotion,
-    promo_codes, audience, cms, zones, invitations, invitation_catalog, quotes,
+    promo_codes, audience, cms, zones, invitations, invitation_catalog, quotes, admin_events,
 )
 from api import staff as staff_router
 
@@ -127,6 +127,7 @@ app.include_router(social.router)
 app.include_router(organizer.router)
 app.include_router(dashboard.router)
 app.include_router(admin.router)
+app.include_router(admin_events.router)
 app.include_router(payments.router)
 app.include_router(ads_router.router)
 app.include_router(staff_router.router)

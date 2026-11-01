@@ -100,7 +100,10 @@ un test inline `if user.role == "admin"`.
 Colonnes essentielles :
 
 - `title`, `description`, `location`, `category`, `event_date` :
-  attributs éditoriaux.
+  attributs éditoriaux. `category` : liste fermée
+  (`core/event_categories.CATEGORIES`, lot 5) ; les variantes sans accent
+  sont ramenées au libellé canonique, « Privé » est réservée aux
+  événements privés.
 - `price` : prix de base d'un billet standard, en FCFA. Zéro pour un
   événement gratuit.
 - `total_seats` : capacité totale.
@@ -112,6 +115,10 @@ Colonnes essentielles :
   uniquement la catégorie par défaut au prix `event.price`.
 - `is_active` : contrôle la visibilité publique. Un événement inactif
   n'apparaît plus dans les listes mais ses billets restent valables.
+- `deactivated_reason`, `deactivated_at`, `deactivated_by` (lot 5) :
+  motif de la désactivation (équipe : obligatoire, journalisé
+  `event_deactivated` ; organisateur : « Retiré par l'organisateur »),
+  remis à NULL à la réactivation.
 - `cover_image_url` : image de couverture stockée en base64 directement
   dans la colonne (migration vers CDN Cloudinary prévue).
 

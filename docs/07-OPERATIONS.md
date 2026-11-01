@@ -278,6 +278,19 @@ bout en bout sans intervention, 1 retrait réussi, analyse des
   `invitation_track_link_created|revoked`, `invitation_agent_assigned|removed`,
   `invitation_purge`.
 
+## Événements : désactivation et catégories (lot 5)
+
+- **Avant le déploiement** : `events` est lue par toutes les routes →
+  exécuter à la main sur Neon, AVANT le push, l'ALTER `deactivated_*` et
+  l'index `ix_events_public_date` (copie des entrées « Lot 5 » de
+  `core/migrations.py`, index en `CONCURRENTLY`).
+- **Désactiver** (admin) : motif obligatoire, journalisé
+  (`event_deactivated` : billets payés, montant, motif). Les billets payés
+  restent valables ; annuler et rembourser = circuit Annulations.
+  Réactivation : `event_reactivated` (ancien motif dans le journal).
+- **Catégories** : liste fermée dans `core/event_categories.py` ; ajouter une
+  catégorie = l'ajouter à `CATEGORIES` (et au formulaire organisateur).
+
 ## Équipe commerciale (lot 4.5)
 
 - **Avant le déploiement** : `users`, `private_event_settings`,

@@ -20,11 +20,9 @@ from models.ticket import Ticket
 from models.user import User, SecurityLog
 from models.payment import Payment, PayoutRequest
 from models.partner import PartnerRequest, CancellationRequest
-from utils.serializers import _event_dict
 
 from core.permissions import (
     get_current_admin,
-    get_current_admin_or_staff,
     require_staff_function,
 )
 
@@ -136,25 +134,7 @@ def admin_update_user(request: Request, user_id: int, data: dict, db: Session = 
     return {"message": "Utilisateur et ses événements mis à jour"}
 
 
-# ── EVENTS ──────────────────────────────────────────────────────
-@router.get("/admin/events")
-def admin_list_events(db: Session = Depends(get_db),
-                      current_user: User = Depends(get_current_admin_or_staff)):
-    events = db.query(Event).order_by(Event.created_at.desc()).all()
-    return [_event_dict(e) for e in events]
-
-
-@router.put("/admin/events/{event_id}")
-@limiter.limit("30/minute")
-def admin_update_event(request: Request, event_id: int, data: dict, db: Session = Depends(get_db),
-                       current_user: User = Depends(get_current_admin)):
-    event = db.query(Event).filter(Event.id == event_id).first()
-    if not event:
-        raise HTTPException(404, "Événement introuvable")
-    if "is_active" in data:
-        event.is_active = data["is_active"]
-    db.commit()
-    return {"message": "Événement mis à jour"}
+# ── EVENTS : api/admin_events.py (lot 5 : liste paginée, désactivation motivée) ──
 
 # ── PARTENAIRES ─────────────────────────────────────────────────
 @router.get("/admin/partners")

@@ -344,6 +344,52 @@ Les textes, images et liens des pages publiques sont modifiables depuis
 - **Purge J+30** : `purge_due()` (cron reconcile + bouton admin) anonymise
   noms, numéros et jetons ; seuls les chiffres restent.
 
+### Flux 8 : Équipe commerciale — devis numérotés, portefeuilles, commissions (lot 4.5)
+
+- **Comptes** (`api/staff.py`, `core/sales.py`) : l'admin crée l'employé sans
+  saisir de PIN ; le serveur génère un PIN provisoire (`secrets`), pose
+  `must_change_pin` et, pour un commercial, un code de référence
+  `COM-PRENOM` (modifiable tant qu'aucun devis / dossier / pack / commission
+  ne le porte). Fiche de bienvenue PDF (`core/sales_docs.welcome_pdf`) ou
+  texte WhatsApp, à partir du PIN affiché une seule fois (le serveur vérifie
+  le PIN contre le hash avant de produire la fiche). Tant que
+  `must_change_pin` est vrai, toutes les dépendances du back-office
+  répondent 403 `PIN_CHANGE_REQUIRED` ; `admin-login.html` impose le
+  changement (PIN trivial refusé).
+- **Portefeuille** : `owner_id` sur `invitation_quotes` et
+  `private_event_settings` (NULL = maison / admin). Un commercial ne voit que
+  ses devis, ses événements et ses ventes (404 sinon, scanner compris) ;
+  `core.permissions.sees_all_sales` (admin) voit tout et peut réaffecter
+  (`/owner`, transfert de portefeuille dans Équipe).
+- **Devis** (`api/quotes.py`, `core/quotes.py`) : numéro `DEV-AAAA-NNNN`
+  sans trou, attribué dans la même transaction que l'insertion
+  (`invitation_quote_counters`, `INSERT … ON CONFLICT DO UPDATE … RETURNING`,
+  année Africa/Bangui). Prix calculé par `core/invitation_catalog.price()`
+  et figé dans `snapshot` ; validité 15 j. Sur mesure / remise manuelle
+  préparés par un commercial → `needs_admin` (validation admin avant envoi).
+  Statuts `brouillon → envoye → accepte → converti` (+ `refuse`, `expire`
+  calculé). PDF (`/pdf`), texte WhatsApp (`/whatsapp`), duplication
+  (nouveau numéro, prix du jour).
+- **Conflits** (`core/quotes.find_conflicts`) : même téléphone client chez
+  un autre commercial avec un devis protégé (validité + 30 j) ou un
+  événement à venir → bloquant (409 générique pour le commercial ; l'admin
+  passe avec un motif, journalisé). Nom / entreprise proche à ± 30 j de la
+  date → alerte admin seulement (`possible_duplicate_of`).
+- **Conversion** (admin) : crée l'événement privé (propriétaire = celui du
+  devis), puis l'activation rejoue l'instantané du devis
+  (`core/invitation_catalog.replay`) → montant facturé = montant du devis
+  même si le catalogue a changé ; seul le plafond d'utilisations du code de
+  remise est revérifié sous verrou. Le client paie GoEvent SARLU, jamais le
+  commercial.
+- **Commissions** (`commissions`, `source_type = 'invitation_pack'`) : à
+  l'activation d'un pack payé vendu par un commercial, ligne `pending`
+  (base = prix du pack après remise, hors options, HT si TVA ; taux du
+  commercial figé). Dues pour les événements du mois M ; clôture admin →
+  `approved` (`period`), versement au plus tard le 5 de M+1 → `paid`
+  (`paid_ref`). Pack annulé → `cancelled` (avertissement si déjà versée).
+- **Purge prospects** : devis non convertis anonymisés 12 mois après leur
+  fin de validité (`purge_due`, cron reconcile, `quotes_anonymized`).
+
 ## Principes transverses
 
 Cinq principes guident l'évolution du code et doivent être respectés par
@@ -382,7 +428,9 @@ autorisée dans les routes. Toute restriction d'accès passe par les
 dépendances FastAPI définies dans `core/permissions.py`. Le matrice des
 capacités par fonction staff (commercial, community manager, designer)
 est définie dans `api/staff.py::_capabilities_for` et constitue la
-référence unique des permissions internes.
+référence unique des permissions internes. Le cloisonnement par
+portefeuille commercial (lot 4.5) s'ajoute au rôle : voir
+05-CONVENTIONS.md, « Propriété des ressources ».
 
 ### Principe 4 : Journalisation des actions sensibles
 

@@ -108,7 +108,7 @@ def _validate(field: dict, raw: str) -> str:
     if kind == "phone":
         digits = re.sub(r"[\s+\-().]", "", value)
         if not digits.isdigit() or not 8 <= len(digits) <= 15:
-            raise HTTPException(400, "Numéro invalide : chiffres uniquement, format international (ex. 23672259398).")
+            raise HTTPException(400, "Numéro invalide : chiffres uniquement, format international (ex. 23670066852).")
         return digits
     if kind == "url":
         low = value.lower()

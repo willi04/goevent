@@ -533,7 +533,7 @@ function btFooter() {
     '<img src="icons/event.png" alt="Logo" class="w-10 h-10 rounded-3xl shadow-sm" />' +
     '<span class="text-2xl font-bold tracking-tight bg-gradient-to-r from-emerald-900 to-emerald-700 bg-clip-text text-transparent font-headline">GoEvent</span>' +
     "</a>" +
-    '<p class="text-neutral-500 text-sm leading-relaxed mb-6 font-body max-w-sm" data-cms="global.footer.tagline">La première plateforme de billetterie en ligne en République Centrafricaine. Soutenons ensemble nos artistes.</p>' +
+    '<p class="text-neutral-500 text-sm leading-relaxed mb-6 font-body max-w-sm" data-cms="global.footer.tagline">Billetterie et invitations digitales, conçues à Bangui. Un pass, une entrée, zéro fraude.</p>' +
     // Réseaux sociaux / contact : liens pilotés par le back-office (Contenu du site → Éléments communs),
     // masqués tant qu'aucune valeur n'est renseignée (data-cms-hide-empty, cf. cms.js).
     '<div class="flex flex-wrap gap-2">' +
@@ -594,7 +594,7 @@ function btFooter() {
     "</div>" + // Fin de la grille
     // Copyright
     '<div class="border-t border-neutral-200 py-8 px-8 md:px-16 text-center">' +
-    '<p class="text-neutral-400 text-xs font-headline font-bold uppercase tracking-widest" data-cms="global.footer.copyright">© 2026 GoEvent | Tous Droits Réservés.</p>' +
+    '<p class="text-neutral-400 text-xs font-headline font-bold uppercase tracking-widest" data-cms="global.footer.copyright">© 2026 GoEvent SARLU · RCCM CA/BG/2026B2593 · Tous droits réservés.</p>' +
     "</div>" +
     "</footer>"
   );

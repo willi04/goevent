@@ -6,10 +6,11 @@
     <link rel="manifest" href="manifest.json" />
     <meta name="theme-color" content="#00502c" />
     <meta
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+      content="width=device-width, initial-scale=1.0"
       name="viewport"
     />
-    <title>GoEvent</title>
+    <title>Événements à Bangui — GoEvent</title>
+    <meta name="description" content="Concerts, festivals, humour, sport… Tous les événements à Bangui et en RCA. Billets payables par Orange Money." />
     <link rel="icon" type="image/png" href="icons/favicon.png" />
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link
@@ -100,6 +101,10 @@
         background: #bec9be;
         border-radius: 10px;
       }
+      /* Lot 5 : défilement horizontal sans barre, badges de carte */
+      .ev-noscroll { scrollbar-width: none; }
+      .ev-noscroll::-webkit-scrollbar { display: none; }
+      .ev-b { align-items: center; padding: 2px 8px; border-radius: 9999px; font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: .04em; }
     </style>
     <script src="auth-guard.js"></script>
   </head>
@@ -153,234 +158,100 @@
       </div>
     </div>
 
-    <main class="flex-1 pt-[72px] md:pt-20 pb-[60px] md:pb-0">
-      <section
-        class="relative h-[400px] flex items-center justify-center overflow-hidden"
-      >
-        <div class="absolute inset-0 z-0">
-          <img
-            class="w-full h-full object-cover"
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuDYrO4AdsJ1jzIg-Cpdg3nB8XV6gdqIBMK2bvR5f_n22Ar07kZhASMKWw1wCbNaxC0T1uVCUb4C2wFWmlfqGcgkiA-1g8Ga-QvWqFK_lsAG4QSrEa9iFJeK4T149VhnHiYS3ZI7pGjbq5nyLwmhjbpTW-1-mDUGpfi9tNLIr-QmWBR205QckolaescsuA7lp1S6yMR1b8QKBs4uYABdMQusHtNFahR8ZT_xLhGXPSQOxp4FYG-ingUsOw-uPoleJXlOYtah2Pk_Kg"
-           data-cms-img="event.img01"/>
-          <div class="absolute inset-0 bg-primary/60 backdrop-blur-[2px]"></div>
-        </div>
-        <div class="relative z-10 w-full max-w-4xl px-4 text-center">
-          <h1
-            class="text-4xl md:text-5xl lg:text-6xl font-headline font-extrabold text-white mb-8 tracking-tight"
-           data-cms="event.001">
-            Tous les événements
-          </h1>
-          <div
-            class="bg-surface-container-lowest p-2 rounded-2xl md:rounded-full shadow-2xl flex flex-col md:flex-row items-center transition-all focus-within:ring-4 focus-within:ring-primary/10 gap-3 md:gap-0"
-          >
-            <div class="flex items-center w-full">
-              <span class="material-symbols-outlined ml-2 md:ml-6 text-outline"
-                >search</span
-              >
-              <input
-                class="w-full border-none focus:ring-0 bg-transparent text-base md:text-lg px-3 md:px-4 py-3 placeholder:text-outline/60"
-                placeholder="Rechercher un concert, un festival, un artiste..."
-                type="text"
-              />
-            </div>
-            <button
-              class="w-full md:w-auto bg-primary text-white px-8 py-3.5 rounded-xl md:rounded-full font-bold hover:bg-primary-container transition-colors"
-             data-cms="event.002">
-              Rechercher
-            </button>
+    <main class="flex-1 pt-14 md:pt-[72px] pb-[76px] md:pb-0">
+      <!-- Bandeau compact : titre + recherche (lot 5) -->
+      <section class="bg-gradient-to-r from-primary to-primary-container text-white">
+        <div class="max-w-[1400px] mx-auto px-4 md:px-10 py-5 md:py-10 md:flex md:items-end md:justify-between md:gap-10">
+          <div>
+            <h1 class="font-headline font-extrabold text-2xl md:text-5xl tracking-tight" data-cms="event.001">Événements</h1>
+            <p class="hidden md:block text-white/80 mt-2" data-cms="event.015">Concerts, festivals, humour, sport… à Bangui et partout en RCA.</p>
           </div>
+          <label class="mt-3 md:mt-0 bg-white rounded-2xl md:rounded-full flex items-center px-4 py-1 md:w-[460px] text-outline gap-2 shadow-lg">
+            <span class="material-symbols-outlined">search</span>
+            <input id="ev-search" type="search" autocomplete="off" enterkeyhint="search"
+              class="flex-1 min-w-0 border-none focus:ring-0 bg-transparent py-2.5 px-0 text-on-surface placeholder:text-outline/70"
+              placeholder="Artiste, événement, lieu…" aria-label="Rechercher un événement" />
+          </label>
         </div>
       </section>
 
-      <div class="max-w-7xl mx-auto px-6 py-16">
-        <div class="flex flex-col md:flex-row gap-12">
-          <aside class="w-full md:w-72 flex-shrink-0 space-y-10">
-            <details class="md:!open" open>
-              <summary class="md:hidden cursor-pointer text-on-primary-fixed-variant font-headline font-bold text-lg flex items-center gap-2 py-3">
-                <span class="material-symbols-outlined">filter_list</span>
-                <span data-cms="event.003">Filtres</span>
-              </summary>
-              <div>
-                <div class="mb-8">
-                  <span
-                    class="text-xs font-label uppercase tracking-widest text-outline mb-4 block"
-                     data-cms="event.004">Catégories</span
-                  >
-                  <div class="space-y-3" id="filter-categories">
-                    <label class="flex items-center group cursor-pointer">
-                      <input
-                        value="Concert"
-                        class="cat-checkbox rounded border-outline-variant text-primary focus:ring-primary w-5 h-5 transition-all"
-                        type="checkbox"
-                      />
-                      <span
-                        class="ml-3 text-on-surface group-hover:text-primary transition-colors"
-                         data-cms="event.005">Concerts & Live</span
-                      >
-                    </label>
-                    <label class="flex items-center group cursor-pointer">
-                      <input
-                        value="Festival"
-                        class="cat-checkbox rounded border-outline-variant text-primary focus:ring-primary w-5 h-5 transition-all"
-                        type="checkbox"
-                      />
-                      <span
-                        class="ml-3 text-on-surface group-hover:text-primary transition-colors"
-                         data-cms="event.006">Festivals Culturels</span
-                      >
-                    </label>
-                    <label class="flex items-center group cursor-pointer">
-                      <input
-                        value="Theatre"
-                        class="cat-checkbox rounded border-outline-variant text-primary focus:ring-primary w-5 h-5 transition-all"
-                        type="checkbox"
-                      />
-                      <span
-                        class="ml-3 text-on-surface group-hover:text-primary transition-colors"
-                         data-cms="event.007">Théâtre & Danse</span
-                      >
-                    </label>
-                    <label class="flex items-center group cursor-pointer">
-                      <input
-                        value="Exposition"
-                        class="cat-checkbox rounded border-outline-variant text-primary focus:ring-primary w-5 h-5 transition-all"
-                        type="checkbox"
-                      />
-                      <span
-                        class="ml-3 text-on-surface group-hover:text-primary transition-colors"
-                         data-cms="event.008">Expositions</span
-                      >
-                    </label>
-                  </div>
-                </div>
-  
-                <div class="mb-8">
-                  <span
-                    class="text-xs font-label uppercase tracking-widest text-outline mb-4 block"
-                     data-cms="event.009">Prix Max (FCFA)</span
-                  >
-                  <input
-                    id="price-filter"
-                    class="w-full accent-primary mb-2"
-                    max="100000"
-                    min="0"
-                    step="5000"
-                    value="100000"
-                    type="range"
-                  />
-                  <div
-                    class="flex justify-between text-xs text-outline font-medium"
-                  >
-                    <span data-cms="event.010">0 FCFA</span>
-                    <span id="price-display">100.000 FCFA</span>
-                  </div>
-                </div>
-  
-                <div class="mb-8">
-                  <span
-                    class="text-xs font-label uppercase tracking-widest text-outline mb-4 block"
-                     data-cms="event.011">Lieu</span
-                  >
-                  <select
-                    id="location-filter"
-                    class="w-full border-none bg-surface-container-high rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20"
-                  >
-                    <option value="">Tous les lieux</option>
-                    <option value="Stade 20,000 places">
-                      Stade 20,000 places
-                    </option>
-                    <option value="Alliance Française">Alliance Française</option>
-                    <option value="Palais de la CEMAC">Palais de la CEMAC</option>
-                  </select>
-                </div>
-                <div class="mb-8">
-                  <span class="text-xs font-label uppercase tracking-widest text-outline mb-4 block" data-cms="event.012">Période</span>
-                  <label class="flex items-start group cursor-pointer">
-                    <input
-                      id="include-past-filter"
-                      type="checkbox"
-                      class="rounded border-outline-variant text-primary focus:ring-primary w-5 h-5 transition-all mt-0.5"
-                    />
-                    <span class="ml-3 text-on-surface group-hover:text-primary transition-colors text-sm">
-                      <span data-cms="event.014">Inclure les événements terminés</span>
-                      <span class="block text-xs text-outline mt-0.5" data-cms="event.013">(30 derniers jours uniquement)</span>
-                    </span>
-                  </label>
-                </div>
-              </div>
-            </details>
-            <!-- EMPLACEMENT : colonne sous les filtres (ordinateur, reste visible au défilement) -->
-            <div class="hidden md:block sticky top-28">
-              <div data-zone="events.sidebar" data-zone-layout="narrow" class="hidden"></div>
+      <!-- Catégories + filtres (collés sous le menu sur ordinateur) -->
+      <div class="bg-white border-b border-gray-100 md:sticky md:top-[72px] z-30">
+        <div class="max-w-[1400px] mx-auto px-4 md:px-10 pt-3 pb-3">
+          <div id="ev-cats" class="flex gap-2 overflow-x-auto ev-noscroll" role="tablist" aria-label="Catégories"></div>
+          <div class="hidden md:flex flex-wrap items-center gap-2 mt-3 text-sm">
+            <div id="ev-when-desk" class="flex gap-2"></div>
+            <span class="w-px h-6 bg-gray-200 mx-1"></span>
+            <select id="ev-price-desk" class="ev-ctl rounded-full border-gray-200 text-sm py-1.5 pl-3 pr-8 font-semibold" aria-label="Prix maximum"></select>
+            <input id="ev-city-desk" type="search" placeholder="Ville ou lieu" class="ev-ctl rounded-full border-gray-200 text-sm py-1.5 px-3 w-40" aria-label="Ville ou lieu" />
+            <label class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 font-semibold cursor-pointer">
+              <input id="ev-free-desk" type="checkbox" class="rounded border-gray-300 text-primary focus:ring-primary" /> Gratuits
+            </label>
+            <label class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 font-semibold cursor-pointer">
+              <input id="ev-past-desk" type="checkbox" class="rounded border-gray-300 text-primary focus:ring-primary" /> Terminés (30 j)
+            </label>
+            <label class="ml-auto text-outline flex items-center gap-1">Trier :
+              <select id="ev-sort-desk" class="ev-ctl border-none text-primary font-bold text-sm py-1 pl-1 pr-7 focus:ring-0"></select>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div id="ev-layout" class="max-w-[1400px] mx-auto px-4 md:px-10 py-4 md:py-8 xl:grid xl:gap-8">
+        <!-- Pub latérale (ordinateur ≥ 1280 px) : emplacement « Colonne événements » -->
+        <aside id="ev-side" class="hidden">
+          <div class="sticky top-[200px]">
+            <div data-zone="events.sidebar" data-zone-layout="narrow" class="hidden"></div>
+          </div>
+        </aside>
+        <div class="min-w-0">
+          <div class="flex items-center justify-between gap-2 mb-3 md:mb-5">
+            <h2 id="events-count-header" class="font-headline font-bold text-base md:text-2xl text-on-surface" aria-live="polite">Chargement…</h2>
+            <div class="flex gap-2 md:hidden">
+              <button id="ev-filters-btn" type="button" class="px-3 py-1.5 rounded-full bg-white border border-gray-200 font-bold text-xs whitespace-nowrap flex items-center gap-1">
+                <span class="material-symbols-outlined text-base">tune</span>Filtres<span id="ev-filters-n" class="hidden ml-0.5 bg-primary text-white rounded-full px-1.5"></span>
+              </button>
+              <select id="ev-sort-mob" class="ev-ctl rounded-full border-gray-200 bg-white text-xs font-bold py-1.5 pl-3 pr-7" aria-label="Trier"></select>
             </div>
-          </aside>
+          </div>
+          <div id="ev-une" class="hidden mb-6"></div>
+          <div id="events-grid-container" data-zone-infeed="events.infeed"
+               class="space-y-3 md:space-y-0 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-5"></div>
+          <!-- Sous 1280 px, la pub latérale passe sous la liste -->
+          <div class="xl:hidden mt-6">
+            <div data-zone="events.sidebar" class="hidden"></div>
+          </div>
+          <div class="text-center mt-8">
+            <button id="ev-more" type="button" class="hidden px-6 py-3 rounded-full border-2 border-primary text-primary font-bold hover:bg-primary hover:text-white transition-colors"></button>
+            <p id="ev-progress" class="text-xs text-outline mt-2"></p>
+          </div>
+        </div>
+      </div>
 
-          <div class="flex-1">
-            <div
-              class="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-8 gap-4 sm:gap-0"
-            >
-              <div>
-                <h2
-                  class="text-2xl font-headline font-bold text-on-surface"
-                  id="events-count-header"
-                >
-                  Chargement...
-                </h2>
-                <p class="text-outline text-sm mt-1" data-cms="event.015">
-                  Spectacles en RCA et alentours
-                </p>
-              </div>
-              <div class="flex items-center gap-2 text-sm">
-                <span class="text-outline" data-cms="event.016">Trier par:</span>
-
-                <div class="relative">
-                  <select
-                    id="sort-select"
-                    class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                    onchange="
-                      document.getElementById('sort-text').innerText =
-                        this.options[this.selectedIndex].text
-                    "
-                  >
-                    <option value="date_asc">Plus récents</option>
-                    <option value="date_desc">Plus lointains</option>
-                    <option value="price_asc">Prix croissant</option>
-                    <option value="price_desc">Prix décroissant</option>
-                  </select>
-
-                  <button
-                    class="font-bold text-primary flex items-center gap-1 pointer-events-none"
-                  >
-                    <span id="sort-text">Plus récents</span>
-                    <span class="material-symbols-outlined text-sm"
-                      >keyboard_arrow_down</span
-                    >
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div
-              class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-              id="events-grid-container"
-              data-zone-infeed="events.infeed"
-            >
-              <div class="col-span-full py-20 text-center">
-                <div class="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                <p class="text-gray-500 font-medium">Chargement des événements...</p>
-              </div>
-            </div>
-
-            <div
-              id="pagination-container"
-              class="mt-16 flex flex-wrap justify-center items-center gap-3"
-            ></div>
+      <!-- Filtres (téléphone) : panneau du bas -->
+      <div id="ev-sheet" class="hidden fixed inset-0 z-[1000] bg-black/50 items-end" role="dialog" aria-modal="true" aria-label="Filtres">
+        <div class="bg-white w-full rounded-t-3xl px-4 pt-3 pb-6 max-h-[88vh] overflow-y-auto">
+          <div class="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-3"></div>
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-headline font-bold text-xl">Filtres</h3>
+            <button type="button" data-close class="text-sm font-bold text-outline">Fermer</button>
+          </div>
+          <p class="text-[11px] font-bold uppercase tracking-widest text-outline mb-2">Quand</p>
+          <div id="ev-when-mob" class="flex flex-wrap gap-2 mb-5"></div>
+          <p class="text-[11px] font-bold uppercase tracking-widest text-outline mb-2">Prix maximum</p>
+          <select id="ev-price-mob" class="ev-ctl w-full rounded-xl border-gray-200 mb-5"></select>
+          <p class="text-[11px] font-bold uppercase tracking-widest text-outline mb-2">Ville ou lieu</p>
+          <input id="ev-city-mob" type="search" placeholder="Ex. Bangui, Alliance Française" class="ev-ctl w-full rounded-xl border-gray-200 mb-5" />
+          <label class="flex items-center gap-3 py-2"><input id="ev-free-mob" type="checkbox" class="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary" /> Gratuits uniquement</label>
+          <label class="flex items-center gap-3 py-2"><input id="ev-past-mob" type="checkbox" class="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary" /> Inclure les événements terminés (30 derniers jours)</label>
+          <div class="grid grid-cols-2 gap-2 mt-5">
+            <button type="button" id="ev-reset" class="py-3 rounded-xl font-bold bg-gray-100">Tout effacer</button>
+            <button type="button" data-close class="py-3 rounded-xl font-bold bg-primary text-white">Voir les résultats</button>
           </div>
         </div>
       </div>
     </main>
 
-    <div id="footer"></div>
     <div id="footer"></div>
     <!-- ✅ BOTTOM NAV MOBILE (md:hidden gérée dans la fonction) -->
     <div id="bottom-nav-mobile"></div>
@@ -436,297 +307,235 @@
           }, 300);
         }
       }
-      // 3. Dessiner les cartes d'événements
-     function renderDynamicEvents(events) {
-        const container = document.getElementById("events-grid-container");
-        if (!container) return;
+      // 3. Liste des événements (lot 5) : catégories, filtres, « À la une », liste / grille, « Voir plus »
+      (function () {
+        var TZ = "Africa/Bangui", LIMIT = 12;
+        var WHEN = [["", "Toutes les dates"], ["today", "Aujourd'hui"], ["weekend", "Ce week-end"], ["month", "Ce mois-ci"]];
+        var PRICES = [["", "Tous les prix"], ["0", "Gratuit"], ["2000", "≤ 2 000 FCFA"], ["5000", "≤ 5 000 FCFA"],
+                      ["10000", "≤ 10 000 FCFA"], ["25000", "≤ 25 000 FCFA"]];
+        var SORTS = [["date_asc", "Les plus proches"], ["date_desc", "Les plus lointains"],
+                     ["price_asc", "Prix croissant"], ["price_desc", "Prix décroissant"]];
+        var F = { q: "", cat: "", when: "", price: "", city: "", free: false, past: false, sort: "date_asc" };
+        var page = 1, total = 0, shown = 0, busy = false, seq = 0;
+        var $ = function (id) { return document.getElementById(id); };
+        var esc = function (s) { return typeof _btEscapeHtml === "function" ? _btEscapeHtml(s) : String(s || ""); };
+        var grid = $("events-grid-container");
 
-        if (!events || events.length === 0) {
-          container.innerHTML =
-            '<p class="text-outline col-span-full py-12 text-center text-lg font-medium">Aucun événement ne correspond à votre recherche.</p>';
-          return;
+        function toDate(iso) { return new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(iso) ? iso : iso + "Z"); }
+        function dateLabel(iso) {
+          var d = toDate(iso);
+          var s = d.toLocaleDateString("fr-FR", { timeZone: TZ, weekday: "short", day: "numeric", month: "short" }) +
+            " · " + d.toLocaleTimeString("fr-FR", { timeZone: TZ, hour: "2-digit", minute: "2-digit" }).replace(":", "h");
+          return s.charAt(0).toUpperCase() + s.slice(1);
         }
+        function price(p) { return p > 0 ? Math.round(p).toLocaleString("fr-FR") + " FCFA" : "Gratuit"; }
+        function cover(e) { return esc(e.cover_image_url || "icons/event-default.svg"); }
 
-        container.innerHTML = events
-          .map((e) => {
-            const dateObj = new Date(e.event_date);
-            const isPast = dateObj < new Date(); 
-
-            const prixFormate =
-              typeof btPrice === "function"
-                ? btPrice(e.price)
-                : e.price > 0
-                  ? e.price.toLocaleString("fr-FR") + " FCFA"
-                  : "Gratuit";
-            
-            const dateString = dateObj
-              .toLocaleDateString("fr-FR", {
-                weekday: "short",
-                day: "numeric",
-                month: "short",
-                hour: "2-digit",
-                minute: "2-digit",
-              })
-              .replace(",", " •");
-
-            // Design de la carte : on garde l'opacité réduite pour les événements passés
-            const cardClass = isPast 
-                ? "group bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm opacity-50 grayscale-[20%] transition-all duration-300 flex flex-col cursor-not-allowed" 
-                : "group bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col";
-            
-            const clickAction = isPast 
-                ? "" 
-                : `onclick="window.location.href='event_detail.html?id=${e.id}'"`;
-
-            // MODIFICATION ICI : Le badge "TERMINÉ" est maintenant en vert GoEvent
-           // Badge "TERMINÉ" en vert GoEvent, panier normal sinon, "Complet" grisé si sold-out
-            const btnHtml = isPast 
-                ? `<div class="px-4 py-2 bg-primary text-white rounded-full font-black text-[15px] uppercase tracking-widest flex items-center gap-1 shadow-sm">
-                     <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1">history</span> TERMINE
-                   </div>`
-                : e.is_sold_out
-                ? `<div class="px-4 py-2 bg-gray-200 text-gray-500 rounded-full font-black text-[12px] uppercase tracking-widest flex items-center gap-1 shadow-sm">
-                     <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1">block</span> Complet
-                   </div>`
-                : `<button onclick="event.stopPropagation(); window.location.href='event_detail.html?id=${e.id}'" class="p-3 bg-primary/5 text-primary rounded-full hover:bg-primary hover:text-white transition-all shadow-sm active:scale-95">
-                    <span class="material-symbols-outlined">shopping_cart</span>
-                  </button>`;
-
-            // Badge "Mis en avant" pour les events boostés (Chantier 17)
-            const boostBadge = (e.is_boosted && !isPast && !e.is_sold_out)
-              ? `<div class="absolute top-4 right-4 bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-lg flex items-center gap-1">
-                   <span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1">local_fire_department</span>
-                   Mis en avant
-                 </div>`
-              : "";
-            
-            // Badge "Gratuit" P2 (si pas boosté, pas passé, pas complet)
-            const isFree = !e.price || e.price === 0;
-            const freeBadge = (isFree && !e.is_boosted && !isPast && !e.is_sold_out)
-              ? `<div class="absolute top-4 right-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-lg flex items-center gap-1">
-                   <span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1">card_giftcard</span>
-                   Gratuit
-                 </div>`
-              : "";
-
-            // Badge "COMPLET" (override boost + gratuit + bouton panier ; event reste cliquable)
-            const soldOutBadge = (e.is_sold_out && !isPast)
-              ? `<div class="absolute top-4 right-4 bg-gray-900/90 backdrop-blur text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-lg flex items-center gap-1">
-                   <span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1">block</span>
-                   Complet
-                 </div>`
-              : "";
-            
-            return `
-            <div class="${cardClass}" ${clickAction}>
-              <div class="relative h-48 overflow-hidden shrink-0">
-                <img class="w-full h-full object-cover ${isPast ? '' : 'transition-transform duration-500 group-hover:scale-110'}" src="${_btEscapeHtml(e.cover_image_url || "https://via.placeholder.com/600x400?text=GoEvent")}" onerror="this.src='https://via.placeholder.com/600x400?text=GoEvent'" alt="${_btEscapeHtml(e.title)}" />
-                <div class="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-primary shadow-sm">
-                  ${_btEscapeHtml(e.category || "Événement")}
-                </div>
-                ${boostBadge}
-                ${freeBadge}
-                ${soldOutBadge}
-              </div>
-              <div class="p-6 flex-1 flex flex-col">
-                <div class="flex items-center gap-2 text-xs text-outline mb-2">
-                  <span class="material-symbols-outlined text-sm">calendar_today</span>
-                  <span class="capitalize">${dateString}</span>
-                </div>
-                <h3 class="text-lg font-headline font-bold text-on-surface mb-3 leading-tight line-clamp-2">
-                  ${_btEscapeHtml(e.title)}
-                </h3>
-                <div class="flex items-center gap-2 text-sm text-outline mb-6">
-                  <span class="material-symbols-outlined text-sm">location_on</span>
-                  <span class="truncate">${_btEscapeHtml(e.location)}</span>
-                </div>
-                <div class="flex items-center justify-between mt-auto">
-                 <span class="text-lg font-extrabold ${isPast ? 'text-gray-400 line-through' : 'text-secondary'}">${prixFormate}</span>
-                  ${btnHtml}
-                </div>
-              </div>
-            </div>
-          `;
-          })
-          .join("");
-        // Cartes sponsorisées (back-office → Emplacements), réinsérées à chaque rendu
-        if (typeof window.btZonesInfeed === "function") window.btZonesInfeed(container);
-      }
-      // 4. LE CODE QUE TU M'AS ENVOYÉ (avec la pagination corrigée)
-      document.addEventListener("DOMContentLoaded", async () => {
-        const container = document.getElementById("events-grid-container");
-        const countHeader = document.getElementById("events-count-header");
-
-        // Filtres
-        const searchInput = document.querySelector('input[type="text"]');
-        const catCheckboxes = document.querySelectorAll(".cat-checkbox");
-        const priceFilter = document.getElementById("price-filter");
-        const priceDisplay = document.getElementById("price-display");
-        const locationFilter = document.getElementById("location-filter");
-        const includePastFilter = document.getElementById("include-past-filter");
-
-        // Nouveaux venus : Tri et Pagination
-        const sortSelect = document.getElementById("sort-select");
-        const paginationContainer = document.getElementById(
-          "pagination-container",
-        );
-
-        // Variables d'état
-        let currentPage = 1;
-        const itemsPerPage = 6; // Combien de cartes on affiche par page
-
-        async function fetchAndRenderEvents() {
-          if (container) container.style.opacity = "0.5";
-
-          try {
-            const params = new URLSearchParams();
-
-            // Ajout de la page, limite et tri
-            params.append("page", currentPage);
-            params.append("limit", itemsPerPage);
-            if (sortSelect) params.append("sort_by", sortSelect.value);
-            
-            // Filtre temporel : par défaut on n'affiche que les futurs.
-            // Si la checkbox est cochée, on élargit aux 30 derniers jours.
-            if (includePastFilter && includePastFilter.checked) {
-              params.append("include_past_days", "30");
-            } else {
-              params.append("upcoming_only", "true");
-            }
-                        if (searchInput && searchInput.value.trim() !== "") {
-              params.append("q", searchInput.value.trim());
-            }
-            const checkedCats = Array.from(catCheckboxes)
-              .filter((cb) => cb.checked)
-              .map((cb) => cb.value);
-            if (checkedCats.length > 0) {
-              params.append("categories", checkedCats.join(","));
-            }
-            if (priceFilter && priceFilter.value < 100000) {
-              params.append("max_price", priceFilter.value);
-            }
-            if (locationFilter && locationFilter.value !== "") {
-              params.append("location", locationFilter.value);
-            }
-
-            // Appel API
-            const url = "/events?" + params.toString();
-            const response = await btApi.get(url);
-
-            // La réponse est maintenant un objet avec .events et .total
-            const events = response.events;
-            const total = response.total;
-
-            // 1. Titre
-            if (countHeader) {
-              if (
-                params.toString().includes("q=") ||
-                params.toString().includes("categories=") ||
-                params.toString().includes("max_price=") ||
-                params.toString().includes("location=")
-              ) {
-                countHeader.textContent =
-                  total +
-                  (total > 1 ? " événements trouvés" : " événement trouvé");
-              } else {
-                countHeader.textContent = "Tous nos événements";
-              }
-            }
-
-            // 2. Grille d'événements
-            renderDynamicEvents(events);
-
-            // 3. Dessiner la pagination
-            renderPagination(total);
-          } catch (error) {
-            console.error("Erreur :", error);
-          } finally {
-            if (container) container.style.opacity = "1";
-          }
+        function card(e, header) {
+          var past = toDate(e.event_date) < new Date();
+          var badge = past ? '<span class="ev-b inline-flex bg-gray-900/85 text-white">Terminé</span>'
+            : e.is_sold_out ? '<span class="ev-b inline-flex bg-gray-900/90 text-white">Complet</span>'
+            : e.is_boosted ? '<span class="ev-b hidden md:inline-flex bg-gradient-to-r from-orange-500 to-red-500 text-white">À la une</span>' : "";
+          return (header ? '<div>' + header : "<div>") +
+            '<a href="event_detail.html?id=' + e.id + '" class="group flex gap-3 p-2.5 bg-white rounded-2xl border border-gray-100 shadow-sm ' +
+            'md:flex-col md:gap-0 md:p-0 md:overflow-hidden md:h-full hover:shadow-lg transition-shadow' + (past ? " opacity-75" : "") + '">' +
+            '<div class="relative w-24 h-24 shrink-0 rounded-xl overflow-hidden bg-gray-100 md:w-full md:h-auto md:aspect-[16/10] md:rounded-none">' +
+            '<img src="' + cover(e) + '" alt="" loading="lazy" class="w-full h-full object-cover md:group-hover:scale-105 transition-transform duration-500" ' +
+            'onerror="this.onerror=null;this.src=\'icons/event-default.svg\'">' +
+            '<span class="hidden md:inline-block absolute top-3 left-3 bg-white/95 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-primary">' +
+            esc(e.category || "Événement") + "</span>" + (badge ? '<span class="absolute bottom-1 left-1 right-1 md:left-auto md:bottom-auto md:top-3 md:right-3 flex justify-center">' + badge + "</span>" : "") +
+            "</div>" +
+            '<div class="min-w-0 flex-1 flex flex-col py-0.5 md:p-4">' +
+            '<p class="text-[11px] md:text-xs text-primary font-bold">' + dateLabel(e.event_date) + "</p>" +
+            '<h3 class="font-headline font-bold text-[15px] md:text-base leading-tight line-clamp-2 text-on-surface mt-0.5">' + esc(e.title) + "</h3>" +
+            '<p class="text-xs md:text-sm text-outline truncate mt-0.5"><span class="md:hidden">' + esc(e.category || "Événement") + " · </span>" + esc(e.location) + "</p>" +
+            '<div class="mt-auto pt-1 md:pt-3 flex items-center justify-between"><span class="font-extrabold text-sm md:text-base ' +
+            (e.price > 0 ? "text-secondary" : "text-primary") + '">' + price(e.price) + "</span>" +
+            (past ? "" : '<span class="hidden md:inline text-xs font-bold text-primary">Réserver →</span>') + "</div></div></a></div>";
         }
-
-        // --- LE MOTEUR DE PAGINATION (Avec TON design) ---
-        function renderPagination(total) {
-          if (!paginationContainer) return;
-          const totalPages = Math.ceil(total / itemsPerPage);
-
-          if (totalPages <= 1) {
-            paginationContainer.innerHTML = ""; // Cache la pagination s'il n'y a qu'une page
-            return;
-          }
-
-          let html = "";
-
-          // Bouton Précédent (chevron_left)
-          html += `<button onclick="changePage(${currentPage - 1})" class="w-12 h-12 rounded-xl border border-outline-variant flex items-center justify-center hover:bg-surface-container-high transition-colors disabled:opacity-30 disabled:cursor-not-allowed" ${currentPage === 1 ? "disabled" : ""}>
-                        <span class="material-symbols-outlined">chevron_left</span>
-                     </button>`;
-
-          // Les numéros (1, 2, 3...)
-          for (let i = 1; i <= totalPages; i++) {
-            if (i === currentPage) {
-              html += `<button class="w-12 h-12 rounded-xl bg-primary text-white font-bold">${i}</button>`;
-            } else {
-              html += `<button onclick="changePage(${i})" class="w-12 h-12 rounded-xl border border-outline-variant flex items-center justify-center hover:bg-surface-container-high font-bold transition-colors">${i}</button>`;
+        function groupHeader(label) {
+          return '<p class="md:hidden text-[11px] font-bold text-outline uppercase tracking-widest pt-2 pb-2">' + label + "</p>";
+        }
+        function render(events, append) {
+          var weekEnd = Date.now() + 7 * 86400000, grouped = F.sort === "date_asc" && !F.past, html = "";
+          var lastGroup = append ? grid.getAttribute("data-group") : null;
+          events.forEach(function (e) {
+            var h = null;
+            if (grouped) {
+              var g = toDate(e.event_date).getTime() < weekEnd ? "Cette semaine" : "Plus tard";
+              if (g !== lastGroup) { h = groupHeader(g); lastGroup = g; }
             }
-          }
-
-          // Bouton Suivant (chevron_right)
-          html += `<button onclick="changePage(${currentPage + 1})" class="w-12 h-12 rounded-xl border border-outline-variant flex items-center justify-center hover:bg-surface-container-high transition-colors disabled:opacity-30 disabled:cursor-not-allowed" ${currentPage === totalPages ? "disabled" : ""}>
-                        <span class="material-symbols-outlined">chevron_right</span>
-                     </button>`;
-
-          paginationContainer.innerHTML = html;
-        }
-
-        // Fonction globale pour changer de page
-        window.changePage = function (newPage) {
-          currentPage = newPage;
-          fetchAndRenderEvents();
-          // Remonte doucement en haut de la liste quand on change de page
-          if (countHeader)
-            countHeader.scrollIntoView({ behavior: "smooth", block: "start" });
-        };
-
-        // --- ECOUTEURS (Quand on touche à un filtre, on retourne à la page 1) ---
-        function updateFilters() {
-          currentPage = 1;
-          fetchAndRenderEvents();
-        }
-
-        let searchTimeout = null;
-        if (searchInput) {
-          searchInput.addEventListener("input", () => {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(updateFilters, 400);
+            html += card(e, h);
           });
+          if (grouped && lastGroup) grid.setAttribute("data-group", lastGroup); else grid.removeAttribute("data-group");
+          if (append) grid.insertAdjacentHTML("beforeend", html); else grid.innerHTML = html;
+          if (!grid.children.length) {
+            grid.innerHTML = '<div class="col-span-full py-12 text-center"><span class="material-symbols-outlined text-5xl text-outline">event_busy</span>' +
+              '<p class="text-on-surface font-bold mt-2">Aucun événement ne correspond.</p>' +
+              '<button type="button" class="mt-3 text-primary font-bold underline" onclick="window.evReset()">Effacer les filtres</button></div>';
+          } else if (typeof window.btZonesInfeed === "function") window.btZonesInfeed(grid);   // cartes « Sponsorisé »
         }
-        catCheckboxes.forEach((cb) =>
-          cb.addEventListener("change", updateFilters),
-        );
-        if (locationFilter)
-          locationFilter.addEventListener("change", updateFilters);
-        if (sortSelect) sortSelect.addEventListener("change", updateFilters);
-        if (includePastFilter) {
-          includePastFilter.addEventListener("change", updateFilters);
+
+        // « À la une » : 3 boostés max (rotation serveur 5 min), seulement sans recherche ni filtre
+        function une(list) {
+          var box = $("ev-une");
+          if (!list.length) { box.classList.add("hidden"); box.innerHTML = ""; return; }
+          var tile = function (e, size, small) {
+            return '<a href="event_detail.html?id=' + e.id + '" class="relative block rounded-3xl overflow-hidden shadow-md ' + size + '">' +
+              '<img src="' + cover(e) + '" alt="" class="absolute inset-0 w-full h-full object-cover" onerror="this.onerror=null;this.src=\'icons/event-default.svg\'">' +
+              '<span class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent"></span>' +
+              '<span class="absolute top-3 left-3 bg-gradient-to-r from-orange-500 to-red-500 text-white px-2.5 py-1 rounded-full text-[10px] font-black uppercase">À la une</span>' +
+              '<span class="absolute bottom-0 left-0 right-0 p-4 md:p-5 text-white"><span class="block text-xs md:text-sm font-bold text-secondary-container">' + dateLabel(e.event_date) + "</span>" +
+              '<span class="block font-headline font-extrabold text-lg leading-tight ' + (small ? "md:text-xl line-clamp-1" : "md:text-2xl line-clamp-2") + '">' + esc(e.title) + "</span>" +
+              '<span class="block text-xs text-white/85 mt-1 truncate">' + (small ? "" : esc(e.location) + " · ") + "<b>" + price(e.price) + "</b></span></span></a>";
+          };
+          var mob = '<div class="md:hidden"><div id="ev-une-track" class="-mx-4 px-4 flex gap-3 overflow-x-auto snap-x snap-mandatory ev-noscroll">' +
+            list.map(function (e) { return '<div class="snap-start shrink-0 ' + (list.length > 1 ? "w-[86%]" : "w-full") + '">' + tile(e, "h-48") + "</div>"; }).join("") + "</div>" +
+            (list.length > 1 ? '<div class="flex justify-center gap-1.5 mt-2" id="ev-une-dots">' + list.map(function (_, i) {
+              return '<span class="h-1.5 rounded-full transition-all ' + (i ? "w-1.5 bg-gray-300" : "w-5 bg-primary") + '"></span>'; }).join("") + "</div>" : "") + "</div>";
+          var desk = list.length === 1 ? tile(list[0], "h-56")
+            : list.length === 2 ? '<div class="grid grid-cols-2 gap-5">' + tile(list[0], "h-56") + tile(list[1], "h-56") + "</div>"
+            : '<div class="grid grid-cols-[1.4fr_1fr] gap-5">' + tile(list[0], "h-72") + '<div class="grid grid-rows-2 gap-5">' + tile(list[1], "", true) + tile(list[2], "", true) + "</div></div>";
+          box.innerHTML = mob + '<div class="hidden md:block">' + desk + "</div>";
+          box.classList.remove("hidden");
+          var track = $("ev-une-track"), dots = $("ev-une-dots");
+          if (track && dots) track.addEventListener("scroll", function () {
+            var i = Math.round(track.scrollLeft / (track.firstChild.getBoundingClientRect().width + 12));
+            Array.prototype.forEach.call(dots.children, function (d, k) { d.className = "h-1.5 rounded-full transition-all " + (k === i ? "w-5 bg-primary" : "w-1.5 bg-gray-300"); });
+          }, { passive: true });
         }
-        if (priceFilter) {
-          priceFilter.addEventListener(
-            "input",
-            (e) =>
-              (priceDisplay.textContent =
-                Number(e.target.value).toLocaleString("fr-FR") + " FCFA"),
-          );
-          priceFilter.addEventListener("change", updateFilters);
+        function filtered() { return !!(F.q || F.cat || F.when || F.price || F.city || F.free || F.past); }
+
+        function params(p) {
+          var u = new URLSearchParams({ page: p, limit: LIMIT, sort_by: F.sort, boost_first: "false" });
+          if (F.past) u.set("include_past_days", "30"); else u.set("upcoming_only", "true");
+          if (F.q) u.set("q", F.q);
+          if (F.cat) u.set("categories", F.cat);
+          if (F.when) u.set("when", F.when);
+          if (F.price === "0") u.set("free_only", "true"); else if (F.price) u.set("max_price", F.price);
+          if (F.free) u.set("free_only", "true");
+          if (F.city) u.set("location", F.city);
+          return u.toString();
         }
-        const urlParams = new URLSearchParams(window.location.search);
-        const searchFromUrl = urlParams.get("search");
-        if (searchFromUrl && searchInput) {
-          searchInput.value = searchFromUrl;
+        function header() {
+          var h = $("events-count-header");
+          h.textContent = total ? total + (filtered() ? (total > 1 ? " événements trouvés" : " événement trouvé")
+            : (total > 1 ? " événements à venir" : " événement à venir")) : (filtered() ? "Aucun résultat" : "Aucun événement à venir");
+          var more = $("ev-more"), prog = $("ev-progress");
+          var left = total - shown;
+          more.classList.toggle("hidden", left <= 0);
+          more.textContent = "Voir " + Math.min(LIMIT, left) + " événement" + (Math.min(LIMIT, left) > 1 ? "s" : "") + " de plus";
+          prog.textContent = total > LIMIT ? shown + " sur " + total : "";
+          var n = ["when", "price", "city", "free", "past"].filter(function (k) { return F[k]; }).length, b = $("ev-filters-n");
+          b.textContent = n; b.classList.toggle("hidden", !n);
         }
-        // Chargement initial
-        await fetchAndRenderEvents();
-      });
+        function load(append) {
+          var my = ++seq;
+          if (!append) { page = 1; grid.style.opacity = "0.5"; }
+          busy = true;
+          return btApi.get("/events?" + params(page)).then(function (r) {
+            if (my !== seq) return;
+            total = r.total || 0;
+            shown = append ? shown + r.events.length : r.events.length;
+            render(r.events || [], append);
+            header();
+          }).catch(function () {
+            if (my !== seq) return;
+            $("events-count-header").textContent = "Connexion impossible";
+            grid.innerHTML = '<div class="col-span-full py-12 text-center"><span class="material-symbols-outlined text-5xl text-outline">wifi_off</span>' +
+              '<p class="font-bold mt-2">Impossible de charger les événements.</p><p class="text-sm text-outline">Vérifiez votre connexion.</p>' +
+              '<button type="button" class="mt-4 px-5 py-2.5 rounded-full bg-primary text-white font-bold" onclick="window.evReload()">Réessayer</button></div>';
+          }).then(function () { if (my === seq) { busy = false; grid.style.opacity = "1"; } });
+        }
+        function loadUne() {
+          if (filtered()) { une([]); return; }
+          btApi.get("/events?boosted_only=true&upcoming_only=true&limit=3").then(function (r) {
+            if (!filtered()) une((r.events || []).slice(0, 3));
+          }).catch(function () { une([]); });
+        }
+        function refresh() { load(false); loadUne(); syncControls(); }
+
+        // ── Contrôles (ordinateur + panneau téléphone, état partagé) ──
+        function chip(active, label) {
+          return "shrink-0 whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold border transition-colors " +
+            (active ? "bg-primary text-white border-primary" : "bg-white text-on-surface border-gray-200 hover:border-primary");
+        }
+        function catChips(list) {
+          var box = $("ev-cats");
+          box.innerHTML = [""].concat(list).map(function (c) {
+            return '<button type="button" role="tab" data-cat="' + esc(c) + '" class="' + chip(F.cat === c) + '">' + esc(c || "Tout") + "</button>";
+          }).join("");
+        }
+        function whenChips(id) {
+          $(id).innerHTML = WHEN.map(function (w) {
+            return '<button type="button" data-when="' + w[0] + '" class="' + chip(F.when === w[0]).replace("text-sm", "text-xs md:text-sm").replace("py-2", "py-1.5") + '">' + w[1] + "</button>";
+          }).join("");
+        }
+        function options(id, list) { $(id).innerHTML = list.map(function (o) { return '<option value="' + o[0] + '">' + o[1] + "</option>"; }).join(""); }
+        function syncControls() {
+          Array.prototype.forEach.call($("ev-cats").children, function (b) { b.className = chip(b.getAttribute("data-cat") === F.cat); });
+          whenChips("ev-when-desk"); whenChips("ev-when-mob");
+          ["desk", "mob"].forEach(function (k) {
+            $("ev-price-" + k).value = F.price; $("ev-city-" + k).value = F.city;
+            $("ev-free-" + k).checked = F.free; $("ev-past-" + k).checked = F.past;
+          });
+          $("ev-sort-desk").value = F.sort; $("ev-sort-mob").value = F.sort;
+        }
+        window.evReset = function () { F.cat = F.when = F.price = F.city = ""; F.free = F.past = false; F.q = ""; $("ev-search").value = ""; refresh(); };
+        window.evReload = function () { refresh(); };
+
+        options("ev-price-desk", PRICES); options("ev-price-mob", PRICES);
+        options("ev-sort-desk", SORTS); options("ev-sort-mob", SORTS);
+        $("ev-cats").addEventListener("click", function (ev) {
+          var b = ev.target.closest("[data-cat]"); if (!b) return;
+          F.cat = b.getAttribute("data-cat"); refresh();
+        });
+        ["ev-when-desk", "ev-when-mob"].forEach(function (id) {
+          $(id).addEventListener("click", function (ev) {
+            var b = ev.target.closest("[data-when]"); if (!b) return;
+            F.when = b.getAttribute("data-when"); refresh();
+          });
+        });
+        var t = null;
+        function debounced(fn) { clearTimeout(t); t = setTimeout(fn, 400); }
+        $("ev-search").addEventListener("input", function () { F.q = this.value.trim(); debounced(refresh); });
+        ["desk", "mob"].forEach(function (k) {
+          $("ev-price-" + k).addEventListener("change", function () { F.price = this.value; refresh(); });
+          $("ev-city-" + k).addEventListener("input", function () { F.city = this.value.trim(); debounced(refresh); });
+          $("ev-free-" + k).addEventListener("change", function () { F.free = this.checked; refresh(); });
+          $("ev-past-" + k).addEventListener("change", function () { F.past = this.checked; refresh(); });
+          $("ev-sort-" + k).addEventListener("change", function () { F.sort = this.value; refresh(); });
+        });
+        $("ev-more").addEventListener("click", function () { if (!busy) { page += 1; load(true); } });
+        var sheet = $("ev-sheet");
+        $("ev-filters-btn").addEventListener("click", function () { sheet.classList.remove("hidden"); sheet.classList.add("flex"); });
+        sheet.addEventListener("click", function (ev) {
+          if (ev.target === sheet || ev.target.closest("[data-close]")) { sheet.classList.add("hidden"); sheet.classList.remove("flex"); }
+        });
+        $("ev-reset").addEventListener("click", function () { window.evReset(); });
+
+        // Pub latérale : la colonne n'apparaît (≥ 1280 px) que si l'emplacement a un bloc en ligne
+        var sideZone = document.querySelector('#ev-side [data-zone]'), side = $("ev-side"), layout = $("ev-layout");
+        function sideCheck() {
+          var on = sideZone && !sideZone.classList.contains("hidden");
+          side.className = on ? "hidden xl:block" : "hidden";
+          layout.classList.toggle("xl:grid-cols-[300px_1fr]", !!on);
+        }
+        if (sideZone && "MutationObserver" in window) new MutationObserver(sideCheck).observe(sideZone, { attributes: true, attributeFilter: ["class"] });
+
+        var url = new URLSearchParams(location.search);
+        F.q = (url.get("search") || url.get("q") || "").trim();
+        F.cat = (url.get("cat") || "").trim();
+        $("ev-search").value = F.q;
+        catChips([]);
+        btApi.get("/categories").then(function (cats) {
+          var list = (cats || []).map(function (c) { return c.category; }).slice(0, 12);
+          if (F.cat && list.indexOf(F.cat) < 0) list.unshift(F.cat);
+          catChips(list);
+        }).catch(function () {});
+        refresh();
+      })();
+
       document.getElementById("footer").innerHTML = btFooter();
     </script>
     <script src="pwa.js"></script>

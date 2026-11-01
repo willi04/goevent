@@ -36,6 +36,10 @@ def list_events(
     include_past_days: int = Query(0, ge=0, le=3650),
     when: Optional[str] = Query(None, pattern="^(today|weekend|month)$"),
     free_only: bool = False,
+    # Page Événements (lot 5) : « À la une » = boostés visibles seulement ; la liste
+    # suit l'ordre choisi sans remonter les boostés (ils sont déjà dans « À la une »).
+    boosted_only: bool = False,
+    boost_first: bool = True,
     db: Session = Depends(get_db),
 ):
     from models.promotion import BoostOrder
@@ -118,8 +122,13 @@ def list_events(
     else:
         visible_boost_ids = set(active_boost_event_ids)
 
+    if boosted_only:
+        if not visible_boost_ids:
+            return {"total": 0, "page": page, "limit": limit, "events": []}
+        query = query.filter(Event.id.in_(visible_boost_ids))
+
     # ─── Tri SQL : visibles_boostés d'abord, puis tri standard ──────────
-    if visible_boost_ids:
+    if visible_boost_ids and boost_first:
         boost_priority = case(
             (Event.id.in_(visible_boost_ids), 0),
             else_=1,

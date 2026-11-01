@@ -190,7 +190,10 @@ bout en bout sans intervention, 1 retrait réussi, analyse des
   (cache invalidé dans son navigateur), ≤ 1 minute pour les visiteurs
   (`Cache-Control: max-age=60`), jusqu'à 5 minutes pour un visiteur déjà sur
   le site (cache de session de `cms.js`).
-- Pages légales : toujours renseigner « Ce qui change » à la publication.
+- Pages légales (Mentions légales, CGU, Confidentialité, Remboursements) :
+  toujours renseigner « Ce qui change » à la publication. Une page jamais
+  publiée affiche le texte du fichier HTML (ex. `mentions.html`) : la publier
+  une première fois depuis le back-office pour la rendre modifiable et datée.
   Restaurer une ancienne version = la charger dans l'éditeur puis la publier
   (nouvelle version datée, l'historique n'est jamais réécrit).
 - Ajout ou suppression de texte dans une page : relancer

@@ -44,6 +44,7 @@ router = APIRouter(tags=["cms"])
 content_editor = require_staff_function("cm")  # admin + CM
 
 LEGAL_TITLES = {
+    "mentions": "Mentions légales",
     "cgu": "Conditions Générales d'Utilisation",
     "confidentialite": "Politique de Confidentialité",
     "remboursements": "Politique de Remboursements",

@@ -38,6 +38,7 @@ PAGES = {
     "a_propos.html": ("a_propos", set(), set(), set()),
     "partenaire.html": ("partenaire", set(), set(), set()),
     "centre_aide.html": ("centre_aide", {"faq-container", "category-filters"}, set(), set()),
+    "mentions.html": ("mentions", set(), {"legal-content"}, set()),
     "cgu.html": ("cgu", set(), {"legal-content"}, set()),
     "confidentialite.html": ("confidentialite", set(), {"legal-content"}, set()),
     "remboursements.html": ("remboursements", set(), {"legal-content"}, set()),
@@ -197,7 +198,7 @@ class Tagger(HTMLParser):
             return
         if "data-cms-page-date" in node.attrs:
             return
-        if self.prefix in ("cgu", "confidentialite", "remboursements") and \
+        if self.prefix in ("mentions", "cgu", "confidentialite", "remboursements") and \
                 any(LEGAL_DATE.search(t) for _, t in meaningful):
             # date de mise à jour → pilotée par la révision de la page légale
             self.inserts.append((node.end_of_start, " data-cms-page-date"))

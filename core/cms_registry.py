@@ -20,7 +20,7 @@ from pathlib import Path
 
 WEB_DIR = Path(__file__).resolve().parent.parent / "web"
 
-LEGAL_PAGES = ("cgu", "confidentialite", "remboursements")
+LEGAL_PAGES = ("mentions", "cgu", "confidentialite", "remboursements")
 
 PAGE_TITLES = {
     "global": "Éléments communs (footer, contact, simulateur)",
@@ -36,6 +36,7 @@ PAGE_TITLES = {
     "login": "Connexion",
     "signup": "Inscription",
     "simulateur": "Simulateur de rentabilité",
+    "mentions": "Mentions légales (en-tête et liens)",
     "cgu": "CGU (en-tête et liens)",
     "confidentialite": "Confidentialité (en-tête et liens)",
     "remboursements": "Remboursements (en-tête et liens)",

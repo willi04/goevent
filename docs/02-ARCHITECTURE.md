@@ -238,9 +238,13 @@ Les textes, images et liens des pages publiques sont modifiables depuis
 - **`web/cms.js`** (inclus sur chaque page publique) appelle
   `GET /content?pages=…` et applique les surcharges en `textContent`
   (jamais `innerHTML`). API indisponible = la page garde son texte statique.
-- **Pages légales** : corps HTML versionné (`site_page_revisions`,
-  append-only), nettoyé par bleach, rendu dans `[data-cms-page]` ; sans
-  version publiée, le texte du fichier HTML reste affiché.
+- **Pages légales** (`mentions`, `cgu`, `confidentialite`, `remboursements` ;
+  liste dans `LEGAL_TITLES`, `api/cms.py`) : corps HTML versionné
+  (`site_page_revisions`, append-only), nettoyé par bleach, rendu dans
+  `[data-cms-page]` ; sans version publiée, le texte du fichier HTML reste
+  affiché. Nouvelle page légale = `LEGAL_TITLES` + `LEGAL_PAGES`
+  (`core/cms_registry.py`) + `LEGAL` / `PAGE_URLS` (`web/admin-cms.js`) +
+  `PAGES` (`scripts/cms_tag.py`) + `TOPBAR_PAGES` + lien du pied de page.
 - **FAQ** : `faq_items`, rendue dans `[data-cms-faq]` (FAQ statique conservée
   tant que la table est vide).
 - **Droits** : textes, images, FAQ = admin + CM ; pages légales et montants

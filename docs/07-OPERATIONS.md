@@ -278,6 +278,20 @@ bout en bout sans intervention, 1 retrait réussi, analyse des
   `invitation_track_link_created|revoked`, `invitation_agent_assigned|removed`,
   `invitation_purge`.
 
+## Aperçu de partage des événements (lot 5)
+
+- Les robots d'aperçu (WhatsApp, Facebook, Telegram, X, LinkedIn, Discord,
+  Google…) qui ouvrent `goevent.africa/e/<slug>` sont envoyés par
+  `web/vercel.json` (condition sur l'en-tête `user-agent`) vers la fonction
+  Vercel `web/api/og-event.js` : titre, date, lieu, prix et image de
+  l'événement. Les visiteurs gardent la page statique.
+- Image : couverture `https://` de l'événement, sinon `web/og/evenement.png`
+  (les couvertures base64 ne sont pas lisibles par les robots). Cache Vercel
+  10 min. API lue : `GOEVENT_API_URL` (défaut `https://api.goevent.africa`).
+- Vérifier : `curl -s -A "WhatsApp/2.23" https://goevent.africa/e/<slug> | grep og:`
+  et le débogueur de partage Facebook (« Scrape Again » après une
+  modification, WhatsApp garde son propre cache quelques jours).
+
 ## Achat de plusieurs billets (lot 5.5)
 
 - **Avant le déploiement** : `tickets` est lue par le scan et le paiement →

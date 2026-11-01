@@ -2,6 +2,17 @@
   "rewrites": [
     {
       "source": "/e/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(WhatsApp|whatsapp|facebookexternalhit|facebookcatalog|Facebot|meta-externalagent|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|SkypeUriPreview|Pinterest|Snapchat|Viber|Googlebot|bingbot|Applebot).*"
+        }
+      ],
+      "destination": "/api/og-event?slug=:slug"
+    },
+    {
+      "source": "/e/:slug",
       "destination": "/event_detail.html?slug=:slug"
     },
     {

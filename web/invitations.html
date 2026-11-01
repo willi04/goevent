@@ -376,7 +376,7 @@
         }
         function waHref(extra) {
           var num = waNumber();
-          return num ? "https://wa.me/" + num + "?text=" + encodeURIComponent(message(extra)) : "partenaire.html#contact";
+          return num ? "https://api.whatsapp.com/send?phone=" + num + "&text=" + encodeURIComponent(message(extra)) : "partenaire.html#contact";
         }
         function refreshLinks() {
           var main = waHref(null);
@@ -384,7 +384,7 @@
           var ctas = document.querySelectorAll("a.js-wa");
           for (var k = 0; k < ctas.length; k++) {
             ctas[k].setAttribute("href", main);
-            if (main.indexOf("https://wa.me/") === 0) { ctas[k].setAttribute("target", "_blank"); ctas[k].setAttribute("rel", "noopener"); }
+            if (main.indexOf("https://") === 0) { ctas[k].setAttribute("target", "_blank"); ctas[k].setAttribute("rel", "noopener"); }
           }
           var packs = document.querySelectorAll("[data-pack-size]");
           for (var i = 0; i < packs.length; i++) {

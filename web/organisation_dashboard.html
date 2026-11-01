@@ -2740,7 +2740,7 @@
       
       function shareWhatsApp() {
         const message = encodeURIComponent(buildShareMessage());
-        window.open(`https://wa.me/?text=${message}`, "_blank");
+        window.open(`https://api.whatsapp.com/send?text=${message}`, "_blank");
       }
       
       function shareFacebook() {

@@ -765,7 +765,7 @@ function btMobileDrawerSections() {
         '<span class="material-symbols-outlined text-base text-green-600">chat</span>' +
         'Support WhatsApp' +
       '</a>' +
-      '<a href="https://wa.me/?text=' + inviteText + '" target="_blank" rel="noopener" class="flex items-center gap-3 p-3 rounded-2xl text-gray-700 font-semibold hover:bg-primary/5 hover:text-primary transition-all text-sm">' +
+      '<a href="https://api.whatsapp.com/send?text=' + inviteText + '" target="_blank" rel="noopener" class="flex items-center gap-3 p-3 rounded-2xl text-gray-700 font-semibold hover:bg-primary/5 hover:text-primary transition-all text-sm">' +
         '<span class="material-symbols-outlined text-base text-gray-500">person_add</span>' +
         'Inviter un ami' +
       '</a>' +

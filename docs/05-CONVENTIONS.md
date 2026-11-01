@@ -462,6 +462,11 @@ transversale à respecter :
 - Les tokens NGSER dans les variables d'environnement suivent le
   format `NGSER_<PURPOSE>_TOKEN` (`NGSER_AUTH_TOKEN`,
   `NGSER_PAYMENT_TOKEN`, `NGSER_WITHDRAWAL_TOKEN`).
+- Liens WhatsApp **avec texte prérempli** : `https://api.whatsapp.com/send?phone=<n°>&text=<texte>`
+  (`?text=` seul pour un partage sans destinataire), texte encodé en UTF-8
+  (`encodeURIComponent` / `urllib.parse.quote(safe="")`). Jamais `wa.me/…?text=` :
+  sa redirection abîme les émojis sur Android (« � »). `https://wa.me/<n°>` reste
+  pour une simple ouverture de conversation (pied de page, support, flyers imprimés).
 - Les préfixes d'order_id NGSER sont documentés dans
   `04-PAYMENT_FLOW.md` et ne doivent pas être renommés sans mise à
   jour coordonnée du dispatcher dans `core/payment_processing.py`.

@@ -2,7 +2,7 @@
  * admin-invitations.js — Onglet « Invitations » du back-office (admin.html)
  *
  * Offre accompagnée : l'équipe GoEvent crée l'événement privé, importe la
- * liste, envoie les pass par WhatsApp (lien wa.me, un clic par invité),
+ * liste, envoie les pass par WhatsApp (lien api.whatsapp.com, un clic par invité),
  * suit les arrivées et remet au client un lien de suivi (chiffres seuls).
  * Accès : capability invitations_manage (admin + commercial). Activation d'un
  * pack : admin uniquement (invitations_activate), après paiement reçu sur un

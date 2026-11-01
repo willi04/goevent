@@ -246,6 +246,17 @@ valide le code promo avant l'achat : si le prix final est nul, il appelle
 directement `POST /tickets/reserve-free` (flux 3). Si un client appelle
 quand même `initiate-ngser` avec ce code, la route répond 400.
 
+### Qui peut acheter (lot 5.7)
+
+- **Comptes fan uniquement** (+ admin pour le support) : `core/orders.BUYER_ROLES`.
+  Organisateurs (même pour leur propre événement), agents du scanner et staff
+  reçoivent 403 sur `initiate-ngser` et `reserve-free`. La fiche et la page de
+  paiement l'expliquent (« Compte fan requis »).
+- **Billetterie fermée à l'heure de début** (`assert_not_started`) : l'API
+  acceptait le paiement d'un événement terminé, seule la page le bloquait.
+- Tests d'achat du staff : environnement de test dédié (plan à venir), jamais
+  en production avec de l'argent réel.
+
 ### Commande de plusieurs billets (lot 5.5)
 
 - `initiate-ngser` accepte `quantity` (1-5, `core/orders.MAX_PER_ORDER`).

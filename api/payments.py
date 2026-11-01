@@ -12,7 +12,7 @@ from core.limiter import limiter
 
 from utils.locks import lock_event_for_booking, lock_event_for_release
 from utils.promo import lock_promo_for_use, compute_discount, release_promo_usage
-from core.orders import MAX_PER_ACCOUNT, assert_account_limit, assert_capacity, unit_total
+from core.orders import MAX_PER_ACCOUNT, assert_account_limit, assert_can_buy, assert_capacity, assert_not_started, unit_total
 from core.database import get_db
 from core.security import get_current_user
 from core.ngser import create_payment_session, check_payment_status
@@ -44,8 +44,10 @@ async def initiate_ngser_payment(
     Abandon sans payer : places libérées par la réconciliation (> 15 min / 24 h).
     """
     qty = data.quantity
+    assert_can_buy(current_user)          # comptes fan (et admin) uniquement
     # 1. Verrou + check quota atomique (P0 anti-survente)
     event = lock_event_for_booking(db, data.event_id)
+    assert_not_started(event)             # l'API acceptait un événement terminé (seule la page bloquait)
     assert_capacity(event, qty)
     assert_account_limit(db, current_user.id, event.id, qty, MAX_PER_ACCOUNT)
 

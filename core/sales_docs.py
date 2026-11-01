@@ -161,7 +161,7 @@ def quote_pdf(q, owner=None) -> bytes:
 def welcome_text(user, pin: str) -> str:
     base = settings.PUBLIC_SITE_URL.rstrip("/")
     lines = ["Bienvenue dans l'équipe GoEvent, %s !" % (user.full_name or ""), "",
-             "Connexion à l'espace équipe : %s/admin-login.html" % base,
+             "Connexion à l'espace équipe : %s/admin.html" % base,
              "Numéro de connexion : %s" % user.phone_number,
              "Code PIN provisoire : %s (à changer dès la première connexion)" % pin]
     if user.sales_code:
@@ -191,7 +191,7 @@ def welcome_pdf(user, pin: str) -> bytes:
     story = [Paragraph(_t("Bienvenue, %s" % (user.full_name or "")), st["h1"]),
              Paragraph(_t("Votre accès à l'espace équipe GoEvent."), st["body"]), Spacer(1, 5 * mm),
              Paragraph("Connexion", st["h2"])]
-    acc = [[Paragraph("Adresse", st["bold"]), Paragraph(_t("%s/admin-login.html" % base), st["body"])],
+    acc = [[Paragraph("Adresse", st["bold"]), Paragraph(_t("%s/admin.html" % base), st["body"])],
            [Paragraph("Numéro", st["bold"]), Paragraph(_t(fmt_phone(user.phone_number)), st["body"])],
            [Paragraph("Code PIN provisoire", st["bold"]), Paragraph(_t(" ".join(pin)), st["h1"])],
            ["", Paragraph(_t("À remplacer par votre propre code dès la première connexion."), st["body"])]]

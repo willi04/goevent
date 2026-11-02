@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from core.database import get_db
 from core.security import get_current_user
-from core.permissions import require_staff_function
+from core.permissions import require_staff_function, is_admin
 from core.limiter import limiter
 from models.user import User
 from models.cms import HomepageContent, AdContract
@@ -118,6 +118,8 @@ def list_contracts(
     user: User = Depends(require_staff_function("commercial")),
 ):
     q = db.query(AdContract).order_by(AdContract.created_at.desc())
+    if not is_admin(user):                       # commercial : uniquement ses propres contrats
+        q = q.filter(AdContract.created_by == user.id)
     if status_filter:
         q = q.filter(AdContract.status == status_filter)
     return q.all()
@@ -132,6 +134,8 @@ def update_contract(
 ):
     contract = db.query(AdContract).filter(AdContract.id == contract_id).first()
     if not contract:
+        raise HTTPException(404, "Contrat introuvable")
+    if not is_admin(user) and contract.created_by != user.id:   # pas le contrat d'un autre commercial
         raise HTTPException(404, "Contrat introuvable")
     for k, v in payload.model_dump(exclude_unset=True).items():
         setattr(contract, k, v)
@@ -148,6 +152,8 @@ def delete_contract(
 ):
     contract = db.query(AdContract).filter(AdContract.id == contract_id).first()
     if not contract:
+        raise HTTPException(404, "Contrat introuvable")
+    if not is_admin(user) and contract.created_by != user.id:   # pas le contrat d'un autre commercial
         raise HTTPException(404, "Contrat introuvable")
     linked = db.query(HomepageContent).filter(HomepageContent.ad_contract_id == contract_id).count()
     if linked > 0:

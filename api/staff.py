@@ -94,10 +94,11 @@ def _capabilities_for(user: User) -> dict:
     if role == "staff":
         if fn == "commercial":
             caps.update({
-                # Pas de view_users / view_finance (lot 4.5) : un commercial ne voit ni la
-                # liste des comptes ni la finance ; ses ventes sont dans Invitations.
+                # Pas de view_users / view_finance / view_events : un commercial ne voit ni les
+                # comptes, ni la finance, ni l'onglet Événements (tous les events + chiffres) —
+                # réservé à l'admin (et au futur responsable commercial). Ses ventes et commissions
+                # sont dans Invitations, cloisonnées par owner_id / beneficiary_user_id.
                 "view_dashboard": True,
-                "view_events": True,
                 "ads_contracts_read": True,
                 "ads_contracts_write": True,
                 "ads_slides_read": True,
@@ -108,7 +109,6 @@ def _capabilities_for(user: User) -> dict:
         elif fn == "cm":
             caps.update({
                 "view_dashboard": True,
-                "view_events": True,
                 "boost_visibility_manage": True,
                 "fb_ads_manage": True,
                 "fb_packages_manage": True,
@@ -122,7 +122,6 @@ def _capabilities_for(user: User) -> dict:
         elif fn == "designer":
             caps.update({
                 "view_dashboard": True,
-                "view_events": True,
                 "ads_slides_read": True,
                 "ads_slides_write": True,
             })

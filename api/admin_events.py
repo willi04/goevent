@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session, joinedload
 from core.database import get_db
 from core.event_query import STATUSES, like, status_filter, status_of, watch_filter, window
 from core.limiter import limiter, user_key
-from core.permissions import get_current_admin, get_current_admin_or_staff
+from core.permissions import get_current_admin
 from core.security import log_security_event
 from models.event import Event
 from models.payment import Payment
@@ -91,7 +91,7 @@ def admin_list_events(
     status: str = Query("tous", pattern="^(tous|avenir|encours|complet|passe|desactive|surveiller)$"),
     q: Optional[str] = Query(None, max_length=80),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_admin_or_staff),
+    current_user: User = Depends(get_current_admin),
 ):
     """Sans `page` : ancien format (tableau léger) pour l'interface actuelle.
     Avec `page` : {total, page, limit, counts, kpis, items}."""

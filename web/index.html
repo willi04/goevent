@@ -278,29 +278,46 @@
     </div>
 
     <main class="flex-1 pt-[72px] md:pt-20 pb-[60px] md:pb-0">
-     <!-- ═══ HERO CARROUSEL — Régie publicitaire ═══ -->
-      <section id="hero-carousel" class="relative w-full overflow-hidden bg-[#03361e]" style="min-height: 60vh;">
-        <!-- Container des slides (rempli dynamiquement par JS) -->
-        <div id="hero-slides-track" class="relative w-full h-full" style="min-height: 60vh;">
-          <!-- Fallback statique si JS désactivé ou API down -->
-          <div class="hero-fallback-slide absolute inset-0 flex items-center px-4 md:px-16">
-            <div class="absolute inset-0 z-0">
-              <img
-                class="w-full h-full object-cover brightness-50"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBLgDK-_QkFA7YCZQAtSH6m1rbySJFBnLlXxmapfO0X-x4Im4k-29hluoN5MZidYlINb7qZU7f1T0vqBAB4KffEYNgaTVsggqeYMOSWTwjUmKMcs_SyJ6IgfsmyPzAFaT3gt-CTcIBeJ2Wv9m1VH9MTy1HS_IbFMxgvFDliXYMLsfB_Js0M08u9wjMaEII1GyjgHN0xKAR53UxQtBR5Dkagtbzl01pQqj_xKfn0ji2XT7VN9ZCuHFNgBDcrtWtRddBvnGq57cb8Mw"
-                alt="GoEvent"
-               data-cms-img="index.img01"/>
-              <div class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-90"></div>
+     <!-- ═══ HERO DE MARQUE (billetterie + invitations) — statique, éditable via « Contenu du site ».
+          Affiché par défaut ; masqué par le JS quand une campagne pub est active (la régie reprend le hero). ═══ -->
+      <section id="hero-brand" class="relative overflow-hidden text-white" style="background: linear-gradient(160deg, #00502c 0%, #013f23 60%, #03311c 100%);">
+        <div class="absolute inset-0" style="background-image: linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px); background-size: 64px 64px;"></div>
+        <div class="relative z-10 max-w-7xl mx-auto px-6 md:px-16 py-16 md:py-24 grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-14 items-center">
+          <div class="text-center lg:text-left">
+            <p class="text-xs font-bold uppercase tracking-[.2em] text-primary-fixed/80 mb-5" data-cms="index.001">Billetterie · Invitations · Contrôle d'accès</p>
+            <h1 class="text-4xl md:text-[3.3rem] font-extrabold font-headline leading-[1.08]"><span data-cms="index.002">Un seul QR Code pour</span> <span class="text-secondary-container" data-cms="index.003">tous vos événements</span>.</h1>
+            <p class="text-base md:text-lg text-primary-fixed/85 mt-6 max-w-lg mx-auto lg:mx-0 leading-relaxed" data-cms="index.004">Vendez les billets de vos événements publics et gérez les invitations de vos cérémonies privées. Vos entrées sont scannées à la porte, même sans internet. Paiement Orange Money.</p>
+            <div class="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start mt-9">
+              <a href="event.html" class="inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-white text-primary font-bold rounded-xl text-base shadow-lg hover:bg-primary-fixed transition-colors"><span class="material-symbols-outlined">confirmation_number</span><span data-cms="index.026">Explorer les événements</span></a>
+              <a href="invitations.html" class="inline-flex items-center justify-center gap-2 px-7 py-3.5 border border-white/40 text-white font-bold rounded-xl text-base hover:bg-white/10 transition-colors"><span class="material-symbols-outlined">mail</span><span data-cms="index.027">Invitations privées</span></a>
             </div>
-            <div class="relative z-10 max-w-4xl">
-              <h1 class="text-4xl md:text-7xl font-extrabold font-headline text-white leading-tight mb-6">
-                <span data-cms="index.002">Vivez la</span> <span class="text-primary-fixed" data-cms="index.001">culture</span><br /><span data-cms="index.003">centrafricaine</span>
-              </h1>
-              <p class="text-lg md:text-xl text-surface-container-lowest/90 font-medium mb-10 max-w-xl" data-cms="index.004">
-                Achetez vos billets en ligne, payez via Orange Money. Sécurisé, rapide et local.
-              </p>
+            <div class="flex flex-wrap justify-center lg:justify-start gap-x-6 gap-y-2 mt-8 text-sm font-medium text-primary-fixed/90">
+              <span class="inline-flex items-center gap-1.5"><span class="material-symbols-outlined text-base">payments</span><span data-cms="index.028">Orange Money</span></span>
+              <span class="inline-flex items-center gap-1.5"><span class="material-symbols-outlined text-base">wifi_off</span><span data-cms="index.029">Scan hors-ligne</span></span>
+              <span class="inline-flex items-center gap-1.5"><span class="material-symbols-outlined text-base">verified_user</span><span data-cms="index.030">QR nominatif, anti-fraude</span></span>
             </div>
           </div>
+          <div class="relative h-[400px] hidden lg:block" aria-hidden="true">
+            <div class="absolute top-0 left-0 w-[290px] bg-white text-gray-900 rounded-2xl overflow-hidden rotate-[-4deg]" style="box-shadow: 0 24px 60px -18px rgba(0,0,0,.55);">
+              <div class="flex items-center justify-between px-5 pt-4"><span class="text-[10px] font-black uppercase tracking-widest text-primary">Billetterie</span><span class="material-symbols-outlined text-primary text-xl">confirmation_number</span></div>
+              <div class="px-5 pb-5 pt-2"><p class="text-[12px] text-gray-500">Ven. 12 déc · 20h00 · Palais des Sports</p><p class="font-headline font-extrabold text-lg leading-tight mt-0.5">Concert Live</p>
+                <div class="flex items-center gap-3 mt-3"><div class="shrink-0 w-16 h-16 border border-gray-200 rounded-lg grid place-items-center"><span class="material-symbols-outlined text-gray-900" style="font-size:52px">qr_code_2</span></div><div><p class="text-[11px] text-gray-500">Catégorie VIP</p><p class="font-headline font-extrabold text-lg">5 000 FCFA</p><span class="inline-block mt-0.5 bg-emerald-50 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full">Payé · Orange Money</span></div></div>
+              </div>
+            </div>
+            <div class="absolute bottom-0 right-0 w-[290px] bg-white text-gray-900 rounded-2xl overflow-hidden rotate-[4deg]" style="box-shadow: 0 24px 60px -18px rgba(0,0,0,.55);">
+              <div class="text-white px-5 pt-4 pb-3" style="background: linear-gradient(160deg, #00502c 0%, #013f23 100%);"><div class="flex items-center justify-between"><span class="text-[10px] font-black uppercase tracking-widest text-secondary-container">Invitation</span><span class="material-symbols-outlined text-white text-xl">mail</span></div><p class="text-[12px] opacity-85 mt-1">Sam. 12 déc · 16h00 · Bangui</p><p class="font-headline font-extrabold text-lg leading-tight">Mariage d'Aïcha &amp; Junior</p></div>
+              <div class="px-5 py-4 flex items-center gap-3"><div class="shrink-0 w-16 h-16 border border-gray-200 rounded-lg grid place-items-center"><span class="material-symbols-outlined text-gray-900" style="font-size:52px">qr_code_2</span></div><div><p class="font-headline font-extrabold text-base">Aïcha Exemple</p><p class="text-[11px] text-gray-500">Pass · 2 personnes</p><span class="inline-block mt-0.5 bg-emerald-50 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full">Table 4</span></div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+     <!-- ═══ RÉGIE PUBLICITAIRE — slides sponsors. Masquée par défaut, révélée par heroCarousel.init() si campagne active ═══ -->
+      <section id="hero-carousel" class="hidden relative w-full overflow-hidden bg-[#03361e]" style="min-height: 60vh;">
+        <!-- Container des slides (rempli dynamiquement par JS) -->
+        <div id="hero-slides-track" class="relative w-full h-full" style="min-height: 60vh;">
+          <!-- Le hero de marque (#hero-brand) sert de défaut hors campagne. Les slides sponsors sont injectées ici par heroCarousel.render(). -->
+          <div class="hero-fallback-slide absolute inset-0"></div>
         </div>
       
         <!-- Indicateurs (points en bas, remplis dynamiquement) -->
@@ -700,21 +717,26 @@
         intervalMs: 5000,
       
         async init() {
+          const brand = document.getElementById("hero-brand");
+          const carousel = document.getElementById("hero-carousel");
           try {
             const slides = await btApi.get("/ads/homepage");
             if (!slides || slides.length === 0) {
-              // Fallback : on garde la slide statique déjà présente
-              console.log("[Hero] Aucune slide active, fallback statique");
+              // Pas de campagne : on garde le hero de marque (#hero-brand), régie masquée
+              console.log("[Hero] Aucune campagne active, hero de marque affiché");
               return;
             }
+            // Campagne active : la régie reprend le hero
             this.slides = slides;
+            if (carousel) carousel.classList.remove("hidden");
+            if (brand) brand.classList.add("hidden");
             this.render();
             if (slides.length > 1) {
               this.start();
             }
           } catch (err) {
-            console.warn("[Hero] API ads indisponible, fallback statique :", err.message);
-            // Le fallback HTML reste affiché, aucune action
+            console.warn("[Hero] API ads indisponible, hero de marque affiché :", err.message);
+            // Le hero de marque reste affiché, aucune action
           }
         },
       

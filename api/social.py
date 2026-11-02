@@ -16,7 +16,8 @@ from core.security import get_current_user, get_optional_user, log_security_even
 from models.event import Event
 from models.user import User
 from models.social import Favorite, Follower, Feedback
-from schemas.social import FeedbackCreate, FeedbackUpdate
+from models.partner import PartnerRequest
+from schemas.social import FeedbackCreate, FeedbackUpdate, PartnerRequestIn
 from utils.serializers import _event_dict
 
 router = APIRouter()
@@ -119,6 +120,26 @@ def follow_organizer(org_id: int, db: Session = Depends(get_db),
         db.add(new_follow)
         db.commit()
         return {"message": f"Vous suivez maintenant {org.org_name or org.full_name}", "is_followed": True}
+
+
+# ── DEMANDE PARTENAIRE / ANNONCEUR (formulaire public page Partenaires) ──
+@router.post("/partner-request")
+@limiter.limit("5/hour")
+def submit_partner_request(request: Request, data: PartnerRequestIn, db: Session = Depends(get_db),
+                           current_user: User = Depends(get_optional_user)):
+    pr = PartnerRequest(
+        company_name=data.company_name,
+        email=str(data.email),
+        phone=data.phone,
+        partnership_type=data.partnership_type,
+        message=data.message,
+        status="nouveau",
+    )
+    db.add(pr)
+    db.commit()
+    log_security_event(db, "partner_request", request, current_user.id if current_user else None,
+                       "%s · %s" % (data.company_name, data.partnership_type or "—"))
+    return {"message": "Demande envoyée"}
 
 
 # ── FEEDBACK PUBLIC ─────────────────────────────────────────────

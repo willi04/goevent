@@ -407,7 +407,6 @@ var BT_NAV_LINKS = [
   { key: "accueil",     label: "Accueil",     href: "index.html",       icon: "home" },
   { key: "evenements",  label: "Événements",  href: "event.html",       icon: "stadium" },
   { key: "invitations", label: "Invitations", href: "invitations.html", icon: "qr_code_2", hint: "Mariages, dots, galas" },
-  { key: "follow",      label: "Follow",      href: "follow.html",      icon: "favorite" },
   { key: "partenaire",  label: "Partenaires", href: "partenaire.html",  icon: "handshake" },
   { key: "apropos",     label: "À propos",    href: "a_propos.html",    icon: "info" },
 ];
@@ -551,7 +550,6 @@ function btFooter() {
     '<ul class="space-y-3 text-sm text-neutral-500">' +
     '<li><a href="index.html" class="hover:text-primary transition-colors">Accueil</a></li>' +
     '<li><a href="event.html" class="hover:text-primary transition-colors">Événements</a></li>' +
-    '<li><a href="follow.html" class="hover:text-primary transition-colors">Follow</a></li>' +
     '<li><a href="invitations.html" class="hover:text-primary transition-colors">Invitations digitales</a></li>' +
     '<li><a href="a_propos.html" class="hover:text-primary transition-colors">À propos</a></li>' +
     "</ul>" +

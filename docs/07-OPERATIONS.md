@@ -292,6 +292,19 @@ bout en bout sans intervention, 1 retrait réussi, analyse des
   et le débogueur de partage Facebook (« Scrape Again » après une
   modification, WhatsApp garde son propre cache quelques jours).
 
+## Onglets Follow et Partenaires (lot 6)
+
+- **Follow** mis en pause : retiré du menu (haut, tiroir, pied de page) car
+  « suivre » ne déclenche encore aucune notification. Le bouton « Suivre »
+  reste sur la fiche événement (les abonnements continuent de s'enregistrer) ;
+  l'onglet reviendra quand un fil ou des notifications existeront. `follow.html`
+  reste accessible par URL mais hors menu.
+- **Partenaires** : le formulaire de contact (`POST /partner-request`) était
+  appelé par la page mais la route n'existait pas (404). Route créée
+  (`api/social.py`, 5 req/h) → les demandes arrivent dans Finance/Partenaires
+  (`GET /admin/partners`). Pense à relever `bt-api.js?v=` à chaque changement
+  de menu (sinon l'ancien menu reste en cache).
+
 ## Achat de plusieurs billets (lot 5.5)
 
 - **Avant le déploiement** : `tickets` est lue par le scan et le paiement →

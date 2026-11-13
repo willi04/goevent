@@ -724,6 +724,84 @@ def paper_pdf(ev: Event, st: PrivateEventSettings, guests: list) -> bytes:
     return buf.getvalue()
 
 
+# ── inscription libre (page publique /r/<slug>, sans compte) ─────────
+# Chaque inscrit reçoit immédiatement un pass d'1 place (catégorie de l'événement,
+# « Participant » par défaut). Plafonds : pack actif (toujours, total de la liste) et
+# signup_max (inscriptions en ligne). Inscriptions sérialisées par un verrou sur la
+# ligne de l'événement : le quota ne peut pas être dépassé par deux requêtes simultanées.
+SIGNUP_SLUG_RE = re.compile(r"^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$")
+SIGNUP_DEFAULT_CATEGORY = "Participant"
+_SIGNUP_REFUSALS = {
+    "closed": "Les inscriptions sont fermées.",
+    "ended": "Les inscriptions sont terminées.",
+    "inactive": "Les inscriptions ne sont pas encore ouvertes.",
+    "full": "Complet : il n'y a plus de place disponible.",
+}
+
+
+def signup_url(slug: str) -> str:
+    return "%s/r/%s" % (settings.PUBLIC_SITE_URL.rstrip("/"), slug)
+
+
+def signup_count(db: Session, event_id: int) -> int:
+    """Personnes inscrites en ligne (pass non annulés)."""
+    return int(db.query(func.coalesce(func.sum(EventGuest.seats), 0)).filter(
+        EventGuest.event_id == event_id, EventGuest.source == "signup", EventGuest.revoked_at.is_(None)).scalar() or 0)
+
+
+def signup_state(db: Session, ev: Event, st: PrivateEventSettings) -> str:
+    """open | closed | ended | inactive (aucun pack actif) | full."""
+    if not ev.is_active or st.purged_at or not st.signup_open or not st.signup_slug:
+        return "closed"
+    if st.signup_until and utcnow() > st.signup_until:
+        return "ended"
+    q = quota(db, ev.id)
+    if q <= 0:
+        return "inactive"
+    if seats_listed(db, ev.id) >= q:
+        return "full"
+    if st.signup_max is not None and signup_count(db, ev.id) >= st.signup_max:
+        return "full"
+    return "open"
+
+
+def signup_settings(db: Session, slug: str):
+    """Événement d'une page d'inscription. 404 si le lien n'existe pas (ou plus)."""
+    if not SIGNUP_SLUG_RE.match(slug or ""):
+        raise HTTPException(404, "Lien d'inscription introuvable")
+    st = db.query(PrivateEventSettings).filter(PrivateEventSettings.signup_slug == slug).first()
+    ev = db.query(Event).filter(Event.id == st.event_id, Event.visibility == "private").first() if st else None
+    if not st or not ev:
+        raise HTTPException(404, "Lien d'inscription introuvable")
+    return ev, st
+
+
+def self_signup(db: Session, slug: str, full_name: str, phone: str, request=None):
+    """Crée le pass d'un inscrit. Retourne (guest, event, settings). Commit inclus."""
+    ev, st = signup_settings(db, slug)
+    ev = get_private_event(db, ev.id, lock=True)
+    db.refresh(st)  # relu sous verrou (fermeture / plafond modifiés entre-temps)
+    state = signup_state(db, ev, st)
+    if state != "open":
+        raise HTTPException(409, _SIGNUP_REFUSALS[state])
+    name = _clean(full_name, 120)
+    if not name or len(name) < 2:
+        raise HTTPException(400, "Indiquez votre nom complet.")
+    if db.query(EventGuest.id).filter(EventGuest.event_id == ev.id, EventGuest.phone == phone,
+                                      EventGuest.revoked_at.is_(None)).first():
+        raise HTTPException(409, "Ce numéro est déjà inscrit. Votre pass est sur le téléphone utilisé pour "
+                                 "l'inscription ; sinon, présentez-vous à l'accueil avec une pièce d'identité.")
+    tok = new_token()
+    g = EventGuest(event_id=ev.id, token=tok, token_hash=token_hash(tok), full_name=name, seats=1,
+                   category=st.signup_category or SIGNUP_DEFAULT_CATEGORY, paper=False, source="signup",
+                   sent_at=utcnow())  # remis directement à l'inscrit : hors file « Envoyer au suivant »
+    set_phone(g, phone)
+    db.add(g)
+    db.commit()
+    log_security_event(db, "invitation_self_signup", request, None, "event %d : pass %d" % (ev.id, g.id))
+    return g, ev, st
+
+
 # ── purge J+30 ───────────────────────────────────────────────────────
 def purge_after_for(event_date: Optional[datetime]) -> datetime:
     return (event_date or utcnow()) + timedelta(days=INVITATION_RETENTION_DAYS)
@@ -744,6 +822,7 @@ def purge_due(db: Session, force_event_id: Optional[int] = None) -> int:
             {GuestCheckin.device_id: None, GuestCheckin.reason: None}, synchronize_session=False)
         st.client_phone = None
         st.track_token = None
+        st.signup_open = False
         st.purged_at = utcnow()
     db.commit()
     return n

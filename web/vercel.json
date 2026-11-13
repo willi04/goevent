@@ -26,6 +26,14 @@
     {
       "source": "/suivi/:token",
       "destination": "/suivi.html?t=:token"
+    },
+    {
+      "source": "/r/:slug",
+      "destination": "/inscription.html?s=:slug"
+    },
+    {
+      "source": "/fonej",
+      "destination": "/inscription.html?s=fonej"
     }
   ],
   "headers": [
@@ -36,6 +44,15 @@
           "key": "Referrer-Policy",
           "value": "no-referrer"
         },
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
+        }
+      ]
+    },
+    {
+      "source": "/r/(.*)",
+      "headers": [
         {
           "key": "X-Robots-Tag",
           "value": "noindex"

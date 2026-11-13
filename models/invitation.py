@@ -14,7 +14,7 @@ InvitationPack       : pack payé (taille × niveau de service), activé par l'a
 from datetime import datetime
 
 from sqlalchemy import (
-    Boolean, Column, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint,
+    Boolean, Column, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 
@@ -38,6 +38,16 @@ class PrivateEventSettings(Base):
     # Portefeuille (lot 4.5) : commercial propriétaire ; NULL = maison (admin)
     owner_id         = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     source_quote_id  = Column(Integer, nullable=True)
+    # Inscription libre (page publique /r/<slug>, sans compte) : chaque inscrit reçoit
+    # immédiatement un pass d'1 place. Plafond = pack actif (toujours) et signup_max (facultatif).
+    signup_slug      = Column(String(40), nullable=True)   # unique : index partiel ci-dessous
+    signup_open      = Column(Boolean, nullable=False, default=False, server_default="false")
+    signup_category  = Column(String(40), nullable=True)       # None = « Participant »
+    signup_max       = Column(Integer, nullable=True)          # personnes inscrites en ligne ; None = pack
+    signup_until     = Column(DateTime, nullable=True)         # UTC ; None = jusqu'à fermeture manuelle
+
+    __table_args__ = (Index("uq_private_event_settings_signup_slug", "signup_slug", unique=True,
+                            postgresql_where=text("signup_slug IS NOT NULL")),)
 
 
 class EventGuest(Base):
@@ -66,6 +76,7 @@ class EventGuest(Base):
     phone4_hash      = Column(String(64), nullable=True)
     created_by       = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at       = Column(DateTime, default=datetime.utcnow, nullable=False)
+    source           = Column(String(10), nullable=True)   # None = back-office ; « signup » = inscription libre
 
     __table_args__ = (Index("ix_event_guests_event_phone", "event_id", "phone"),)
 

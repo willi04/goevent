@@ -21,6 +21,7 @@
     h1 { font-size: 24px; line-height: 1.2; margin: 8px 0 10px; font-weight: 800; }
     .meta { font-size: 14px; opacity: .92; margin: 2px 0; }
     .body { padding: 22px; text-align: center; }
+    .label { display: inline-block; background: var(--green); color: #fff; font-weight: 800; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; padding: 6px 14px; border-radius: 999px; margin: 0 0 12px; }
     .guest { font-size: 22px; font-weight: 800; margin: 0; }
     .seats { color: var(--muted); font-size: 14px; margin: 4px 0 0; }
     .chips { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
@@ -51,6 +52,7 @@
         <p class="meta" id="location"></p>
       </div>
       <div class="body">
+        <p class="label hidden" id="label"></p>
         <p class="guest" id="guest"></p>
         <p class="seats" id="seats"></p>
         <div class="chips" id="chips"></div>
@@ -99,8 +101,11 @@
         $("location").textContent = p.location ? "📍 " + p.location : "";
         $("guest").textContent = p.guest_name || "";
         $("seats").textContent = "Pass valable pour " + p.seats + " personne" + (p.seats > 1 ? "s" : "");
+        // Catégorie en tête du pass (PARTICIPANT, JURY…) : lisible d'un coup d'œil à l'entrée
+        $("label").textContent = p.category || "";
+        $("label").classList.toggle("hidden", !p.category);
         var chips = $("chips"); chips.innerHTML = "";
-        [p.table ? "Table " + p.table : null, p.category].forEach(function (t) {
+        [p.table ? "Table " + p.table : null].forEach(function (t) {
           if (!t) return; var s = document.createElement("span"); s.className = "chip"; s.textContent = t; chips.appendChild(s);
         });
         var banner = $("banner"), noQr = false;

@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="referrer" content="no-referrer" />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#00502c" />
+  <title>Inscription | GoEvent</title>
+  <link rel="icon" href="/icons/icon-192.svg" />
+  <!-- Inscription libre (événement privé) : page générique /r/<lien>, contenu chargé par l'API.
+       Page volontairement autonome : aucun script tiers, aucune police externe, aucun traceur. -->
+  <style>
+    :root { --green: #00502c; --green2: #006b3c; --ink: #111827; --muted: #6b7280; --line: #e5e7eb; --bg: #f3f4f1; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    main { max-width: 440px; margin: 0 auto; padding: 16px 16px 32px; }
+    .card { background: #fff; border-radius: 28px; overflow: hidden; box-shadow: 0 12px 32px rgba(0,0,0,.08); }
+    .top { background: linear-gradient(140deg, var(--green), var(--green2)); color: #fff; padding: 26px 22px 22px; text-align: center; }
+    .host { font-size: 13px; letter-spacing: .04em; opacity: .85; margin: 0; }
+    h1 { font-size: 24px; line-height: 1.2; margin: 8px 0 10px; font-weight: 800; }
+    .meta { font-size: 14px; opacity: .92; margin: 2px 0; }
+    .body { padding: 22px; }
+    h2 { font-size: 19px; margin: 0 0 4px; font-weight: 800; }
+    .lead { color: var(--muted); font-size: 14px; margin: 0 0 18px; }
+    label.f { display: block; font-size: 13px; font-weight: 700; margin: 14px 0 6px; }
+    input[type=text], input[type=tel] { width: 100%; font: inherit; font-size: 17px; padding: 13px 14px; border: 1px solid #d1d5db; border-radius: 14px; background: #fff; color: var(--ink); }
+    input[type=text]:focus, input[type=tel]:focus { outline: 3px solid #bbf7d0; border-color: var(--green2); }
+    .help { font-size: 12px; color: var(--muted); margin: 6px 0 0; }
+    .consent { display: flex; gap: 10px; align-items: flex-start; margin: 18px 0 0; font-size: 13px; color: #374151; }
+    .consent input { width: 22px; height: 22px; flex: none; margin: 1px 0 0; accent-color: var(--green); }
+    .consent a { color: var(--green); }
+    .trap { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+    .btn { display: block; width: 100%; text-align: center; text-decoration: none; font: inherit; font-weight: 800; font-size: 16px; padding: 15px 12px; border-radius: 16px; border: 0; cursor: pointer; margin-top: 18px; }
+    .btn-primary { background: var(--green); color: #fff; }
+    .btn-primary[disabled] { opacity: .6; cursor: wait; }
+    .btn-wa { background: #25d366; color: #fff; margin-top: 10px; }
+    .btn-light { background: #fff; color: var(--ink); border: 1px solid var(--line); margin-top: 10px; }
+    .banner { border-radius: 16px; padding: 12px 14px; font-size: 14px; font-weight: 600; margin: 16px 0 0; }
+    .ok { background: #ecfdf3; color: #065f46; } .warn { background: #fffbeb; color: #92400e; } .bad { background: #fef2f2; color: #991b1b; }
+    .done { text-align: center; }
+    .done .check { width: 64px; height: 64px; border-radius: 50%; background: #ecfdf3; color: var(--green); font-size: 34px; line-height: 64px; margin: 0 auto 10px; font-weight: 800; }
+    .done .name { font-size: 21px; font-weight: 800; margin: 2px 0; }
+    .tag { display: inline-block; background: #ecfdf3; color: var(--green); font-weight: 800; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; padding: 5px 12px; border-radius: 999px; margin: 6px 0 4px; }
+    .account { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); text-align: center; }
+    .account a { color: var(--green); font-weight: 700; }
+    .link { background: none; border: 0; color: var(--green); font: inherit; font-size: 14px; font-weight: 700; text-decoration: underline; cursor: pointer; margin-top: 14px; padding: 4px; }
+    .loading { text-align: center; color: var(--muted); padding: 60px 0; }
+    footer { text-align: center; margin-top: 22px; font-size: 12px; color: var(--muted); }
+    footer a { color: var(--muted); }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <main>
+    <div id="loading" class="loading">Chargement…</div>
+
+    <div id="page" class="card hidden">
+      <div class="top">
+        <p class="host" id="host"></p>
+        <h1 id="title"></h1>
+        <p class="meta" id="date"></p>
+        <p class="meta" id="location"></p>
+      </div>
+
+      <!-- Formulaire -->
+      <div class="body hidden" id="form-box">
+        <h2>Recevez votre pass d'entrée</h2>
+        <p class="lead">30 secondes, sans compte. Votre pass nominatif à QR Code s'affiche aussitôt.</p>
+        <form id="form" novalidate>
+          <label class="f" for="name">Nom et prénom</label>
+          <input type="text" id="name" name="name" autocomplete="name" maxlength="120" required />
+          <label class="f" for="phone">Numéro de téléphone (WhatsApp)</label>
+          <input type="tel" id="phone" name="phone" autocomplete="tel" inputmode="tel" maxlength="20" placeholder="72 00 00 00" required />
+          <p class="help">8 chiffres pour un numéro centrafricain, sinon le format international (+…).</p>
+          <div class="trap" aria-hidden="true"><label for="website">Ne pas remplir</label><input type="text" id="website" name="website" tabindex="-1" autocomplete="off" /></div>
+          <label class="consent"><input type="checkbox" id="consent" />
+            <span>J'accepte que mon nom et mon numéro servent uniquement à établir mon pass d'entrée pour cet événement. Ils sont supprimés <span id="days">30</span> jours après l'événement. <a href="/confidentialite.html#invitations" target="_blank" rel="noopener">Confidentialité</a></span>
+          </label>
+          <div id="error" class="banner bad hidden" role="alert"></div>
+          <button class="btn btn-primary" id="submit" type="submit">Recevoir mon pass</button>
+        </form>
+      </div>
+
+      <!-- Inscriptions fermées / complet -->
+      <div class="body hidden" id="closed-box">
+        <div class="banner warn" id="closed-msg" style="margin:0"></div>
+      </div>
+
+      <!-- Inscription réussie (ou déjà faite sur ce téléphone) -->
+      <div class="body done hidden" id="done-box">
+        <div class="check">✓</div>
+        <h2 id="done-title">Inscription confirmée</h2>
+        <p class="name" id="done-name"></p>
+        <span class="tag" id="done-tag"></span>
+        <p class="lead" style="margin-top:8px">Présentez votre pass (QR Code) à l'entrée. Gardez-le : envoyez-le-vous sur WhatsApp ou faites une capture d'écran.</p>
+        <a class="btn btn-primary" id="btn-pass" href="#">Voir mon pass</a>
+        <a class="btn btn-wa hidden" id="btn-wa" href="#" target="_blank" rel="noopener noreferrer">M'envoyer le pass sur WhatsApp</a>
+        <button class="link" id="btn-another" type="button">Inscrire une autre personne</button>
+        <p class="account">Ne manquez pas les prochains événements : <a href="/signup.html">créez votre compte GoEvent</a>.</p>
+      </div>
+    </div>
+
+    <div id="notfound" class="card hidden"><div class="body">
+      <h2>Lien d'inscription introuvable</h2>
+      <p class="lead">Ce lien est invalide ou n'est plus actif. Vérifiez l'adresse transmise par l'organisateur.</p>
+    </div></div>
+
+    <footer>Propulsé par GoEvent — <a href="https://goevent.africa" rel="noopener">goevent.africa</a> · <a href="/confidentialite.html#invitations">Confidentialité</a></footer>
+  </main>
+
+  <script>
+    (function () {
+      "use strict";
+      var host = location.hostname, local = host === "localhost" || host === "127.0.0.1";
+      var API = local ? location.protocol + "//" + host + ":8000" : "https://api.goevent.africa";
+      // /r/<lien> (rewrite Vercel), alias court /<lien> (ex. /fonej), ?s=<lien> en local
+      var m = location.pathname.match(/^\/r\/([a-z0-9-]{3,40})\/?$/) || location.pathname.match(/^\/([a-z0-9-]{3,40})\/?$/);
+      var slug = m ? m[1] : (new URLSearchParams(location.search).get("s") || "").toLowerCase();
+      var KEY = "goevent_signup:" + slug;
+      var $ = function (id) { return document.getElementById(id); };
+      var info = null;
+      var CLOSED = {
+        closed: "Les inscriptions sont fermées.",
+        ended: "Les inscriptions sont terminées.",
+        inactive: "Les inscriptions ne sont pas encore ouvertes. Revenez un peu plus tard sur ce lien.",
+        full: "Complet : il n'y a plus de place disponible."
+      };
+
+      function store(v) { try { if (v) localStorage.setItem(KEY, JSON.stringify(v)); else localStorage.removeItem(KEY); } catch (e) {} }
+      function stored() { try { return JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) { return null; } }
+      function passHref(token) { return local ? "invitation.html?t=" + encodeURIComponent(token) : "/i/" + encodeURIComponent(token); }
+      function only(id) {
+        ["form-box", "closed-box", "done-box"].forEach(function (b) { $(b).classList.toggle("hidden", b !== id); });
+      }
+      function header(p) {
+        $("loading").classList.add("hidden");
+        $("page").classList.remove("hidden");
+        $("host").textContent = p.host_label ? p.host_label + " vous invite" : "";
+        $("title").textContent = p.event_title || "";
+        $("date").textContent = p.event_date_label ? "🗓 " + p.event_date_label : "";
+        $("location").textContent = p.location ? "📍 " + p.location : "";
+        $("days").textContent = String(p.retention_days || 30);
+        document.title = "Inscription · " + (p.event_title || "GoEvent");
+      }
+      function showDone(v, again) {
+        $("done-title").textContent = again ? "Vous êtes inscrit(e)" : "Inscription confirmée";
+        $("done-name").textContent = v.guest_name || "";
+        $("done-tag").textContent = v.category || "";
+        $("done-tag").classList.toggle("hidden", !v.category);
+        $("btn-pass").href = passHref(v.token);
+        $("btn-wa").classList.toggle("hidden", !v.wa_url);
+        if (v.wa_url) $("btn-wa").href = v.wa_url;
+        only("done-box");
+      }
+      function showForm() {
+        if (info.state !== "open") { $("closed-msg").textContent = CLOSED[info.state] || CLOSED.closed; only("closed-box"); return; }
+        only("form-box");
+      }
+      function fail() { $("loading").classList.add("hidden"); $("notfound").classList.remove("hidden"); }
+      function error(msg) { var e = $("error"); e.textContent = msg; e.classList.remove("hidden"); }
+
+      $("btn-another").addEventListener("click", function () {
+        $("form").reset(); $("error").classList.add("hidden"); showForm(); $("name").focus();
+      });
+
+      $("form").addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        $("error").classList.add("hidden");
+        var name = $("name").value.trim(), phone = $("phone").value.trim();
+        if (name.length < 2) { error("Indiquez votre nom et votre prénom."); $("name").focus(); return; }
+        if (phone.replace(/\D/g, "").length < 8) { error("Indiquez votre numéro de téléphone (8 chiffres)."); $("phone").focus(); return; }
+        if (!$("consent").checked) { error("Cochez la case d'accord pour recevoir votre pass."); return; }
+        var btn = $("submit"); btn.disabled = true; btn.textContent = "Inscription en cours…";
+        fetch(API + "/invitations/signup/" + encodeURIComponent(slug), {
+          method: "POST", credentials: "omit", cache: "no-store",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ full_name: name, phone: phone, consent: true, website: $("website").value || null })
+        }).then(function (r) {
+          return r.json().catch(function () { return {}; }).then(function (d) { return { ok: r.ok, status: r.status, d: d }; });
+        }).then(function (res) {
+          if (res.ok) {
+            var v = { token: res.d.token, guest_name: res.d.guest_name, category: res.d.category, wa_url: res.d.wa_url };
+            store(v); showDone(v, false); window.scrollTo(0, 0); return;
+          }
+          var msg = typeof res.d.detail === "string" ? res.d.detail : null;
+          if (res.status === 422 || !msg) msg = "Vérifiez votre nom et votre numéro, puis réessayez.";
+          if (res.status === 409 && /Complet|fermées|terminées|pas encore/.test(msg)) {
+            info.state = /Complet/.test(msg) ? "full" : "closed"; $("closed-msg").textContent = msg; only("closed-box"); return;
+          }
+          error(msg);
+        }).catch(function () {
+          error("Connexion impossible. Vérifiez votre connexion internet et réessayez.");
+        }).then(function () { btn.disabled = false; btn.textContent = "Recevoir mon pass"; });
+      });
+
+      if (!/^[a-z0-9-]{3,40}$/.test(slug)) { fail(); return; }
+      fetch(API + "/invitations/signup/" + encodeURIComponent(slug), { cache: "no-store", credentials: "omit" })
+        .then(function (r) { if (r.status === 404) throw new Error("404"); if (!r.ok) throw new Error("net"); return r.json(); })
+        .then(function (p) {
+          info = p; header(p);
+          var v = stored();
+          if (v && v.token) showDone(v, true); else showForm();
+        })
+        .catch(function (e) {
+          if (e.message === "404") { store(null); fail(); return; }
+          var v = stored();
+          if (v && v.token) {   // hors connexion : on garde l'accès au pass déjà obtenu
+            info = { state: "closed" }; header({ event_title: "Votre inscription" }); showDone(v, true);
+          } else {
+            $("loading").textContent = "Connexion impossible. Vérifiez votre connexion internet puis rechargez la page.";
+          }
+        });
+    })();
+  </script>
+</body>
+</html>

@@ -342,7 +342,19 @@ Les textes, images et liens des pages publiques sont modifiables depuis
 - **Suivi client** : `goevent.africa/suivi/<jeton>` → titre, date et
   chiffres uniquement (pas de lieu, aucun nom ni numéro), jeton révocable.
 - **Purge J+30** : `purge_due()` (cron reconcile + bouton admin) anonymise
-  noms, numéros et jetons ; seuls les chiffres restent.
+  noms, numéros et jetons ; seuls les chiffres restent (et ferme
+  l'inscription libre).
+- **Inscription libre** : page générique `inscription.html`
+  (`goevent.africa/r/<lien>`, rewrite Vercel ; alias court `/fonej`), sans
+  compte, contenu lu sur `GET /invitations/signup/{slug}`.
+  `POST /invitations/signup/{slug}` (nom, numéro, consentement, champ piège)
+  crée un pass d'1 place (`source=signup`, catégorie de l'événement) et le
+  renvoie aussitôt (+ lien WhatsApp vers son propre numéro). Inscriptions
+  sérialisées par `FOR UPDATE` sur la ligne de l'événement : pack actif
+  (total de la liste) et `signup_max` jamais dépassés ; numéro déjà inscrit
+  → 409, jamais le pass d'autrui. Réglages : `PUT
+  /admin/invitations/events/{id}/signup` (admin + commercial propriétaire ;
+  ouverture = lien choisi + pack actif).
 
 ### Flux 7 bis : Listes d'événements (lot 5)
 

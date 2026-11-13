@@ -8,6 +8,7 @@ Public (sans compte, rate limit) :
   GET /invitations/pass/{token}               pass nominatif (jamais de téléphone)
   GET /invitations/pass/{token}/calendar.ics  ajout au calendrier
   GET /invitations/track/{token}              lien de suivi client : chiffres uniquement
+  GET|POST /invitations/signup/{slug}         inscription libre (page /r/<slug>) : pass immédiat
 Scanner (agent assigné / orga propriétaire) :
   GET  /invitations/offline/{event_id}        liste hors ligne (empreintes des jetons)
   POST /invitations/checkins/sync             entrées faites hors ligne
@@ -20,12 +21,13 @@ from typing import Optional
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import JSONResponse, Response
 from sqlalchemy import or_
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from core import invitation_catalog as cat
 from core import invitations as inv
 from core.database import get_db
-from core.limiter import PUBLIC_IP_CEILING, limiter, path_token_key, user_key
+from core.limiter import PUBLIC_IP_CEILING, hit_or_429, limiter, path_token_key, user_key
 from core.permissions import get_current_admin, is_admin, normalize_role, require_staff_function, sees_all_sales
 from core.security import get_current_user, hash_pin, log_security_event
 from models.event import Event
@@ -34,7 +36,7 @@ from models.invitation_catalog import InvFormula
 from models.user import User
 from schemas.invitation import (
     AgentIn, AgentManualIn, GuestImportIn, GuestPatch, ManualCheckinIn, OwnerIn, PackCancelIn, PrivateEventIn,
-    PrivateEventPatch, SyncIn,
+    PrivateEventPatch, SignupIn, SignupSettingsIn, SyncIn,
 )
 from schemas.invitation_catalog import OrderIn
 
@@ -238,8 +240,49 @@ def admin_get_event(event_id: int, db: Session = Depends(get_db), user: User = D
                 "track_url": inv.track_url(st.track_token) if st.track_token else None,
                 "purge_after": _iso(st.purge_after), "packs": [_pack_out(p) for p in packs],
                 "agents": [{"id": a.id, "full_name": a.full_name, "phone_number": a.phone_number} for a in agents],
-                "agents_included": cat.agents_included_total(db, ev.id)})
+                "agents_included": cat.agents_included_total(db, ev.id), "signup": _signup_out(db, ev, st)})
     return out
+
+
+def _signup_out(db: Session, ev: Event, st: PrivateEventSettings) -> dict:
+    return {"open": st.signup_open, "slug": st.signup_slug, "url": inv.signup_url(st.signup_slug) if st.signup_slug else None,
+            "category": st.signup_category, "default_category": inv.SIGNUP_DEFAULT_CATEGORY, "max": st.signup_max,
+            "until": _iso(st.signup_until), "count": inv.signup_count(db, ev.id), "state": inv.signup_state(db, ev, st)}
+
+
+@router.put("/admin/invitations/events/{event_id}/signup")
+@limiter.limit("30/minute")
+def admin_signup_settings(request: Request, event_id: int, data: SignupSettingsIn, db: Session = Depends(get_db),
+                          user: User = Depends(manager)):
+    """Inscription libre : ouvre / ferme la page publique /r/<slug> et règle ses plafonds."""
+    ev, st = _load(db, event_id, user, lock=True)
+    if st.purged_at:
+        raise HTTPException(400, "Liste supprimée (conservation de 30 jours dépassée).")
+    slug = (data.slug or "").strip().lower() or None
+    if slug and not inv.SIGNUP_SLUG_RE.match(slug):
+        raise HTTPException(400, "Lien : 3 à 40 caractères, lettres minuscules, chiffres et tirets (ex. fonej-2026).")
+    if slug and db.query(PrivateEventSettings.event_id).filter(
+            PrivateEventSettings.signup_slug == slug, PrivateEventSettings.event_id != ev.id).first():
+        raise HTTPException(409, "Ce lien est déjà utilisé par un autre événement : choisissez-en un autre.")
+    if data.open and not slug:
+        raise HTTPException(400, "Choisissez le lien de la page avant d'ouvrir les inscriptions.")
+    if data.open and inv.quota(db, ev.id) <= 0:
+        raise HTTPException(400, "Activez un pack avant d'ouvrir les inscriptions.")
+    old = (st.signup_open, st.signup_slug)
+    st.signup_open = data.open
+    st.signup_slug = slug
+    st.signup_category = inv._clean(data.category, 40)
+    st.signup_max = data.max
+    st.signup_until = inv.naive_utc(data.until)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "Ce lien est déjà utilisé par un autre événement : choisissez-en un autre.")
+    log_security_event(db, "invitation_signup_settings", request, user.id, "event %d : %s/%s → %s/%s, max %s" % (
+        ev.id, "ouvert" if old[0] else "fermé", old[1] or "-", "ouvert" if st.signup_open else "fermé",
+        st.signup_slug or "-", st.signup_max or "pack"))
+    return admin_get_event(ev.id, db, user)
 
 
 @router.patch("/admin/invitations/events/{event_id}")
@@ -719,6 +762,38 @@ def public_track(request: Request, token: str, db: Session = Depends(get_db)):
                          "entered": s["entered"], "remaining": s["remaining"], "rate": s["rate"],
                          "updated_at": inv.utcnow().isoformat() + "Z"},
                         headers={"Cache-Control": "public, max-age=15", "X-Robots-Tag": "noindex"})
+
+
+@router.get("/invitations/signup/{slug}")
+@limiter.shared_limit(PUBLIC_IP_CEILING, scope="public_token_pages")
+def public_signup_info(request: Request, slug: str, db: Session = Depends(get_db)):
+    """Page d'inscription libre : événement + état (open | closed | ended | inactive | full).
+    Pas de limite par lien : tout le public d'un événement ouvre la même page (CGNAT)."""
+    ev, st = inv.signup_settings(db, slug)
+    return _no_store({"state": inv.signup_state(db, ev, st), "event_title": ev.title, "event_date": _iso(ev.event_date),
+                      "event_date_label": inv.fmt_date_fr(ev.event_date), "location": ev.location,
+                      "host_label": st.host_label or st.client_name,
+                      "category": st.signup_category or inv.SIGNUP_DEFAULT_CATEGORY,
+                      "retention_days": inv.INVITATION_RETENTION_DAYS})
+
+
+@router.post("/invitations/signup/{slug}")
+@limiter.limit("60/minute")
+@limiter.shared_limit(PUBLIC_IP_CEILING, scope="public_token_pages")
+def public_signup(request: Request, slug: str, data: SignupIn, db: Session = Depends(get_db)):
+    """Inscription libre : crée le pass (1 place) et le renvoie aussitôt. Sans compte.
+    Limites : 5 / heure par numéro (corps de la requête), 60 / min par IP (large : CGNAT)."""
+    if data.website:
+        raise HTTPException(400, "Inscription impossible.")
+    if not data.consent:
+        raise HTTPException(400, "Cochez la case d'accord pour recevoir votre pass.")
+    phone = _phone(data.phone)
+    hit_or_429("5/hour", "signup", phone, "Trop de tentatives pour ce numéro. Réessayez dans une heure.")
+    g, ev, st = inv.self_signup(db, slug, data.full_name, phone, request)
+    link = inv.pass_url(g.token)
+    return _no_store({"guest_name": g.full_name, "category": g.category, "event_title": ev.title,
+                      "event_date_label": inv.fmt_date_fr(ev.event_date), "pass_url": link, "token": g.token,
+                      "wa_url": inv.wa_url(phone, "Mon pass pour %s : %s" % (ev.title, link))})
 
 
 # ════════════════════════════════════════════════════════════

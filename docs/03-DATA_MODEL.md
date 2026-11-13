@@ -404,6 +404,12 @@ rétroactivement.
   `conflict_with_quote_id` (passage forcé admin), `possible_duplicate_of`
   (alerte nom proche), `purge_after` (validité + 12 mois) / `purged_at`.
   Index : (`owner_id`, `status`), `phone_norm`, `event_date`.
+- Inscription libre (FONEJ) : `private_event_settings.signup_slug` (**unique
+  partiel** `WHERE signup_slug IS NOT NULL`, minuscules / chiffres / tirets),
+  `signup_open`, `signup_category` (NULL = « Participant »), `signup_max`
+  (inscriptions en ligne, NULL = pack), `signup_until` (UTC, NULL = fermeture
+  manuelle) ; `event_guests.source` (NULL = back-office, `signup` = inscrit
+  en ligne : 1 place, `sent_at` posé à l'inscription, `created_by` NULL).
 - `invitation_quote_counters` (`year` PK, `last`) : incrémenté par
   `INSERT … ON CONFLICT DO UPDATE … RETURNING` dans la transaction du devis
   → numéros sans trou ni doublon, même en concurrence.

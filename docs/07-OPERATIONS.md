@@ -271,7 +271,23 @@ bout en bout sans intervention, 1 retrait réussi, analyse des
 - **Purge** : noms, numéros et jetons anonymisés 30 j après l'événement
   (cron `/admin/reconcile`, résumé `invitations_anonymized`) ; anticipée
   possible depuis la fiche (admin).
-- Traçabilité : `invitation_event_created|updated`, `invitation_guests_imported`,
+- **Inscription libre (avant le déploiement)** : `private_event_settings` et
+  `event_guests` sont lues par les routes chaudes → passer le SQL de la
+  livraison (`ALTER … signup_*`, `ALTER event_guests … source`, puis l'index
+  unique `CREATE UNIQUE INDEX CONCURRENTLY … uq_private_event_settings_signup_slug`
+  seul, vérifier `indisvalid = true`) sur Neon AVANT le push ; copie exacte
+  dans `core/migrations.py`.
+- **Ouvrir une inscription libre** : fiche de l'événement privé → pack actif
+  → bloc « Inscription libre » : lien (`goevent.africa/r/<lien>`), catégorie
+  affichée en tête du pass (vide = Participant), limite facultative, fermeture
+  automatique facultative → « Enregistrer et ouvrir ». Le plafond est
+  toujours le pack (liste entière, officiels importés compris) : activer un
+  pack complémentaire relance les inscriptions. Changer le lien casse
+  l'ancien. Les inscrits n'entrent pas dans la file WhatsApp. Un inscrit qui
+  a perdu son pass : entrée manuelle au scanner (nom + 4 derniers chiffres).
+  Alias court : une ligne dans `web/vercel.json` (ex. `/fonej`).
+- Traçabilité : `invitation_signup_settings`, `invitation_self_signup`,
+  `invitation_event_created|updated`, `invitation_guests_imported`,
   `invitation_pack_activated|cancelled`, `invitation_pass_revoked|restored|regenerated`,
   `invitation_manual_checkin`, `invitation_offline_list`, `invitation_offline_sync`,
   `invitation_paper_pdf`,

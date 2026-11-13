@@ -281,6 +281,10 @@ SlowAPI. Les valeurs typiques déjà utilisées dans le code :
 - `/auth/reset-password` : `10/hour` par email ; plafond `60/hour` par IP.
 - `/scan`, scanner invitations : par agent (`user_key`).
 - `/payment/initiate-ngser` : `15/minute` par IP.
+- `POST /invitations/signup/{slug}` (inscription libre) : `5/hour` par numéro
+  (`hit_or_429`) ; `60/minute` par IP + plafond commun `600/minute`. Le
+  `GET` de la page n'a que le plafond commun : tout le public d'un événement
+  ouvre le même lien.
 
 Clé lue dans le corps de la requête (numéro, email, jeton) : slowapi ne sait
 pas la lire → `hit_or_429(limite, scope, identité, message)` dans la route

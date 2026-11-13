@@ -220,6 +220,26 @@ MIGRATIONS = [
         "ix_events_public_date",
         "CREATE INDEX IF NOT EXISTS ix_events_public_date ON events (event_date) WHERE visibility = 'public'",
     ),
+    # ── Inscription libre (FONEJ, livraison 1). private_event_settings (pass public, scanner)
+    # et event_guests (scan) sont lues par des routes chaudes : ALTER exécuté À LA MAIN sur
+    # Neon AVANT le push (docs/07). Ici pour les bases de test / nouvelles installations.
+    (
+        "private_event_settings.signup_* (inscription libre)",
+        "ALTER TABLE private_event_settings ADD COLUMN IF NOT EXISTS signup_slug VARCHAR(40), "
+        "ADD COLUMN IF NOT EXISTS signup_open BOOLEAN NOT NULL DEFAULT false, "
+        "ADD COLUMN IF NOT EXISTS signup_category VARCHAR(40), "
+        "ADD COLUMN IF NOT EXISTS signup_max INTEGER, "
+        "ADD COLUMN IF NOT EXISTS signup_until TIMESTAMP",
+    ),
+    (
+        "uq_private_event_settings_signup_slug",
+        "CREATE UNIQUE INDEX IF NOT EXISTS uq_private_event_settings_signup_slug "
+        "ON private_event_settings (signup_slug) WHERE signup_slug IS NOT NULL",
+    ),
+    (
+        "event_guests.source (inscription libre)",
+        "ALTER TABLE event_guests ADD COLUMN IF NOT EXISTS source VARCHAR(10)",
+    ),
 ]
 
 

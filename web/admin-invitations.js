@@ -261,6 +261,7 @@
       kpi("Conflits hors ligne", String(s.conflicts), s.conflicts ? "Pass accepté(s) sur 2 téléphones" : "Aucun", s.conflicts ? "text-red-600" : "text-gray-900"),
     ]));
     root.appendChild(packBlock());
+    if (!ev.purged) root.appendChild(signupBlock());
     if (!ev.purged) root.appendChild(guestsBlock());
     root.appendChild(liveBlock());
     root.appendChild(messageBlock());
@@ -886,6 +887,53 @@
         (a.table ? " (table " + a.table + ")" : "") + " · " + a.count + " pers. · " + ({ online: "scan", offline: "scan hors ligne", manual: "manuel" }[a.source] || a.source) +
         (a.conflict ? " · CONFLIT" : "") }));
     });
+  }
+
+  // ── Inscription libre (page publique /r/<lien>, sans compte) ──────
+  var SIGNUP_STATE = { open: ["Ouvertes", "#dcfce7", "#166534"], closed: ["Fermées", "#f3f4f6", "#374151"],
+                       ended: ["Terminées (date limite)", "#f3f4f6", "#374151"], inactive: ["Aucun pack actif", "#fef3c7", "#92400e"],
+                       full: ["Complet", "#fee2e2", "#991b1b"] };
+  function signupBlock() {
+    var ev = S.ev, su = ev.signup || {}, stt = SIGNUP_STATE[su.state] || SIGNUP_STATE.closed;
+    var slug = el("input", { class: "input-field", placeholder: "ex. fonej-2026", maxlength: "40" });
+    var cat = el("input", { class: "input-field", placeholder: su.default_category || "Participant", maxlength: "40" });
+    var max = el("input", { class: "input-field", type: "number", min: "1", max: "5000", placeholder: "Limite du pack" });
+    var until = el("input", { class: "input-field", type: "datetime-local" });
+    slug.value = su.slug || ""; cat.value = su.category || ""; max.value = su.max ? String(su.max) : ""; until.value = toLocalInput(su.until);
+    slug.addEventListener("input", function () { slug.value = slug.value.toLowerCase().replace(/[^a-z0-9-]/g, ""); });
+    function save(open, btn) {
+      var body = { open: open, slug: slug.value.trim() || null, category: cat.value.trim() || null,
+                   max: max.value ? parseInt(max.value, 10) : null, until: until.value ? new Date(until.value).toISOString() : null };
+      if (su.open && su.slug && body.slug !== su.slug && !window.confirm("Changer le lien ? L'ancien lien (" + su.url + ") ne fonctionnera plus.")) return;
+      btn.disabled = true;
+      btApi.put("/admin/invitations/events/" + ev.id + "/signup", body)
+        .then(function () { toast(open ? "Inscriptions ouvertes." : (su.open ? "Inscriptions fermées." : "Réglages enregistrés."), "success"); reloadEvent(); })
+        .catch(function (e) { btn.disabled = false; toast(e.message || "Erreur", "error"); });
+    }
+    var items = [
+      el("p", { class: "text-[11px] text-gray-500 mb-2", text: "Page publique sans compte : chaque inscrit reçoit aussitôt un pass d'1 place à son nom (catégorie ci-dessous), " +
+        "sans passer par l'envoi WhatsApp. Plafond : le pack actif (toujours) et la limite facultative. Inscription possible sur place pendant l'événement si la page reste ouverte." }),
+      el("div", { class: "flex flex-wrap items-center gap-2 mb-3" }, [
+        el("span", { class: "text-xs font-bold px-2 py-1 rounded-full", style: "background:" + stt[1] + ";color:" + stt[2], text: stt[0] }),
+        el("span", { class: "text-sm text-gray-700", text: su.count + " inscrit(s) en ligne" + (su.max ? " / " + su.max : "") }),
+      ]),
+    ];
+    if (su.url) items.push(el("div", { class: "flex flex-wrap gap-2 items-center mb-3" }, [
+      el("code", { class: "text-xs bg-white px-2 py-1 rounded border border-gray-200 break-all", text: su.url }),
+      act("Copier", "background:#f3f4f6;color:#374151", function () { copy(su.url, "Lien d'inscription"); }),
+      el("a", { class: "action-btn text-[11px]", style: "background:#f3f4f6;color:#374151", href: su.url, target: "_blank", rel: "noopener", text: "Ouvrir" }),
+    ]));
+    items.push(el("div", { class: "grid sm:grid-cols-2 gap-3" }, [
+      field("Lien : goevent.africa/r/…", slug, "3 à 40 caractères : minuscules, chiffres, tirets."),
+      field("Catégorie des inscrits", cat, "Affichée en tête du pass (vide = " + (su.default_category || "Participant") + ")."),
+      field("Limite d'inscriptions en ligne", max, "Vide = jusqu'à la limite du pack."),
+      field("Fermeture automatique", until, "Vide = fermeture manuelle."),
+    ]));
+    var bOpen = el("button", { class: "action-btn btn-primary text-xs", text: su.open ? "Enregistrer" : "Enregistrer et ouvrir les inscriptions", onclick: function () { save(true, bOpen); } });
+    var bClose = el("button", { class: su.open ? "action-btn btn-danger text-xs" : "action-btn text-xs", style: su.open ? null : "background:#f3f4f6;color:#374151",
+      text: su.open ? "Fermer les inscriptions" : "Enregistrer sans ouvrir", onclick: function () { save(false, bClose); } });
+    items.push(el("div", { class: "flex flex-wrap gap-2 mt-3" }, [bOpen, bClose]));
+    return block("Inscription libre (lien public)", items);
   }
 
   // ── Message WhatsApp ──────────────────────────────────────────────

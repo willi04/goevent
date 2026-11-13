@@ -23,5 +23,6 @@ pypng==0.20220715.0    # PNG des QR (email billet) sans service tiers
 openpyxl==3.1.5        # import des listes d'invités (.xlsx)
 python-docx==1.1.2     # import des listes d'invités (.docx)
 reportlab==4.2.5       # PDF A4 des pass papier (installe pillow)
+pillow>=10.0           # affiche des invitations : contrôle, ré-encodage JPEG, image d'aperçu 1200×630
 pydantic-settings==2.5.2
 sentry-sdk[fastapi]==2.18.0

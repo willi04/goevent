@@ -418,6 +418,9 @@ rétroactivement.
   `SUM(count)` des checkins de la séance hors `reentry` et hors `conflict`
   (synchro hors ligne en conflit : part admise et part en trop sur deux
   lignes). `event_guests.seats_used` = total toutes séances (indicatif).
+- `invitation_pages` (PK `event_id`) : `description` (publique), `cover_data`
+  (JPEG ré-encodé, bytea), `cover_sha`, `cover_width`, `cover_height`,
+  `updated_by|at`. Ne jamais charger `cover_data` hors des routes d'image.
 - `invitation_quote_counters` (`year` PK, `last`) : incrémenté par
   `INSERT … ON CONFLICT DO UPDATE … RETURNING` dans la transaction du devis
   → numéros sans trou ni doublon, même en concurrence.

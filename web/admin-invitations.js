@@ -264,6 +264,7 @@
     root.appendChild(packBlock());
     if (!ev.purged) root.appendChild(sessionsBlock());
     if (!ev.purged) root.appendChild(signupBlock());
+    if (!ev.purged) root.appendChild(posterBlock());
     if (!ev.purged) root.appendChild(guestsBlock());
     root.appendChild(liveBlock());
     root.appendChild(messageBlock());
@@ -985,6 +986,54 @@
         el("button", { class: "action-btn text-xs", style: "background:#f3f4f6;color:#374151", text: "+ Ajouter une séance", onclick: add }),
         bSave,
       ]),
+    ]);
+  }
+
+  // ── Affiche (page d'inscription + aperçu de partage WhatsApp / Facebook) ─
+  // Compressée dans le navigateur (btCompressImage), puis contrôlée et ré-encodée par le serveur.
+  function posterBlock() {
+    var ev = S.ev, cv = ev.cover;
+    var img = el("img", { alt: "Affiche", style: "width:120px;height:150px;object-fit:cover;object-position:top;border-radius:12px;background:#f3f4f6" });
+    var input = el("input", { type: "file", accept: "image/jpeg,image/png,image/webp", class: "hidden" });
+    if (cv) {
+      fetch(BT_API + "/admin/invitations/events/" + ev.id + "/cover.jpg", { headers: { Authorization: "Bearer " + btAuth.getToken() } })
+        .then(function (r) { return r.ok ? r.blob() : null; })
+        .then(function (b) { if (b) img.src = URL.createObjectURL(b); }).catch(function () {});
+    }
+    input.addEventListener("change", function () {
+      var f = input.files && input.files[0];
+      if (!f) return;
+      toast("Préparation de l'affiche…", "info");
+      btCompressImage(f, { maxWidth: 1600, maxHeight: 1600, targetBytes: 1200 * 1024, skipBelow: 900 * 1024 })
+        .then(function (dataUrl) { return btApi.put("/admin/invitations/events/" + ev.id + "/cover", { image: dataUrl }); })
+        .then(function () { toast("Affiche enregistrée.", "success"); reloadEvent(); })
+        .catch(function (e) { toast(e.message || "Affiche refusée", "error"); })
+        .then(function () { input.value = ""; });
+    });
+    var desc = el("textarea", { class: "input-field text-sm", rows: "6", maxlength: "2000", placeholder: "Présentation de l'événement pour le public (programme, à qui il s'adresse…)" });
+    desc.value = ev.public_description || "";
+    var bDesc = el("button", { class: "action-btn btn-primary text-xs", text: "Enregistrer la description", onclick: function () {
+      bDesc.disabled = true;
+      btApi.put("/admin/invitations/events/" + ev.id + "/page", { description: desc.value })
+        .then(function () { toast("Description enregistrée.", "success"); reloadEvent(); })
+        .catch(function (e) { bDesc.disabled = false; toast(e.message || "Erreur", "error"); });
+    } });
+    return block("Page d'inscription : affiche et description", [
+      el("p", { class: "text-[11px] text-gray-500 mb-3", text: "Visibles par le public : page d'inscription (affiche en grand sur ordinateur, en vignette sur téléphone) et aperçu du lien partagé sur WhatsApp ou Facebook. " +
+        "Affiche : JPEG, PNG ou WebP, portrait ou carré conseillé. La note interne de l'événement (« Modifier ») n'est jamais publiée." }),
+      el("div", { class: "flex flex-wrap items-end gap-4" }, [
+        cv ? img : el("div", { class: "w-[120px] h-[150px] rounded-xl bg-gray-100 flex items-center justify-center text-[11px] text-gray-400 text-center p-2", text: "Aucune affiche" }),
+        el("div", { class: "flex flex-col gap-2" }, [
+          cv ? el("p", { class: "text-[11px] text-gray-500", text: cv.width + " × " + cv.height + " px · " + dt(cv.updated_at) }) : null,
+          act(cv ? "Remplacer l'affiche" : "Choisir une affiche", "background:#dcfce7;color:#166534", function () { input.click(); }),
+          cv ? act("Retirer", "background:#fee2e2;color:#991b1b", function () {
+            if (!window.confirm("Retirer l'affiche ? La page d'inscription et l'aperçu WhatsApp n'auront plus d'image.")) return;
+            btApi.delete("/admin/invitations/events/" + ev.id + "/cover").then(function () { toast("Affiche retirée.", "success"); reloadEvent(); });
+          }) : null,
+          input,
+        ]),
+      ]),
+      el("div", { class: "mt-4" }, [field("Description publique", desc, "Un paragraphe par ligne. 2 000 caractères maximum."), el("div", { class: "mt-2" }, [bDesc])]),
     ]);
   }
 

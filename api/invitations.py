@@ -28,17 +28,21 @@ from sqlalchemy.orm import Session
 
 from core import invitation_catalog as cat
 from core import invitations as inv
+from core import invitation_media as media
 from core import sessions as sess
+from core.config import settings
 from core.database import get_db
 from core.limiter import PUBLIC_IP_CEILING, hit_or_429, limiter, path_token_key, user_key
 from core.permissions import get_current_admin, is_admin, normalize_role, require_staff_function, sees_all_sales
 from core.security import get_current_user, hash_pin, log_security_event
 from models.event import Event
-from models.invitation import EventGuest, EventSession, GuestCheckin, InvitationPack, PrivateEventSettings
+from models.invitation import (
+    EventGuest, EventSession, GuestCheckin, InvitationPack, InvitationPage, PrivateEventSettings,
+)
 from models.invitation_catalog import InvFormula
 from models.user import User
 from schemas.invitation import (
-    AgentIn, AgentManualIn, GuestImportIn, GuestPatch, ManualCheckinIn, OwnerIn, PackCancelIn, PrivateEventIn,
+    AgentIn, AgentManualIn, CoverIn, PageIn, GuestImportIn, GuestPatch, ManualCheckinIn, OwnerIn, PackCancelIn, PrivateEventIn,
     PrivateEventPatch, SessionsIn, SignupIn, SignupSettingsIn, SyncIn,
 )
 from schemas.invitation_catalog import OrderIn
@@ -248,8 +252,75 @@ def admin_get_event(event_id: int, db: Session = Depends(get_db), user: User = D
     locked = {sid for (sid,) in db.query(GuestCheckin.session_id).filter(
         GuestCheckin.event_id == ev.id, GuestCheckin.session_id.isnot(None)).distinct().all()}
     out.update({"sessions": [dict(sess.session_out(x), locked=x.id in locked) for x in sessions],
-                "dates_label": sess.dates_label(sessions)})
+                "dates_label": sess.dates_label(sessions), "cover": _cover_meta(db, ev.id),
+                "public_description": _public_description(db, ev.id)})
     return out
+
+
+# ── page d'inscription : affiche et description publique ─────────────
+def _cover_meta(db: Session, event_id: int) -> Optional[dict]:
+    row = db.query(InvitationPage.cover_sha, InvitationPage.cover_width, InvitationPage.cover_height,
+                   InvitationPage.updated_at).filter(InvitationPage.event_id == event_id,
+                                                     InvitationPage.cover_sha.isnot(None)).first()   # jamais cover_data ici
+    return {"sha": row[0], "width": row[1], "height": row[2], "updated_at": _iso(row[3])} if row else None
+
+
+def _public_description(db: Session, event_id: int) -> str:
+    return db.query(InvitationPage.description).filter(InvitationPage.event_id == event_id).scalar() or ""
+
+
+def _page_row(db: Session, event_id: int, user: User) -> InvitationPage:
+    row = db.get(InvitationPage, event_id) or InvitationPage(event_id=event_id)
+    row.updated_by, row.updated_at = user.id, inv.utcnow()
+    db.add(row)
+    return row
+
+
+@router.put("/admin/invitations/events/{event_id}/page")
+@limiter.limit("30/minute")
+def admin_put_page(request: Request, event_id: int, data: PageIn, db: Session = Depends(get_db),
+                   user: User = Depends(manager)):
+    """Description PUBLIQUE (page d'inscription), distincte de la note interne de l'événement."""
+    ev, st = _load(db, event_id, user)
+    text = "\n".join(inv._clean(x, 2000) or "" for x in (data.description or "").replace("\r", "").split("\n")).strip()
+    _page_row(db, ev.id, user).description = text[:2000] or None
+    db.commit()
+    log_security_event(db, "invitation_page_updated", request, user.id, "event %d : description %d car." % (ev.id, len(text)))
+    return {"public_description": _public_description(db, ev.id)}
+
+
+@router.put("/admin/invitations/events/{event_id}/cover")
+@limiter.limit("10/minute")
+def admin_put_cover(request: Request, event_id: int, data: CoverIn, db: Session = Depends(get_db),
+                    user: User = Depends(manager)):
+    """Affiche : contrôlée puis ré-encodée en JPEG par le serveur (core/invitation_media.py)."""
+    ev, st = _load(db, event_id, user)
+    jpeg, w, h, sha = media.normalize_upload(data.image)
+    row = _page_row(db, ev.id, user)
+    row.cover_data, row.cover_width, row.cover_height, row.cover_sha = jpeg, w, h, sha
+    db.commit()
+    log_security_event(db, "invitation_cover_updated", request, user.id, "event %d : %dx%d, %d Ko" % (ev.id, w, h, len(jpeg) // 1024))
+    return {"cover": _cover_meta(db, ev.id)}
+
+
+@router.delete("/admin/invitations/events/{event_id}/cover")
+@limiter.limit("10/minute")
+def admin_delete_cover(request: Request, event_id: int, db: Session = Depends(get_db), user: User = Depends(manager)):
+    ev, st = _load(db, event_id, user)
+    row = _page_row(db, ev.id, user)
+    row.cover_data = row.cover_sha = row.cover_width = row.cover_height = None
+    db.commit()
+    log_security_event(db, "invitation_cover_removed", request, user.id, "event %d" % ev.id)
+    return {"cover": None}
+
+
+@router.get("/admin/invitations/events/{event_id}/cover.jpg")
+def admin_get_cover(event_id: int, db: Session = Depends(get_db), user: User = Depends(manager)):
+    ev, st = _load(db, event_id, user)
+    data = db.query(InvitationPage.cover_data).filter(InvitationPage.event_id == ev.id).scalar()
+    if not data:
+        raise HTTPException(404, "Aucune affiche")
+    return Response(data, media_type="image/jpeg", headers={"Cache-Control": "private, no-store"})
 
 
 @router.put("/admin/invitations/events/{event_id}/sessions")
@@ -912,12 +983,52 @@ def public_signup_info(request: Request, slug: str, db: Session = Depends(get_db
     """Page d'inscription libre : événement + état (open | closed | ended | inactive | full).
     Pas de limite par lien : tout le public d'un événement ouvre la même page (CGNAT)."""
     ev, st = inv.signup_settings(db, slug)
+    sessions = sess.list_sessions(db, ev.id)
+    cover = _cover_meta(db, ev.id)
+    base = "%s/invitations/signup/%s" % (settings.PUBLIC_API_URL.rstrip("/"), slug)
     return _no_store({"state": inv.signup_state(db, ev, st), "event_title": ev.title, "event_date": _iso(ev.event_date),
                       "event_date_label": inv.fmt_date_fr(ev.event_date), "location": ev.location,
                       "host_label": st.host_label or st.client_name,
                       "category": st.signup_category or inv.SIGNUP_DEFAULT_CATEGORY,
                       "retention_days": inv.INVITATION_RETENTION_DAYS,
-                      "dates_label": sess.dates_label(sess.list_sessions(db, ev.id))})
+                      "dates_label": sess.dates_label(sessions), "when": sess.when_parts(sessions, ev.event_date),
+                      "multi_session": len(sessions) > 1, "description": _public_description(db, ev.id),
+                      "cover_url": "%s/cover.jpg?v=%s" % (base, cover["sha"][:12]) if cover else None,
+                      "og_image_url": "%s/og.jpg?v=%s" % (base, cover["sha"][:12]) if cover else None,
+                      "share_url": inv.signup_url(slug), "max_per_phone": inv.SIGNUP_MAX_PER_PHONE})
+
+
+def _public_cover(db: Session, slug: str):
+    ev, st = inv.signup_settings(db, slug)
+    row = db.query(InvitationPage.cover_data, InvitationPage.cover_sha).filter(
+        InvitationPage.event_id == ev.id, InvitationPage.cover_sha.isnot(None)).first()
+    if not row:
+        raise HTTPException(404, "Aucune affiche")
+    return row
+
+
+def _image(data: bytes, sha: str, v: Optional[str]) -> Response:
+    # Lien versionné (?v=) : immuable, mis en cache par le navigateur et le CDN ; sinon 10 min.
+    cache = "public, max-age=31536000, immutable" if v and sha.startswith(v) else "public, max-age=600"
+    return Response(data, media_type="image/jpeg", headers={"Cache-Control": cache, "ETag": '"%s"' % sha[:32],
+                                                            "X-Content-Type-Options": "nosniff"})
+
+
+@router.get("/invitations/signup/{slug}/cover.jpg")
+@limiter.shared_limit(PUBLIC_IP_CEILING, scope="public_token_pages")
+def public_signup_cover(request: Request, slug: str, v: Optional[str] = Query(None, max_length=64),
+                        db: Session = Depends(get_db)):
+    data, sha = _public_cover(db, slug)
+    return _image(data, sha, v)
+
+
+@router.get("/invitations/signup/{slug}/og.jpg")
+@limiter.shared_limit(PUBLIC_IP_CEILING, scope="public_token_pages")
+def public_signup_og(request: Request, slug: str, v: Optional[str] = Query(None, max_length=64),
+                     db: Session = Depends(get_db)):
+    """Aperçu de partage 1200×630 (WhatsApp, Facebook…) calculé depuis l'affiche."""
+    data, sha = _public_cover(db, slug)
+    return _image(media.og_image(data, sha), sha, v)
 
 
 @router.post("/invitations/signup/{slug}")
@@ -925,13 +1036,13 @@ def public_signup_info(request: Request, slug: str, db: Session = Depends(get_db
 @limiter.shared_limit(PUBLIC_IP_CEILING, scope="public_token_pages")
 def public_signup(request: Request, slug: str, data: SignupIn, db: Session = Depends(get_db)):
     """Inscription libre : crée le pass (1 place) et le renvoie aussitôt. Sans compte.
-    Limites : 5 / heure par numéro (corps de la requête), 60 / min par IP (large : CGNAT)."""
+    Limites : 10 / heure par numéro (3 personnes + erreurs de saisie), 60 / min par IP (large : CGNAT)."""
     if data.website:
         raise HTTPException(400, "Inscription impossible.")
     if not data.consent:
         raise HTTPException(400, "Cochez la case d'accord pour recevoir votre pass.")
     phone = _phone(data.phone)
-    hit_or_429("5/hour", "signup", phone, "Trop de tentatives pour ce numéro. Réessayez dans une heure.")
+    hit_or_429("10/hour", "signup", phone, "Trop de tentatives pour ce numéro. Réessayez dans une heure.")
     g, ev, st = inv.self_signup(db, slug, data.full_name, phone, request)
     link = inv.pass_url(g.token)
     return _no_store({"guest_name": g.full_name, "category": g.category, "event_title": ev.title,

@@ -29,6 +29,28 @@
     },
     {
       "source": "/r/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(WhatsApp|whatsapp|facebookexternalhit|facebookcatalog|Facebot|meta-externalagent|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|SkypeUriPreview|Pinterest|Snapchat|Viber|Googlebot|bingbot|Applebot).*"
+        }
+      ],
+      "destination": "/api/og-signup?slug=:slug"
+    },
+    {
+      "source": "/fonej",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(WhatsApp|whatsapp|facebookexternalhit|facebookcatalog|Facebot|meta-externalagent|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|SkypeUriPreview|Pinterest|Snapchat|Viber|Googlebot|bingbot|Applebot).*"
+        }
+      ],
+      "destination": "/api/og-signup?slug=fonej&path=/fonej"
+    },
+    {
+      "source": "/r/:slug",
       "destination": "/inscription.html?s=:slug"
     },
     {

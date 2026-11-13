@@ -10,12 +10,13 @@ PrivateEventSettings : réglages 1-1 de l'événement privé (client, message, s
 EventGuest           : un pass nominatif (1 à 20 places), jeton aléatoire.
 GuestCheckin         : journal des entrées (en ligne, hors ligne, manuelle).
 EventSession         : séances d'un événement sur plusieurs jours (une entrée par séance).
+InvitationPage       : présentation publique (affiche, description) de la page d'inscription.
 InvitationPack       : pack payé (taille × niveau de service), activé par l'admin.
 """
 from datetime import datetime
 
 from sqlalchemy import (
-    Boolean, Column, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, text,
+    Boolean, Column, DateTime, ForeignKey, Index, Integer, LargeBinary, String, Text, UniqueConstraint, text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 
@@ -159,3 +160,19 @@ class InvitationPack(Base):
 
     # Un même paiement (canal + référence) ne peut activer qu'un seul pack, même annulé.
     __table_args__ = (UniqueConstraint("payment_channel", "payment_ref", name="uq_invitation_pack_payment"),)
+
+
+class InvitationPage(Base):
+    """Présentation PUBLIQUE d'un événement privé : page d'inscription libre et aperçu de partage
+    (WhatsApp…). Description publique distincte de events.description (note interne du back-office).
+    Table À PART : jamais chargée par les routes chaudes (scan, pass, synchro, suivi) ; l'image est
+    ré-encodée en JPEG par le serveur (métadonnées retirées). Lire cover_data seulement pour la servir."""
+    __tablename__ = "invitation_pages"
+    event_id     = Column(Integer, ForeignKey("events.id", ondelete="CASCADE"), primary_key=True)
+    description  = Column(Text, nullable=True)
+    cover_data   = Column(LargeBinary, nullable=True)      # JPEG
+    cover_sha    = Column(String(64), nullable=True)       # version (cache navigateur / CDN)
+    cover_width  = Column(Integer, nullable=True)
+    cover_height = Column(Integer, nullable=True)
+    updated_by   = Column(Integer, ForeignKey("users.id"), nullable=True)
+    updated_at   = Column(DateTime, default=datetime.utcnow, nullable=False)

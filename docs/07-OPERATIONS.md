@@ -297,6 +297,13 @@ bout en bout sans intervention, 1 retrait réussi, analyse des
   nominative des invités présents hors inscription en ligne. S'ouvre dans
   Excel (« ; »). À télécharger AVANT la purge (date affichée sous le bouton) :
   après, les noms sont anonymisés.
+- **Page d'inscription** : fiche → « Page d'inscription : affiche et
+  description » : affiche (JPEG/PNG/WebP, portrait ou carré) et description
+  publique (un paragraphe par ligne). La note interne (« Modifier ») n'est
+  jamais publiée. Aperçu du lien dans WhatsApp : la première fois que le
+  lien est partagé, WhatsApp met l'aperçu en cache plusieurs jours → mettre
+  l'affiche AVANT de diffuser le lien. Variable Render `PUBLIC_API_URL`
+  (défaut `https://api.goevent.africa`) : liens absolus de l'affiche.
 - **Ouvrir une inscription libre** : fiche de l'événement privé → pack actif
   → bloc « Inscription libre » : lien (`goevent.africa/r/<lien>`), catégorie
   affichée en tête du pass (vide = Participant), limite facultative, fermeture
@@ -306,7 +313,7 @@ bout en bout sans intervention, 1 retrait réussi, analyse des
   l'ancien. Les inscrits n'entrent pas dans la file WhatsApp. Un inscrit qui
   a perdu son pass : entrée manuelle au scanner (nom + 4 derniers chiffres).
   Alias court : une ligne dans `web/vercel.json` (ex. `/fonej`).
-- Traçabilité : `invitation_report_csv`, `invitation_sessions_updated`, `invitation_signup_settings`, `invitation_self_signup`,
+- Traçabilité : `invitation_page_updated`, `invitation_cover_updated|removed`, `invitation_report_csv`, `invitation_sessions_updated`, `invitation_signup_settings`, `invitation_self_signup`,
   `invitation_event_created|updated`, `invitation_guests_imported`,
   `invitation_pack_activated|cancelled`, `invitation_pass_revoked|restored|regenerated`,
   `invitation_manual_checkin`, `invitation_offline_list`, `invitation_offline_sync`,

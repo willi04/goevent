@@ -7,107 +7,215 @@
   <meta name="robots" content="noindex, nofollow" />
   <meta name="theme-color" content="#00502c" />
   <title>Inscription | GoEvent</title>
-  <link rel="icon" href="/icons/icon-192.svg" />
+  <link rel="icon" href="/icons/favicon.png" />
+  <link rel="preload" href="/fonts/plus-jakarta-sans/plus-jakarta-sans-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin />
   <!-- Inscription libre (événement privé) : page générique /r/<lien>, contenu chargé par l'API.
-       Page volontairement autonome : aucun script tiers, aucune police externe, aucun traceur. -->
+       Même présentation que le checkout GoEvent, mais page AUTONOME : aucun script tiers, aucune
+       police externe (Plus Jakarta Sans hébergée dans /fonts, licence OFL), aucun traceur.
+       Toute donnée affichée passe par textContent. -->
   <style>
-    :root { --green: #00502c; --green2: #006b3c; --ink: #111827; --muted: #6b7280; --line: #e5e7eb; --bg: #f3f4f1; }
+    @font-face { font-family: "Plus Jakarta Sans"; font-weight: 400; font-display: swap; src: url(/fonts/plus-jakarta-sans/plus-jakarta-sans-latin-400-normal.woff2) format("woff2"); }
+    @font-face { font-family: "Plus Jakarta Sans"; font-weight: 600; font-display: swap; src: url(/fonts/plus-jakarta-sans/plus-jakarta-sans-latin-600-normal.woff2) format("woff2"); }
+    @font-face { font-family: "Plus Jakarta Sans"; font-weight: 700; font-display: swap; src: url(/fonts/plus-jakarta-sans/plus-jakarta-sans-latin-700-normal.woff2) format("woff2"); }
+    @font-face { font-family: "Plus Jakarta Sans"; font-weight: 800; font-display: swap; src: url(/fonts/plus-jakarta-sans/plus-jakarta-sans-latin-800-normal.woff2) format("woff2"); }
+    :root { --primary: #00502c; --ink: #1a1c1c; --muted: #6b7280; --line: #f0f0f0; --bg: #f9f9f9; }
     * { box-sizing: border-box; }
-    body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-    main { max-width: 440px; margin: 0 auto; padding: 16px 16px 32px; }
-    .card { background: #fff; border-radius: 28px; overflow: hidden; box-shadow: 0 12px 32px rgba(0,0,0,.08); }
-    .top { background: linear-gradient(140deg, var(--green), var(--green2)); color: #fff; padding: 26px 22px 22px; text-align: center; }
-    .host { font-size: 13px; letter-spacing: .04em; opacity: .85; margin: 0; }
-    h1 { font-size: 24px; line-height: 1.2; margin: 8px 0 10px; font-weight: 800; }
-    .meta { font-size: 14px; opacity: .92; margin: 2px 0; }
-    .body { padding: 22px; }
-    h2 { font-size: 19px; margin: 0 0 4px; font-weight: 800; }
-    .lead { color: var(--muted); font-size: 14px; margin: 0 0 18px; }
-    label.f { display: block; font-size: 13px; font-weight: 700; margin: 14px 0 6px; }
-    input[type=text], input[type=tel] { width: 100%; font: inherit; font-size: 17px; padding: 13px 14px; border: 1px solid #d1d5db; border-radius: 14px; background: #fff; color: var(--ink); }
-    input[type=text]:focus, input[type=tel]:focus { outline: 3px solid #bbf7d0; border-color: var(--green2); }
-    .help { font-size: 12px; color: var(--muted); margin: 6px 0 0; }
-    .consent { display: flex; gap: 10px; align-items: flex-start; margin: 18px 0 0; font-size: 13px; color: #374151; }
-    .consent input { width: 22px; height: 22px; flex: none; margin: 1px 0 0; accent-color: var(--green); }
-    .consent a { color: var(--green); }
-    .trap { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
-    .btn { display: block; width: 100%; text-align: center; text-decoration: none; font: inherit; font-weight: 800; font-size: 16px; padding: 15px 12px; border-radius: 16px; border: 0; cursor: pointer; margin-top: 18px; }
-    .btn-primary { background: var(--green); color: #fff; }
-    .btn-primary[disabled] { opacity: .6; cursor: wait; }
-    .btn-wa { background: #25d366; color: #fff; margin-top: 10px; }
-    .btn-light { background: #fff; color: var(--ink); border: 1px solid var(--line); margin-top: 10px; }
-    .banner { border-radius: 16px; padding: 12px 14px; font-size: 14px; font-weight: 600; margin: 16px 0 0; }
-    .ok { background: #ecfdf3; color: #065f46; } .warn { background: #fffbeb; color: #92400e; } .bad { background: #fef2f2; color: #991b1b; }
-    .done { text-align: center; }
-    .done .check { width: 64px; height: 64px; border-radius: 50%; background: #ecfdf3; color: var(--green); font-size: 34px; line-height: 64px; margin: 0 auto 10px; font-weight: 800; }
-    .done .name { font-size: 21px; font-weight: 800; margin: 2px 0; }
-    .tag { display: inline-block; background: #ecfdf3; color: var(--green); font-weight: 800; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; padding: 5px 12px; border-radius: 999px; margin: 6px 0 4px; }
-    .account { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); text-align: center; }
-    .account a { color: var(--green); font-weight: 700; }
-    .link { background: none; border: 0; color: var(--green); font: inherit; font-size: 14px; font-weight: 700; text-decoration: underline; cursor: pointer; margin-top: 14px; padding: 4px; }
-    .loading { text-align: center; color: var(--muted); padding: 60px 0; }
-    footer { text-align: center; margin-top: 22px; font-size: 12px; color: var(--muted); }
-    footer a { color: var(--muted); }
+    body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    svg { width: 1em; height: 1em; flex: none; }
+    a { color: inherit; }
     .hidden { display: none !important; }
+    header { position: fixed; top: 0; left: 0; right: 0; z-index: 50; background: rgba(255,255,255,.96); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+    header .in { max-width: 1024px; margin: 0 auto; height: 64px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .logo { display: flex; align-items: center; gap: 8px; text-decoration: none; }
+    .logo img { width: 36px; height: 36px; border-radius: 13px; object-fit: cover; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+    .logo span { font-weight: 800; font-size: 21px; color: var(--primary); letter-spacing: -.02em; }
+    .chip { display: inline-flex; align-items: center; gap: 6px; color: var(--primary); background: rgba(0,80,44,.06); font-weight: 800; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; padding: 8px 12px; border-radius: 999px; white-space: nowrap; }
+    main { max-width: 1024px; margin: 0 auto; padding: 88px 16px 40px; }
+    .kicker { display: flex; align-items: center; gap: 6px; color: var(--muted); font-weight: 700; font-size: 13px; margin: 0 0 10px; }
+    h1 { font-size: 30px; line-height: 1.1; font-weight: 800; letter-spacing: -.03em; margin: 0 0 6px; }
+    .sub { color: var(--muted); font-weight: 600; margin: 0 0 22px; }
+    .grid { display: flex; flex-direction: column-reverse; gap: 20px; }
+    .box { background: #fff; border: 1px solid var(--line); border-radius: 2rem; box-shadow: 0 1px 2px rgba(0,0,0,.04); padding: 22px; }
+    .space { display: flex; flex-direction: column; gap: 18px; }
+    .step { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 17px; margin: 0 0 18px; }
+    .step i { font-style: normal; width: 30px; height: 30px; border-radius: 50%; background: rgba(0,80,44,.1); color: var(--primary); display: grid; place-items: center; font-size: 13px; }
+    label.f { display: block; font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin: 0 0 8px; }
+    .field + .field { margin-top: 18px; }
+    input[type=text], input[type=tel] { width: 100%; font: inherit; font-size: 16px; font-weight: 600; color: var(--ink); background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 14px; padding: 13px 15px; }
+    input:focus { outline: 3px solid rgba(0,80,44,.18); border-color: var(--primary); }
+    .tel { display: flex; }
+    .tel span { display: inline-flex; align-items: center; padding: 0 14px; background: #f3f4f6; border: 1px solid #e5e7eb; border-right: 0; border-radius: 14px 0 0 14px; color: var(--muted); font-weight: 800; font-size: 14px; }
+    .tel input { border-radius: 0 14px 14px 0; background: #fff; font-size: 18px; letter-spacing: .05em; font-weight: 700; min-width: 0; }
+    .hint { color: #9ca3af; font-size: 11.5px; font-weight: 600; margin: 8px 0 0; }
+    .consent { display: flex; gap: 12px; align-items: flex-start; font-size: 13px; color: #374151; font-weight: 500; cursor: pointer; }
+    .consent input { width: 22px; height: 22px; accent-color: var(--primary); flex: none; margin: 1px 0 0; }
+    .consent a { color: var(--primary); font-weight: 700; }
+    .trap { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+    .err { background: #fef2f2; color: #991b1b; border-radius: 14px; padding: 12px 14px; font-size: 14px; font-weight: 700; }
+    .btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; border: 0; border-radius: 1.1rem; padding: 17px; font: inherit; font-weight: 800; font-size: 17px; color: #fff; background: var(--primary); box-shadow: 0 10px 24px rgba(0,80,44,.22); cursor: pointer; text-decoration: none; }
+    .btn[disabled] { opacity: .6; cursor: wait; }
+    .btn svg { width: 22px; height: 22px; }
+    .btn.wa { background: #25d366; box-shadow: none; margin-top: 10px; font-size: 15px; padding: 15px; }
+    .btn.lt { background: #f3f4f6; color: var(--ink); box-shadow: none; margin-top: 10px; font-size: 15px; padding: 15px; }
+    .trust { display: flex; align-items: center; justify-content: center; gap: 6px; color: #9ca3af; font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; margin: 14px 0 0; text-align: center; }
+    .notice { background: #ecfdf3; border: 1px solid #bbf7d0; border-radius: 1.4rem; padding: 16px 18px; }
+    .notice b { display: block; font-size: 14px; margin-bottom: 6px; }
+    .notice .p { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid #d1fae5; font-weight: 700; font-size: 14px; }
+    .notice .p:first-of-type { border-top: 0; }
+    .notice a { color: var(--primary); font-weight: 800; font-size: 13px; white-space: nowrap; }
+    .notice small { display: block; color: #047857; font-size: 12px; font-weight: 600; margin-top: 6px; }
+    .closed { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; border-radius: 1.4rem; padding: 18px; font-weight: 700; }
+    /* Récapitulatif (téléphone, et ordinateur sans affiche) */
+    .recap { box-shadow: 0 20px 40px rgba(0,0,0,.08); }
+    .recap h3 { font-size: 19px; font-weight: 800; margin: 0 0 18px; }
+    .ev { display: flex; gap: 14px; padding-bottom: 18px; border-bottom: 1px solid var(--line); }
+    .thumb { position: relative; width: 84px; height: 105px; border-radius: 14px; overflow: hidden; flex: none; background: #e5e7eb; border: 0; padding: 0; cursor: zoom-in; }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+    .thumb em { position: absolute; left: 4px; right: 4px; bottom: 4px; font-style: normal; font-size: 10px; font-weight: 800; color: #fff; background: rgba(0,0,0,.55); border-radius: 8px; padding: 2px 0; text-align: center; }
+    .ev h4 { font-size: 16px; font-weight: 800; line-height: 1.25; margin: 2px 0 8px; overflow-wrap: anywhere; }
+    .tag { display: inline-block; background: rgba(0,80,44,.1); color: var(--primary); font-weight: 800; font-size: 11px; padding: 4px 10px; border-radius: 999px; }
+    .rows { padding: 16px 0; border-bottom: 1px solid var(--line); display: grid; gap: 12px; }
+    .rows > div { display: flex; gap: 10px; font-size: 14px; }
+    .rows svg { width: 18px; height: 18px; color: var(--primary); margin-top: 2px; }
+    .rows b { display: block; font-weight: 700; }
+    .rows small { display: block; color: var(--muted); font-weight: 600; font-size: 12px; }
+    .total { display: flex; justify-content: space-between; align-items: center; padding-top: 16px; }
+    .total span { font-size: 11px; font-weight: 800; color: #9ca3af; letter-spacing: .12em; text-transform: uppercase; }
+    .total b { font-size: 24px; font-weight: 800; color: var(--primary); }
+    details { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 14px; }
+    summary { cursor: pointer; font-weight: 800; font-size: 14px; color: var(--primary); list-style: none; display: flex; justify-content: space-between; }
+    summary::-webkit-details-marker { display: none; }
+    details[open] summary span { transform: rotate(45deg); }
+    .desc p { color: #4b5563; font-size: 14px; margin: 10px 0 0; overflow-wrap: anywhere; }
+    /* Ordinateur : affiche en grand à gauche, description et infos pratiques en bas */
+    .poster-lg, .about-lg { display: none; }
+    footer { text-align: center; color: #9ca3af; font-size: 12px; margin-top: 28px; }
+    footer a { color: #9ca3af; }
+    @media (min-width: 900px) {
+      main { padding-top: 116px; }
+      h1 { font-size: 46px; }
+      .grid { flex-direction: row; gap: 36px; align-items: flex-start; }
+      .grid > .col-form { flex: 1; min-width: 0; }
+      .box { padding: 30px; }
+      .recap { width: 372px; flex: none; position: sticky; top: 100px; padding: 30px; }
+      body.has-cover .recap { display: none; }
+      body.has-cover .poster-lg { display: block; width: 440px; flex: 0 0 440px; }
+      .poster-lg .pc { background: #fff; border: 1px solid var(--line); border-radius: 2rem; padding: 14px; box-shadow: 0 20px 40px rgba(0,0,0,.08); }
+      .poster-lg button { display: block; width: 100%; padding: 0; border: 0; background: none; cursor: zoom-in; }
+      .poster-lg img { display: block; width: 100%; border-radius: 1.4rem; }
+      .poster-lg .meta { padding: 14px 6px 4px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+      .poster-lg .meta b { font-size: 15px; font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; }
+      .poster-lg .meta .free { color: var(--primary); font-weight: 800; font-size: 20px; white-space: nowrap; }
+      body.has-cover .about-lg { display: block; margin-top: 36px; }
+      .about-lg .cols { display: grid; grid-template-columns: 1fr 340px; gap: 36px; }
+      .about-lg.nodesc .cols { grid-template-columns: 1fr; }
+      .about-lg h3 { font-size: 22px; font-weight: 800; margin: 0 0 12px; }
+      .about-lg .desc p { font-size: 16px; color: #374151; margin: 0 0 12px; }
+      .about-lg .rows { border: 0; padding: 0; }
+    }
+    /* Fenêtres : confirmation (comme « Paiement réussi ») et affiche en grand */
+    .ov { position: fixed; inset: 0; background: rgba(0,0,0,.8); backdrop-filter: blur(3px); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 100; overflow-y: auto; }
+    .ov.on { display: flex; }
+    .ok { background: #fff; border-radius: 2.5rem; padding: 28px 22px; max-width: 390px; width: 100%; text-align: center; margin: auto; }
+    .ok .c { width: 72px; height: 72px; border-radius: 50%; background: #dcfce7; color: #16a34a; display: grid; place-items: center; margin: 0 auto 16px; }
+    .ok .c svg { width: 38px; height: 38px; }
+    .ok h2 { font-size: 24px; font-weight: 800; margin: 0 0 6px; }
+    .ok p { color: var(--muted); font-size: 14px; font-weight: 500; margin: 0 0 16px; }
+    .passbox { border: 2px dashed #e5e7eb; background: #f9fafb; border-radius: 1.2rem; padding: 14px; margin-bottom: 16px; }
+    .passbox small { display: block; font-size: 10px; font-weight: 800; color: #9ca3af; letter-spacing: .12em; text-transform: uppercase; }
+    .passbox b { display: block; font-size: 18px; margin: 4px 0 6px; overflow-wrap: anywhere; }
+    .ok .x { background: none; border: 0; color: var(--muted); font: inherit; font-weight: 700; font-size: 14px; margin-top: 14px; text-decoration: underline; cursor: pointer; }
+    .ok .acc { font-size: 12px; color: #9ca3af; margin: 14px 0 0; }
+    .ok .acc a { color: var(--primary); font-weight: 700; }
+    .lb img { max-width: 100%; max-height: 92vh; border-radius: 1rem; display: block; margin: auto; }
+    .loading { text-align: center; color: var(--muted); padding: 80px 0; font-weight: 600; }
   </style>
 </head>
 <body>
+  <header><div class="in">
+    <a class="logo" href="https://goevent.africa" rel="noopener"><img src="/icons/event.png" alt="" /><span>GoEvent</span></a>
+    <span class="chip"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 9.7 8 11 4.6-1.3 8-6 8-11V5l-8-3Zm-1.2 14.2-3.5-3.5 1.4-1.4 2.1 2.1 4.9-4.9 1.4 1.4-6.3 6.3Z"/></svg>Inscription gratuite</span>
+  </div></header>
+
   <main>
     <div id="loading" class="loading">Chargement…</div>
 
-    <div id="page" class="card hidden">
-      <div class="top">
-        <p class="host" id="host"></p>
-        <h1 id="title"></h1>
-        <p class="meta" id="date"></p>
-        <p class="meta" id="location"></p>
+    <div id="page" class="hidden">
+      <p class="kicker"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 4h16v4a2 2 0 0 0 0 4v4H4v-4a2 2 0 0 0 0-4V4Zm2 2v.9a4 4 0 0 1 0 6.2V14h12v-.9a4 4 0 0 1 0-6.2V6H6Z"/></svg>Pass d'entrée · 30 secondes, sans compte</p>
+      <h1>Réservez votre place</h1>
+      <p class="sub">Votre pass nominatif à QR Code s'affiche dès la validation.</p>
+
+      <div class="grid">
+        <div class="poster-lg"><div class="pc">
+          <button type="button" class="js-zoom" aria-label="Voir l'affiche en grand"><img id="poster-lg-img" alt="Affiche de l'événement" /></button>
+          <div class="meta"><b id="poster-lg-title"></b><span class="free">Gratuit</span></div>
+        </div></div>
+
+        <div class="col-form">
+          <div class="space">
+            <div id="mine" class="notice hidden"></div>
+            <div id="closed" class="closed hidden"></div>
+            <form id="form" class="space" novalidate>
+              <div class="box">
+                <p class="step"><i>1</i>Vos informations</p>
+                <div class="field"><label class="f" for="name">Nom complet</label>
+                  <input type="text" id="name" autocomplete="name" maxlength="120" placeholder="Prénom et nom" required /></div>
+                <div class="field"><label class="f" for="phone">Numéro de téléphone (WhatsApp de préférence)</label>
+                  <div class="tel"><span>+236</span><input type="tel" id="phone" autocomplete="tel-national" inputmode="tel" maxlength="20" placeholder="7X XX XX XX" required /></div>
+                  <p class="hint" id="phone-hint">Sert à vérifier votre identité à l'entrée. Il n'est jamais affiché sur le pass. Numéro étranger : tapez-le avec l'indicatif (+…).</p></div>
+                <div class="trap" aria-hidden="true"><label for="website">Ne pas remplir</label><input type="text" id="website" tabindex="-1" autocomplete="off" /></div>
+              </div>
+              <div class="box">
+                <p class="step"><i>2</i>Confirmation</p>
+                <label class="consent"><input type="checkbox" id="consent" />
+                  <span>J'accepte que mon nom et mon numéro servent uniquement à établir mon pass d'entrée pour cet événement. Ils sont supprimés <span id="days">30</span> jours après l'événement. <a href="/confidentialite.html#invitations" target="_blank" rel="noopener">Confidentialité</a></span></label>
+              </div>
+              <div id="error" class="err hidden" role="alert"></div>
+              <button class="btn" id="submit" type="submit"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 3h8v8H3V3Zm2 2v4h4V5H5Zm8-2h8v8h-8V3Zm2 2v4h4V5h-4ZM3 13h8v8H3v-8Zm2 2v4h4v-4H5Zm11-2h2v3h3v2h-3v3h-2v-3h-3v-2h3v-3Z"/></svg><span id="submit-txt">Recevoir mon pass gratuit</span></button>
+            </form>
+          </div>
+          <p class="trust"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 9.7 8 11 4.6-1.3 8-6 8-11V5l-8-3Z"/></svg>Données protégées · supprimées après l'événement</p>
+        </div>
+
+        <aside class="box recap">
+          <h3>Récapitulatif</h3>
+          <div class="ev">
+            <button type="button" class="thumb js-zoom" id="thumb" aria-label="Voir l'affiche en grand"><img id="thumb-img" alt="" /><em id="thumb-em">Affiche</em></button>
+            <div><h4 id="recap-title"></h4><span class="tag" id="recap-tag"></span></div>
+          </div>
+          <div class="rows" id="recap-rows"></div>
+          <div class="total"><span>Prix du pass</span><b>Gratuit</b></div>
+          <details id="recap-about"><summary>À propos de l'événement <span>＋</span></summary><div class="desc" id="recap-desc"></div></details>
+        </aside>
       </div>
 
-      <!-- Formulaire -->
-      <div class="body hidden" id="form-box">
-        <h2>Recevez votre pass d'entrée</h2>
-        <p class="lead">30 secondes, sans compte. Votre pass nominatif à QR Code s'affiche aussitôt.</p>
-        <form id="form" novalidate>
-          <label class="f" for="name">Nom et prénom</label>
-          <input type="text" id="name" name="name" autocomplete="name" maxlength="120" required />
-          <label class="f" for="phone">Numéro de téléphone (WhatsApp)</label>
-          <input type="tel" id="phone" name="phone" autocomplete="tel" inputmode="tel" maxlength="20" placeholder="72 00 00 00" required />
-          <p class="help">8 chiffres pour un numéro centrafricain, sinon le format international (+…).</p>
-          <div class="trap" aria-hidden="true"><label for="website">Ne pas remplir</label><input type="text" id="website" name="website" tabindex="-1" autocomplete="off" /></div>
-          <label class="consent"><input type="checkbox" id="consent" />
-            <span>J'accepte que mon nom et mon numéro servent uniquement à établir mon pass d'entrée pour cet événement. Ils sont supprimés <span id="days">30</span> jours après l'événement. <a href="/confidentialite.html#invitations" target="_blank" rel="noopener">Confidentialité</a></span>
-          </label>
-          <div id="error" class="banner bad hidden" role="alert"></div>
-          <button class="btn btn-primary" id="submit" type="submit">Recevoir mon pass</button>
-        </form>
-      </div>
-
-      <!-- Inscriptions fermées / complet -->
-      <div class="body hidden" id="closed-box">
-        <div class="banner warn" id="closed-msg" style="margin:0"></div>
-      </div>
-
-      <!-- Inscription réussie (ou déjà faite sur ce téléphone) -->
-      <div class="body done hidden" id="done-box">
-        <div class="check">✓</div>
-        <h2 id="done-title">Inscription confirmée</h2>
-        <p class="name" id="done-name"></p>
-        <span class="tag" id="done-tag"></span>
-        <p class="lead" style="margin-top:8px">Présentez votre pass (QR Code) à l'entrée. Gardez-le : envoyez-le-vous sur WhatsApp ou faites une capture d'écran.</p>
-        <a class="btn btn-primary" id="btn-pass" href="#">Voir mon pass</a>
-        <a class="btn btn-wa hidden" id="btn-wa" href="#" target="_blank" rel="noopener noreferrer">M'envoyer le pass sur WhatsApp</a>
-        <button class="link" id="btn-another" type="button">Inscrire une autre personne</button>
-        <p class="account">Ne manquez pas les prochains événements : <a href="/signup.html">créez votre compte GoEvent</a>.</p>
-      </div>
+      <section class="box about-lg" id="about-lg"><div class="cols">
+        <div id="about-desc-col"><h3>À propos de l'événement</h3><div class="desc" id="about-desc"></div></div>
+        <div><h3>Infos pratiques</h3><div class="rows" id="about-rows"></div></div>
+      </div></section>
     </div>
 
-    <div id="notfound" class="card hidden"><div class="body">
-      <h2>Lien d'inscription introuvable</h2>
-      <p class="lead">Ce lien est invalide ou n'est plus actif. Vérifiez l'adresse transmise par l'organisateur.</p>
-    </div></div>
+    <div id="notfound" class="box hidden" style="max-width:520px;margin:40px auto">
+      <h1 style="font-size:24px">Lien d'inscription introuvable</h1>
+      <p class="sub" style="margin:0">Ce lien est invalide ou n'est plus actif. Vérifiez l'adresse transmise par l'organisateur.</p>
+    </div>
 
     <footer>Propulsé par GoEvent — <a href="https://goevent.africa" rel="noopener">goevent.africa</a> · <a href="/confidentialite.html#invitations">Confidentialité</a></footer>
   </main>
+
+  <div class="ov" id="ov-ok" role="dialog" aria-modal="true" aria-labelledby="ok-title"><div class="ok">
+    <div class="c"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm-1.2 14.2-3.5-3.5 1.4-1.4 2.1 2.1 4.9-4.9 1.4 1.4-6.3 6.3Z"/></svg></div>
+    <h2 id="ok-title">Inscription confirmée !</h2>
+    <p id="ok-sub">Présentez votre pass à l'entrée.</p>
+    <div class="passbox"><small id="ok-kind">Pass d'entrée</small><b id="ok-name"></b><span class="tag" id="ok-tag"></span></div>
+    <a class="btn" id="ok-pass" href="#">Voir mon pass (QR Code)</a>
+    <a class="btn wa hidden" id="ok-wa" href="#" target="_blank" rel="noopener noreferrer">M'envoyer le pass sur WhatsApp</a>
+    <button class="btn lt" id="ok-share" type="button">Inviter un ami à s'inscrire</button>
+    <button class="x" id="ok-another" type="button">Inscrire une autre personne</button>
+    <p class="acc">Ne manquez pas les prochains événements : <a href="/signup.html">créez votre compte GoEvent</a>.</p>
+  </div></div>
+
+  <div class="ov lb" id="ov-poster" role="dialog" aria-modal="true" aria-label="Affiche"><img id="lb-img" alt="Affiche de l'événement" /></div>
 
   <script>
     (function () {
@@ -126,53 +234,133 @@
         inactive: "Les inscriptions ne sont pas encore ouvertes. Revenez un peu plus tard sur ce lien.",
         full: "Complet : il n'y a plus de place disponible."
       };
+      var ICON = {
+        date: "M7 2h2v2h6V2h2v2h3v18H4V4h3V2Zm11 8H6v10h12V10Z",
+        place: "M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z",
+        host: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 2c-4.4 0-8 2.2-8 5v1h16v-1c0-2.8-3.6-5-8-5Z"
+      };
 
-      function store(v) { try { if (v) localStorage.setItem(KEY, JSON.stringify(v)); else localStorage.removeItem(KEY); } catch (e) {} }
-      function stored() { try { return JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) { return null; } }
-      function passHref(token) { return local ? "invitation.html?t=" + encodeURIComponent(token) : "/i/" + encodeURIComponent(token); }
-      function only(id) {
-        ["form-box", "closed-box", "done-box"].forEach(function (b) { $(b).classList.toggle("hidden", b !== id); });
+      // Pass obtenus sur ce téléphone (jusqu'à 3 personnes par numéro)
+      function stored() {
+        try {
+          var v = JSON.parse(localStorage.getItem(KEY) || "null");
+          return Array.isArray(v) ? v : (v && v.token ? [v] : []);
+        } catch (e) { return []; }
       }
-      function header(p) {
+      function store(list) { try { localStorage.setItem(KEY, JSON.stringify(list.slice(-6))); } catch (e) {} }
+      function passHref(token) { return local ? "invitation.html?t=" + encodeURIComponent(token) : "/i/" + encodeURIComponent(token); }
+
+      function svg(path) {
+        var ns = "http://www.w3.org/2000/svg", s = document.createElementNS(ns, "svg"), p = document.createElementNS(ns, "path");
+        s.setAttribute("viewBox", "0 0 24 24"); s.setAttribute("fill", "currentColor"); s.setAttribute("aria-hidden", "true");
+        p.setAttribute("d", path); s.appendChild(p); return s;
+      }
+      function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+      function row(icon, title, small) {
+        var d = el("div"), t = el("span");
+        t.appendChild(el("b", null, title));
+        if (small) t.appendChild(el("small", null, small));
+        d.append(svg(ICON[icon]), t);
+        return d;
+      }
+      function fillRows(box, p) {
+        box.replaceChildren();
+        var w = p.when || {};
+        if (w.days) box.appendChild(row("date", w.days, [w.hours, p.multi_session ? "un pass valable à chaque séance" : ""].filter(Boolean).join(" · ")));
+        if (p.location) box.appendChild(row("place", p.location));
+        if (p.host_label) box.appendChild(row("host", p.host_label, "Organisateur"));
+      }
+      function fillDesc(box, text) {
+        box.replaceChildren();
+        String(text || "").split(/\n+/).map(function (t) { return t.trim(); }).filter(Boolean)
+          .forEach(function (t) { box.appendChild(el("p", null, t)); });
+        return box.children.length > 0;
+      }
+
+      function render(p) {
         $("loading").classList.add("hidden");
         $("page").classList.remove("hidden");
-        $("host").textContent = p.host_label ? p.host_label + " vous invite" : "";
-        $("title").textContent = p.event_title || "";
-        var when = p.dates_label || p.event_date_label;
-        $("date").textContent = when ? "🗓 " + when : "";
-        $("location").textContent = p.location ? "📍 " + p.location : "";
-        $("days").textContent = String(p.retention_days || 30);
         document.title = "Inscription · " + (p.event_title || "GoEvent");
+        $("days").textContent = String(p.retention_days || 30);
+        $("recap-title").textContent = p.event_title || "";
+        $("poster-lg-title").textContent = (p.event_title || "") + " · Pass " + String(p.category || "").toLowerCase();
+        $("recap-tag").textContent = p.category || "";
+        fillRows($("recap-rows"), p);
+        fillRows($("about-rows"), p);
+        var hasDesc = fillDesc($("recap-desc"), p.description);
+        fillDesc($("about-desc"), p.description);
+        $("recap-about").classList.toggle("hidden", !hasDesc);
+        $("about-desc-col").classList.toggle("hidden", !hasDesc);
+        $("about-lg").classList.toggle("nodesc", !hasDesc);
+        if (p.cover_url) {
+          document.body.classList.add("has-cover");
+          $("thumb-img").src = p.cover_url; $("poster-lg-img").src = p.cover_url; $("lb-img").src = p.cover_url;
+        } else {
+          $("thumb-img").src = "/icons/event-default.svg"; $("thumb-em").classList.add("hidden");
+          $("thumb").disabled = true; $("thumb").style.cursor = "default";
+        }
+        if (p.multi_session && p.when && p.when.days) $("ok-sub").textContent = "Présentez votre pass à l'entrée, à chaque séance (" + p.when.days + ").";
+        renderMine();
+        showState();
       }
-      function showDone(v, again) {
-        $("done-title").textContent = again ? "Vous êtes inscrit(e)" : "Inscription confirmée";
-        $("done-name").textContent = v.guest_name || "";
-        $("done-tag").textContent = v.category || "";
-        $("done-tag").classList.toggle("hidden", !v.category);
-        $("btn-pass").href = passHref(v.token);
-        $("btn-wa").classList.toggle("hidden", !v.wa_url);
-        if (v.wa_url) $("btn-wa").href = v.wa_url;
-        only("done-box");
+      function renderMine() {
+        var list = stored(), box = $("mine");
+        box.replaceChildren();
+        box.classList.toggle("hidden", !list.length);
+        if (!list.length) return;
+        box.appendChild(el("b", null, list.length > 1 ? "Inscrits depuis ce téléphone" : "Vous êtes inscrit(e) depuis ce téléphone"));
+        list.forEach(function (v) {
+          var r = el("div", "p"); r.appendChild(el("span", null, v.guest_name || ""));
+          var a = el("a", null, "Voir le pass"); a.href = passHref(v.token); r.appendChild(a);
+          box.appendChild(r);
+        });
+        box.appendChild(el("small", null, "Vous pouvez inscrire jusqu'à " + ((info && info.max_per_phone) || 3) + " personnes avec un même numéro, chacune à son nom."));
       }
-      function showForm() {
-        if (info.state !== "open") { $("closed-msg").textContent = CLOSED[info.state] || CLOSED.closed; only("closed-box"); return; }
-        only("form-box");
+      function showState() {
+        var open = info.state === "open";
+        $("form").classList.toggle("hidden", !open);
+        $("closed").classList.toggle("hidden", open);
+        if (!open) $("closed").textContent = CLOSED[info.state] || CLOSED.closed;
       }
-      function fail() { $("loading").classList.add("hidden"); $("notfound").classList.remove("hidden"); }
-      function error(msg) { var e = $("error"); e.textContent = msg; e.classList.remove("hidden"); }
+      function error(msg) { var e = $("error"); e.textContent = msg; e.classList.remove("hidden"); e.scrollIntoView({ block: "center", behavior: "smooth" }); }
+      function openOv(id) { $(id).classList.add("on"); document.body.style.overflow = "hidden"; }
+      function closeOv(id) { $(id).classList.remove("on"); document.body.style.overflow = ""; }
 
-      $("btn-another").addEventListener("click", function () {
-        $("form").reset(); $("error").classList.add("hidden"); showForm(); $("name").focus();
+      function success(v) {
+        $("ok-name").textContent = v.guest_name || "";
+        $("ok-tag").textContent = v.category || "";
+        $("ok-kind").textContent = "Pass " + String(v.category || "d'entrée").toLowerCase();
+        $("ok-pass").href = passHref(v.token);
+        $("ok-wa").classList.toggle("hidden", !v.wa_url);
+        if (v.wa_url) $("ok-wa").href = v.wa_url;
+        openOv("ov-ok");
+      }
+      $("ok-another").addEventListener("click", function () {
+        closeOv("ov-ok"); $("form").reset(); $("error").classList.add("hidden"); renderMine(); $("name").focus();
       });
+      $("ov-ok").addEventListener("click", function (e) { if (e.target === this) { closeOv("ov-ok"); renderMine(); } });
+      $("ok-share").addEventListener("click", function () {
+        var url = (info && info.share_url) || location.href.split("?")[0];
+        var text = "Inscris-toi gratuitement à " + ((info && info.event_title) || "l'événement") + " : " + url;
+        if (navigator.share) { navigator.share({ title: info && info.event_title, text: text, url: url }).catch(function () {}); return; }
+        window.open("https://api.whatsapp.com/send?text=" + encodeURIComponent(text), "_blank", "noopener");
+      });
+      Array.prototype.forEach.call(document.querySelectorAll(".js-zoom"), function (b) {
+        b.addEventListener("click", function () { if (info && info.cover_url) openOv("ov-poster"); });
+      });
+      $("ov-poster").addEventListener("click", function () { closeOv("ov-poster"); });
+      document.addEventListener("keydown", function (e) { if (e.key === "Escape") { closeOv("ov-poster"); } });
 
       $("form").addEventListener("submit", function (ev) {
         ev.preventDefault();
         $("error").classList.add("hidden");
-        var name = $("name").value.trim(), phone = $("phone").value.trim();
-        if (name.length < 2) { error("Indiquez votre nom et votre prénom."); $("name").focus(); return; }
+        var name = $("name").value.trim(), raw = $("phone").value.trim();
+        // 8 chiffres = Centrafrique (+236 affiché) ; « + » ou « 00 » = numéro international tel quel
+        var phone = /^(\+|00)/.test(raw) ? raw : raw.replace(/\D/g, "");
+        if (name.length < 2) { error("Indiquez votre nom complet."); $("name").focus(); return; }
         if (phone.replace(/\D/g, "").length < 8) { error("Indiquez votre numéro de téléphone (8 chiffres)."); $("phone").focus(); return; }
         if (!$("consent").checked) { error("Cochez la case d'accord pour recevoir votre pass."); return; }
-        var btn = $("submit"); btn.disabled = true; btn.textContent = "Inscription en cours…";
+        var btn = $("submit"); btn.disabled = true; $("submit-txt").textContent = "Inscription en cours…";
         fetch(API + "/invitations/signup/" + encodeURIComponent(slug), {
           method: "POST", credentials: "omit", cache: "no-store",
           headers: { "Content-Type": "application/json" },
@@ -182,32 +370,32 @@
         }).then(function (res) {
           if (res.ok) {
             var v = { token: res.d.token, guest_name: res.d.guest_name, category: res.d.category, wa_url: res.d.wa_url };
-            store(v); showDone(v, false); window.scrollTo(0, 0); return;
+            var list = stored().filter(function (x) { return x.token !== v.token; }); list.push(v); store(list);
+            success(v); return;
           }
           var msg = typeof res.d.detail === "string" ? res.d.detail : null;
           if (res.status === 422 || !msg) msg = "Vérifiez votre nom et votre numéro, puis réessayez.";
           if (res.status === 409 && /Complet|fermées|terminées|pas encore/.test(msg)) {
-            info.state = /Complet/.test(msg) ? "full" : "closed"; $("closed-msg").textContent = msg; only("closed-box"); return;
+            info.state = /Complet/.test(msg) ? "full" : "closed"; showState(); $("closed").textContent = msg; return;
           }
           error(msg);
         }).catch(function () {
           error("Connexion impossible. Vérifiez votre connexion internet et réessayez.");
-        }).then(function () { btn.disabled = false; btn.textContent = "Recevoir mon pass"; });
+        }).then(function () { btn.disabled = false; $("submit-txt").textContent = "Recevoir mon pass gratuit"; });
       });
 
+      function fail() { $("loading").classList.add("hidden"); $("notfound").classList.remove("hidden"); }
       if (!/^[a-z0-9-]{3,40}$/.test(slug)) { fail(); return; }
       fetch(API + "/invitations/signup/" + encodeURIComponent(slug), { cache: "no-store", credentials: "omit" })
         .then(function (r) { if (r.status === 404) throw new Error("404"); if (!r.ok) throw new Error("net"); return r.json(); })
-        .then(function (p) {
-          info = p; header(p);
-          var v = stored();
-          if (v && v.token) showDone(v, true); else showForm();
-        })
+        .then(function (p) { info = p; render(p); })
         .catch(function (e) {
-          if (e.message === "404") { store(null); fail(); return; }
-          var v = stored();
-          if (v && v.token) {   // hors connexion : on garde l'accès au pass déjà obtenu
-            info = { state: "closed" }; header({ event_title: "Votre inscription" }); showDone(v, true);
+          if (e.message === "404") { fail(); return; }
+          var list = stored();
+          if (list.length) {   // hors connexion : on garde l'accès aux pass déjà obtenus
+            info = { state: "closed", max_per_phone: 3 };
+            render({ event_title: "Votre inscription", category: list[0].category, retention_days: 30 });
+            $("closed").textContent = "Pas de connexion : vos pass restent accessibles ci-dessus.";
           } else {
             $("loading").textContent = "Connexion impossible. Vérifiez votre connexion internet puis rechargez la page.";
           }

@@ -917,12 +917,22 @@ def paper_pdf(ev: Event, st: PrivateEventSettings, guests: list) -> bytes:
 # ligne de l'événement : le quota ne peut pas être dépassé par deux requêtes simultanées.
 SIGNUP_SLUG_RE = re.compile(r"^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$")
 SIGNUP_DEFAULT_CATEGORY = "Participant"
+# Un même numéro peut inscrire jusqu'à 3 personnes (familles, téléphone partagé) : un pass,
+# un QR et un nom par personne. Même numéro + même nom = déjà inscrit.
+SIGNUP_MAX_PER_PHONE = 3
 _SIGNUP_REFUSALS = {
     "closed": "Les inscriptions sont fermées.",
     "ended": "Les inscriptions sont terminées.",
     "inactive": "Les inscriptions ne sont pas encore ouvertes.",
     "full": "Complet : il n'y a plus de place disponible.",
 }
+
+
+def _name_key(name: str) -> str:
+    """Comparaison de noms : sans accents, sans casse, espaces réduits."""
+    import unicodedata
+    n = unicodedata.normalize("NFD", name or "")
+    return " ".join("".join(ch for ch in n if not unicodedata.combining(ch)).lower().split())
 
 
 def signup_url(slug: str) -> str:
@@ -977,10 +987,13 @@ def self_signup(db: Session, slug: str, full_name: str, phone: str, request=None
     name = _clean(full_name, 120)
     if not name or len(name) < 2:
         raise HTTPException(400, "Indiquez votre nom complet.")
-    if db.query(EventGuest.id).filter(EventGuest.event_id == ev.id, EventGuest.phone == phone,
-                                      EventGuest.revoked_at.is_(None)).first():
-        raise HTTPException(409, "Ce numéro est déjà inscrit. Votre pass est sur le téléphone utilisé pour "
-                                 "l'inscription ; sinon, présentez-vous à l'accueil avec une pièce d'identité.")
+    same = [n for (n,) in db.query(EventGuest.full_name).filter(
+        EventGuest.event_id == ev.id, EventGuest.phone == phone, EventGuest.revoked_at.is_(None)).all()]
+    if any(_name_key(n) == _name_key(name) for n in same):
+        raise HTTPException(409, "Cette personne est déjà inscrite avec ce numéro. Son pass est sur le téléphone "
+                                 "utilisé pour l'inscription ; sinon, présentez-vous à l'accueil avec une pièce d'identité.")
+    if len(same) >= SIGNUP_MAX_PER_PHONE:
+        raise HTTPException(409, "%d inscriptions maximum par numéro de téléphone." % SIGNUP_MAX_PER_PHONE)
     tok = new_token()
     g = EventGuest(event_id=ev.id, token=tok, token_hash=token_hash(tok), full_name=name, seats=1,
                    category=st.signup_category or SIGNUP_DEFAULT_CATEGORY, paper=False, source="signup",

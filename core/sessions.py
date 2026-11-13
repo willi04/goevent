@@ -112,6 +112,35 @@ def dates_label(sessions: List[EventSession]) -> str:
     return label
 
 
+def when_parts(sessions: List[EventSession], event_date: Optional[datetime]) -> dict:
+    """Page d'inscription : {"days": "Ven. 20 & sam. 21 nov. 2026", "hours": "7h00 – 16h00"}.
+    Sans séance : le jour et l'heure de début de l'événement."""
+    starts = [_local(s.starts_at) for s in sessions] if sessions else ([_local(event_date)] if event_date else [])
+    if not starts:
+        return {"days": "", "hours": ""}
+    days, seen = [], set()
+    for d in starts:
+        if d.date() not in seen:
+            seen.add(d.date())
+            days.append(d)
+    parts, i = [], 0
+    while i < len(days):            # « ven. 20 & sam. 21 nov. », mois regroupés
+        j = i
+        while j + 1 < len(days) and (days[j + 1].month, days[j + 1].year) == (days[i].month, days[i].year):
+            j += 1
+        names = ["%s %s" % (_JOURS_COURTS[d.weekday()], "1er" if d.day == 1 else d.day) for d in days[i:j + 1]]
+        txt = names[0] if len(names) == 1 else ", ".join(names[:-1]) + " & " + names[-1]
+        parts.append("%s %s" % (txt, _MOIS_COURTS[days[i].month - 1]))
+        i = j + 1
+    label = (" & ".join(parts) if len(parts) <= 2 else ", ".join(parts)) + " %d" % days[-1].year
+    if sessions:
+        hours = {(_hm(_local(s.starts_at)), _hm(_local(s.ends_at))) for s in sessions}
+        h = "%s – %s" % hours.pop() if len(hours) == 1 else ""
+    else:
+        h = _hm(starts[0])
+    return {"days": label[:1].upper() + label[1:], "hours": h}
+
+
 def session_out(s: EventSession) -> dict:
     iso = lambda d: d.isoformat() + "Z"  # noqa: E731
     return {"id": s.id, "label": s.label, "starts_at": iso(s.starts_at), "ends_at": iso(s.ends_at),

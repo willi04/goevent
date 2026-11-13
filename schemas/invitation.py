@@ -127,3 +127,13 @@ class SessionIn(BaseModel):
 class SessionsIn(BaseModel):
     """Séances d'un événement privé (liste complète : remplace l'existante)."""
     sessions: List[SessionIn] = Field(..., max_length=14)
+
+
+class CoverIn(BaseModel):
+    """Affiche d'un événement privé : data:image/(jpeg|png|webp);base64,… (compressée côté navigateur)."""
+    image: str = Field(..., min_length=30, max_length=6_000_000)
+
+
+class PageIn(BaseModel):
+    """Description PUBLIQUE de la page d'inscription (distincte de la note interne)."""
+    description: Optional[str] = Field(None, max_length=2000)

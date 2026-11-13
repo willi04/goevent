@@ -363,6 +363,18 @@ Les textes, images et liens des pages publiques sont modifiables depuis
   supprimée ni déplacée. Sans séance : une entrée au total (inchangé). La date
   de l'événement suit la 1re séance ; purge et fermeture de l'inscription
   libre suivent la fin de la dernière.
+- **Page d'inscription — affiche et description publique** : table
+  `invitation_pages` (à part : jamais lue par le scan / le pass / la synchro).
+  Affiche envoyée par le back-office, contrôlée par Pillow (JPEG/PNG/WebP,
+  taille et pixels bornés) puis ré-encodée en JPEG sans métadonnées
+  (`core/invitation_media.py`) ; servie par `GET /invitations/signup/{slug}/cover.jpg`
+  et `/og.jpg` (aperçu 1200×630, affiche sur fond flou), liens versionnés
+  `?v=<sha>` (cache immuable). Description publique distincte de
+  `events.description` (note interne, jamais publiée). Aperçu WhatsApp /
+  Facebook : fonction Vercel `web/api/og-signup.js` pour les robots sur
+  `/r/:slug` et les alias. Page au gabarit du checkout, police Plus Jakarta
+  Sans hébergée (`web/fonts`, OFL), aucun script tiers. Jusqu'à 3 pass par
+  numéro (noms différents ; même nom + même numéro = déjà inscrit).
 - **Inscription libre** : page générique `inscription.html`
   (`goevent.africa/r/<lien>`, rewrite Vercel ; alias court `/fonej`), sans
   compte, contenu lu sur `GET /invitations/signup/{slug}`.

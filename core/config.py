@@ -82,6 +82,8 @@ class Settings(BaseSettings):
     INVITATION_CHANNELS_ACTIVE: str = "especes_recu,orange_money_goevent"
     # Domaine des liens de pass (QR) et de suivi
     PUBLIC_SITE_URL: str = "https://goevent.africa"
+    # URL publique de l'API (liens absolus : affiche et aperçu de partage des inscriptions)
+    PUBLIC_API_URL: str = "https://api.goevent.africa"
 
     # ── IP CLIENT (rate limit, journaux) ───────────────────────
     # peer | header:<nom> | xff:<n> — cf. core/client_ip.py et docs/07. Défaut = historique.

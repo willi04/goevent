@@ -22,6 +22,8 @@ function page(meta, url) {
     ["og:type", "website"], ["og:site_name", "GoEvent"], ["og:locale", "fr_FR"], ["og:url", url],
     ["og:title", meta.title], ["og:description", meta.description], ["og:image", meta.image],
     ["og:image:width", meta.image === DEFAULT_IMAGE ? "" : "1200"], ["og:image:height", meta.image === DEFAULT_IMAGE ? "" : "630"],
+    ["og:image:secure_url", /^https:/.test(meta.image) ? meta.image : ""],
+    ["og:image:type", meta.image === DEFAULT_IMAGE ? "image/png" : "image/jpeg"],
     ["og:image:alt", meta.title],
   ].filter((t) => t[1]).map((t) => '<meta property="' + t[0] + '" content="' + esc(t[1]) + '">').join("\n    ");
   return '<!doctype html>\n<html lang="fr">\n  <head>\n    <meta charset="utf-8">\n' +

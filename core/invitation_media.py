@@ -77,13 +77,15 @@ def og_image(jpeg: bytes, sha: str) -> bytes:
         return _og_cache[sha]
     W, H = OG_SIZE
     src = Image.open(io.BytesIO(jpeg)).convert("RGB")
-    bg = ImageOps.fit(src, (W, H), Image.LANCZOS, centering=(0.5, 0.3))
-    bg = ImageEnhance.Brightness(bg.filter(ImageFilter.GaussianBlur(28))).enhance(0.55)
+    # Fond flou calculé en petit puis agrandi : quelques ms (l'aperçu WhatsApp n'attend pas longtemps)
+    small = ImageOps.fit(src, (W // 4, H // 4), Image.BILINEAR, centering=(0.5, 0.3)).filter(ImageFilter.GaussianBlur(7))
+    bg = ImageEnhance.Brightness(small.resize((W, H), Image.BILINEAR)).enhance(0.55)
     fg = src.copy()
     fg.thumbnail((W, H), Image.LANCZOS)
     bg.paste(fg, ((W - fg.width) // 2, (H - fg.height) // 2))
     out = io.BytesIO()
-    bg.save(out, "JPEG", quality=82, optimize=True, progressive=True)
+    # JPEG « baseline » (non progressif) : le format le plus sûr pour les aperçus de liens
+    bg.save(out, "JPEG", quality=82, optimize=True, progressive=False)
     data = out.getvalue()
     _og_cache[sha] = data
     while len(_og_cache) > 8:

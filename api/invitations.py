@@ -299,6 +299,7 @@ def admin_put_cover(request: Request, event_id: int, data: CoverIn, db: Session 
     row = _page_row(db, ev.id, user)
     row.cover_data, row.cover_width, row.cover_height, row.cover_sha = jpeg, w, h, sha
     db.commit()
+    media.og_image(jpeg, sha)   # aperçu de partage prêt avant le premier partage du lien
     log_security_event(db, "invitation_cover_updated", request, user.id, "event %d : %dx%d, %d Ko" % (ev.id, w, h, len(jpeg) // 1024))
     return {"cover": _cover_meta(db, ev.id)}
 
@@ -994,7 +995,8 @@ def public_signup_info(request: Request, slug: str, db: Session = Depends(get_db
                       "dates_label": sess.dates_label(sessions), "when": sess.when_parts(sessions, ev.event_date),
                       "multi_session": len(sessions) > 1, "description": _public_description(db, ev.id),
                       "cover_url": "%s/cover.jpg?v=%s" % (base, cover["sha"][:12]) if cover else None,
-                      "og_image_url": "%s/og.jpg?v=%s" % (base, cover["sha"][:12]) if cover else None,
+                      # f= : version du calcul de l'aperçu (change l'URL quand le rendu change → caches renouvelés)
+                      "og_image_url": "%s/og.jpg?v=%s&f=2" % (base, cover["sha"][:12]) if cover else None,
                       "share_url": inv.signup_url(slug), "max_per_phone": inv.SIGNUP_MAX_PER_PHONE})
 
 

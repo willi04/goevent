@@ -341,9 +341,10 @@
       $("ov-ok").addEventListener("click", function (e) { if (e.target === this) { closeOv("ov-ok"); renderMine(); } });
       $("ok-share").addEventListener("click", function () {
         var url = (info && info.share_url) || location.href.split("?")[0];
-        var text = "Inscris-toi gratuitement à " + ((info && info.event_title) || "l'événement") + " : " + url;
+        var text = "Inscris-toi gratuitement à " + ((info && info.event_title) || "l'événement") + " :";
+        // Le partage du téléphone ajoute lui-même le lien après le texte (sinon il apparaît deux fois)
         if (navigator.share) { navigator.share({ title: info && info.event_title, text: text, url: url }).catch(function () {}); return; }
-        window.open("https://api.whatsapp.com/send?text=" + encodeURIComponent(text), "_blank", "noopener");
+        window.open("https://api.whatsapp.com/send?text=" + encodeURIComponent(text + " " + url), "_blank", "noopener");
       });
       Array.prototype.forEach.call(document.querySelectorAll(".js-zoom"), function (b) {
         b.addEventListener("click", function () { if (info && info.cover_url) openOv("ov-poster"); });

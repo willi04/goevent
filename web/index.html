@@ -174,6 +174,25 @@
         background: #ffffff;
         width: 32px;
       }
+      /* Slide « affiche » : image en PORTRAIT (affiche d'événement) détectée au chargement.
+         Affiche entière et nette à droite (ordinateur) / en haut (téléphone), sur un fond flou
+         de ses propres couleurs ; une image horizontale garde le rendu habituel. */
+      .hero-poster-fig { display: none; }
+      .hero-slide.is-poster .hero-bg { filter: blur(28px) brightness(0.45) saturate(1.2); transform: scale(1.15); }
+      .hero-slide.is-poster .hero-shade { display: none; }
+      .hero-slide.is-poster .hero-content { flex-direction: row-reverse; justify-content: space-between; gap: 48px; max-width: 1200px; margin: 0 auto; }
+      .hero-slide.is-poster .hero-content h1 { font-size: clamp(2.25rem, 4.6vw, 4rem); line-height: 1.04; letter-spacing: -0.02em; }
+      .hero-slide.is-poster .hero-poster-fig { display: block; flex: none; height: 560px; max-height: 84%; aspect-ratio: var(--poster-ratio, 0.8); border-radius: 22px; overflow: hidden; box-shadow: 0 30px 60px rgba(0, 0, 0, 0.45); }
+      .hero-poster-fig img { width: 100%; height: 100%; object-fit: contain; display: block; }
+      #hero-carousel.has-poster .hero-slide.is-poster .hero-text { max-width: 560px; }
+      @media (max-width: 767px) {
+        #hero-carousel.has-poster { height: 86vh; min-height: 640px; max-height: 760px; }
+        .hero-slide.is-poster .hero-content { flex-direction: column; justify-content: center; gap: 18px; padding: 24px 20px 64px; text-align: center; }
+        .hero-slide.is-poster .hero-poster-fig { height: min(44vh, 340px); max-height: none; border-radius: 16px; }
+        .hero-slide.is-poster .hero-content h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+        .hero-slide.is-poster .hero-content p { font-size: 1rem; margin: 0 auto; }
+        .hero-slide.is-poster .hero-content a { margin-top: 1.1rem; }
+      }
     </style>
   </head>
   <body
@@ -790,17 +809,19 @@
       
           return `
             <div class="hero-slide ${i === 0 ? "active" : ""}" data-slide-index="${i}">
-              <div class="absolute inset-0 z-0">
+              <div class="absolute inset-0 z-0 overflow-hidden">
                 <img
-                  class="w-full h-full object-cover brightness-50"
+                  class="hero-bg w-full h-full object-cover brightness-50"
                   src="${this._escapeAttr(s.image_url || "")}"
                   alt="${this._escapeAttr(s.title || "")}"
+                  onload="heroCarousel._fit(this)"
                   onerror="this.style.display='none'"
                 />
-                <div class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-90"></div>
+                <div class="hero-shade absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-90"></div>
               </div>
-              <div class="absolute inset-0 flex items-center px-6 md:px-16">
-                <div class="relative z-10 max-w-4xl">
+              <div class="hero-content absolute inset-0 flex items-center px-6 md:px-16">
+                <div class="hero-poster-fig"><img src="${this._escapeAttr(s.image_url || "")}" alt="" loading="lazy" /></div>
+                <div class="hero-text relative z-10 max-w-4xl">
                   <h1 class="text-4xl md:text-7xl font-extrabold font-headline text-white leading-tight mb-4 md:mb-6">
                     ${this._escapeHtml(s.title || "")}
                   </h1>
@@ -812,6 +833,16 @@
           `;
         },
       
+        // Image en portrait (affiche) → mode « affiche » pour cette slide
+        _fit(img) {
+          const slide = img.closest(".hero-slide");
+          if (!slide || !img.naturalWidth || img.naturalHeight <= img.naturalWidth * 1.05) return;
+          slide.classList.add("is-poster");
+          slide.style.setProperty("--poster-ratio", String(img.naturalWidth / img.naturalHeight));
+          const carousel = document.getElementById("hero-carousel");
+          if (carousel) carousel.classList.add("has-poster");
+        },
+
         goTo(idx) {
           const slides = document.querySelectorAll(".hero-slide");
           const indicators = document.querySelectorAll(".hero-indicator");

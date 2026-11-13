@@ -14,7 +14,7 @@ from .premium_interest import PremiumInterest
 from models.promo import PromoCode, PromoUsage 
 from models.audience_log import AudienceExportLog
 from models.site_content import SiteContent, SitePageRevision, FaqItem, ZoneBlock, SiteSetting
-from models.invitation import PrivateEventSettings, EventGuest, GuestCheckin, InvitationPack
+from models.invitation import PrivateEventSettings, EventGuest, GuestCheckin, InvitationPack, EventSession
 from models.invitation_catalog import InvFormula, InvPack, InvOption, InvDiscountCode, InvCatalogLog
 from models.invitation_quote import InvitationQuote, InvitationQuoteCounter
 

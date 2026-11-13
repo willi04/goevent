@@ -224,6 +224,12 @@
         <div id="count-buttons" class="grid grid-cols-5 gap-2 mb-3"></div>
         <button onclick="relancerScanner()" class="w-full py-3 rounded-full bg-gray-100 text-gray-700 font-bold">Annuler</button>
       </div>
+      <!-- Séances : pass déjà utilisé dans la séance → l'agent décide (sortie puis retour) -->
+      <div id="reentry-picker" class="hidden w-full mb-4">
+        <p id="reentry-text" class="font-bold text-amber-700 mb-3"></p>
+        <button id="btn-reentry-yes" class="w-full py-4 rounded-full bg-[#00502c] text-white font-black text-lg mb-2 active:scale-95">Laisser entrer (retour)</button>
+        <button onclick="refuseReentry()" class="w-full py-3 rounded-full bg-red-50 text-red-600 font-black active:scale-95">Refuser</button>
+      </div>
       <p id="result-reason" class="text-red-500 font-bold mb-6 hidden">
         Raison de l'erreur
       </p>
@@ -439,6 +445,7 @@
         const reasonEl = document.getElementById("result-reason");
         reasonEl.textContent = reason || ""; reasonEl.classList.toggle("hidden", !reason);
         document.getElementById("count-picker").classList.add("hidden");
+        document.getElementById("reentry-picker").classList.add("hidden");
         document.getElementById("btn-next-scan").classList.remove("hidden");
         const modal = document.getElementById("scan-result");
         modal.classList.remove("hidden"); modal.classList.add("flex");
@@ -466,6 +473,20 @@
         document.getElementById("btn-next-scan").classList.add("hidden");
       }
 
+      // Séances : déjà entré dans la séance en cours → l'agent décide (retour non compté)
+      function askReentry(name, detail, eventLabel, enteredAt, onYes) {
+        showResult("ask", "DÉJÀ ENTRÉ", name, detail, eventLabel, null);
+        document.getElementById("reentry-text").textContent =
+          "Entré(e) " + (enteredAt ? "à " + enteredAt + " " : "") + "pendant cette séance. Sortie puis retour ?";
+        document.getElementById("btn-reentry-yes").onclick = onYes;
+        document.getElementById("reentry-picker").classList.remove("hidden");
+        document.getElementById("btn-next-scan").classList.add("hidden");
+        beep(false);
+      }
+      function refuseReentry() {
+        showResult("bad", "REFUSÉ", document.getElementById("result-fan").textContent, "", "", "Retour refusé par l'agent.");
+      }
+
       // 4. Le cœur du système : Que se passe-t-il quand un QR est détecté ?
       async function onScanSuccess(decodedText, decodedResult) {
         html5QrCode.pause(true);
@@ -476,6 +497,9 @@
           const response = await btApi.post("/scan", { qr_data: decodedText, client_uuid: lastScan.uuid });
           if (response && response.needs_count) {
             return askCount(response.guest_name, response.remaining, guestDetail(response), response.event, (n) => scanInvitation(n));
+          }
+          if (response && response.needs_reentry) {
+            return askReentry(response.guest_name, guestDetail(response), sessionEvent(response), response.entered_at, () => scanInvitation(null, true));
           }
           if (response && response.valid === true) {
             const name = response.kind === "invitation" ? response.guest_name
@@ -489,21 +513,24 @@
       }
 
       // Pass d'invitation : en ligne d'abord, bascule hors ligne si le réseau ne répond pas
-      async function scanInvitation(count) {
+      function sessionEvent(r) { return (r.event || "") + (r.session ? " · " + r.session : ""); }
+      async function scanInvitation(count, reentry) {
         const body = { qr_data: lastScan.text, client_uuid: lastScan.uuid };
         if (count) body.count = count;
+        if (reentry) body.reentry = true;
         try {
           const r = await withTimeout(btApi.post("/scan", body), ONLINE_TIMEOUT_MS);
           setNet(true);
           if (!r) return;
-          if (r.needs_count) return askCount(r.guest_name, r.remaining, guestDetail(r), r.event, (n) => scanInvitation(n));
+          if (r.needs_count) return askCount(r.guest_name, r.remaining, guestDetail(r), sessionEvent(r), (n) => scanInvitation(n));
+          if (r.needs_reentry) return askReentry(r.guest_name, guestDetail(r), sessionEvent(r), r.entered_at, () => scanInvitation(null, true));
           if (r.valid) {
             applyLocal(lastScan.token, r.admitted || 0);
-            showResult("ok", r.duplicate ? "DÉJÀ ENREGISTRÉ" : "ACCÈS AUTORISÉ", r.guest_name,
-              (r.admitted ? r.admitted + " personne(s) · " : "") + guestDetail(r), r.event);
+            showResult("ok", r.duplicate ? "DÉJÀ ENREGISTRÉ" : r.reentry ? "RETOUR AUTORISÉ" : "ACCÈS AUTORISÉ", r.guest_name,
+              (r.admitted ? r.admitted + " personne(s) · " : "") + guestDetail(r), sessionEvent(r));
           }
         } catch (e) {
-          if (isNetworkError(e)) { setNet(false); return scanOffline(count); }
+          if (isNetworkError(e)) { setNet(false); return scanOffline(count, reentry); }
           showResult("bad", "REFUSÉ", "Pass refusé", "", "", e.message || "Pass non reconnu.");
         }
       }
@@ -515,6 +542,35 @@
       const listKey = () => "goevent_offline_list:" + currentEventId;
       const queueKey = () => "goevent_offline_queue:" + currentEventId;
       let tokenHashCache = {};
+      // Séances (événement sur plusieurs jours) : séance en cours d'après l'HORLOGE DU TÉLÉPHONE.
+      // Les places du pass sont disponibles à chaque séance ; g.us = { id séance: personnes entrées }.
+      function hasSessions(list) { return !!(list && list.sessions && list.sessions.length); }
+      function curSession(list) {
+        if (!hasSessions(list)) return null;
+        const now = Date.now();
+        return list.sessions.find((x) => now >= new Date(x.start).getTime() - (x.doors || 0) * 60000 && now <= new Date(x.end).getTime()) || null;
+      }
+      function nextSession(list) {
+        const now = Date.now();
+        return (list.sessions || []).find((x) => new Date(x.start).getTime() - (x.doors || 0) * 60000 > now) || null;
+      }
+      function usedNow(list, g) {
+        if (!hasSessions(list)) return g.u;
+        const s = curSession(list);
+        return s && g.us ? (g.us[String(s.id)] || 0) : 0;
+      }
+      function addUsed(list, g, count, sid) {
+        g.u += count;
+        if (hasSessions(list) && sid) { g.us = g.us || {}; g.us[String(sid)] = (g.us[String(sid)] || 0) + count; }
+      }
+      function noSessionReason(list) {
+        const n = nextSession(list);
+        if (!n) return "Événement terminé : plus aucune séance de contrôle.";
+        const d = new Date(n.start);
+        return "Pas de séance en cours. Prochaine : " + n.label + ", " +
+          d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" }) + " à " +
+          d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) + ". Vérifiez l'heure du téléphone.";
+      }
 
       function setNet(online) {
         const dot = document.getElementById("net-dot"), label = document.getElementById("net-label");
@@ -525,8 +581,10 @@
       function renderOfflineInfo() {
         const list = lsGet(listKey(), null), q = lsGet(queueKey(), []);
         const info = document.getElementById("offline-info"), sync = document.getElementById("sync-info");
+        const cs = curSession(list);
         if (info) info.textContent = list
-          ? `Liste hors ligne : ${list.guests.length} pass · ${new Date(list.saved_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}`
+          ? `Liste hors ligne : ${list.guests.length} pass · ${new Date(list.saved_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}` +
+            (hasSessions(list) ? " · " + (cs ? "Séance : " + cs.label : "aucune séance en cours") : "")
           : "Liste hors ligne : non téléchargée";
         if (sync) { sync.textContent = q.length ? `${q.length} entrée(s) à synchroniser` : ""; sync.classList.toggle("hidden", !q.length); }
         if (!navigator.onLine || document.getElementById("net-label").textContent.startsWith("Hors")) updateLocalStats();
@@ -535,7 +593,7 @@
         const list = lsGet(listKey(), null);
         if (!list) return;
         let expected = 0, entered = 0;
-        list.guests.forEach((g) => { if (!g.r) { expected += g.s; entered += Math.min(g.u, g.s); } });
+        list.guests.forEach((g) => { if (!g.r) { expected += g.s; entered += Math.min(usedNow(list, g), g.s); } });
         const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
         set("stat-entered", entered.toLocaleString("fr-FR"));
         set("stat-expected", expected.toLocaleString("fr-FR"));
@@ -547,7 +605,8 @@
         try {
           Object.keys(localStorage).filter((k) => k.indexOf("goevent_offline_list:") === 0).forEach((k) => {
             const l = lsGet(k, null);
-            if (l && l.event && l.event.date && Date.now() > new Date(l.event.date + (/[zZ]|[+-]\d\d:?\d\d$/.test(l.event.date) ? "" : "Z")).getTime() + 48 * 3600 * 1000) {
+            const end = l && l.event && (l.event.ends || l.event.date);
+            if (end && Date.now() > new Date(end + (/[zZ]|[+-]\d\d:?\d\d$/.test(end) ? "" : "Z")).getTime() + 48 * 3600 * 1000) {
               localStorage.removeItem(k);
               localStorage.removeItem(k.replace("_list:", "_meta:"));
             }
@@ -562,8 +621,8 @@
           if (!data) return;
           // Les entrées encore en file (pas synchronisées) restent comptées localement
           const pending = {};
-          lsGet(queueKey(), []).forEach((it) => { pending[it.h] = (pending[it.h] || 0) + it.count; });
-          data.guests.forEach((g) => { if (pending[g.h]) g.u += pending[g.h]; });
+          lsGet(queueKey(), []).forEach((it) => { if (!it.reentry) (pending[it.h] = pending[it.h] || []).push(it); });
+          data.guests.forEach((g) => { (pending[g.h] || []).forEach((it) => addUsed(data, g, it.count, it.sid)); });
           data.saved_at = Date.now();
           if (!lsSet(listKey(), data)) btToast("Stockage du téléphone plein : liste hors ligne non enregistrée.", "error");
           setNet(true);
@@ -584,9 +643,10 @@
       function applyLocalHash(h, count) {
         const list = lsGet(listKey(), null);
         const g = count && list && list.guests.find((x) => x.h === h);
-        if (g) { g.u += count; lsSet(listKey(), list); }
+        const s = curSession(list);
+        if (g) { addUsed(list, g, count, s && s.id); lsSet(listKey(), list); }
       }
-      async function scanOffline(count) {
+      async function scanOffline(count, reentry) {
         const list = lsGet(listKey(), null);
         if (!list) {
           return showResult("bad", "HORS LIGNE", "Liste non disponible", "", "",
@@ -599,22 +659,34 @@
         const g = list.guests.find((x) => x.h === h);
         const label = (list.event && list.event.title ? list.event.title : "") + " · hors ligne";
         if (!g) return showResult("bad", "REFUSÉ", "Pass introuvable", "", label, "Ce pass n'est pas sur la liste de l'événement.");
-        const info = { table: g.t, category: g.c, seats: g.s, seats_used: g.u };
-        if (g.r) return showResult("bad", "REFUSÉ", g.n, guestDetail(info), label, "Pass ANNULÉ par l'organisateur.");
-        const remaining = g.s - g.u;
+        const sess = curSession(list);
+        if (hasSessions(list) && !sess) return showResult("bad", "REFUSÉ", g.n, "", label, noSessionReason(list));
+        const slabel = label + (sess ? " · " + sess.label : "");
+        const used = usedNow(list, g);
+        const info = { table: g.t, category: g.c, seats: g.s, seats_used: used };
+        if (g.r) return showResult("bad", "REFUSÉ", g.n, guestDetail(info), slabel, "Pass ANNULÉ par l'organisateur.");
+        const remaining = g.s - used;
+        if (remaining <= 0 && sess) {
+          if (!reentry) return askReentry(g.n, guestDetail(info), slabel, null, () => scanOffline(null, true));
+          const q = lsGet(queueKey(), []);
+          q.push({ uuid: lastScan.uuid, h, count: 1, at: new Date().toISOString(), reentry: true, sid: sess.id });
+          lsSet(queueKey(), q);
+          renderOfflineInfo();
+          return showResult("ok", "RETOUR AUTORISÉ", g.n, guestDetail(info), slabel);
+        }
         if (remaining <= 0) return showResult("bad", "REFUSÉ", g.n, guestDetail(info), label, `Pass COMPLET : ${g.u}/${g.s} déjà entré(s).`);
         if (!count) {
-          if (remaining > 1) return askCount(g.n, remaining, guestDetail(info), label, (n) => scanOffline(n));
+          if (remaining > 1) return askCount(g.n, remaining, guestDetail(info), slabel, (n) => scanOffline(n));
           count = 1;
         }
         count = Math.min(count, remaining);
-        g.u += count;
+        addUsed(list, g, count, sess && sess.id);
         lsSet(listKey(), list);
         const q = lsGet(queueKey(), []);
-        q.push({ uuid: lastScan.uuid, h, count, at: new Date().toISOString() });
+        q.push({ uuid: lastScan.uuid, h, count, at: new Date().toISOString(), sid: sess ? sess.id : null });
         lsSet(queueKey(), q);
         renderOfflineInfo();
-        showResult("ok", "ACCÈS AUTORISÉ", g.n, count + " personne(s) · " + guestDetail({ ...info, seats_used: g.u }), label);
+        showResult("ok", "ACCÈS AUTORISÉ", g.n, count + " personne(s) · " + guestDetail({ ...info, seats_used: used + count }), slabel);
       }
       let syncing = false;
       async function syncQueue() {
@@ -623,7 +695,9 @@
         if (!q.length) return;
         syncing = true;
         try {
-          const res = await withTimeout(btApi.post("/invitations/checkins/sync", { device_id: deviceId(), items: q.slice(0, 200) }), 15000);
+          const items = q.slice(0, 200).map((it) => ({ uuid: it.uuid, h: it.h, count: it.count, at: it.at, source: it.source,
+                                                        reason: it.reason, reentry: !!it.reentry }));
+          const res = await withTimeout(btApi.post("/invitations/checkins/sync", { device_id: deviceId(), items }), 15000);
           if (!res) return;
           const done = {};
           let conflicts = 0;
@@ -699,7 +773,7 @@
           if (!list) return manualMsg("Pas de réseau et la liste hors ligne n'a pas été téléchargée.", "text-red-600 font-bold");
           const nq = normTxt(q);
           rows = list.guests.filter((g) => normTxt(g.n).includes(nq) || normTxt(g.t).includes(nq)).slice(0, 20)
-            .map((g) => ({ id: null, h: g.h, name: g.n, table: g.t, category: g.c, seats: g.s, used: g.u, revoked: g.r, hasPhone: !!g.ph }));
+            .map((g) => ({ id: null, h: g.h, name: g.n, table: g.t, category: g.c, seats: g.s, used: usedNow(list, g), revoked: g.r, hasPhone: !!g.ph }));
         }
         if (seq !== manualSeq) return;
         if (!rows.length) return manualMsg("Aucun invité trouvé" + (offline ? " (liste du téléphone)." : "."));
@@ -780,7 +854,7 @@
               if (sel.h) applyLocalHash(sel.h, r.admitted || 0);
               closeManual(false);
               showResult("ok", r.duplicate ? "DÉJÀ ENREGISTRÉ" : "ENTRÉE MANUELLE", r.guest_name,
-                (r.admitted ? r.admitted + " personne(s) · " : "") + guestDetail(r), r.event);
+                (r.admitted ? r.admitted + " personne(s) · " : "") + guestDetail(r), sessionEvent(r));
             }
             return;
           } catch (e) {
@@ -793,8 +867,11 @@
         const g = list && sel.h && list.guests.find((x) => x.h === sel.h);
         if (!g) return mErr("Pas de réseau et invité absent de la liste du téléphone. Actualisez la liste dès que le réseau revient.");
         if (g.r) return mErr("Pass ANNULÉ par l'organisateur.");
-        const left = g.s - g.u;
-        if (left <= 0) return mErr(`Pass COMPLET : ${g.u}/${g.s} déjà entré(s).`);
+        const msess = curSession(list);
+        if (hasSessions(list) && !msess) return mErr(noSessionReason(list));
+        const mused = usedNow(list, g), left = g.s - mused;
+        if (left <= 0) return mErr(msess ? "Déjà entré(e) pendant cette séance. S'il s'agit d'un retour, laissez entrer : rien à saisir."
+                                         : `Pass COMPLET : ${g.u}/${g.s} déjà entré(s).`);
         if (count > left) return mErr(`Il ne reste que ${left} place(s) sur ce pass.`);
         let method = "identité vérifiée";
         if (last4) {
@@ -805,17 +882,18 @@
           if (!ok) return mErr("Les 4 derniers chiffres ne correspondent pas.");
           method = "4 derniers chiffres";
         }
-        g.u += count;
+        addUsed(list, g, count, msess && msess.id);
         lsSet(listKey(), list);
         const q = lsGet(queueKey(), []);
         if (!q.some((it) => it.uuid === sel.uuid)) {
-          q.push({ uuid: sel.uuid, h: g.h, count, at: new Date().toISOString(), source: "manual", reason: `[${method}] ${reason}` });
+          q.push({ uuid: sel.uuid, h: g.h, count, at: new Date().toISOString(), source: "manual", reason: `[${method}] ${reason}`,
+                   sid: msess ? msess.id : null });
           lsSet(queueKey(), q);
         }
         renderOfflineInfo();
         closeManual(false);
-        showResult("ok", "ENTRÉE MANUELLE", g.n, count + " personne(s) · " + guestDetail({ table: g.t, category: g.c, seats: g.s, seats_used: g.u }),
-          (list.event && list.event.title ? list.event.title : "") + " · hors ligne");
+        showResult("ok", "ENTRÉE MANUELLE", g.n, count + " personne(s) · " + guestDetail({ table: g.t, category: g.c, seats: g.s, seats_used: mused + count }),
+          (list.event && list.event.title ? list.event.title : "") + " · hors ligne" + (msess ? " · " + msess.label : ""));
       }
 
       function initOffline() {
@@ -833,6 +911,7 @@
         document.getElementById("scan-result").classList.add("hidden");
         document.getElementById("scan-result").classList.remove("flex");
         document.getElementById("count-picker").classList.add("hidden");
+        document.getElementById("reentry-picker").classList.add("hidden");
         html5QrCode.resume();
         // Refresh immédiat des stats après scan (sans attendre les 30s)
         if (typeof loadScanStats === "function") loadScanStats();

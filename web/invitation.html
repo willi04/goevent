@@ -97,7 +97,9 @@
         $("pass").classList.remove("hidden");
         $("host").textContent = (p.host_label || "") + " vous invite";
         $("title").textContent = p.event_title || "";
-        $("date").textContent = p.event_date_label ? "🗓 " + p.event_date_label : "";
+        // Événement à séances : « 20 & 21 nov. 2026 · 7h00–16h00 » plutôt que la seule première date
+        var when = p.dates_label || p.event_date_label;
+        $("date").textContent = when ? "🗓 " + when : "";
         $("location").textContent = p.location ? "📍 " + p.location : "";
         $("guest").textContent = p.guest_name || "";
         $("seats").textContent = "Pass valable pour " + p.seats + " personne" + (p.seats > 1 ? "s" : "");
@@ -112,6 +114,7 @@
         banner.className = "banner hidden";
         var msg = null, cls = "ok";
         if (p.status === "partial") { msg = p.seats_used + " personne(s) sur " + p.seats + " déjà entrée(s). Le pass reste valable pour les autres."; cls = "warn"; }
+        else if (p.status === "complete" && p.multi_session) { msg = "Déjà entré(e) pendant cette séance. Votre pass reste valable pour les séances suivantes."; cls = "ok"; }
         else if (p.status === "complete") { msg = "Pass déjà utilisé : " + p.seats_used + "/" + p.seats + " personne(s) entrée(s)."; cls = "warn"; }
         else if (p.status === "revoked") { msg = "Ce pass a été annulé par l'organisateur."; cls = "bad"; noQr = true; }
         else if (p.status === "cancelled") { msg = "Cet événement a été annulé."; cls = "bad"; noQr = true; }

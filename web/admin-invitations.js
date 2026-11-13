@@ -217,6 +217,7 @@
       sub ? el("p", { class: "text-[11px] text-gray-500", text: sub }) : null,
     ]);
   }
+  function entLabel(s) { return s && s.session ? "Entrés · " + s.session.label + (s.session.current ? "" : " (terminée)") : "Entrés"; }
   function block(title, children, id) {
     return el("div", { class: "card p-5 mb-4", id: id || null }, [el("h3", { class: "font-black text-gray-900 mb-3", text: title })].concat(children));
   }
@@ -255,12 +256,13 @@
     }
     var packTxt = ev.quota ? ev.quota + " personnes" : "Aucun";
     root.appendChild(el("div", { class: "grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4", id: "inv-kpis" }, [
-      kpi("Entrés", s.entered + " / " + s.expected, s.rate + " % · " + s.remaining + " restant(s)", "text-primary"),
+      kpi(entLabel(s), s.entered + " / " + s.expected, s.rate + " % · " + s.remaining + " restant(s)", "text-primary"),
       kpi("Pass envoyés", s.passes_sent + " / " + s.passes, s.passes_arrived + " pass utilisés"),
       kpi("Pack payé", packTxt, ev.quota ? ev.listed + " personne(s) dans la liste" : "Envoi et scan bloqués", ev.quota ? "text-gray-900" : "text-amber-600"),
       kpi("Conflits hors ligne", String(s.conflicts), s.conflicts ? "Pass accepté(s) sur 2 téléphones" : "Aucun", s.conflicts ? "text-red-600" : "text-gray-900"),
     ]));
     root.appendChild(packBlock());
+    if (!ev.purged) root.appendChild(sessionsBlock());
     if (!ev.purged) root.appendChild(signupBlock());
     if (!ev.purged) root.appendChild(guestsBlock());
     root.appendChild(liveBlock());
@@ -276,14 +278,14 @@
       if (k) {
         var s = d.stats;
         k.replaceWith(el("div", { class: "grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4", id: "inv-kpis" }, [
-          kpi("Entrés", s.entered + " / " + s.expected, s.rate + " % · " + s.remaining + " restant(s)", "text-primary"),
+          kpi(entLabel(s), s.entered + " / " + s.expected, s.rate + " % · " + s.remaining + " restant(s)", "text-primary"),
           kpi("Pass envoyés", s.passes_sent + " / " + s.passes, s.passes_arrived + " pass utilisés"),
           kpi("Pack payé", S.ev.quota ? S.ev.quota + " personnes" : "Aucun", S.ev.quota ? S.ev.listed + " personne(s) dans la liste" : "Envoi et scan bloqués",
               S.ev.quota ? "text-gray-900" : "text-amber-600"),
           kpi("Conflits hors ligne", String(s.conflicts), s.conflicts ? "Pass accepté(s) sur 2 téléphones" : "Aucun", s.conflicts ? "text-red-600" : "text-gray-900"),
         ]));
       }
-      renderArrivals(d.arrivals);
+      renderArrivals(d.arrivals, d.stats);
     }).catch(function () {});
   }
 
@@ -876,17 +878,91 @@
     setTimeout(refreshLive, 0);
     return block("Suivi en direct", items);
   }
-  function renderArrivals(list) {
+  function renderArrivals(list, stats) {
     var box = document.getElementById("inv-arrivals");
     if (!box) return;
     box.innerHTML = "";
+    if (stats && stats.sessions && stats.sessions.length) {
+      box.appendChild(el("p", { class: "text-xs font-bold text-gray-700 mb-2", text: stats.sessions.map(function (x) {
+        return x.label + " : " + x.entered + " entrée(s)" + (x.reentries ? " + " + x.reentries + " retour(s)" : "");
+      }).join(" · ") }));
+    }
     if (!list.length) { box.appendChild(el("p", { class: "text-xs text-gray-400", text: "Aucune arrivée pour l'instant." })); return; }
     box.appendChild(el("p", { class: "text-[11px] font-black uppercase tracking-widest text-gray-400 mb-1", text: "Dernières arrivées" }));
     list.forEach(function (a) {
-      box.appendChild(el("p", { class: "text-xs " + (a.conflict ? "text-red-700 font-bold" : "text-gray-700"), text: dt(a.at) + " · " + a.name +
-        (a.table ? " (table " + a.table + ")" : "") + " · " + a.count + " pers. · " + ({ online: "scan", offline: "scan hors ligne", manual: "manuel" }[a.source] || a.source) +
-        (a.conflict ? " · CONFLIT" : "") }));
+      box.appendChild(el("p", { class: "text-xs " + (a.conflict ? "text-red-700 font-bold" : a.reentry ? "text-gray-400" : "text-gray-700"), text: dt(a.at) + " · " + a.name +
+        (a.table ? " (table " + a.table + ")" : "") + " · " + (a.reentry ? "retour" : a.count + " pers.") + " · " + ({ online: "scan", offline: "scan hors ligne", manual: "manuel" }[a.source] || a.source) +
+        (a.session ? " · " + a.session : "") + (a.conflict ? " · CONFLIT" : "") }));
     });
+  }
+
+  // ── Séances (événement sur plusieurs jours) ───────────────────────
+  function bgParts(iso) {   // ISO UTC → { date: "2026-11-20", time: "07:00" } à l'heure de Bangui
+    var d = new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(iso) ? iso : iso + "Z"), g = {};
+    new Intl.DateTimeFormat("fr-CA", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit",
+      minute: "2-digit", hour12: false }).formatToParts(d).forEach(function (p) { g[p.type] = p.value; });
+    return { date: g.year + "-" + g.month + "-" + g.day, time: (g.hour === "24" ? "00" : g.hour) + ":" + g.minute };
+  }
+  function addDays(ymd, n) {
+    var d = new Date(ymd + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n);
+    return d.toISOString().slice(0, 10);
+  }
+  function sessionsBlock() {
+    var ev = S.ev, rows = el("div", { class: "space-y-2 mb-3" });
+    var list = (ev.sessions || []).map(function (x) {
+      var a = bgParts(x.starts_at), b = bgParts(x.ends_at);
+      return { id: x.id, label: x.label, date: a.date, start: a.time, end: b.time, locked: x.locked };
+    });
+    var doors = el("input", { class: "input-field", type: "number", min: "0", max: "240" });
+    doors.value = String(ev.sessions && ev.sessions.length ? ev.sessions[0].doors_before_min : 60);
+    function draw() {
+      rows.innerHTML = "";
+      if (!list.length) rows.appendChild(el("p", { class: "text-xs text-gray-400", text: "Aucune séance : chaque pass donne une seule entrée pour tout l'événement." }));
+      list.forEach(function (r, i) {
+        var lab = el("input", { class: "input-field", maxlength: "60", value: r.label });
+        var day = el("input", { class: "input-field", type: "date", value: r.date });
+        var a = el("input", { class: "input-field", type: "time", value: r.start });
+        var b = el("input", { class: "input-field", type: "time", value: r.end });
+        lab.addEventListener("input", function () { r.label = lab.value; });
+        day.addEventListener("input", function () { r.date = day.value; });
+        a.addEventListener("input", function () { r.start = a.value; });
+        b.addEventListener("input", function () { r.end = b.value; });
+        if (r.locked) { day.disabled = a.disabled = b.disabled = true; }
+        rows.appendChild(el("div", { class: "grid grid-cols-2 sm:grid-cols-5 gap-2 items-center" }, [lab, day, a, b,
+          r.locked ? el("span", { class: "text-[11px] text-gray-500", text: "Entrées enregistrées : horaires figés" })
+            : act("Retirer", "background:#fee2e2;color:#991b1b", function () { list.splice(i, 1); draw(); })]));
+      });
+    }
+    function add() {
+      var last = list[list.length - 1], base = last ? addDays(last.date, 1) : bgParts(ev.event_date || new Date().toISOString()).date;
+      list.push({ id: null, label: "Jour " + (list.length + 1), date: base, start: last ? last.start : "07:00", end: last ? last.end : "16:00" });
+      draw();
+    }
+    var bSave = el("button", { class: "action-btn btn-primary text-xs", text: "Enregistrer les séances", onclick: function () {
+      var body = { sessions: list.map(function (r) {
+        // Fin avant (ou égale à) l'heure de début = séance qui passe minuit (ex. 20h → 2h)
+        var endDate = r.end <= r.start ? addDays(r.date, 1) : r.date;
+        return { id: r.id, label: (r.label || "").trim(), starts_at: r.date + "T" + r.start + ":00+01:00",
+                 ends_at: endDate + "T" + r.end + ":00+01:00", doors_before_min: doors.value === "" ? 60 : parseInt(doors.value, 10) };
+      }) };
+      if (list.some(function (r) { return !r.date || !r.start || !r.end; })) return toast("Indiquez la date et les heures de chaque séance.", "error");
+      bSave.disabled = true;
+      btApi.put("/admin/invitations/events/" + ev.id + "/sessions", body).then(function () { toast("Séances enregistrées.", "success"); reloadEvent(); })
+        .catch(function (e) { bSave.disabled = false; toast(e.message || "Erreur", "error"); });
+    } });
+    draw();
+    return block("Séances (événement sur plusieurs jours)", [
+      el("p", { class: "text-[11px] text-gray-500 mb-2", text: "Avec des séances, chaque pass donne ses places à CHAQUE séance (ex. forum les 20 et 21). " +
+        "Un invité déjà entré pendant la séance : l'agent décide s'il s'agit d'un retour (journalisé, jamais compté). " +
+        "Sans séance : une seule entrée pour tout l'événement. Heures de Bangui ; fin avant le début = séance qui passe minuit." }),
+      ev.dates_label ? el("p", { class: "text-sm font-bold text-gray-800 mb-2", text: ev.dates_label }) : null,
+      rows,
+      el("div", { class: "grid sm:grid-cols-3 gap-3 items-end" }, [
+        field("Scan accepté … minutes avant le début", doors, "Ouverture des portes (toutes les séances)."),
+        el("button", { class: "action-btn text-xs", style: "background:#f3f4f6;color:#374151", text: "+ Ajouter une séance", onclick: add }),
+        bSave,
+      ]),
+    ]);
   }
 
   // ── Inscription libre (page publique /r/<lien>, sans compte) ──────

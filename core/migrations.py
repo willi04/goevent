@@ -240,6 +240,13 @@ MIGRATIONS = [
         "event_guests.source (inscription libre)",
         "ALTER TABLE event_guests ADD COLUMN IF NOT EXISTS source VARCHAR(10)",
     ),
+    # ── Séances multi-jours (FONEJ, livraison 2). guest_checkins est écrite à chaque scan :
+    # ALTER exécuté À LA MAIN sur Neon AVANT le push (docs/07). event_sessions : create_all.
+    (
+        "guest_checkins.session_id + reentry (séances)",
+        "ALTER TABLE guest_checkins ADD COLUMN IF NOT EXISTS session_id INTEGER, "
+        "ADD COLUMN IF NOT EXISTS reentry BOOLEAN NOT NULL DEFAULT false",
+    ),
 ]
 
 

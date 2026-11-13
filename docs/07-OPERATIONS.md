@@ -277,6 +277,20 @@ bout en bout sans intervention, 1 retrait réussi, analyse des
   unique `CREATE UNIQUE INDEX CONCURRENTLY … uq_private_event_settings_signup_slug`
   seul, vérifier `indisvalid = true`) sur Neon AVANT le push ; copie exacte
   dans `core/migrations.py`.
+- **Séances (avant le déploiement)** : `guest_checkins` est écrite à chaque
+  scan → passer sur Neon AVANT le push :
+  `ALTER TABLE guest_checkins ADD COLUMN IF NOT EXISTS session_id INTEGER, ADD COLUMN IF NOT EXISTS reentry BOOLEAN NOT NULL DEFAULT false;`
+  (`event_sessions` est créée au démarrage). Service worker v1.2.4 : chaque
+  téléphone agent doit ouvrir le scanner AVEC du réseau après le déploiement
+  (nouvelle version mise en cache), puis « Actualiser la liste ».
+- **Événement sur plusieurs jours** : fiche → bloc « Séances » → « + Ajouter
+  une séance » (une par jour, heures de Bangui ; fin avant le début = séance
+  qui passe minuit), ouverture des portes (minutes avant), « Enregistrer ».
+  À faire AVANT l'envoi des pass (dates sur le pass, l'agenda et la page
+  d'inscription). Jour J : l'heure des téléphones agents doit être juste (la
+  séance hors ligne en dépend). « Déjà entré » au scanner : l'agent choisit
+  « Laisser entrer (retour) » ou « Refuser » ; les retours apparaissent à part
+  dans le suivi.
 - **Ouvrir une inscription libre** : fiche de l'événement privé → pack actif
   → bloc « Inscription libre » : lien (`goevent.africa/r/<lien>`), catégorie
   affichée en tête du pass (vide = Participant), limite facultative, fermeture
@@ -286,7 +300,7 @@ bout en bout sans intervention, 1 retrait réussi, analyse des
   l'ancien. Les inscrits n'entrent pas dans la file WhatsApp. Un inscrit qui
   a perdu son pass : entrée manuelle au scanner (nom + 4 derniers chiffres).
   Alias court : une ligne dans `web/vercel.json` (ex. `/fonej`).
-- Traçabilité : `invitation_signup_settings`, `invitation_self_signup`,
+- Traçabilité : `invitation_sessions_updated`, `invitation_signup_settings`, `invitation_self_signup`,
   `invitation_event_created|updated`, `invitation_guests_imported`,
   `invitation_pack_activated|cancelled`, `invitation_pass_revoked|restored|regenerated`,
   `invitation_manual_checkin`, `invitation_offline_list`, `invitation_offline_sync`,

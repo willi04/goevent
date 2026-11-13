@@ -344,6 +344,18 @@ Les textes, images et liens des pages publiques sont modifiables depuis
 - **Purge J+30** : `purge_due()` (cron reconcile + bouton admin) anonymise
   noms, numéros et jetons ; seuls les chiffres restent (et ferme
   l'inscription libre).
+- **Séances** (`core/sessions.py`, `PUT /admin/invitations/events/{id}/sessions`) :
+  un événement sur plusieurs jours / soirées déclare ses séances (fenêtre =
+  début − ouverture des portes → fin, heures de Bangui ; une soirée qui passe
+  minuit reste une séance). Les places d'un pass valent à CHAQUE séance ; hors
+  séance → refus avec la prochaine. Déjà entré dans la séance → `needs_reentry`
+  : l'agent laisse entrer (retour, `reentry = true`, non compté) ou refuse.
+  Hors ligne : la liste embarque les séances et les entrées par séance, la
+  séance est celle de l'horloge du téléphone ; à la synchro, celle de l'heure
+  du téléphone (à défaut, de la réception). Séance avec entrées : ni
+  supprimée ni déplacée. Sans séance : une entrée au total (inchangé). La date
+  de l'événement suit la 1re séance ; purge et fermeture de l'inscription
+  libre suivent la fin de la dernière.
 - **Inscription libre** : page générique `inscription.html`
   (`goevent.africa/r/<lien>`, rewrite Vercel ; alias court `/fonej`), sans
   compte, contenu lu sur `GET /invitations/signup/{slug}`.

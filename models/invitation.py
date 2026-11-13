@@ -9,6 +9,7 @@ aucune donnée financière.
 PrivateEventSettings : réglages 1-1 de l'événement privé (client, message, suivi).
 EventGuest           : un pass nominatif (1 à 20 places), jeton aléatoire.
 GuestCheckin         : journal des entrées (en ligne, hors ligne, manuelle).
+EventSession         : séances d'un événement sur plusieurs jours (une entrée par séance).
 InvitationPack       : pack payé (taille × niveau de service), activé par l'admin.
 """
 from datetime import datetime
@@ -95,6 +96,23 @@ class GuestCheckin(Base):
     device_id   = Column(String(64), nullable=True)
     conflict    = Column(Boolean, nullable=False, default=False)  # places en trop (2 téléphones hors ligne)
     reason      = Column(String(200), nullable=True)              # entrée manuelle : motif
+    # Séances (événement sur plusieurs jours) : NULL = événement sans séance (une entrée au total).
+    # reentry = retour dans la même séance accepté par l'agent : journalisé, jamais compté comme entrée.
+    session_id  = Column(Integer, nullable=True)
+    reentry     = Column(Boolean, nullable=False, default=False, server_default="false")
+
+
+class EventSession(Base):
+    """Séance d'un événement privé (« Jour 1 », « Soirée d'ouverture »). Avec des séances, un pass
+    donne ses places à CHAQUE séance ; sans séance, il les donne une fois pour tout l'événement."""
+    __tablename__ = "event_sessions"
+    id               = Column(Integer, primary_key=True, index=True)
+    event_id         = Column(Integer, ForeignKey("events.id", ondelete="CASCADE"), nullable=False, index=True)
+    label            = Column(String(60), nullable=False)
+    starts_at        = Column(DateTime, nullable=False)          # UTC
+    ends_at          = Column(DateTime, nullable=False)          # UTC
+    doors_before_min = Column(Integer, nullable=False, default=60)  # scan accepté N min avant le début
+    created_at       = Column(DateTime, default=datetime.utcnow, nullable=False)
 
 
 class InvitationPack(Base):

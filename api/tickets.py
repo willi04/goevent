@@ -286,7 +286,8 @@ def valider_billet(request: Request, data: ScanTicket, db: Session = Depends(get
     # mêmes contrôles d'accès, places multiples (cf. core/invitations.scan)
     invitation_token = invitations.parse_pass_qr(data.qr_data)
     if invitation_token:
-        return invitations.scan(db, current_user, invitation_token, data.count, request, data.client_uuid)
+        return invitations.scan(db, current_user, invitation_token, data.count, request, data.client_uuid,
+                                data.reentry)
 
     # Verrou ligne : 2 agents qui scannent le même QR simultanément →
     # un seul passe, l'autre voit "DÉJÀ UTILISÉ".

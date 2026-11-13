@@ -87,6 +87,7 @@ class SyncItem(BaseModel):
     at: Optional[str] = Field(None, max_length=40)
     source: Optional[str] = Field(None, max_length=10)     # "manual" : entrée manuelle hors ligne
     reason: Optional[str] = Field(None, max_length=200)    # obligatoire si manual
+    reentry: bool = False                                  # séances : retour accepté par l'agent
 
 
 class SyncIn(BaseModel):
@@ -113,3 +114,16 @@ class SignupIn(BaseModel):
     phone: str = Field(..., min_length=8, max_length=30)
     consent: bool = False
     website: Optional[str] = Field(None, max_length=200)   # champ piège (invisible) : rempli = robot
+
+
+class SessionIn(BaseModel):
+    id: Optional[int] = None
+    label: str = Field(..., min_length=1, max_length=60)
+    starts_at: datetime
+    ends_at: datetime
+    doors_before_min: Optional[int] = Field(None, ge=0, le=240)
+
+
+class SessionsIn(BaseModel):
+    """Séances d'un événement privé (liste complète : remplace l'existante)."""
+    sessions: List[SessionIn] = Field(..., max_length=14)

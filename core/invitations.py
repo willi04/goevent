@@ -19,6 +19,9 @@ Règles clés
   jamais le jeton. Synchro idempotente (client_uuid), dépassements signalés
   en conflit (deux téléphones hors ligne ont accepté le même pass).
 - Données personnelles : purge J+30 (nom anonymisé, téléphone et jeton effacés).
+- Séances (core/sessions.py) : un événement sur plusieurs jours donne les places du
+  pass à CHAQUE séance ; un retour dans la même séance est décidé par l'agent
+  (reentry, jamais compté). Sans séance : une entrée au total (inchangé).
 """
 import hashlib
 import re
@@ -33,6 +36,7 @@ from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from core import sessions as sess
 from core.config import (
     INVITATION_HOUSE_PHONE, INVITATION_PAYMENT_CHANNELS, INVITATION_RETENTION_DAYS, settings,
 )
@@ -238,15 +242,27 @@ def stats(db: Session, event_id: int) -> dict:
         func.count(EventGuest.first_checkin_at),
     ).filter(EventGuest.event_id == event_id, EventGuest.revoked_at.is_(None)).one()
     expected, entered = int(row[0]), int(row[1])
-    entered_shown = min(entered, expected) if expected else entered
     conflicts = db.query(func.count(GuestCheckin.id)).filter(
         GuestCheckin.event_id == event_id, GuestCheckin.conflict == True).scalar()  # noqa: E712
-    return {
-        "expected": expected, "entered": entered_shown, "remaining": max(0, expected - entered),
-        "rate": round(entered_shown / expected * 100, 1) if expected else 0.0,
-        "passes": int(row[2]), "passes_sent": int(row[3]), "passes_arrived": int(row[4]),
-        "conflicts": int(conflicts or 0),
-    }
+    out = {"passes": int(row[2]), "passes_sent": int(row[3]), "passes_arrived": int(row[4]),
+           "conflicts": int(conflicts or 0), "session": None, "sessions": []}
+    sessions = sess.list_sessions(db, event_id)
+    if sessions:
+        # Chiffres de la séance en cours (sinon la dernière commencée) ; détail par séance.
+        per = dict(db.query(GuestCheckin.session_id, func.sum(GuestCheckin.count)).filter(
+            GuestCheckin.event_id == event_id, GuestCheckin.reentry == False,  # noqa: E712
+            GuestCheckin.conflict == False, GuestCheckin.session_id.isnot(None)).group_by(GuestCheckin.session_id).all())
+        back = dict(db.query(GuestCheckin.session_id, func.count(GuestCheckin.id)).filter(
+            GuestCheckin.event_id == event_id, GuestCheckin.reentry == True).group_by(GuestCheckin.session_id).all())  # noqa: E712
+        ref = sess.reference_session(sessions, utcnow())
+        out["sessions"] = [{"id": x.id, "label": x.label, "display": sess.session_label(x),
+                            "entered": int(per.get(x.id) or 0), "reentries": int(back.get(x.id) or 0)} for x in sessions]
+        out["session"] = {"id": ref.id, "label": ref.label, "current": sess.find_session(sessions, utcnow()) is ref}
+        entered = int(per.get(ref.id) or 0)
+    entered_shown = min(entered, expected) if expected else entered
+    out.update({"expected": expected, "entered": entered_shown, "remaining": max(0, expected - entered),
+                "rate": round(entered_shown / expected * 100, 1) if expected else 0.0})
+    return out
 
 
 # ── message WhatsApp ────────────────────────────────────────────────
@@ -457,8 +473,51 @@ def _valid_uuid(v: Optional[str]) -> Optional[str]:
         return None
 
 
+def _session_admit(db: Session, user: User, g: EventGuest, ev: Event, sessions: list, count: Optional[int],
+                   cid: Optional[str], reentry: bool) -> dict:
+    """Scan d'un pass pour un événement à séances : places du pass disponibles à chaque séance.
+    Pass déjà utilisé dans la séance → l'agent décide (needs_reentry) ; s'il accepte, retour
+    journalisé (reentry = true), jamais compté comme entrée."""
+    now = utcnow()
+    s = sess.require_current(sessions, now)
+    used = sess.used_in_session(db, g.id, s.id)
+    remaining = g.seats - used
+
+    def info(u):
+        return dict(guest_public(g), seats_used=u, remaining=max(0, g.seats - u), kind="invitation",
+                    event=ev.title, session=s.label)
+    if remaining <= 0:
+        if not reentry:
+            at = fmt_time(sess.last_entry_at(db, g.id, s.id))
+            return dict(info(used), valid=False, needs_reentry=True, entered_at=at,
+                        message="%s : déjà entré%s (%s) à %s." % (g.full_name, "s" if g.seats > 1 else "", s.label, at))
+        n = max(1, min(count or 1, g.seats))
+        g.last_checkin_at = now
+        db.add(GuestCheckin(guest_id=g.id, event_id=ev.id, count=n, source="online", scanned_at=now, by_user_id=user.id,
+                            client_uuid=cid, session_id=s.id, reentry=True))
+        db.commit()
+        return dict(info(used), valid=True, reentry=True, admitted=0, returned=n,
+                    message="Retour autorisé : %s." % g.full_name)
+    if count is None:
+        if remaining > 1:
+            return dict(info(used), valid=False, needs_count=True,
+                        message="%s : combien de personnes entrent ?" % g.full_name)
+        count = 1
+    if not 1 <= count <= remaining:
+        raise HTTPException(400, "Nombre invalide : %d place(s) restante(s) sur ce pass (%s)." % (remaining, s.label))
+    g.seats_used += count          # total des entrées, toutes séances confondues
+    g.first_checkin_at = g.first_checkin_at or now
+    g.last_checkin_at = now
+    db.add(GuestCheckin(guest_id=g.id, event_id=ev.id, count=count, source="online", scanned_at=now,
+                        by_user_id=user.id, client_uuid=cid, session_id=s.id))
+    db.commit()
+    return dict(info(used + count), valid=True, admitted=count,
+                message="Bienvenue %s ! %d personne%s entre%s (%s)." % (g.full_name, count, "s" if count > 1 else "",
+                                                                       "nt" if count > 1 else "", s.label))
+
+
 def scan(db: Session, user: User, token: str, count: Optional[int], request=None,
-         client_uuid: Optional[str] = None) -> dict:
+         client_uuid: Optional[str] = None, reentry: bool = False) -> dict:
     from api.tickets import _can_operate_event  # même contrôle que les billets (agent assigné / orga propriétaire)
     g = db.query(EventGuest).filter(EventGuest.token == token).with_for_update().first()
     if not g:
@@ -476,6 +535,9 @@ def scan(db: Session, user: User, token: str, count: Optional[int], request=None
     info = dict(guest_public(g), kind="invitation", event=ev.title)
     if g.revoked_at:
         raise HTTPException(400, "Pass ANNULÉ par l'organisateur (%s)." % g.full_name)
+    sessions = sess.list_sessions(db, ev.id)
+    if sessions:
+        return _session_admit(db, user, g, ev, sessions, count, cid, reentry)
     remaining = g.seats - g.seats_used
     if remaining <= 0:
         raise HTTPException(400, "Pass COMPLET : %d/%d déjà entré%s (dernière entrée à %s)."
@@ -530,8 +592,15 @@ def agent_manual_checkin(db: Session, user: User, guest_id: int, count: int, rea
                     message="Entrée déjà enregistrée pour %s." % g.full_name)
     method = verify_identity(g, last4, identity_checked)
     g = manual_checkin(db, user, g, count, "[%s] %s" % (method, reason.strip()), request, client_uuid=cid, locked=True)
-    return dict(guest_public(g), valid=True, admitted=count, event=ev.title,
-                message="Entrée manuelle validée : %s (%d personne%s)." % (g.full_name, count, "s" if count > 1 else ""))
+    out = dict(guest_public(g), valid=True, admitted=count, event=ev.title,
+               message="Entrée manuelle validée : %s (%d personne%s)." % (g.full_name, count, "s" if count > 1 else ""))
+    sessions = sess.list_sessions(db, ev.id)
+    cur = sess.find_session(sessions, utcnow()) if sessions else None
+    if cur:
+        out["seats_used"] = sess.used_in_session(db, g.id, cur.id)
+        out["remaining"] = max(0, g.seats - out["seats_used"])
+        out["session"] = cur.label
+    return out
 
 
 def search_guests(db: Session, ev: Event, q: str, limit: int = 20) -> list:
@@ -544,8 +613,15 @@ def search_guests(db: Session, ev: Event, q: str, limit: int = 20) -> list:
             .order_by(EventGuest.full_name).limit(limit).all())
     # Jamais le numéro : seulement s'il existe (pour proposer la vérification des 4 chiffres)
     # h : empreinte du jeton (déjà dans la liste hors ligne) pour basculer hors ligne si le réseau coupe
-    return [dict(guest_public(g), id=g.id, h=g.token_hash, revoked=bool(g.revoked_at), has_phone=bool(g.phone))
-            for g in rows]
+    out = [dict(guest_public(g), id=g.id, h=g.token_hash, revoked=bool(g.revoked_at), has_phone=bool(g.phone))
+           for g in rows]
+    sessions = sess.list_sessions(db, ev.id)
+    cur = sess.find_session(sessions, utcnow()) if sessions else None
+    if cur:   # séances : places restantes DANS la séance en cours
+        for r, g in zip(out, rows):
+            r["seats_used"] = sess.used_in_session(db, g.id, cur.id)
+            r["remaining"] = max(0, g.seats - r["seats_used"])
+    return out
 
 
 def manual_checkin(db: Session, user: User, g: EventGuest, count: int, reason: str, request=None,
@@ -554,15 +630,26 @@ def manual_checkin(db: Session, user: User, g: EventGuest, count: int, reason: s
         db.refresh(g, with_for_update=True)
     if g.revoked_at:
         raise HTTPException(400, "Pass annulé.")
-    remaining = g.seats - g.seats_used
+    sessions = sess.list_sessions(db, g.event_id)
+    now = utcnow()
+    session_id = None
+    if sessions:
+        s = sess.require_current(sessions, now)
+        session_id = s.id
+        remaining = g.seats - sess.used_in_session(db, g.id, s.id)
+        if remaining <= 0:
+            raise HTTPException(400, "Déjà entré%s (%s) à %s. S'il s'agit d'un retour, laissez entrer : "
+                                     "rien à saisir." % ("s" if g.seats > 1 else "", s.label,
+                                                         fmt_time(sess.last_entry_at(db, g.id, s.id))))
+    else:
+        remaining = g.seats - g.seats_used
     if not 1 <= count <= remaining:
         raise HTTPException(400, "Nombre invalide : %d place(s) restante(s)." % remaining)
-    now = utcnow()
     g.seats_used += count
     g.first_checkin_at = g.first_checkin_at or now
     g.last_checkin_at = now
     db.add(GuestCheckin(guest_id=g.id, event_id=g.event_id, count=count, source="manual", scanned_at=now,
-                        by_user_id=user.id, reason=reason[:200], client_uuid=client_uuid))
+                        by_user_id=user.id, reason=reason[:200], client_uuid=client_uuid, session_id=session_id))
     db.commit()
     log_security_event(db, "invitation_manual_checkin", request, user.id,
                        "pass %d (event %d) +%d : %s" % (g.id, g.event_id, count, reason[:150]))
@@ -578,15 +665,60 @@ def offline_list(db: Session, ev: Event) -> dict:
         set_phone(g, g.phone)
     if missing:
         db.commit()
+    sessions = sess.list_sessions(db, ev.id)
+    usage = sess.usage_by_session(db, ev.id) if sessions else {}
+    end = sess.last_end(sessions) or ev.event_date
     return {
-        "event": {"id": ev.id, "title": ev.title, "date": ev.event_date.isoformat() if ev.event_date else None},
+        "event": {"id": ev.id, "title": ev.title, "date": ev.event_date.isoformat() if ev.event_date else None,
+                  "ends": end.isoformat() + "Z" if end else None},
         "generated_at": utcnow().isoformat() + "Z",
         "phone4_iterations": PHONE4_ITERATIONS,
+        # Séances : la séance en cours est déterminée par l'HORLOGE DU TÉLÉPHONE (consigne : vérifier l'heure)
+        "sessions": [{"id": x.id, "label": x.label, "start": x.starts_at.isoformat() + "Z",
+                      "end": x.ends_at.isoformat() + "Z", "doors": x.doors_before_min} for x in sessions],
         # ps / ph : sel + empreinte PBKDF2 des 4 derniers chiffres (contrôle manuel hors ligne)
-        "guests": [{"h": g.token_hash, "n": g.full_name, "t": g.table_label, "c": g.category,
-                    "s": g.seats, "u": g.seats_used, "r": bool(g.revoked_at),
-                    "ps": g.phone4_salt, "ph": g.phone4_hash} for g in guests],
+        # us : personnes entrées par séance {id séance: n} (événements à séances)
+        "guests": [dict({"h": g.token_hash, "n": g.full_name, "t": g.table_label, "c": g.category,
+                         "s": g.seats, "u": g.seats_used, "r": bool(g.revoked_at),
+                         "ps": g.phone4_salt, "ph": g.phone4_hash},
+                        **({"us": {str(k): v for k, v in usage.get(g.id, {}).items()}} if sessions else {}))
+                   for g in guests],
     }
+
+
+def _sync_session_item(db: Session, user: User, g: EventGuest, sessions: list, it: dict, raw: str, cid: str,
+                       count: int, at: datetime, manual: bool, reason: Optional[str], device_id: Optional[str]) -> dict:
+    """Entrée hors ligne d'un événement à séances. Séance = celle de l'heure du téléphone (à défaut,
+    celle de la réception). Places déjà prises dans la séance (autre téléphone hors ligne) → conflit :
+    la part admise et la part en trop sont journalisées séparément (seule la première compte)."""
+    s = sess.find_session(sessions, at) or sess.find_session(sessions, utcnow())
+    src = "manual" if manual else "offline"
+    dev = (device_id or "")[:64] or None
+    base = dict(guest_id=g.id, event_id=g.event_id, scanned_at=at, by_user_id=user.id, device_id=dev,
+                session_id=s.id if s else None, source=src)
+    tag = (lambda why: ("[hors ligne] %s%s" % (reason, " — " + why if why else ""))[:200]) if manual else (lambda why: why)
+    if not s:
+        db.add(GuestCheckin(count=count, client_uuid=cid, conflict=True, reason=tag("hors séance (heure du téléphone)"), **base))
+        db.commit()
+        return {"uuid": raw, "status": "conflict", "applied": 0}
+    if it.get("reentry") and not g.revoked_at:
+        g.last_checkin_at = max(filter(None, [g.last_checkin_at, at]))
+        db.add(GuestCheckin(count=count, client_uuid=cid, reentry=True, reason=tag(None), **base))
+        db.commit()
+        return {"uuid": raw, "status": "ok", "applied": 0, "reentry": True}
+    remaining = 0 if g.revoked_at else max(0, g.seats - sess.used_in_session(db, g.id, s.id))
+    applied = min(count, remaining)
+    why = ("pass annulé" if g.revoked_at else "places déjà utilisées (%s)" % s.label) if applied < count else None
+    if applied:
+        g.seats_used += applied
+        g.first_checkin_at = min(filter(None, [g.first_checkin_at, at]))
+        g.last_checkin_at = max(filter(None, [g.last_checkin_at, at]))
+        db.add(GuestCheckin(count=applied, client_uuid=cid, reason=tag(None), **base))
+    if applied < count:
+        db.add(GuestCheckin(count=count - applied, client_uuid=None if applied else cid, conflict=True,
+                            reason=tag(why), **base))
+    db.commit()
+    return {"uuid": raw, "status": "conflict" if applied < count else "ok", "applied": applied}
 
 
 def sync_checkins(db: Session, user: User, device_id: Optional[str], items: list, request=None) -> list:
@@ -619,6 +751,10 @@ def sync_checkins(db: Session, user: User, device_id: Optional[str], items: list
         reason = _clean(it.get("reason"), 180) if manual else None
         if manual and (not reason or len(reason) < 3):
             results.append({"uuid": raw, "status": "invalid"}); continue
+        sessions = sess.list_sessions(db, g.event_id)
+        if sessions:
+            results.append(_sync_session_item(db, user, g, sessions, it, raw, cid, count, at, manual, reason, device_id))
+            continue
         remaining = max(0, g.seats - g.seats_used)
         applied = min(count, remaining)
         conflict = applied < count or bool(g.revoked_at)
@@ -755,6 +891,10 @@ def signup_state(db: Session, ev: Event, st: PrivateEventSettings) -> str:
         return "closed"
     if st.signup_until and utcnow() > st.signup_until:
         return "ended"
+    if not st.signup_until:   # séances : inscriptions closes à la fin de la dernière séance
+        end = sess.last_end(sess.list_sessions(db, ev.id))
+        if end and utcnow() > end:
+            return "ended"
     q = quota(db, ev.id)
     if q <= 0:
         return "inactive"
@@ -805,6 +945,12 @@ def self_signup(db: Session, slug: str, full_name: str, phone: str, request=None
 # ── purge J+30 ───────────────────────────────────────────────────────
 def purge_after_for(event_date: Optional[datetime]) -> datetime:
     return (event_date or utcnow()) + timedelta(days=INVITATION_RETENTION_DAYS)
+
+
+def purge_after_event(db: Session, ev: Event) -> datetime:
+    """Conservation : 30 j après la fin de la DERNIÈRE séance (à défaut, la date de l'événement)."""
+    end = sess.last_end(sess.list_sessions(db, ev.id))
+    return purge_after_for(max(filter(None, [end, ev.event_date])) if (end or ev.event_date) else None)
 
 
 def purge_due(db: Session, force_event_id: Optional[int] = None) -> int:

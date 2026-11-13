@@ -410,6 +410,14 @@ rétroactivement.
   (inscriptions en ligne, NULL = pack), `signup_until` (UTC, NULL = fermeture
   manuelle) ; `event_guests.source` (NULL = back-office, `signup` = inscrit
   en ligne : 1 place, `sent_at` posé à l'inscription, `created_by` NULL).
+- Séances (FONEJ, événement sur plusieurs jours) : `event_sessions`
+  (`event_id`, `label`, `starts_at` / `ends_at` UTC, `doors_before_min`) ;
+  `guest_checkins.session_id` (NULL = événement sans séance) et `reentry`
+  (retour accepté par l'agent : journalisé, jamais compté). Avec séances, les
+  places d'un pass valent à chaque séance : entrées d'une séance =
+  `SUM(count)` des checkins de la séance hors `reentry` et hors `conflict`
+  (synchro hors ligne en conflit : part admise et part en trop sur deux
+  lignes). `event_guests.seats_used` = total toutes séances (indicatif).
 - `invitation_quote_counters` (`year` PK, `last`) : incrémenté par
   `INSERT … ON CONFLICT DO UPDATE … RETURNING` dans la transaction du devis
   → numéros sans trou ni doublon, même en concurrence.

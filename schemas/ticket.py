@@ -19,6 +19,8 @@ class ScanTicket(BaseModel):
     # réponse se perd (réseau lent) et que le scanner bascule hors ligne, la synchro
     # réutilise le même identifiant → aucune double entrée comptée.
     client_uuid: Optional[str] = Field(None, max_length=40)
+    # invitations à séances : l'agent a accepté le retour d'une personne déjà entrée dans la séance
+    reentry: bool = False
 
 
 class CashReservation(BaseModel):

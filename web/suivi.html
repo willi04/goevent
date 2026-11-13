@@ -28,6 +28,15 @@
     .k b { display: block; font-size: 24px; font-variant-numeric: tabular-nums; }
     .k small { color: var(--muted); font-size: 12px; font-weight: 600; }
     .upd { text-align: center; color: var(--muted); font-size: 12px; margin-top: 14px; }
+    .sec { margin-top: 20px; }
+    .sec h2 { font-size: 13px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+    .row { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; padding: 8px 0; border-top: 1px solid #eef2ef; font-size: 14px; }
+    .row .n { font-weight: 700; overflow-wrap: anywhere; }
+    .row .v { font-variant-numeric: tabular-nums; font-weight: 800; }
+    .row .mini { grid-column: 1 / -1; height: 6px; background: #e5efe8; border-radius: 999px; overflow: hidden; }
+    .row .mini i { display: block; height: 100%; background: var(--green); }
+    .cur { color: var(--green); }
+    .sub { color: var(--muted); font-weight: 600; font-size: 12px; }
     .err { text-align: center; padding: 40px 10px; color: var(--muted); }
     footer { text-align: center; margin-top: 22px; font-size: 12px; color: var(--muted); }
     footer a { color: var(--muted); }
@@ -47,6 +56,8 @@
         <div class="k"><b id="k-remaining">0</b><small>Restants</small></div>
         <div class="k"><b id="k-rate">0 %</b><small>Taux</small></div>
       </div>
+      <div class="sec hidden" id="sec-sessions"><h2>Par jour</h2><div id="sessions"></div></div>
+      <div class="sec hidden" id="sec-cats"><h2 id="cats-title">Par catégorie</h2><div id="cats"></div></div>
       <p class="upd" id="upd"></p>
     </div>
     <div id="error" class="card err hidden">Lien de suivi invalide ou révoqué.</div>
@@ -63,12 +74,37 @@
       var $ = function (id) { return document.getElementById(id); };
       var nf = function (n) { return Number(n || 0).toLocaleString("fr-FR"); };
       var timer = null;
+      function line(name, value, pct, sub, cls) {
+        var r = document.createElement("div"); r.className = "row";
+        var n = document.createElement("span"); n.className = "n " + (cls || ""); n.textContent = name;
+        if (sub) { var s = document.createElement("span"); s.className = "sub"; s.textContent = " " + sub; n.appendChild(s); }
+        var v = document.createElement("span"); v.className = "v"; v.textContent = value;
+        r.append(n, v);
+        if (pct != null) { var m = document.createElement("div"); m.className = "mini"; var i = document.createElement("i"); i.style.width = Math.min(100, pct) + "%"; m.appendChild(i); r.appendChild(m); }
+        return r;
+      }
+      // Séances et catégories : chiffres uniquement (textContent), aucun nom d'invité
+      function renderLists(d) {
+        var ss = d.sessions || [], cs = d.categories || [];
+        $("sec-sessions").classList.toggle("hidden", ss.length < 2);
+        $("sessions").replaceChildren.apply($("sessions"), ss.map(function (x) {
+          return line(x.label, nf(x.entered) + " / " + nf(d.expected), d.expected ? x.entered / d.expected * 100 : 0,
+                      (x.current ? "en cours" : "") + (x.reentries ? (x.current ? " · " : "") + nf(x.reentries) + " retour(s)" : ""), x.current ? "cur" : "");
+        }));
+        $("sec-cats").classList.toggle("hidden", cs.length < 2);
+        $("cats-title").textContent = "Par catégorie" + (d.session ? " · " + d.session : "");
+        $("cats").replaceChildren.apply($("cats"), cs.map(function (x) {
+          return line(x.category, nf(x.entered) + " / " + nf(x.expected), x.expected ? x.entered / x.expected * 100 : 0);
+        }));
+      }
       function load() {
         fetch(API + "/invitations/track/" + encodeURIComponent(token), { credentials: "omit" })
           .then(function (r) { if (r.status === 404) throw new Error("404"); if (!r.ok) throw new Error("net"); return r.json(); })
           .then(function (d) {
             $("loading").classList.add("hidden"); $("view").classList.remove("hidden");
-            $("title").textContent = d.event_title; $("date").textContent = d.event_date_label;
+            $("title").textContent = d.event_title;
+            $("date").textContent = (d.dates_label || d.event_date_label) + (d.session ? " · " + (d.session_current ? "en cours : " : "dernière séance : ") + d.session : "");
+            renderLists(d);
             $("entered").textContent = nf(d.entered); $("expected").textContent = nf(d.expected);
             $("k-entered").textContent = nf(d.entered); $("k-remaining").textContent = nf(d.remaining);
             $("k-rate").textContent = String(Math.round(d.rate)) + " %";

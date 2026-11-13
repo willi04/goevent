@@ -244,6 +244,15 @@ masque les payloads des routes `/auth/*` et retire les en-têtes
 `Authorization` et `Cookie`, mais cette protection est passive — la
 discipline reste sur le développeur.
 
+### Exports CSV
+
+Toute cellule issue d'une saisie tierce (noms d'invités — dont l'inscription
+libre —, organisations, titres) passe par une neutralisation : préfixe `'`
+si elle commence par `=`, `+`, `-`, `@`, tabulation ou retour chariot
+(injection de formule à l'ouverture dans Excel). Exemple :
+`api/invitations._csv_cell`. Exports pour Excel en français : séparateur
+`;`, UTF-8 avec BOM.
+
 ### Validation côté serveur
 
 Aucune validation exclusivement côté client n'est acceptable. Toute

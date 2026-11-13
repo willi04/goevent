@@ -341,6 +341,13 @@ Les textes, images et liens des pages publiques sont modifiables depuis
   (reportlab, A4, 8 pass/page, QR locaux).
 - **Suivi client** : `goevent.africa/suivi/<jeton>` → titre, date et
   chiffres uniquement (pas de lieu, aucun nom ni numéro), jeton révocable.
+  Avec séances : chiffres de la séance en cours + détail par jour (entrées,
+  retours) ; par catégorie (libellés du back-office) pour la séance en cours.
+- **Bilan** : `GET /admin/invitations/events/{id}/report.csv` (admin seul,
+  journalisé `invitation_report_csv`) : synthèse par catégorie × séance
+  (`core/invitations.breakdown`) puis invités présents HORS inscription en
+  ligne (officiels importés). « ; », UTF-8 BOM, cellules neutralisées
+  contre l'injection de formule. Aucun numéro de téléphone.
 - **Purge J+30** : `purge_due()` (cron reconcile + bouton admin) anonymise
   noms, numéros et jetons ; seuls les chiffres restent (et ferme
   l'inscription libre).

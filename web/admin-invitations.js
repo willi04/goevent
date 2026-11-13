@@ -285,7 +285,7 @@
           kpi("Conflits hors ligne", String(s.conflicts), s.conflicts ? "Pass accepté(s) sur 2 téléphones" : "Aucun", s.conflicts ? "text-red-600" : "text-gray-900"),
         ]));
       }
-      renderArrivals(d.arrivals, d.stats);
+      renderArrivals(d.arrivals, d.stats, d.breakdown);
     }).catch(function () {});
   }
 
@@ -874,14 +874,37 @@
       track.appendChild(el("p", { class: "text-[11px] text-gray-500", text: "Lien de suivi client : inclus dans les formules qui le prévoient (aucun pack actif ne l'inclut)." }));
     }
     items.push(track);
+    if (canActivate()) items.push(el("div", { class: "flex flex-wrap items-center gap-2 mb-3" }, [
+      act("Télécharger le bilan (CSV)", "background:#dcfce7;color:#166534", function () { downloadReport(ev); }),
+      el("span", { class: "text-[11px] text-gray-500", text: "Synthèse par catégorie et par séance + invités présents hors inscription en ligne. Avant la suppression des données (" + dt(ev.purge_after) + ")." }),
+    ]));
     items.push(el("div", { id: "inv-arrivals" }, [el("p", { class: "text-xs text-gray-400", text: "Chargement des arrivées…" })]));
     setTimeout(refreshLive, 0);
     return block("Suivi en direct", items);
   }
-  function renderArrivals(list, stats) {
+  // Bilan : téléchargé avec le jeton (pas de lien direct : la route exige l'authentification)
+  function downloadReport(ev) {
+    fetch(BT_API + "/admin/invitations/events/" + ev.id + "/report.csv", { headers: { Authorization: "Bearer " + btAuth.getToken() } })
+      .then(function (r) {
+        if (!r.ok) return r.json().catch(function () { return {}; }).then(function (d) { throw new Error(d.detail || "Bilan indisponible"); });
+        // Nom construit ici : Content-Disposition n'est pas lisible en cross-origin (API sur un autre domaine)
+        var name = "bilan-" + (String(ev.title || "evenement").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "evenement") + ".csv";
+        return r.blob().then(function (b) {
+          var a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = name;
+          document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+        });
+      }).catch(function (e) { toast(e.message || "Erreur", "error"); });
+  }
+  function renderArrivals(list, stats, bd) {
     var box = document.getElementById("inv-arrivals");
     if (!box) return;
     box.innerHTML = "";
+    if (bd && bd.categories && bd.categories.length > 1) {
+      var curCol = (bd.columns || []).filter(function (c) { return c.key === bd.current; })[0];
+      box.appendChild(el("p", { class: "text-xs text-gray-700 mb-1", text: "Par catégorie" + (curCol && bd.columns.length > 1 ? " (" + curCol.label + ")" : "") + " : " +
+        bd.categories.map(function (c) { return c.category + " " + c.by[bd.current].entered + "/" + c.expected; }).join(" · ") }));
+    }
     if (stats && stats.sessions && stats.sessions.length) {
       box.appendChild(el("p", { class: "text-xs font-bold text-gray-700 mb-2", text: stats.sessions.map(function (x) {
         return x.label + " : " + x.entered + " entrée(s)" + (x.reentries ? " + " + x.reentries + " retour(s)" : "");

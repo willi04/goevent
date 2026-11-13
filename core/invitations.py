@@ -265,7 +265,57 @@ def stats(db: Session, event_id: int) -> dict:
     return out
 
 
-# ── message WhatsApp ────────────────────────────────────────────────
+NO_CATEGORY = "Sans catégorie"
+
+
+def breakdown(db: Session, event_id: int) -> dict:
+    """Chiffres par catégorie et par séance (suivi client, fiche, bilan). Aucun nom.
+    entered = personnes entrées (retours et conflits exclus) ; reentries = retours acceptés ;
+    came = pass utilisés au moins une fois. Sans séance : une colonne unique « all »."""
+    catcol = func.coalesce(func.nullif(EventGuest.category, ""), NO_CATEGORY)
+    cats = {}
+
+    def c(name):
+        return cats.setdefault(name, {"category": name, "expected": 0, "passes": 0, "signups": 0, "came": 0, "by": {}})
+    for name, seats, n, signups, came in db.query(
+            catcol, func.coalesce(func.sum(EventGuest.seats), 0), func.count(EventGuest.id),
+            func.count(EventGuest.id).filter(EventGuest.source == "signup"),
+            func.count(EventGuest.first_checkin_at)).filter(
+            EventGuest.event_id == event_id, EventGuest.revoked_at.is_(None)).group_by(catcol).all():
+        x = c(name)
+        x.update(expected=int(seats or 0), passes=int(n or 0), signups=int(signups or 0), came=int(came or 0))
+    sessions = sess.list_sessions(db, event_id)
+    if sessions:
+        q = (db.query(GuestCheckin.session_id, catcol, GuestCheckin.reentry, func.sum(GuestCheckin.count), func.count(GuestCheckin.id))
+             .join(EventGuest, EventGuest.id == GuestCheckin.guest_id)
+             .filter(GuestCheckin.event_id == event_id, GuestCheckin.conflict == False,  # noqa: E712
+                     GuestCheckin.session_id.isnot(None))
+             .group_by(GuestCheckin.session_id, catcol, GuestCheckin.reentry))
+        for sid, name, back, total, n in q.all():
+            b = c(name)["by"].setdefault(str(sid), {"entered": 0, "reentries": 0})
+            if back:
+                b["reentries"] += int(n or 0)
+            else:
+                b["entered"] += int(total or 0)
+        cols = [{"key": str(x.id), "label": x.label, "display": sess.session_label(x)} for x in sessions]
+    else:
+        for name, used in (db.query(catcol, func.coalesce(func.sum(func.least(EventGuest.seats_used, EventGuest.seats)), 0))
+                           .filter(EventGuest.event_id == event_id).group_by(catcol).all()):
+            c(name)["by"]["all"] = {"entered": int(used or 0), "reentries": 0}
+        cols = [{"key": "all", "label": "Événement", "display": "Événement"}]
+    rows = sorted(cats.values(), key=lambda x: (-x["expected"], x["category"]))
+    for r in rows:
+        for col in cols:
+            r["by"].setdefault(col["key"], {"entered": 0, "reentries": 0})
+    total = {"expected": sum(r["expected"] for r in rows), "passes": sum(r["passes"] for r in rows),
+             "signups": sum(r["signups"] for r in rows), "came": sum(r["came"] for r in rows),
+             "by": {col["key"]: {"entered": sum(r["by"][col["key"]]["entered"] for r in rows),
+                                 "reentries": sum(r["by"][col["key"]]["reentries"] for r in rows)} for col in cols}}
+    ref = sess.reference_session(sessions, utcnow())
+    return {"columns": cols, "categories": rows, "total": total, "current": str(ref.id) if ref else "all"}
+
+
+# ── message WhatsApp ────────────────────────────────────────────────# ── message WhatsApp ────────────────────────────────────────────────
 def render_message(ev: Event, st: PrivateEventSettings, g: EventGuest) -> str:
     values = {
         "nom": g.full_name, "hote": st.host_label or st.client_name, "evenement": ev.title,

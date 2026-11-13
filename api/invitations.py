@@ -15,6 +15,7 @@ Scanner (agent assigné / orga propriétaire) :
   POST /invitations/checkins/sync             entrées faites hors ligne
   (le scan en ligne passe par POST /scan, cf. api/tickets.py)
 """
+import re
 import secrets
 from datetime import datetime, timedelta
 from typing import Optional
@@ -600,10 +601,72 @@ def admin_arrivals(event_id: int, db: Session = Depends(get_db), user: User = De
             .join(EventGuest, EventGuest.id == GuestCheckin.guest_id)
             .filter(GuestCheckin.event_id == ev.id).order_by(GuestCheckin.scanned_at.desc()).limit(30).all())
     labels = {x.id: x.label for x in sess.list_sessions(db, ev.id)}
-    return {"stats": inv.stats(db, ev.id), "arrivals": [
+    return {"stats": inv.stats(db, ev.id), "breakdown": inv.breakdown(db, ev.id), "arrivals": [
         {"name": n, "table": t, "count": c.count, "source": c.source, "at": _iso(c.scanned_at), "conflict": c.conflict,
          "reentry": c.reentry, "session": labels.get(c.session_id)}
         for c, n, t in rows]}
+
+
+def _csv_cell(v) -> str:
+    """Cellule CSV sans injection de formule (noms saisis par des tiers, dont l'inscription libre)."""
+    v = "" if v is None else str(v)
+    return "'" + v if v[:1] in ("=", "+", "-", "@", "\t", "\r") else v
+
+
+@router.get("/admin/invitations/events/{event_id}/report.csv")
+@limiter.limit("20/minute")
+def admin_report_csv(request: Request, event_id: int, db: Session = Depends(get_db),
+                     user: User = Depends(get_current_admin)):
+    """Bilan de l'événement (admin seul, journalisé) : synthèse par catégorie et par séance, puis
+    liste nominative des invités présents HORS inscription en ligne (officiels importés).
+    Séparateur « ; » (Excel en français), UTF-8 avec BOM. À télécharger avant la purge à J+30."""
+    import csv
+    import io
+    ev, st = _load(db, event_id, user)
+    sessions = sess.list_sessions(db, ev.id)
+    b = inv.breakdown(db, ev.id)
+    cols = b["columns"]
+    buf = io.StringIO()
+    w = csv.writer(buf, delimiter=";", quoting=csv.QUOTE_MINIMAL, lineterminator="\r\n")
+    row = lambda *v: w.writerow([_csv_cell(x) for x in v])  # noqa: E731
+    now_bg = inv.local(inv.utcnow())
+    row("Bilan des entrées", ev.title)
+    row("Lieu", ev.location or "")
+    row("Dates", sess.dates_label(sessions) or inv.fmt_date_fr(ev.event_date))
+    row("Client", st.client_name)
+    row("Généré le", now_bg.strftime("%d/%m/%Y %H:%M") + " (heure de Bangui)")
+    if st.purged_at:
+        row("Attention", "Liste anonymisée (conservation de 30 jours dépassée) : seuls les chiffres restent.")
+    row()
+    row("SYNTHÈSE PAR CATÉGORIE")
+    head = ["Catégorie", "Places attendues", "Pass", "Inscrits en ligne"]
+    for col in cols:
+        head += ["%s : entrées" % col["label"]] + (["%s : retours" % col["label"]] if sessions else [])
+    row(*(head + ["Pass utilisés au moins une fois"]))
+    for r in b["categories"] + [dict(b["total"], category="TOTAL")]:
+        line = [r["category"], r["expected"], r["passes"], r["signups"]]
+        for col in cols:
+            line += [r["by"][col["key"]]["entered"]] + ([r["by"][col["key"]]["reentries"]] if sessions else [])
+        row(*(line + [r["came"]]))
+    row()
+    row("INVITÉS PRÉSENTS (hors inscription en ligne)")
+    usage = sess.usage_by_session(db, ev.id) if sessions else {}
+    present = (db.query(EventGuest).filter(EventGuest.event_id == ev.id, EventGuest.first_checkin_at.isnot(None),
+                                          or_(EventGuest.source.is_(None), EventGuest.source != "signup"))
+               .order_by(EventGuest.category, EventGuest.full_name).all())
+    row(*(["Nom", "Catégorie", "Table", "Places"] + ["%s : entrées" % x.label for x in sessions] +
+          ["Première entrée", "Pass annulé"]))
+    for g in present:
+        per = [usage.get(g.id, {}).get(x.id, 0) for x in sessions]
+        first = inv.local(g.first_checkin_at)
+        row(*([g.full_name, g.category or inv.NO_CATEGORY, g.table_label or "", g.seats] + per +
+              [first.strftime("%d/%m %H:%M") if first else "", "oui" if g.revoked_at else ""]))
+    if not present:
+        row("Aucun")
+    log_security_event(db, "invitation_report_csv", request, user.id, "event %d : %d présents nominatifs" % (ev.id, len(present)))
+    name = "bilan-%s.csv" % (re.sub(r"[^a-z0-9]+", "-", inv._clean(ev.title, 60).lower()).strip("-") or "evenement")
+    return Response("\ufeff" + buf.getvalue(), media_type="text/csv; charset=utf-8",
+                    headers={"Content-Disposition": 'attachment; filename="%s"' % name, "Cache-Control": "no-store"})
 
 
 # ── lien de suivi client ─────────────────────────────────────────────
@@ -825,10 +888,20 @@ def public_track(request: Request, token: str, db: Session = Depends(get_db)):
     if not st or not ev:
         raise HTTPException(404, "Lien de suivi invalide ou révoqué")
     s = inv.stats(db, ev.id)
-    # Chiffres uniquement : ni lieu, ni nom, ni numéro d'invité.
+    b = inv.breakdown(db, ev.id)
+    cur = b["current"]
+    # Chiffres uniquement : ni lieu, ni nom, ni numéro d'invité (catégories et séances : libellés du back-office).
     return JSONResponse({"event_title": ev.title, "event_date": _iso(ev.event_date),
                          "event_date_label": inv.fmt_date_fr(ev.event_date), "expected": s["expected"],
                          "entered": s["entered"], "remaining": s["remaining"], "rate": s["rate"],
+                         "dates_label": sess.dates_label(sess.list_sessions(db, ev.id)),
+                         "session": s["session"]["label"] if s["session"] else None,
+                         "session_current": bool(s["session"] and s["session"]["current"]),
+                         "sessions": [{"label": col["label"], "entered": b["total"]["by"][col["key"]]["entered"],
+                                       "reentries": b["total"]["by"][col["key"]]["reentries"], "current": col["key"] == cur}
+                                      for col in b["columns"]] if s["session"] else [],
+                         "categories": [{"category": r["category"], "expected": r["expected"],
+                                         "entered": r["by"][cur]["entered"]} for r in b["categories"]],
                          "updated_at": inv.utcnow().isoformat() + "Z"},
                         headers={"Cache-Control": "public, max-age=15", "X-Robots-Tag": "noindex"})
 

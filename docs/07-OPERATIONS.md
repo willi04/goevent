@@ -291,6 +291,12 @@ bout en bout sans intervention, 1 retrait réussi, analyse des
   séance hors ligne en dépend). « Déjà entré » au scanner : l'agent choisit
   « Laisser entrer (retour) » ou « Refuser » ; les retours apparaissent à part
   dans le suivi.
+- **Bilan d'un événement** (admin) : fiche → « Suivi en direct » →
+  « Télécharger le bilan (CSV) » : synthèse par catégorie et par séance
+  (attendus, inscrits en ligne, entrées, retours, pass utilisés) + liste
+  nominative des invités présents hors inscription en ligne. S'ouvre dans
+  Excel (« ; »). À télécharger AVANT la purge (date affichée sous le bouton) :
+  après, les noms sont anonymisés.
 - **Ouvrir une inscription libre** : fiche de l'événement privé → pack actif
   → bloc « Inscription libre » : lien (`goevent.africa/r/<lien>`), catégorie
   affichée en tête du pass (vide = Participant), limite facultative, fermeture
@@ -300,7 +306,7 @@ bout en bout sans intervention, 1 retrait réussi, analyse des
   l'ancien. Les inscrits n'entrent pas dans la file WhatsApp. Un inscrit qui
   a perdu son pass : entrée manuelle au scanner (nom + 4 derniers chiffres).
   Alias court : une ligne dans `web/vercel.json` (ex. `/fonej`).
-- Traçabilité : `invitation_sessions_updated`, `invitation_signup_settings`, `invitation_self_signup`,
+- Traçabilité : `invitation_report_csv`, `invitation_sessions_updated`, `invitation_signup_settings`, `invitation_self_signup`,
   `invitation_event_created|updated`, `invitation_guests_imported`,
   `invitation_pack_activated|cancelled`, `invitation_pass_revoked|restored|regenerated`,
   `invitation_manual_checkin`, `invitation_offline_list`, `invitation_offline_sync`,

@@ -1,5 +1,5 @@
 """
-core/sales_docs.py — Documents PDF de l'équipe commerciale (lot 4.5) :
+core/sales_docs.py — Documents PDF de l'équipe commerciale :
   - devis numéroté A4 (en-tête GoEvent SARLU répété sur chaque page) ;
   - fiche de bienvenue d'un commercial (accès, code, lien personnel + QR).
 ReportLab, polices standard (WinAnsi) comme les pass papier : un caractère hors
@@ -14,8 +14,8 @@ from core.config import settings
 GREEN = "#0E9F6E"
 INK = "#0D1411"
 LOGO = Path(__file__).resolve().parent.parent / "web" / "icons" / "event.png"
-COMPANY = ("GoEvent SARLU — SARL unipersonnelle au capital de 150 000 FCFA — RCCM CA/BG/2026B2593 — "
-           "NIU en cours d'attribution — Avenue D. Dacko, à proximité du marché de Bimbo, Bangui — "
+COMPANY = ("GoEvent SARLU — RCCM CA/BG/2026B2593 — "
+           "NIU 2362026M24449V — Avenue D. Dacko, à proximité du marché de Bimbo, Bangui — "
            "goevent.africa@gmail.com — WhatsApp +236 70 06 68 52")
 CONDITIONS = ("Paiement intégral à la commande, à GoEvent SARLU (espèces contre reçu ou Orange Money). "
               "Aucun acompte. Les invitations sont activées dès réception du paiement. "

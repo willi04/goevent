@@ -11,39 +11,103 @@
   <link rel="icon" href="/icons/icon-192.svg" />
   <!-- Page volontairement autonome : aucun script tiers, aucune police externe, aucun traceur. -->
   <style>
-    :root { --green: #00502c; --green2: #006b3c; --ink: #111827; --muted: #6b7280; --line: #e5e7eb; --bg: #f3f4f1; }
+    :root { --green: #00502c; --green2: #006b3c; --ink: #111827; --muted: #6b7280; --line: #e5e7eb; --bg: #f3f4f1;
+            /* Tokens design (lot 6), surchargés par le skin si un design existe */
+            --d-fond: var(--bg); --d-accent: var(--green); --d-accentD: var(--green2);
+            --d-clair: #fff; --d-texte: var(--ink); --d-muted: var(--muted);
+            --d-titre: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
     * { box-sizing: border-box; }
     body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    body.design { background: var(--d-fond); color: var(--d-texte); }
     main { max-width: 440px; margin: 0 auto; padding: 16px 16px 32px; }
     .card { background: #fff; border-radius: 28px; overflow: hidden; box-shadow: 0 12px 32px rgba(0,0,0,.08); }
+    body.design .card { background: var(--d-clair); box-shadow: 0 16px 40px rgba(0,0,0,.14); }
     .top { background: linear-gradient(140deg, var(--green), var(--green2)); color: #fff; padding: 26px 22px 22px; text-align: center; }
+    body.design .top { background: linear-gradient(140deg, var(--d-accent), var(--d-accentD)); }
     .host { font-size: 13px; letter-spacing: .04em; opacity: .85; margin: 0; }
     h1 { font-size: 24px; line-height: 1.2; margin: 8px 0 10px; font-weight: 800; }
     .meta { font-size: 14px; opacity: .92; margin: 2px 0; }
     .body { padding: 22px; text-align: center; }
-    .label { display: inline-block; background: var(--green); color: #fff; font-weight: 800; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; padding: 6px 14px; border-radius: 999px; margin: 0 0 12px; }
     .guest { font-size: 22px; font-weight: 800; margin: 0; }
     .seats { color: var(--muted); font-size: 14px; margin: 4px 0 0; }
+    body.design .seats { color: var(--d-muted); }
     .chips { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
     .chip { background: #ecfdf3; color: var(--green); font-weight: 700; font-size: 13px; padding: 5px 12px; border-radius: 999px; }
+    body.design .chip { background: color-mix(in srgb, var(--d-accent) 14%, #fff); color: var(--d-accentD); }
+    .chip.vip { background: #fef3c7; color: #92400e; }
     .qr { margin: 20px auto 6px; width: 260px; max-width: 100%; aspect-ratio: 1; background: #fff; border: 1px solid var(--line); border-radius: 20px; padding: 8px; }
     .qr img { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
     .hint { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+    body.design .hint { color: var(--d-muted); }
     .banner { border-radius: 16px; padding: 12px 14px; font-size: 14px; font-weight: 600; margin: 16px 0 0; text-align: left; }
     .ok { background: #ecfdf3; color: #065f46; } .warn { background: #fffbeb; color: #92400e; } .bad { background: #fef2f2; color: #991b1b; }
     .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
     .btn { display: block; text-align: center; text-decoration: none; font-weight: 700; font-size: 14px; padding: 12px 10px; border-radius: 14px; border: 1px solid var(--line); color: var(--ink); background: #fff; }
+    body.design .btn { color: var(--d-texte); border-color: color-mix(in srgb, var(--d-texte) 14%, transparent); background: transparent; }
     .btn:active { transform: scale(.98); }
     .offline { font-size: 12px; color: var(--muted); text-align: center; margin: 12px 0 0; }
     .loading { text-align: center; color: var(--muted); padding: 60px 0; }
     footer { text-align: center; margin-top: 22px; font-size: 12px; color: var(--muted); }
     footer a { color: var(--muted); }
     .hidden { display: none !important; }
+
+    /* ── Couche design (lot 6) : faire-part / page + programme ── */
+    #exp { margin-bottom: 16px; }
+    .fp { margin-bottom: 16px; }
+    .fp .photo { width: 100%; aspect-ratio: 4/3; overflow: hidden; }
+    .fp .photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .fp-in { padding: 26px 24px 28px; text-align: center; }
+    .eyebrow { font-size: 12px; letter-spacing: .18em; text-transform: uppercase; font-weight: 800; color: var(--d-accentD); }
+    .names { font-family: var(--d-titre); font-size: 40px; line-height: 1.04; font-weight: 600; margin: 10px 0 4px; color: var(--d-texte); }
+    .corp .titre { font-family: var(--d-titre); font-size: 34px; line-height: 1.08; font-weight: 800; margin: 8px 0 6px; color: var(--d-texte); }
+    .corp .sous { font-size: 16px; color: var(--d-muted); margin: 0 0 6px; }
+    .verset { font-family: var(--d-titre); font-style: italic; font-size: 18px; color: var(--d-texte); margin: 14px 0 4px; }
+    .verset .ref { display: block; font-style: normal; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--d-muted); margin-top: 4px; }
+    .fp p.txt { font-size: 15px; color: var(--d-texte); opacity: .92; margin: 12px 0 0; }
+    .fp .when, .fp .where { font-size: 15px; font-weight: 600; color: var(--d-texte); margin-top: 14px; }
+    .fp .logo { height: 44px; margin: 0 auto 10px; display: block; }
+    .spk { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; }
+    .spk .s { text-align: center; }
+    .spk .av { width: 84px; height: 84px; border-radius: 50%; margin: 0 auto 8px; overflow: hidden; border: 2px solid var(--d-accent); background: color-mix(in srgb, var(--d-accent) 12%, #fff); }
+    .spk .av img { width: 100%; height: 100%; object-fit: cover; }
+    .spk .nm { font-weight: 800; font-size: 15px; color: var(--d-texte); }
+    .spk .ro { font-size: 13px; color: var(--d-accentD); font-weight: 700; }
+    .spk .co { font-size: 12px; color: var(--d-muted); }
+    .cta { display: inline-block; margin-top: 20px; background: var(--d-accent); color: #fff; font-weight: 800; font-size: 15px; padding: 14px 22px; border-radius: 14px; }
+    .prog .prog-t { font-size: 12px; letter-spacing: .16em; text-transform: uppercase; font-weight: 800; color: var(--d-accentD); padding: 20px 22px 0; }
+    .prog .row { display: flex; gap: 16px; padding: 16px 22px; border-top: 1px solid color-mix(in srgb, var(--d-texte) 8%, transparent); }
+    .prog .row:first-of-type { border-top: 0; }
+    .prog .tm { font-weight: 800; color: var(--d-accentD); min-width: 64px; }
+    .prog .lb { font-weight: 700; color: var(--d-texte); }
+    .prog .ds { font-size: 13px; color: var(--d-muted); margin-top: 2px; }
+
+    /* ── Enveloppe (ouverture pro, sans zoom) ── */
+    #env { position: fixed; inset: 0; background: var(--d-fond); display: flex; align-items: center; justify-content: center; z-index: 50; }
+    #env.go .env { transform: translateY(-130%); opacity: 0; transition: transform .6s cubic-bezier(.4,0,.2,1) .5s, opacity .5s ease .6s; }
+    .env { position: relative; width: 300px; height: 200px; cursor: pointer; transition: transform .6s, opacity .5s; }
+    .env .back { position: absolute; inset: 0; background: var(--d-accentD); border-radius: 12px; }
+    .env .pocket { position: absolute; inset: 0; border-radius: 12px; overflow: hidden; }
+    .env .pocket::before, .env .pocket::after { content: ""; position: absolute; bottom: 0; width: 56%; height: 100%; background: var(--d-accent); }
+    .env .pocket::before { left: 0; clip-path: polygon(0 0, 0 100%, 100% 100%); }
+    .env .pocket::after { right: 0; clip-path: polygon(100% 0, 0 100%, 100% 100%); }
+    .env .letter { position: absolute; left: 12px; right: 12px; top: 14px; bottom: 10px; background: var(--d-clair); border-radius: 8px; box-shadow: 0 6px 16px rgba(0,0,0,.18);
+                   display: flex; align-items: center; justify-content: center; text-align: center; padding: 14px; transition: transform .6s cubic-bezier(.4,0,.2,1); z-index: 1; }
+    .env .letter .nm { font-family: var(--d-titre); font-size: 24px; font-weight: 600; color: var(--d-texte); }
+    #env.go .letter { transform: translateY(-26px); }
+    .env .flap { position: absolute; top: 0; left: 0; right: 0; height: 50%; background: var(--d-accentD); transform-origin: top; border-radius: 12px 12px 0 0;
+                 clip-path: polygon(0 0, 100% 0, 50% 100%); transition: transform .7s cubic-bezier(.5,0,.2,1); z-index: 3; }
+    #env.go .flap { transform: rotateX(180deg); z-index: 0; }
+    .env .seal { position: absolute; top: calc(50% - 20px); left: calc(50% - 20px); width: 40px; height: 40px; border-radius: 50%; background: var(--d-accent);
+                 color: #fff; display: flex; align-items: center; justify-content: center; font-size: 18px; z-index: 4; box-shadow: 0 3px 8px rgba(0,0,0,.25); transition: opacity .3s; }
+    #env.go .seal { opacity: 0; }
+    .env-hint { position: absolute; left: 0; right: 0; top: calc(100% + 18px); text-align: center; font-size: 13px; color: var(--d-muted); transition: opacity .3s; }
+    #env.go .env-hint { opacity: 0; }
   </style>
 </head>
 <body>
   <main>
     <div id="loading" class="loading">Chargement de votre invitation…</div>
+    <div id="exp" class="hidden"></div>
     <div id="pass" class="card hidden">
       <div class="top">
         <p class="host" id="host"></p>
@@ -52,7 +116,6 @@
         <p class="meta" id="location"></p>
       </div>
       <div class="body">
-        <p class="label hidden" id="label"></p>
         <p class="guest" id="guest"></p>
         <p class="seats" id="seats"></p>
         <div class="chips" id="chips"></div>
@@ -72,6 +135,7 @@
     </div></div>
     <footer>Propulsé par GoEvent — <a href="https://goevent.africa" rel="noopener">Organisez votre événement</a></footer>
   </main>
+  <div id="env" class="hidden"></div>
 
   <script src="/vendor/qrcode-generator-2.0.4.js"></script>
   <script>
@@ -83,6 +147,7 @@
       var token = m ? m[1] : new URLSearchParams(location.search).get("t");
       var KEY = "goevent_pass:" + token;
       var $ = function (id) { return document.getElementById(id); };
+      var esc = function (s) { var d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML; };
 
       function qrDataUrl(text) {
         var q = qrcode(0, "M"); q.addData(text); q.make();
@@ -92,29 +157,23 @@
         for (var r = 0; r < n; r++) for (var k = 0; k < n; k++) if (q.isDark(r, k)) g.fillRect((k + mg) * cell, (r + mg) * cell, cell, cell);
         return c.toDataURL("image/png");
       }
-      function show(p, offline) {
-        $("loading").classList.add("hidden");
-        $("pass").classList.remove("hidden");
+
+      // Remplit la carte pass (QR). Le conteneur #pass est affiché par l'appelant.
+      function fillPass(p, offline) {
         $("host").textContent = (p.host_label || "") + " vous invite";
         $("title").textContent = p.event_title || "";
-        // Événement à séances : « 20 & 21 nov. 2026 · 7h00–16h00 » plutôt que la seule première date
-        var when = p.dates_label || p.event_date_label;
-        $("date").textContent = when ? "🗓 " + when : "";
+        $("date").textContent = p.event_date_label ? "🗓 " + p.event_date_label : "";
         $("location").textContent = p.location ? "📍 " + p.location : "";
         $("guest").textContent = p.guest_name || "";
         $("seats").textContent = "Pass valable pour " + p.seats + " personne" + (p.seats > 1 ? "s" : "");
-        // Catégorie en tête du pass (PARTICIPANT, JURY…) : lisible d'un coup d'œil à l'entrée
-        $("label").textContent = p.category || "";
-        $("label").classList.toggle("hidden", !p.category);
         var chips = $("chips"); chips.innerHTML = "";
-        [p.table ? "Table " + p.table : null].forEach(function (t) {
-          if (!t) return; var s = document.createElement("span"); s.className = "chip"; s.textContent = t; chips.appendChild(s);
+        [p.table ? "Table " + p.table : null, p.category].forEach(function (t) {
+          if (!t) return; var s = document.createElement("span");
+          s.className = "chip" + (/vip/i.test(t) ? " vip" : ""); s.textContent = t; chips.appendChild(s);
         });
-        var banner = $("banner"), noQr = false;
-        banner.className = "banner hidden";
+        var banner = $("banner"), noQr = false; banner.className = "banner hidden";
         var msg = null, cls = "ok";
         if (p.status === "partial") { msg = p.seats_used + " personne(s) sur " + p.seats + " déjà entrée(s). Le pass reste valable pour les autres."; cls = "warn"; }
-        else if (p.status === "complete" && p.multi_session) { msg = "Déjà entré(e) pendant cette séance. Votre pass reste valable pour les séances suivantes."; cls = "ok"; }
         else if (p.status === "complete") { msg = "Pass déjà utilisé : " + p.seats_used + "/" + p.seats + " personne(s) entrée(s)."; cls = "warn"; }
         else if (p.status === "revoked") { msg = "Ce pass a été annulé par l'organisateur."; cls = "bad"; noQr = true; }
         else if (p.status === "cancelled") { msg = "Cet événement a été annulé."; cls = "bad"; noQr = true; }
@@ -127,7 +186,122 @@
         if (p.location) $("btn-map").href = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(p.location);
         else $("btn-map").classList.add("hidden");
         $("offline").classList.toggle("hidden", !offline);
+        return noQr;
+      }
+
+      var SERIF = { "Fraunces": 1, "Cormorant Garamond": 1, "Playfair Display": 1, "Marcellus": 1 };
+      function fontStack(n) {
+        return SERIF[n] ? '"' + n + '", Georgia, "Times New Roman", serif'
+                        : '"' + n + '", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+      }
+      function applySkin(skin) {
+        var c = skin.couleurs || {}, pol = skin.polices || {}, r = document.documentElement.style;
+        r.setProperty("--d-fond", c.fond || "#f3f4f1");
+        r.setProperty("--d-accent", c.accent || "#00502c");
+        r.setProperty("--d-accentD", c.accentD || c.accent || "#006b3c");
+        r.setProperty("--d-clair", c.clair || "#ffffff");
+        r.setProperty("--d-texte", c.texte || "#111827");
+        r.setProperty("--d-muted", c.muted || "#6b7280");
+        r.setProperty("--d-titre", fontStack(pol.titre || "Plus Jakarta Sans"));
+        document.body.classList.add("design");
+        var meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.content = c.accent || "#00502c";
+      }
+
+      function el(html) { var d = document.createElement("div"); d.innerHTML = html; return d.firstElementChild; }
+
+      function renderFairePart(p) {
+        var d = p.design, f = d.fiche || {}, corp = d.famille === "corporate", parts = [];
+        if (!corp && d.photo_url) parts.push('<div class="photo"><img src="' + esc(d.photo_url) + '" alt=""></div>');
+        parts.push('<div class="fp-in">');
+        if (corp && d.logo_url) parts.push('<img class="logo" src="' + esc(d.logo_url) + '" alt="">');
+        if (corp) {
+          if (f.organisateur) parts.push('<div class="eyebrow">' + esc(f.organisateur) + '</div>');
+          parts.push('<div class="titre">' + esc(f.titre || p.event_title) + '</div>');
+          if (f.sous_titre) parts.push('<div class="sous">' + esc(f.sous_titre) + '</div>');
+        } else {
+          if (f.eyebrow) parts.push('<div class="eyebrow">' + esc(f.eyebrow) + '</div>');
+          parts.push('<div class="names">' + esc(f.display_names || p.event_title) + '</div>');
+          if (f.verset) parts.push('<div class="verset">« ' + esc(f.verset) + ' »' + (f.reference ? '<span class="ref">' + esc(f.reference) + '</span>' : '') + '</div>');
+          if (f.intro) parts.push('<p class="txt">' + esc(f.intro) + '</p>');
+          if (f.body) parts.push('<p class="txt">' + esc(f.body) + '</p>');
+          if (f.closing) parts.push('<p class="txt">' + esc(f.closing) + '</p>');
+        }
+        var when = f.date_label || p.event_date_label, where = f.lieu || p.location;
+        if (when) parts.push('<div class="when">🗓 ' + esc(when) + '</div>');
+        if (where) parts.push('<div class="where">📍 ' + esc(where) + '</div>');
+        // Intervenants (corporate)
+        if (corp && f.intervenants && f.intervenants.length) {
+          var sp = ['<div class="spk">'];
+          f.intervenants.slice(0, 6).forEach(function (s) {
+            sp.push('<div class="s"><div class="av">' + (s.photo ? '<img src="' + esc(s.photo) + '" alt="">' : '') + '</div>'
+              + '<div class="nm">' + esc(s.nom || "") + '</div>'
+              + (s.role ? '<div class="ro">' + esc(s.role) + '</div>' : '')
+              + (s.societe ? '<div class="co">' + esc(s.societe) + '</div>' : '') + '</div>');
+          });
+          sp.push('</div>'); parts.push(sp.join(''));
+        }
+        if (f.cta) parts.push('<span class="cta">' + esc(f.cta) + '</span>');
+        parts.push('</div>');
+        return '<div class="fp card' + (corp ? ' corp' : '') + '">' + parts.join('') + '</div>';
+      }
+
+      function renderProgramme(p) {
+        var d = p.design, f = d.fiche || {}, corp = d.famille === "corporate";
+        var list = corp ? (f.sessions || []) : (f.programme || []);
+        if (!d.scenes || !d.scenes.programme || !list.length) return "";
+        var rows = ['<div class="prog-t">Programme</div>'];
+        list.forEach(function (it) {
+          var lb = corp ? (it.titre || "") : (it.label || "");
+          var ds = corp ? (it.intervenant || "") : (it.desc || "");
+          rows.push('<div class="row"><div class="tm">' + esc(it.heure || "") + '</div><div><div class="lb">' + esc(lb) + '</div>'
+            + (ds ? '<div class="ds">' + esc(ds) + '</div>' : '') + '</div></div>');
+        });
+        return '<div class="prog card">' + rows.join('') + '</div>';
+      }
+
+      function openEnvelope(p, onDone) {
+        var d = p.design, f = d.fiche || {};
+        var nm = (d.famille === "corporate") ? (f.titre || p.event_title) : (f.display_names || p.guest_name || p.event_title);
+        var env = $("env");
+        env.innerHTML = '<div class="env" id="env-card">'
+          + '<div class="back"></div><div class="pocket"></div>'
+          + '<div class="letter"><div class="nm">' + esc(nm) + '</div></div>'
+          + '<div class="flap"></div><div class="seal">✦</div>'
+          + '<div class="env-hint">Touchez pour ouvrir</div></div>';
+        env.classList.remove("hidden");
+        var opened = false;
+        function go() {
+          if (opened) return; opened = true;
+          env.classList.add("go");
+          setTimeout(function () { env.classList.add("hidden"); if (onDone) onDone(); }, 1250);
+        }
+        $("env-card").addEventListener("click", go);
+        env.addEventListener("click", go);
+      }
+
+      function renderDesign(p, offline) {
+        applySkin(p.design.skin || {});
+        $("loading").classList.add("hidden");
+        var exp = $("exp");
+        exp.innerHTML = renderFairePart(p) + renderProgramme(p);
+        exp.classList.remove("hidden");
+        fillPass(p, offline);
+        $("pass").classList.remove("hidden");
         document.title = (p.event_title || "Invitation") + " | Invitation";
+        var canOpen = p.design.enveloppe && ["revoked", "cancelled", "inactive"].indexOf(p.status) === -1;
+        if (canOpen) openEnvelope(p, null);
+      }
+
+      function renderPass(p, offline) {
+        $("loading").classList.add("hidden");
+        $("pass").classList.remove("hidden");
+        fillPass(p, offline);
+        document.title = (p.event_title || "Invitation") + " | Invitation";
+      }
+
+      function show(p, offline) {
+        if (p && p.design && p.design.cadre) { try { renderDesign(p, offline); return; } catch (e) { /* fallback pass */ } }
+        renderPass(p, offline);
       }
       function fail() { $("loading").classList.add("hidden"); $("error").classList.remove("hidden"); }
 

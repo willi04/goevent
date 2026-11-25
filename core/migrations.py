@@ -247,6 +247,21 @@ MIGRATIONS = [
         "ALTER TABLE guest_checkins ADD COLUMN IF NOT EXISTS session_id INTEGER, "
         "ADD COLUMN IF NOT EXISTS reentry BOOLEAN NOT NULL DEFAULT false",
     ),
+    # ── Lot 6 étape 4 : stockage photo client / logo sur invitation_design.
+    # Table créée par create_all (lot 6.1) ; ces colonnes s'ajoutent après coup
+    # → ALTER idempotent ici (règle du fichier). Octets binaires (BYTEA).
+    (
+        "invitation_design.photo_data (lot 6)",
+        "ALTER TABLE invitation_design ADD COLUMN IF NOT EXISTS photo_data BYTEA, "
+        "ADD COLUMN IF NOT EXISTS photo_mime VARCHAR(40), "
+        "ADD COLUMN IF NOT EXISTS photo_sha VARCHAR(64)",
+    ),
+    (
+        "invitation_design.logo_data (lot 6)",
+        "ALTER TABLE invitation_design ADD COLUMN IF NOT EXISTS logo_data BYTEA, "
+        "ADD COLUMN IF NOT EXISTS logo_mime VARCHAR(40), "
+        "ADD COLUMN IF NOT EXISTS logo_sha VARCHAR(64)",
+    ),
 ]
 
 

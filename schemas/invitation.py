@@ -137,3 +137,14 @@ class CoverIn(BaseModel):
 class PageIn(BaseModel):
     """Description PUBLIQUE de la page d'inscription (distincte de la note interne)."""
     description: Optional[str] = Field(None, max_length=2000)
+
+
+class DesignPut(BaseModel):
+    """Fiche design d'un événement (lot 6). Tout est optionnel : PUT partiel.
+    `fiche` et `theme_override` sont des dicts typés côté cadre ; on borne la
+    taille (uploads = données non fiables) et on valide le statut."""
+    modele_id: Optional[int] = None
+    fiche: Optional[dict] = None
+    theme_override: Optional[dict] = None     # palette ajustée (depuis l'affiche ou à la main)
+    vip: Optional[dict] = None
+    status: Optional[str] = Field(None, pattern="^(brouillon|pret)$")

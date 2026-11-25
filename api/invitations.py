@@ -13,6 +13,7 @@ Scanner (agent assigné / orga propriétaire) :
   POST /invitations/checkins/sync             entrées faites hors ligne
   (le scan en ligne passe par POST /scan, cf. api/tickets.py)
 """
+import json
 import secrets
 from datetime import datetime, timedelta
 from typing import Optional
@@ -35,9 +36,10 @@ from models.invitation import (
 from models.invitation_catalog import InvFormula
 from models.user import User
 from schemas.invitation import (
-    AgentIn, AgentManualIn, GuestImportIn, GuestPatch, ManualCheckinIn, OwnerIn, PackCancelIn, PrivateEventIn,
-    PrivateEventPatch, SyncIn,
+    AgentIn, AgentManualIn, DesignPut, GuestImportIn, GuestPatch, ManualCheckinIn, OwnerIn, PackCancelIn,
+    PrivateEventIn, PrivateEventPatch, SyncIn,
 )
+from core import inv_design as idesign
 from schemas.invitation_catalog import OrderIn
 
 router = APIRouter(tags=["invitations"])
@@ -290,6 +292,186 @@ def admin_event_owner(request: Request, event_id: int, data: OwnerIn, db: Sessio
     log_security_event(db, "invitation_event_owner_changed", request, user.id,
                        "event %d : %s → %s" % (ev.id, old or "maison", st.owner_id or "maison"))
     return admin_get_event(ev.id, db, user)
+
+
+# ── design visuel (lot 6) ────────────────────────────────────────────
+def _bound_json(value, limit: int):
+    """Borne la taille d'un JSON reçu (upload = donnée non fiable). None passe."""
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise HTTPException(400, "Format invalide")
+    if len(json.dumps(value)) > limit:
+        raise HTTPException(413, "Contenu trop volumineux")
+    return value
+
+
+async def _read_upload(file: UploadFile, max_bytes: int) -> bytes:
+    raw = await file.read()
+    if not raw:
+        raise HTTPException(400, "Fichier vide")
+    if len(raw) > max_bytes:
+        raise HTTPException(413, "Fichier trop lourd (max %d Mo)" % (max_bytes // (1024 * 1024)))
+    return raw
+
+
+def _get_or_create_design(db: Session, ev, st) -> InvitationDesign:
+    d = db.query(InvitationDesign).filter(InvitationDesign.event_id == ev.id).first()
+    if not d:
+        d = InvitationDesign(event_id=ev.id, owner_id=st.owner_id, status="brouillon")
+        db.add(d)
+        db.flush()
+    return d
+
+
+def _design_admin_out(db: Session, ev, d: Optional[InvitationDesign]) -> dict:
+    mod = db.get(InvModele, d.modele_id) if d and d.modele_id else None
+    cad = db.get(InvModeleCadre, mod.cadre_id) if mod else None
+    return {
+        "event_id": ev.id,
+        "status": d.status if d else "brouillon",
+        "modele_id": d.modele_id if d else None,
+        "modele": {"id": mod.id, "name": mod.name, "skin": mod.skin, "enveloppe": mod.enveloppe} if mod else None,
+        "cadre": {"code": cad.code, "famille": cad.famille, "scenes": cad.scenes, "champs": cad.champs} if cad else None,
+        "skin": (d.theme_override if d and d.theme_override else (mod.skin if mod else None)),
+        "theme_override": d.theme_override if d else None,
+        "fiche": (d.fiche if d else None) or {},
+        "vip": d.vip if d else None,
+        "has_photo": bool(d and d.photo_sha),
+        "has_logo": bool(d and d.logo_sha),
+        "photo_sha": d.photo_sha if d else None,
+        "logo_sha": d.logo_sha if d else None,
+    }
+
+
+@router.get("/admin/invitations/cadres")
+def admin_cadres(famille: Optional[str] = Query(None, max_length=20),
+                 event_type: Optional[str] = Query(None, max_length=40),
+                 db: Session = Depends(get_db), user: User = Depends(manager)):
+    """Catalogue des cadres (+ gabarits/skins). `event_type` remonte les cadres
+    suggérés en tête (lookup suggest_for, pas d'IA, pas de reconstruction)."""
+    qy = db.query(InvModeleCadre).filter(InvModeleCadre.status == "actif")
+    if famille:
+        qy = qy.filter(InvModeleCadre.famille == famille)
+    out = []
+    for c in qy.order_by(InvModeleCadre.famille, InvModeleCadre.sort_order).all():
+        modeles = (db.query(InvModele)
+                   .filter(InvModele.cadre_id == c.id, InvModele.status == "actif")
+                   .order_by(InvModele.sort_order).all())
+        out.append({
+            "code": c.code, "famille": c.famille, "name": c.name, "scenes": c.scenes, "champs": c.champs,
+            "suggested": bool(event_type and c.suggest_for and event_type in c.suggest_for),
+            "modeles": [{"id": m.id, "name": m.name, "skin": m.skin, "enveloppe": m.enveloppe} for m in modeles],
+        })
+    out.sort(key=lambda x: (not x["suggested"], x["famille"]))
+    return {"cadres": out}
+
+
+@router.get("/admin/invitations/events/{event_id}/design")
+def admin_get_design(event_id: int, db: Session = Depends(get_db), user: User = Depends(manager)):
+    ev, st = _load(db, event_id, user)
+    d = db.query(InvitationDesign).filter(InvitationDesign.event_id == ev.id).first()
+    return _design_admin_out(db, ev, d)
+
+
+@router.put("/admin/invitations/events/{event_id}/design")
+@limiter.limit("60/minute")
+def admin_put_design(request: Request, event_id: int, data: DesignPut,
+                     db: Session = Depends(get_db), user: User = Depends(manager)):
+    ev, st = _load(db, event_id, user)
+    d = _get_or_create_design(db, ev, st)
+    f = data.model_fields_set
+    if "modele_id" in f:
+        if data.modele_id is not None:
+            m = db.get(InvModele, data.modele_id)
+            if not m or m.status != "actif":
+                raise HTTPException(400, "Gabarit invalide")
+            d.modele_id = m.id
+        else:
+            d.modele_id = None
+    if "fiche" in f:
+        d.fiche = _bound_json(data.fiche, 20000)
+    if "theme_override" in f:
+        d.theme_override = _bound_json(data.theme_override, 4000)
+    if "vip" in f:
+        d.vip = _bound_json(data.vip, 2000)
+    if "status" in f and data.status:
+        if data.status == "pret" and not d.modele_id:
+            raise HTTPException(400, "Choisissez un gabarit avant de publier le design")
+        d.status = data.status
+    d.owner_id = d.owner_id or st.owner_id
+    d.updated_by = user.id
+    d.updated_at = inv.utcnow()
+    db.commit()
+    log_security_event(db, "invitation_design_updated", request, user.id, "event %d" % ev.id)
+    return admin_get_design(ev.id, db, user)
+
+
+@router.post("/admin/invitations/events/{event_id}/design/palette")
+@limiter.limit("20/minute")
+async def admin_design_palette(request: Request, event_id: int, file: UploadFile = File(...),
+                               db: Session = Depends(get_db), user: User = Depends(manager)):
+    """Upload affiche → extraction COULEURS (Pillow). L'affiche n'est PAS stockée.
+    L'admin applique/ajuste puis enregistre via theme_override (PUT)."""
+    ev, st = _load(db, event_id, user)
+    raw = await _read_upload(file, idesign.MAX_UPLOAD_BYTES)
+    try:
+        tokens = idesign.extract_palette(raw)
+    except Exception:
+        raise HTTPException(400, "Image illisible : envoyez un JPEG/PNG valide")
+    return {"couleurs": tokens}
+
+
+@router.post("/admin/invitations/events/{event_id}/design/photo")
+@limiter.limit("20/minute")
+async def admin_design_photo(request: Request, event_id: int, file: UploadFile = File(...),
+                             db: Session = Depends(get_db), user: User = Depends(manager)):
+    ev, st = _load(db, event_id, user)
+    d = _get_or_create_design(db, ev, st)
+    raw = await _read_upload(file, idesign.MAX_UPLOAD_BYTES)
+    try:
+        b, mime, sha, w, h = idesign.reencode_image(raw, "photo")
+    except Exception:
+        raise HTTPException(400, "Image illisible : envoyez un JPEG/PNG valide")
+    d.photo_data, d.photo_mime, d.photo_sha = b, mime, sha
+    d.updated_by, d.updated_at = user.id, inv.utcnow()
+    db.commit()
+    return {"ok": True, "photo_sha": sha, "width": w, "height": h}
+
+
+@router.post("/admin/invitations/events/{event_id}/design/logo")
+@limiter.limit("20/minute")
+async def admin_design_logo(request: Request, event_id: int, file: UploadFile = File(...),
+                            db: Session = Depends(get_db), user: User = Depends(manager)):
+    ev, st = _load(db, event_id, user)
+    d = _get_or_create_design(db, ev, st)
+    raw = await _read_upload(file, idesign.MAX_UPLOAD_BYTES)
+    try:
+        b, mime, sha, w, h = idesign.reencode_image(raw, "logo")
+    except Exception:
+        raise HTTPException(400, "Image illisible : envoyez un JPEG/PNG valide")
+    d.logo_data, d.logo_mime, d.logo_sha = b, mime, sha
+    d.updated_by, d.updated_at = user.id, inv.utcnow()
+    db.commit()
+    return {"ok": True, "logo_sha": sha, "width": w, "height": h}
+
+
+@router.delete("/admin/invitations/events/{event_id}/design/{which}")
+@limiter.limit("30/minute")
+def admin_design_del_image(request: Request, event_id: int, which: str,
+                           db: Session = Depends(get_db), user: User = Depends(manager)):
+    if which not in ("photo", "logo"):
+        raise HTTPException(404, "Ressource inconnue")
+    ev, st = _load(db, event_id, user)
+    d = db.query(InvitationDesign).filter(InvitationDesign.event_id == ev.id).first()
+    if d:
+        if which == "photo":
+            d.photo_data = d.photo_mime = d.photo_sha = None
+        else:
+            d.logo_data = d.logo_mime = d.logo_sha = None
+        d.updated_by, d.updated_at = user.id, inv.utcnow()
+        db.commit()
+    return {"ok": True}
 
 
 # ── invités ──────────────────────────────────────────────────────────
@@ -660,10 +842,11 @@ def _no_store(payload: dict) -> JSONResponse:
     return JSONResponse(payload, headers={"Cache-Control": "no-store", "X-Robots-Tag": "noindex"})
 
 
-def _design_payload(db: Session, event_id: int) -> Optional[dict]:
+def _design_payload(db: Session, event_id: int, token: str) -> Optional[dict]:
     """Couche visuelle (lot 6) pour la page invité. None = pas de design prêt
     → la page retombe sur le pass actuel (zéro régression). Une seule requête,
-    jointure de 3 petites tables par clé ; route publique rate-limitée."""
+    jointure de 3 petites tables par clé ; route publique rate-limitée.
+    Photo/logo servis derrière le pass_token (chemin racine, le front préfixe l'API)."""
     row = (
         db.query(InvitationDesign, InvModele, InvModeleCadre)
         .outerjoin(InvModele, InvModele.id == InvitationDesign.modele_id)
@@ -677,14 +860,15 @@ def _design_payload(db: Session, event_id: int) -> Optional[dict]:
     if not mod or not cad:               # design créé mais pas encore relié à un gabarit
         return None
     scenes = cad.scenes or {}
+    q = "/invitations/pass/%s/" % token
     return {
         "cadre": cad.code,
         "famille": cad.famille,
         "scenes": scenes,
         "skin": d.theme_override or mod.skin or {},   # theme_override = palette ajustée depuis l'affiche
         "fiche": d.fiche or {},
-        "photo_url": d.photo_url,
-        "logo_url": d.logo_url,
+        "photo_url": (q + "photo?v=" + d.photo_sha) if d.photo_sha else (d.photo_url or None),
+        "logo_url": (q + "logo?v=" + d.logo_sha) if d.logo_sha else (d.logo_url or None),
         "enveloppe": bool(mod.enveloppe and scenes.get("enveloppe")),
         "vip": d.vip or None,
     }
@@ -709,10 +893,39 @@ def public_pass(request: Request, token: str, db: Session = Depends(get_db)):
         "event_date_label": inv.fmt_date_fr(ev.event_date), "location": ev.location,
         "host_label": st.host_label or st.client_name, "pass_url": inv.pass_url(g.token),
     }
-    design = _design_payload(db, ev.id)
+    design = _design_payload(db, ev.id, token)
     if design:                           # couche visuelle lot 6 ; absente = pass classique
         payload["design"] = design
     return _no_store(payload)
+
+
+def _serve_design_image(db: Session, token: str, which: str) -> Response:
+    """Sert la photo/logo d'un design PRÊT, derrière le pass_token (non énumérable).
+    Octets déjà ré-encodés à l'upload : aucune donnée d'origine servie."""
+    g, ev, st = _pass_guest(db, token)
+    d = (db.query(InvitationDesign)
+         .filter(InvitationDesign.event_id == ev.id, InvitationDesign.status == "pret").first())
+    data = mime = None
+    if d:
+        data, mime = (d.photo_data, d.photo_mime) if which == "photo" else (d.logo_data, d.logo_mime)
+    if not data:
+        raise HTTPException(404, "Image introuvable")
+    return Response(bytes(data), media_type=mime or "image/jpeg",
+                    headers={"Cache-Control": "public, max-age=86400", "X-Robots-Tag": "noindex"})
+
+
+@router.get("/invitations/pass/{token}/photo")
+@limiter.limit("90/minute", key_func=path_token_key)
+@limiter.shared_limit(PUBLIC_IP_CEILING, scope="public_token_pages")
+def public_pass_photo(request: Request, token: str, db: Session = Depends(get_db)):
+    return _serve_design_image(db, token, "photo")
+
+
+@router.get("/invitations/pass/{token}/logo")
+@limiter.limit("90/minute", key_func=path_token_key)
+@limiter.shared_limit(PUBLIC_IP_CEILING, scope="public_token_pages")
+def public_pass_logo(request: Request, token: str, db: Session = Depends(get_db)):
+    return _serve_design_image(db, token, "logo")
 
 
 def _ics(s: str) -> str:

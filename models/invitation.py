@@ -237,6 +237,14 @@ class InvitationDesign(Base):
     logo_url       = Column(String(300), nullable=True)   # logo corporate (asset, jamais reconstruit)
     fiche          = Column(JSONB, nullable=True)      # contenu typé selon cadre.champs (cf. §3)
     vip            = Column(JSONB, nullable=True)      # {salon_label, acces_prioritaire} (corporate)
+    # Photo client / logo : image uploadée RÉ-ENCODÉE (Pillow), métadonnées retirées, servie
+    # derrière le pass_token (jamais énumérable). Octets stockés en base comme InvitationPage.cover.
+    photo_data     = Column(LargeBinary, nullable=True)
+    photo_mime     = Column(String(40), nullable=True)
+    photo_sha      = Column(String(64), nullable=True)    # version (cache navigateur)
+    logo_data      = Column(LargeBinary, nullable=True)
+    logo_mime      = Column(String(40), nullable=True)
+    logo_sha       = Column(String(64), nullable=True)
     status         = Column(String(10), nullable=False, default="brouillon")      # brouillon | pret
     owner_id       = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)  # cloisonnement
     updated_by     = Column(Integer, ForeignKey("users.id"), nullable=True)

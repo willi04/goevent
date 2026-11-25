@@ -9,12 +9,14 @@ aucune donnée financière.
 PrivateEventSettings : réglages 1-1 de l'événement privé (client, message, suivi).
 EventGuest           : un pass nominatif (1 à 20 places), jeton aléatoire.
 GuestCheckin         : journal des entrées (en ligne, hors ligne, manuelle).
+EventSession         : séances d'un événement sur plusieurs jours (une entrée par séance).
+InvitationPage       : présentation publique (affiche, description) de la page d'inscription.
 InvitationPack       : pack payé (taille × niveau de service), activé par l'admin.
 """
 from datetime import datetime
 
 from sqlalchemy import (
-    Boolean, Column, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint,
+    Boolean, Column, DateTime, ForeignKey, Index, Integer, LargeBinary, String, Text, UniqueConstraint, text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 
@@ -38,6 +40,16 @@ class PrivateEventSettings(Base):
     # Portefeuille (lot 4.5) : commercial propriétaire ; NULL = maison (admin)
     owner_id         = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     source_quote_id  = Column(Integer, nullable=True)
+    # Inscription libre (page publique /r/<slug>, sans compte) : chaque inscrit reçoit
+    # immédiatement un pass d'1 place. Plafond = pack actif (toujours) et signup_max (facultatif).
+    signup_slug      = Column(String(40), nullable=True)   # unique : index partiel ci-dessous
+    signup_open      = Column(Boolean, nullable=False, default=False, server_default="false")
+    signup_category  = Column(String(40), nullable=True)       # None = « Participant »
+    signup_max       = Column(Integer, nullable=True)          # personnes inscrites en ligne ; None = pack
+    signup_until     = Column(DateTime, nullable=True)         # UTC ; None = jusqu'à fermeture manuelle
+
+    __table_args__ = (Index("uq_private_event_settings_signup_slug", "signup_slug", unique=True,
+                            postgresql_where=text("signup_slug IS NOT NULL")),)
 
 
 class EventGuest(Base):
@@ -66,6 +78,7 @@ class EventGuest(Base):
     phone4_hash      = Column(String(64), nullable=True)
     created_by       = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at       = Column(DateTime, default=datetime.utcnow, nullable=False)
+    source           = Column(String(10), nullable=True)   # None = back-office ; « signup » = inscription libre
 
     __table_args__ = (Index("ix_event_guests_event_phone", "event_id", "phone"),)
 
@@ -84,6 +97,23 @@ class GuestCheckin(Base):
     device_id   = Column(String(64), nullable=True)
     conflict    = Column(Boolean, nullable=False, default=False)  # places en trop (2 téléphones hors ligne)
     reason      = Column(String(200), nullable=True)              # entrée manuelle : motif
+    # Séances (événement sur plusieurs jours) : NULL = événement sans séance (une entrée au total).
+    # reentry = retour dans la même séance accepté par l'agent : journalisé, jamais compté comme entrée.
+    session_id  = Column(Integer, nullable=True)
+    reentry     = Column(Boolean, nullable=False, default=False, server_default="false")
+
+
+class EventSession(Base):
+    """Séance d'un événement privé (« Jour 1 », « Soirée d'ouverture »). Avec des séances, un pass
+    donne ses places à CHAQUE séance ; sans séance, il les donne une fois pour tout l'événement."""
+    __tablename__ = "event_sessions"
+    id               = Column(Integer, primary_key=True, index=True)
+    event_id         = Column(Integer, ForeignKey("events.id", ondelete="CASCADE"), nullable=False, index=True)
+    label            = Column(String(60), nullable=False)
+    starts_at        = Column(DateTime, nullable=False)          # UTC
+    ends_at          = Column(DateTime, nullable=False)          # UTC
+    doors_before_min = Column(Integer, nullable=False, default=60)  # scan accepté N min avant le début
+    created_at       = Column(DateTime, default=datetime.utcnow, nullable=False)
 
 
 class InvitationPack(Base):
@@ -130,6 +160,22 @@ class InvitationPack(Base):
 
     # Un même paiement (canal + référence) ne peut activer qu'un seul pack, même annulé.
     __table_args__ = (UniqueConstraint("payment_channel", "payment_ref", name="uq_invitation_pack_payment"),)
+
+
+class InvitationPage(Base):
+    """Présentation PUBLIQUE d'un événement privé : page d'inscription libre et aperçu de partage
+    (WhatsApp…). Description publique distincte de events.description (note interne du back-office).
+    Table À PART : jamais chargée par les routes chaudes (scan, pass, synchro, suivi) ; l'image est
+    ré-encodée en JPEG par le serveur (métadonnées retirées). Lire cover_data seulement pour la servir."""
+    __tablename__ = "invitation_pages"
+    event_id     = Column(Integer, ForeignKey("events.id", ondelete="CASCADE"), primary_key=True)
+    description  = Column(Text, nullable=True)
+    cover_data   = Column(LargeBinary, nullable=True)      # JPEG
+    cover_sha    = Column(String(64), nullable=True)       # version (cache navigateur / CDN)
+    cover_width  = Column(Integer, nullable=True)
+    cover_height = Column(Integer, nullable=True)
+    updated_by   = Column(Integer, ForeignKey("users.id"), nullable=True)
+    updated_at   = Column(DateTime, default=datetime.utcnow, nullable=False)
 
 
 # ══════════════════════════════════════════════════════════════════════════

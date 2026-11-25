@@ -148,6 +148,7 @@
       var KEY = "goevent_pass:" + token;
       var $ = function (id) { return document.getElementById(id); };
       var esc = function (s) { var d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML; };
+      var mediaUrl = function (u) { return (u && u.charAt(0) === "/") ? API + u : u; };   // photo/logo = chemin racine servi par l'API
 
       function qrDataUrl(text) {
         var q = qrcode(0, "M"); q.addData(text); q.make();
@@ -211,9 +212,9 @@
 
       function renderFairePart(p) {
         var d = p.design, f = d.fiche || {}, corp = d.famille === "corporate", parts = [];
-        if (!corp && d.photo_url) parts.push('<div class="photo"><img src="' + esc(d.photo_url) + '" alt=""></div>');
+        if (!corp && d.photo_url) parts.push('<div class="photo"><img src="' + esc(mediaUrl(d.photo_url)) + '" alt=""></div>');
         parts.push('<div class="fp-in">');
-        if (corp && d.logo_url) parts.push('<img class="logo" src="' + esc(d.logo_url) + '" alt="">');
+        if (corp && d.logo_url) parts.push('<img class="logo" src="' + esc(mediaUrl(d.logo_url)) + '" alt="">');
         if (corp) {
           if (f.organisateur) parts.push('<div class="eyebrow">' + esc(f.organisateur) + '</div>');
           parts.push('<div class="titre">' + esc(f.titre || p.event_title) + '</div>');

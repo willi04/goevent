@@ -266,10 +266,185 @@
     if (!ev.purged) root.appendChild(signupBlock());
     if (!ev.purged) root.appendChild(posterBlock());
     if (!ev.purged) root.appendChild(guestsBlock());
+    if (!ev.purged) root.appendChild(designBlock());
     root.appendChild(liveBlock());
     root.appendChild(messageBlock());
     root.appendChild(agentsBlock());
     root.appendChild(dataBlock());
+  }
+
+  // ── Design visuel (lot 6) ───────────────────────────────────────────
+  function designBlock() {
+    var box = el("div", { id: "inv-design-body" }, [el("p", { class: "text-sm text-gray-400", text: "Chargement…" })]);
+    loadDesign(box);
+    return block("Design de l'invitation", [box], "inv-design");
+  }
+
+  function loadDesign(box) {
+    Promise.all([
+      btApi.get("/admin/invitations/events/" + S.eventId + "/design"),
+      btApi.get("/admin/invitations/cadres")
+    ]).then(function (r) {
+      S.design = r[0]; S.cadres = r[1].cadres || [];
+      if (!S.design.fiche) S.design.fiche = {};
+      renderDesign(box);
+    }).catch(function (e) {
+      box.innerHTML = ""; box.appendChild(el("div", { class: "text-sm text-red-600", text: e.message || "Erreur" }));
+    });
+  }
+
+  function _listKeys(type) { var m = /^list\[(.+)\]$/.exec(type); return m ? m[1].split(",") : null; }
+  function _listToText(arr, keys) {
+    return (arr || []).map(function (o) { return keys.map(function (k) { return o[k] || ""; }).join(" | "); }).join("\n");
+  }
+  function _textToList(txt, keys) {
+    return (txt || "").split("\n").map(function (l) { return l.trim(); }).filter(Boolean).map(function (l) {
+      var p = l.split("|").map(function (x) { return x.trim(); }), o = {};
+      keys.forEach(function (k, i) { if (p[i]) o[k] = p[i]; }); return o;
+    });
+  }
+
+  function renderDesign(box) {
+    var d = S.design, fiche = d.fiche, fam = (d.cadre && d.cadre.famille) || d._fam || "familial";
+    d._fam = fam;
+    box.innerHTML = "";
+
+    // 1) Statut + famille
+    var statut = el("span", { class: "text-[11px] font-bold px-2 py-1 rounded-full " + (d.status === "pret" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"), text: d.status === "pret" ? "Publié (visible par les invités)" : "Brouillon" });
+    var famSel = el("select", { class: "input-field", style: "max-width:220px", onchange: function () { d._fam = famSel.value; d.cadre = null; d.modele_id = null; renderDesign(box); } },
+      [["familial", "Célébrations familiales"], ["corporate", "Professionnel / corporate"]].map(function (o) {
+        return el("option", { value: o[0], text: o[1], selected: o[0] === fam ? "selected" : null });
+      }));
+
+    // 2) Choix du cadre (suggérés d'abord déjà triés côté API)
+    var cadres = S.cadres.filter(function (c) { return c.famille === fam; });
+    var curCode = d.cadre && d.cadre.code;
+    var cadreWrap = el("div", { class: "flex flex-wrap gap-2 mt-1" }, cadres.map(function (c) {
+      var on = c.code === curCode;
+      return el("button", { class: "action-btn text-xs " + (on ? "btn-primary" : ""), style: on ? "" : "background:#f3f4f6;color:#374151",
+        text: c.name + (c.suggested ? " ★" : ""), onclick: function () {
+          d.cadre = { code: c.code, famille: c.famille, scenes: c.scenes, champs: c.champs };
+          var m0 = (c.modeles || [])[0]; d.modele_id = m0 ? m0.id : null; d.modele = m0 || null;
+          d._cadreModeles = c.modeles || []; renderDesign(box);
+        } });
+    }));
+
+    // 3) Gabarit / skin du cadre choisi
+    var skinSel = null;
+    if (d.cadre) {
+      var modeles = d._cadreModeles || (cadres.filter(function (c) { return c.code === curCode; })[0] || {}).modeles || [];
+      skinSel = el("select", { class: "input-field", style: "max-width:260px", onchange: function () {
+        d.modele_id = parseInt(skinSel.value, 10);
+        d.modele = modeles.filter(function (m) { return m.id === d.modele_id; })[0] || null; renderSkinPreview();
+      } }, modeles.map(function (m) { return el("option", { value: String(m.id), text: m.name, selected: m.id === d.modele_id ? "selected" : null }); }));
+    }
+
+    // 4) Fiche typée
+    var inputs = {};
+    var ficheWrap = el("div", { class: "space-y-2 mt-2" });
+    if (d.cadre && d.cadre.champs) {
+      Object.keys(d.cadre.champs).forEach(function (key) {
+        var type = d.cadre.champs[key];
+        if (type === "image") return;                       // géré par les uploads
+        var keys = _listKeys(type), val = fiche[key];
+        var node;
+        if (keys) {
+          node = el("textarea", { class: "input-field", rows: String(Math.max(2, (val || []).length + 1)),
+            placeholder: keys.join(" | "), text: _listToText(val, keys) });
+          node._keys = keys;
+        } else if (type === "textarea") {
+          node = el("textarea", { class: "input-field", rows: "2", text: val || "" });
+        } else {
+          node = el("input", { class: "input-field", value: val || "" });
+        }
+        inputs[key] = node;
+        ficheWrap.appendChild(field(key.replace(/_/g, " "), node));
+      });
+    } else {
+      ficheWrap.appendChild(el("p", { class: "text-sm text-gray-400", text: "Choisissez un cadre pour remplir le contenu." }));
+    }
+
+    // 5) Affiche → palette
+    var paletteBox = el("div", { class: "flex flex-wrap gap-2 mt-2" });
+    var afficheIn = el("input", { type: "file", accept: "image/*", class: "text-xs" });
+    afficheIn.addEventListener("change", function () {
+      if (!afficheIn.files[0]) return;
+      _upload("/design/palette", afficheIn.files[0], function (res) {
+        d.theme_override = Object.assign({}, d.theme_override, { couleurs: res.couleurs });
+        if (d.modele) d.modele.skin = Object.assign({}, d.modele.skin, { couleurs: res.couleurs });
+        toast("Palette extraite de l'affiche.", "success"); renderSkinPreview();
+      });
+    });
+
+    // 6) Photo / logo
+    function uploader(label, which) {
+      var fin = el("input", { type: "file", accept: "image/*", class: "text-xs" });
+      var state = el("span", { class: "text-xs text-gray-500", text: (which === "photo" ? d.has_photo : d.has_logo) ? "✓ chargé" : "aucun" });
+      fin.addEventListener("change", function () {
+        if (!fin.files[0]) return;
+        _upload("/design/" + which, fin.files[0], function () { state.textContent = "✓ chargé"; toast(label + " chargé.", "success"); renderSkinPreview(); });
+      });
+      return field(label, el("div", { class: "flex items-center gap-3" }, [fin, state]));
+    }
+
+    // 7) Aperçu skin (couleurs + titre)
+    var preview = el("div", { class: "rounded-xl p-4 mt-2", id: "inv-skin-preview" });
+    function renderSkinPreview() {
+      var skin = (d.theme_override && d.theme_override.couleurs) ? d.theme_override : (d.modele && d.modele.skin) || { couleurs: {} };
+      var c = skin.couleurs || {};
+      preview.style.background = c.fond || "#f3f4f1"; preview.style.color = c.texte || "#111";
+      preview.innerHTML = "";
+      preview.appendChild(el("div", { style: "font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;color:" + (c.accentD || c.accent || "#888"), text: fiche.eyebrow || fiche.organisateur || "Aperçu" }));
+      preview.appendChild(el("div", { style: "font-size:26px;font-weight:800;margin-top:4px", text: fiche.display_names || fiche.titre || S.ev.title }));
+      preview.appendChild(el("div", { style: "display:flex;gap:6px;margin-top:10px" }, ["fond", "accent", "clair", "texte"].map(function (k) {
+        return el("span", { title: k + " " + (c[k] || ""), style: "width:26px;height:26px;border-radius:6px;border:1px solid #0001;background:" + (c[k] || "#fff") });
+      })));
+    }
+
+    // 8) Actions
+    function collectFiche() {
+      var out = {};
+      Object.keys(inputs).forEach(function (k) {
+        var n = inputs[k];
+        out[k] = n._keys ? _textToList(n.value, n._keys) : (n.value || "").trim();
+      });
+      return out;
+    }
+    function save(status) {
+      var body = { modele_id: d.modele_id, fiche: collectFiche(), theme_override: d.theme_override || null };
+      if (status) body.status = status;
+      if (status === "pret" && !d.modele_id) { toast("Choisissez un cadre avant de publier.", "error"); return; }
+      btApi.put("/admin/invitations/events/" + S.eventId + "/design", body).then(function (res) {
+        S.design = res; if (!S.design.fiche) S.design.fiche = {}; S.design._fam = fam;
+        toast(status === "pret" ? "Design publié." : (status === "brouillon" ? "Repassé en brouillon." : "Design enregistré."), "success");
+        renderDesign(box);
+      }).catch(function (e) { toast(e.message || "Erreur", "error"); });
+    }
+
+    var btnSave = el("button", { class: "action-btn btn-primary text-sm", text: "Enregistrer", onclick: function () { save(null); } });
+    var btnPub = el("button", { class: "action-btn text-sm", style: d.status === "pret" ? "background:#fee2e2;color:#991b1b" : "background:#dcfce7;color:#166534",
+      text: d.status === "pret" ? "Dépublier" : "Publier (rendre visible)", onclick: function () { save(d.status === "pret" ? "brouillon" : "pret"); } });
+
+    box.appendChild(el("div", { class: "flex items-center gap-3 mb-3" }, [statut]));
+    box.appendChild(field("Famille de modèle", famSel));
+    box.appendChild(lbl("Cadre (★ = suggéré)")); box.appendChild(cadreWrap);
+    if (skinSel) box.appendChild(field("Palette / skin", skinSel));
+    box.appendChild(ficheWrap);
+    box.appendChild(field("Affiche → extraire les couleurs", afficheIn, "L'affiche n'est pas conservée : seules les couleurs sont extraites."));
+    box.appendChild(paletteBox);
+    if (fam === "familial") box.appendChild(uploader("Photo du couple / client", "photo"));
+    if (fam === "corporate") box.appendChild(uploader("Logo", "logo"));
+    box.appendChild(lbl("Aperçu")); box.appendChild(preview);
+    box.appendChild(el("div", { class: "flex flex-wrap gap-2 mt-4" }, [btnSave, btnPub]));
+    renderSkinPreview();
+  }
+
+  function _upload(suffix, file, onok) {
+    var fd = new FormData(); fd.append("file", file);
+    fetch(BT_API + "/admin/invitations/events/" + S.eventId + suffix, {
+      method: "POST", headers: { Authorization: "Bearer " + btAuth.getToken() }, body: fd
+    }).then(function (r) { return r.ok ? r.json() : r.json().then(function (j) { throw new Error(j.detail || "Erreur"); }); })
+      .then(onok).catch(function (e) { toast(e.message || "Upload impossible", "error"); });
   }
 
   function refreshLive() {

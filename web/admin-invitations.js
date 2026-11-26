@@ -298,11 +298,38 @@
     return (arr || []).map(function (o) { return keys.map(function (k) { return o[k] || ""; }).join(" | "); }).join("\n");
   }
   function _textToList(txt, keys) {
+    // séparateurs flexibles : « | », tabulation (collage Excel) ou « ; »
     return (txt || "").split("\n").map(function (l) { return l.trim(); }).filter(Boolean).map(function (l) {
-      var p = l.split("|").map(function (x) { return x.trim(); }), o = {};
+      var p = l.split(/\t|\||;/).map(function (x) { return x.trim(); }), o = {};
       keys.forEach(function (k, i) { if (p[i]) o[k] = p[i]; }); return o;
     });
   }
+
+  // Ordre + libellés FR + exemples des champs de la fiche (indépendant de l'ordre JSONB)
+  var FIELD_SPECS = {
+    familial: [
+      { k: "display_names", l: "Noms affichés", ph: "Awa & Léon" },
+      { k: "eyebrow", l: "Accroche (en-tête)", ph: "Nous nous marions" },
+      { k: "date_label", l: "Date (en toutes lettres)", ph: "Samedi 14 juin 2026" },
+      { k: "lieu", l: "Lieu", ph: "Cathédrale de Bangui" },
+      { k: "verset", l: "Verset / citation", t: "textarea", ph: "L'amour est patient, il est plein de bonté" },
+      { k: "reference", l: "Référence du verset", ph: "1 Corinthiens 13" },
+      { k: "intro", l: "Introduction", t: "textarea", ph: "C'est avec joie que nous vous convions à célébrer notre union." },
+      { k: "body", l: "Texte principal", t: "textarea" },
+      { k: "closing", l: "Formule de fin", ph: "Votre présence est notre plus beau cadeau." },
+      { k: "programme", l: "Programme", t: "list", ph: "15h00 | Cérémonie | Cathédrale" }
+    ],
+    corporate: [
+      { k: "organisateur", l: "Organisateur", ph: "AXION Group" },
+      { k: "titre", l: "Titre de l'événement", ph: "Tech Summit 2026" },
+      { k: "sous_titre", l: "Sous-titre", ph: "L'IA au service de l'Afrique centrale" },
+      { k: "lieu", l: "Lieu", ph: "Ledger Plaza, Bangui" },
+      { k: "cta", l: "Bouton d'action (CTA)", ph: "Confirmer ma présence" },
+      { k: "intervenants", l: "Intervenants", t: "list", ph: "David Koyt | CEO | PayGo Africa" },
+      { k: "sessions", l: "Programme / sessions", t: "list", ph: "09h00 | Ouverture | D. Koyt" },
+      { k: "sponsors", l: "Sponsors", t: "list", ph: "Orange CA | " }
+    ]
+  };
 
   function renderDesign(box) {
     var d = S.design, fiche = d.fiche, fam = (d.cadre && d.cadre.famille) || d._fam || "familial";
@@ -343,22 +370,22 @@
     var inputs = {};
     var ficheWrap = el("div", { class: "space-y-2 mt-2" });
     if (d.cadre && d.cadre.champs) {
-      Object.keys(d.cadre.champs).forEach(function (key) {
-        var type = d.cadre.champs[key];
-        if (type === "image") return;                       // géré par les uploads
-        var keys = _listKeys(type), val = fiche[key];
-        var node;
+      (FIELD_SPECS[fam] || []).forEach(function (sp) {
+        var type = d.cadre.champs[sp.k];
+        if (type == null || type === "image") return;       // champ absent de ce cadre (ou géré par upload)
+        var keys = _listKeys(type), val = fiche[sp.k], node, help = null;
         if (keys) {
-          node = el("textarea", { class: "input-field", rows: String(Math.max(2, (val || []).length + 1)),
-            placeholder: keys.join(" | "), text: _listToText(val, keys) });
+          node = el("textarea", { class: "input-field", rows: String(Math.max(3, (val || []).length + 1)),
+            placeholder: sp.ph || keys.join(" | "), text: _listToText(val, keys) });
           node._keys = keys;
+          help = "Une ligne par entrée · colonnes : " + keys.join(", ") + " · séparez par « | » ou une tabulation (collage Excel/tableur OK).";
         } else if (type === "textarea") {
-          node = el("textarea", { class: "input-field", rows: "2", text: val || "" });
+          node = el("textarea", { class: "input-field", rows: "2", placeholder: sp.ph || "", text: val || "" });
         } else {
-          node = el("input", { class: "input-field", value: val || "" });
+          node = el("input", { class: "input-field", placeholder: sp.ph || "", value: val || "" });
         }
-        inputs[key] = node;
-        ficheWrap.appendChild(field(key.replace(/_/g, " "), node));
+        inputs[sp.k] = node;
+        ficheWrap.appendChild(field(sp.l, node, help));
       });
     } else {
       ficheWrap.appendChild(el("p", { class: "text-sm text-gray-400", text: "Choisissez un cadre pour remplir le contenu." }));

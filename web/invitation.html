@@ -51,6 +51,16 @@
     footer a { color: var(--muted); }
     .hidden { display: none !important; }
 
+    /* Pass façon badge (uniquement quand un design est présent) */
+    .gomark, .pass-label { display: none; }
+    body.design #pass .top { display: flex; align-items: center; justify-content: space-between; text-align: left; padding: 16px 22px; }
+    body.design #pass #host, body.design #pass #date, body.design #pass #location { display: none; }
+    body.design #pass #title { font-size: 14px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; margin: 0; }
+    body.design #pass .gomark { display: inline; font-weight: 800; font-size: 15px; color: #fff; opacity: .92; }
+    body.design #pass .pass-label { display: block; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; font-weight: 800; color: var(--d-accentD); margin-bottom: 2px; }
+    body.design #pass .guest { font-family: var(--d-titre); font-size: 30px; }
+    body.design #pass .qr { border-color: color-mix(in srgb, var(--d-accent) 28%, #e5e7eb); }
+
     /* ── Couche design (lot 6) : faire-part / page + programme ── */
     #exp { margin-bottom: 16px; }
     .fp { margin-bottom: 16px; }
@@ -81,22 +91,24 @@
     .prog .lb { font-weight: 700; color: var(--d-texte); }
     .prog .ds { font-size: 13px; color: var(--d-muted); margin-top: 2px; }
 
-    /* ── Enveloppe (ouverture pro, sans zoom) : fermée, le billet est CACHÉ à l'intérieur ── */
+    /* ── Enveloppe (ouverture pro, sans zoom) : le billet SORT de l'intérieur, séquence ~3,5 s ── */
     #env { position: fixed; inset: 0; background: var(--d-fond); display: flex; align-items: center; justify-content: center; z-index: 50; }
-    #env.go { animation: envgone .55s ease 1.05s forwards; }
+    #env.go { animation: envgone .6s ease 3.2s forwards; }                 /* le faire-part n'apparaît qu'après ~3,2 s */
     @keyframes envgone { to { opacity: 0; visibility: hidden; } }
     .env { position: relative; width: 300px; height: 200px; cursor: pointer; }
-    /* billet glissé dans l'enveloppe : derrière la face avant (z2 < z3) → invisible tant que c'est fermé */
-    .env .letter { position: absolute; left: 20px; right: 20px; top: 66px; height: 120px; background: var(--d-clair); border-radius: 8px;
-                   box-shadow: 0 8px 18px rgba(0,0,0,.20); display: flex; align-items: center; justify-content: center; text-align: center; padding: 14px; z-index: 2; }
-    .env .letter .nm { font-family: var(--d-titre); font-size: 24px; font-weight: 600; color: var(--d-texte); }
-    #env.go .letter { animation: letterout 1s cubic-bezier(.4,0,.2,1) .35s forwards; }
-    @keyframes letterout { 0% { transform: translateY(0); z-index: 2; } 2% { z-index: 6; } 100% { transform: translateY(-152px); z-index: 6; } }
-    /* face avant OPAQUE : cache le billet quand l'enveloppe est fermée */
-    .env .body { position: absolute; inset: 0; background: var(--d-accent); border-radius: 12px; z-index: 3; overflow: hidden; }
-    .env .body::after { content: ""; position: absolute; inset: 0; background: linear-gradient(135deg, transparent 49.4%, rgba(0,0,0,.13) 49.7%, transparent 50%); }
+    /* billet DANS l'enveloppe : TOUJOURS derrière la face avant (z2 < z3) → il émerge par le haut, jamais superposé */
+    .env .letter { position: absolute; left: 22px; right: 22px; top: 30px; height: 150px; background: var(--d-clair); border-radius: 8px 8px 10px 10px;
+                   box-shadow: 0 10px 22px rgba(0,0,0,.22); display: flex; align-items: center; justify-content: center; text-align: center; padding: 16px; z-index: 2; }
+    .env .letter .nm { font-family: var(--d-titre); font-size: 24px; font-weight: 600; color: var(--d-texte); opacity: 0; }
+    #env.go .letter { animation: letterout 1.7s cubic-bezier(.22,1,.36,1) 1.3s forwards; }   /* glisse hors de l'enveloppe */
+    @keyframes letterout { from { transform: translateY(0); } to { transform: translateY(-186px); } }
+    #env.go .letter .nm { animation: nmfade .8s ease 1.9s forwards; }       /* le texte apparaît en sortant */
+    @keyframes nmfade { to { opacity: 1; } }
+    /* face avant OPAQUE : cache le billet, et masque la part encore À L'INTÉRIEUR pendant qu'il sort */
+    .env .front { position: absolute; inset: 0; background: var(--d-accent); border-radius: 12px; z-index: 3; overflow: hidden; box-shadow: inset 0 7px 12px -7px rgba(0,0,0,.4); }
+    .env .front::after { content: ""; position: absolute; inset: 0; background: linear-gradient(135deg, transparent 49.4%, rgba(0,0,0,.12) 49.7%, transparent 50%); }
     .env .flap { position: absolute; top: 0; left: 0; right: 0; height: 52%; background: var(--d-accentD); transform-origin: top; border-radius: 12px 12px 0 0;
-                 clip-path: polygon(0 0, 100% 0, 50% 100%); transition: transform .75s cubic-bezier(.5,0,.2,1); z-index: 4; }
+                 clip-path: polygon(0 0, 100% 0, 50% 100%); transition: transform 1s cubic-bezier(.5,0,.2,1) .3s; z-index: 4; }
     #env.go .flap { transform: rotateX(180deg); z-index: 1; }
     .env .seal { position: absolute; top: calc(52% - 20px); left: calc(50% - 20px); width: 40px; height: 40px; border-radius: 50%; background: var(--d-accent);
                  color: #fff; display: flex; align-items: center; justify-content: center; font-size: 18px; z-index: 5; box-shadow: 0 3px 8px rgba(0,0,0,.25); transition: opacity .3s; }
@@ -115,8 +127,10 @@
         <h1 id="title"></h1>
         <p class="meta" id="date"></p>
         <p class="meta" id="location"></p>
+        <span class="gomark">GoEvent.</span>
       </div>
       <div class="body">
+        <p class="pass-label" id="pass-label"></p>
         <p class="guest" id="guest"></p>
         <p class="seats" id="seats"></p>
         <div class="chips" id="chips"></div>
@@ -267,7 +281,7 @@
         var env = $("env");
         env.innerHTML = '<div class="env" id="env-card">'
           + '<div class="letter"><div class="nm">' + esc(nm) + '</div></div>'
-          + '<div class="body"></div>'
+          + '<div class="front"></div>'
           + '<div class="flap"></div><div class="seal">✦</div>'
           + '<div class="env-hint">Touchez pour ouvrir</div></div>';
         env.classList.remove("hidden");
@@ -275,7 +289,7 @@
         function go() {
           if (opened) return; opened = true;
           env.classList.add("go");
-          setTimeout(function () { env.classList.add("hidden"); if (onDone) onDone(); }, 1250);
+          setTimeout(function () { env.classList.add("hidden"); if (onDone) onDone(); }, 3800);
         }
         $("env-card").addEventListener("click", go);
         env.addEventListener("click", go);
@@ -288,6 +302,7 @@
         exp.innerHTML = renderFairePart(p) + renderProgramme(p);
         exp.classList.remove("hidden");
         fillPass(p, offline);
+        var pl = $("pass-label"); if (pl) pl.textContent = p.category || "Invité";
         $("pass").classList.remove("hidden");
         document.title = (p.event_title || "Invitation") + " | Invitation";
         var canOpen = p.design.enveloppe && ["revoked", "cancelled", "inactive"].indexOf(p.status) === -1;

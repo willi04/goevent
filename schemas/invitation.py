@@ -147,4 +147,5 @@ class DesignPut(BaseModel):
     fiche: Optional[dict] = None
     theme_override: Optional[dict] = None     # palette ajustée (depuis l'affiche ou à la main)
     vip: Optional[dict] = None
+    photo_crop: Optional[dict] = None         # cadrage photo : {x, y} point focal en %, {zoom}
     status: Optional[str] = Field(None, pattern="^(brouillon|pret)$")

@@ -123,6 +123,84 @@
     .prog .lb { font-weight: 700; color: var(--d-texte); }
     .prog .ds { font-size: 13px; color: var(--d-muted); margin-top: 2px; }
 
+    /* ── 10 cadres familiaux : chaque code a sa structure ── */
+    .ph-empty { background: color-mix(in srgb, var(--d-accent) 14%, var(--d-clair)); }
+    /* object-position : point focal par défaut haut-centre (visages du couple) ; surchargé par --ph-pos si l'admin a recadré */
+    .fp [class$="-ph"] img { width: 100%; height: 100%; object-fit: cover; object-position: var(--ph-pos, center 28%); display: block; }
+    /* b1 Papier-décoré : photo haut + bandeau ethnique */
+    .fp-b1 .b1-ph { width: 100%; aspect-ratio: 4/3; overflow: hidden; }
+    .fp-b1 .b1-band { height: 14px; background: repeating-linear-gradient(135deg, var(--d-accent) 0 9px, var(--d-accentD) 9px 18px); }
+    /* b2 Éditorial-moderne : photo encadrée + grand serif */
+    .fp-b2 .fp-in { padding-top: 24px; }
+    .fp-b2 .b2-frame { border: 1px solid color-mix(in srgb, var(--d-accent) 45%, transparent); padding: 8px; border-radius: 6px; margin: 6px 0 18px; }
+    .fp-b2 .b2-ph { aspect-ratio: 3/2; overflow: hidden; border-radius: 3px; }
+    .fp-b2 .names { font-size: 44px; }
+    /* b3 Cadre-ornemental : arche + cadre doré */
+    .fp-b3 .b3-frame { margin: 14px; border: 2px solid var(--d-accent); border-radius: 16px; }
+    .fp-b3 .b3-ph { width: 66%; margin: 6px auto 16px; aspect-ratio: 3/4; overflow: hidden; border-radius: 110px 110px 12px 12px; border: 2px solid var(--d-accent); }
+    /* b4 Pleine photo / affiche : prénoms en surimpression */
+    .fp-b4 { min-height: 480px; background: var(--d-accent); background-size: cover; background-position: center; display: flex; align-items: flex-end; }
+    .fp-b4 .b4-in { padding: 26px 24px 30px; width: 100%; text-align: center; }
+    .fp-b4 .b4-in .names, .fp-b4 .b4-in .when, .fp-b4 .b4-in .where { color: #fff; }
+    .fp-b4 .b4-in .eyebrow { color: #fff; opacity: .9; }
+    /* b5 Split asymétrique : photo + carte texte décalée */
+    .fp-b5 .b5-ph { width: 100%; aspect-ratio: 1/1; overflow: hidden; }
+    .fp-b5 .b5-card { position: relative; margin: -56px 16px 22px; padding: 22px 20px; background: var(--d-clair); border-radius: 16px; box-shadow: 0 12px 30px rgba(0,0,0,.14); text-align: left; }
+    .fp-b5 .b5-card .names { font-size: 34px; }
+    /* b6 Médaillon couronne : photo ronde + couronne */
+    .fp-b6 .b6-med { position: relative; width: 190px; height: 190px; margin: 8px auto 16px; }
+    .fp-b6 .b6-ph { position: absolute; top: 18px; left: 18px; width: 154px; height: 154px; border-radius: 50%; overflow: hidden; }
+    .fp-b6 .b6-ring { position: absolute; inset: 0; border-radius: 50%; border: 2px dashed var(--d-accent); }
+    .fp-b6 .b6-ring::after { content: ""; position: absolute; inset: 7px; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--d-accent) 50%, transparent); }
+    /* b7 Polaroid / album : polaroïd incliné sur kraft */
+    .fp-b7 { background: color-mix(in srgb, var(--d-texte) 10%, #d9c7a4); }
+    .fp-b7 .b7-pola { background: #fff; padding: 12px 12px 0; border-radius: 3px; box-shadow: 0 12px 26px rgba(0,0,0,.22); transform: rotate(-3deg); width: 80%; margin: 8px auto 20px; }
+    .fp-b7 .b7-ph { aspect-ratio: 1/1; overflow: hidden; }
+    .fp-b7 .b7-cap { font-family: var(--d-titre); font-size: 22px; padding: 12px 6px 14px; color: #2a2318; }
+    /* b8 Minimal typographique : typo géante + vignette */
+    .fp-b8 .b8-vign { width: 72px; height: 72px; border-radius: 50%; overflow: hidden; margin: 2px auto 12px; border: 2px solid var(--d-accent); }
+    .fp-b8 .b8-names { font-size: 54px; line-height: .98; }
+    /* b9 Magazine / bandeau : masthead + photo pleine largeur */
+    .fp-b9 .b9-mast { background: var(--d-accent); color: #fff; display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; font-size: 13px; }
+    .fp-b9 .b9-ph { width: 100%; aspect-ratio: 16/10; overflow: hidden; }
+    .fp-b9 .names { font-size: 40px; }
+    /* b10 Art déco géométrique : hexagone doré, noir + or */
+    .fp-b10 { background: color-mix(in srgb, var(--d-texte) 86%, #000); }
+    .fp-b10 .fp-in { color: #ece0c6; }
+    .fp-b10 .b10-hex { width: 164px; height: 184px; margin: 6px auto 8px; padding: 3px; background: var(--d-accent); clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
+    .fp-b10 .b10-ph { width: 100%; height: 100%; overflow: hidden; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
+    .fp-b10 .b10-deco { width: 60px; height: 2px; background: var(--d-accent); margin: 10px auto 12px; }
+    .fp-b10 .names { color: var(--d-accent); }
+    .fp-b10 .eyebrow { color: var(--d-accent); }
+    .fp-b10 .txt, .fp-b10 .when, .fp-b10 .where { color: #e4d8bf; }
+
+    /* ── Décors ornementaux par cadre (skinnables via --d-accent) ── */
+    .fp-b1 .fp-in::before { content: "❖"; display: block; color: var(--d-accent); font-size: 15px; margin-bottom: 8px; letter-spacing: .3em; }
+    .fp-b1 .fp-in::after { content: ""; display: block; height: 10px; margin: 18px -24px -28px; background: repeating-linear-gradient(135deg, var(--d-accent) 0 7px, var(--d-accentD) 7px 14px); }
+    .fp-b2 { position: relative; }
+    .fp-b2::before { content: ""; position: absolute; inset: 9px; border: 1px solid color-mix(in srgb, var(--d-accent) 40%, transparent); border-radius: 10px; pointer-events: none; }
+    .fp-b3 .b3-frame { position: relative; }
+    .fp-b3 .b3-frame::before, .fp-b3 .b3-frame::after { content: "❧"; position: absolute; color: var(--d-accent); font-size: 18px; }
+    .fp-b3 .b3-frame::before { top: 8px; left: 12px; } .fp-b3 .b3-frame::after { bottom: 8px; right: 12px; transform: rotate(180deg); }
+    .fp-b4 { position: relative; }
+    .fp-b4::after { content: ""; position: absolute; inset: 14px; border: 1px solid rgba(255,255,255,.55); pointer-events: none; }
+    .fp-b5 .b5-card { border-left: 4px solid var(--d-accent); }
+    .fp-b5 .b5-card::after { content: "❖"; position: absolute; top: 14px; right: 16px; color: var(--d-accent); font-size: 14px; }
+    .fp-b6 .b6-med::before, .fp-b6 .b6-med::after { content: "✿"; position: absolute; left: 50%; transform: translateX(-50%); color: var(--d-accent); font-size: 18px; }
+    .fp-b6 .b6-med::before { top: -6px; } .fp-b6 .b6-med::after { bottom: -6px; }
+    .fp-b7 .b7-pola { position: relative; }
+    .fp-b7 .b7-pola::before, .fp-b7 .b7-pola::after { content: ""; position: absolute; top: -8px; width: 54px; height: 20px; background: color-mix(in srgb, var(--d-accent) 22%, #fff); opacity: .7; }
+    .fp-b7 .b7-pola::before { left: 10px; transform: rotate(-8deg); } .fp-b7 .b7-pola::after { right: 10px; transform: rotate(8deg); }
+    .fp-b8 .fp-in::before { content: ""; display: block; width: 44px; height: 2px; background: var(--d-accent); margin: 2px auto 12px; }
+    .fp-b8 .fp-in::after { content: "◆ ◆ ◆"; display: block; color: var(--d-accent); font-size: 9px; letter-spacing: .4em; margin-top: 16px; }
+    .fp-b9 .fp-in { position: relative; }
+    .fp-b9 .fp-in::before { content: ""; position: absolute; top: 0; left: 24px; right: 24px; height: 3px; border-top: 1px solid var(--d-accent); border-bottom: 1px solid var(--d-accent); }
+    .fp-b9 .fp-in { padding-top: 28px; }
+    .fp-b10 { position: relative; }
+    .fp-b10::before, .fp-b10::after { content: ""; position: absolute; width: 26px; height: 26px; border: 2px solid var(--d-accent); pointer-events: none; }
+    .fp-b10::before { top: 12px; left: 12px; border-right: 0; border-bottom: 0; }
+    .fp-b10::after { bottom: 12px; right: 12px; border-left: 0; border-top: 0; }
+
     /* ── Enveloppe (ouverture pro, sans zoom) : le billet SORT de l'intérieur, séquence ~3,5 s ── */
     #env { position: fixed; inset: 0; background: var(--d-fond); display: flex; align-items: center; justify-content: center; z-index: 50; }
     #env.go { animation: envgone .6s ease 3.2s forwards; }                 /* le faire-part n'apparaît qu'après ~3,2 s */
@@ -262,31 +340,49 @@
 
       function el(html) { var d = document.createElement("div"); d.innerHTML = html; return d.firstElementChild; }
 
-      function renderFairePart(p) {
-        var d = p.design, f = d.fiche || {}, corp = d.famille === "corporate", parts = [];
-        if (!corp && d.photo_url) parts.push('<div class="photo"><img src="' + esc(mediaUrl(d.photo_url)) + '" alt=""></div>');
-        parts.push('<div class="fp-in">');
-        if (corp && d.logo_url) parts.push('<img class="logo" src="' + esc(mediaUrl(d.logo_url)) + '" alt="">');
-        if (corp) {
-          if (f.organisateur) parts.push('<div class="eyebrow">' + esc(f.organisateur) + '</div>');
-          parts.push('<div class="titre">' + esc(f.titre || p.event_title) + '</div>');
-          if (f.sous_titre) parts.push('<div class="sous">' + esc(f.sous_titre) + '</div>');
-        } else {
-          if (f.eyebrow) parts.push('<div class="eyebrow">' + esc(f.eyebrow) + '</div>');
-          parts.push('<div class="names">' + esc(f.display_names || p.event_title) + '</div>');
-          if (f.verset) parts.push('<div class="verset">« ' + esc(f.verset) + ' »' + (f.reference ? '<span class="ref">' + esc(f.reference) + '</span>' : '') + '</div>');
-          if (f.intro) parts.push('<p class="txt">' + esc(f.intro) + '</p>');
-          if (f.body) parts.push('<p class="txt">' + esc(f.body) + '</p>');
-          if (f.closing) parts.push('<p class="txt">' + esc(f.closing) + '</p>');
-        }
+      // ── Fragments de contenu réutilisés par les cadres familiaux ──
+      function _f(p) { return p.design.fiche || {}; }
+      function _photo(p) { return p.design.photo_url ? mediaUrl(p.design.photo_url) : ""; }
+      function _names(p) { return esc(_f(p).display_names || p.event_title); }
+      function _eye(p) { var e = _f(p).eyebrow; return e ? '<div class="eyebrow">' + esc(e) + '</div>' : ""; }
+      function _verset(p) { var f = _f(p); return f.verset ? '<div class="verset">« ' + esc(f.verset) + ' »' + (f.reference ? '<span class="ref">' + esc(f.reference) + '</span>' : "") + '</div>' : ""; }
+      function _texts(p) { var f = _f(p), o = ""; ["intro", "body", "closing"].forEach(function (k) { if (f[k]) o += '<p class="txt">' + esc(f[k]) + '</p>'; }); return o; }
+      function _dl(p) { var f = _f(p), w = f.date_label || p.event_date_label, l = f.lieu || p.location, o = ""; if (w) o += '<div class="when">🗓 ' + esc(w) + '</div>'; if (l) o += '<div class="where">📍 ' + esc(l) + '</div>'; return o; }
+      function _imgdiv(p, cls) {
+        var u = _photo(p);
+        if (!u) return '<div class="' + cls + ' ph-empty"></div>';
+        var c = p.design.photo_crop || {}, pos = "";
+        if (c.x != null || c.y != null) pos = ' style="--ph-pos:' + (c.x == null ? 50 : c.x) + '% ' + (c.y == null ? 28 : c.y) + '%"';
+        return '<div class="' + cls + '"' + pos + '><img src="' + esc(u) + '" alt=""></div>';
+      }
+
+      // ── 10 structures familiales distinctes (chaque cadre a sa mise en page) ──
+      var FP_FAM = {
+        b1: function (p) { return '<div class="fp card fp-b1">' + _imgdiv(p, "b1-ph") + '<div class="b1-band"></div><div class="fp-in">' + _eye(p) + '<div class="names">' + _names(p) + '</div>' + _verset(p) + _texts(p) + _dl(p) + '</div></div>'; },
+        b2: function (p) { return '<div class="fp card fp-b2"><div class="fp-in">' + _eye(p) + '<div class="b2-frame">' + _imgdiv(p, "b2-ph") + '</div><div class="names">' + _names(p) + '</div>' + _verset(p) + _texts(p) + _dl(p) + '</div></div>'; },
+        b3: function (p) { return '<div class="fp card fp-b3"><div class="b3-frame"><div class="fp-in">' + _imgdiv(p, "b3-ph") + _eye(p) + '<div class="names">' + _names(p) + '</div>' + _verset(p) + _texts(p) + _dl(p) + '</div></div></div>'; },
+        b4: function (p) { var u = _photo(p); return '<div class="fp card fp-b4"' + (u ? ' style="background-image:linear-gradient(to top,rgba(0,0,0,.78),rgba(0,0,0,.05) 55%,rgba(0,0,0,.4)),url(\'' + esc(u) + '\')"' : '') + '><div class="b4-in">' + _eye(p) + '<div class="names">' + _names(p) + '</div>' + _dl(p) + '</div></div>'; },
+        b5: function (p) { return '<div class="fp card fp-b5">' + _imgdiv(p, "b5-ph") + '<div class="b5-card">' + _eye(p) + '<div class="names">' + _names(p) + '</div>' + _verset(p) + _texts(p) + _dl(p) + '</div></div>'; },
+        b6: function (p) { return '<div class="fp card fp-b6"><div class="fp-in"><div class="b6-med">' + _imgdiv(p, "b6-ph") + '<span class="b6-ring"></span></div>' + _eye(p) + '<div class="names">' + _names(p) + '</div>' + _verset(p) + _texts(p) + _dl(p) + '</div></div>'; },
+        b7: function (p) { return '<div class="fp card fp-b7"><div class="fp-in"><div class="b7-pola">' + _imgdiv(p, "b7-ph") + '<div class="b7-cap">' + _names(p) + '</div></div>' + _eye(p) + _verset(p) + _texts(p) + _dl(p) + '</div></div>'; },
+        b8: function (p) { return '<div class="fp card fp-b8"><div class="fp-in"><div class="b8-vign">' + _imgdiv(p, "b8-ph") + '</div>' + _eye(p) + '<div class="names b8-names">' + _names(p) + '</div>' + _verset(p) + _texts(p) + _dl(p) + '</div></div>'; },
+        b9: function (p) { return '<div class="fp card fp-b9"><div class="b9-mast"><span>Faire-part</span><span>GoEvent.</span></div>' + _imgdiv(p, "b9-ph") + '<div class="fp-in">' + _eye(p) + '<div class="names">' + _names(p) + '</div>' + _verset(p) + _texts(p) + _dl(p) + '</div></div>'; },
+        b10: function (p) { return '<div class="fp card fp-b10"><div class="fp-in"><div class="b10-hex">' + _imgdiv(p, "b10-ph") + '</div><div class="b10-deco"></div>' + _eye(p) + '<div class="names">' + _names(p) + '</div>' + _verset(p) + _texts(p) + _dl(p) + '</div></div>'; }
+      };
+
+      function fpCorporate(p) {
+        var d = p.design, f = d.fiche || {}, parts = ['<div class="fp-in">'];
+        if (d.logo_url) parts.push('<img class="logo" src="' + esc(mediaUrl(d.logo_url)) + '" alt="">');
+        if (f.organisateur) parts.push('<div class="eyebrow">' + esc(f.organisateur) + '</div>');
+        parts.push('<div class="titre">' + esc(f.titre || p.event_title) + '</div>');
+        if (f.sous_titre) parts.push('<div class="sous">' + esc(f.sous_titre) + '</div>');
         var when = f.date_label || p.event_date_label, where = f.lieu || p.location;
         if (when) parts.push('<div class="when">🗓 ' + esc(when) + '</div>');
         if (where) parts.push('<div class="where">📍 ' + esc(where) + '</div>');
-        // Intervenants (corporate)
-        if (corp && f.intervenants && f.intervenants.length) {
+        if (f.intervenants && f.intervenants.length) {
           var sp = ['<div class="spk">'];
           f.intervenants.slice(0, 6).forEach(function (s) {
-            sp.push('<div class="s"><div class="av">' + (s.photo ? '<img src="' + esc(s.photo) + '" alt="">' : '') + '</div>'
+            sp.push('<div class="s"><div class="av">' + (s.photo ? '<img src="' + esc(mediaUrl(s.photo)) + '" alt="">' : '') + '</div>'
               + '<div class="nm">' + esc(s.nom || "") + '</div>'
               + (s.role ? '<div class="ro">' + esc(s.role) + '</div>' : '')
               + (s.societe ? '<div class="co">' + esc(s.societe) + '</div>' : '') + '</div>');
@@ -295,7 +391,12 @@
         }
         if (f.cta) parts.push('<span class="cta">' + esc(f.cta) + '</span>');
         parts.push('</div>');
-        return '<div class="fp card' + (corp ? ' corp' : '') + '">' + parts.join('') + '</div>';
+        return '<div class="fp card corp">' + parts.join('') + '</div>';
+      }
+
+      function renderFairePart(p) {
+        if (p.design.famille === "corporate") return fpCorporate(p);
+        return (FP_FAM[p.design.cadre] || FP_FAM.b1)(p);
       }
 
       function renderProgramme(p) {

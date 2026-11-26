@@ -382,9 +382,44 @@
       var state = el("span", { class: "text-xs text-gray-500", text: (which === "photo" ? d.has_photo : d.has_logo) ? "✓ chargé" : "aucun" });
       fin.addEventListener("change", function () {
         if (!fin.files[0]) return;
-        _upload("/design/" + which, fin.files[0], function () { state.textContent = "✓ chargé"; toast(label + " chargé.", "success"); renderSkinPreview(); });
+        _upload("/design/" + which, fin.files[0], function () {
+          state.textContent = "✓ chargé";
+          if (which === "photo") { d.has_photo = true; var ci = document.getElementById("inv-crop-img"); if (ci) loadCropImg(ci); }
+          else d.has_logo = true;
+          toast(label + " chargé.", "success"); renderSkinPreview();
+        });
       });
       return field(label, el("div", { class: "flex items-center gap-3" }, [fin, state]));
+    }
+
+    // Recadrage photo : aperçu + 2 curseurs (point focal), enregistré dans photo_crop
+    function loadCropImg(img) {
+      fetch(BT_API + "/admin/invitations/events/" + S.eventId + "/design/photo", { headers: { Authorization: "Bearer " + btAuth.getToken() } })
+        .then(function (r) { return r.ok ? r.blob() : Promise.reject(); })
+        .then(function (b) { img.src = URL.createObjectURL(b); })
+        .catch(function () {});
+    }
+    function photoCrop() {
+      var crop = d.photo_crop || {}, cx = crop.x == null ? 50 : crop.x, cy = crop.y == null ? 28 : crop.y;
+      var img = el("img", { id: "inv-crop-img", style: "width:100%;height:100%;object-fit:cover;object-position:" + cx + "% " + cy + "%" });
+      var frame = el("div", { style: "width:130px;height:130px;flex:0 0 130px;border-radius:14px;overflow:hidden;border:1px solid #e5e7eb;background:#f3f4f6" }, [img]);
+      if (d.has_photo) loadCropImg(img);
+      var sx = el("input", { type: "range", min: "0", max: "100", value: String(cx), class: "w-full" });
+      var sy = el("input", { type: "range", min: "0", max: "100", value: String(cy), class: "w-full" });
+      var tmr;
+      function apply() {
+        var x = parseInt(sx.value, 10), y = parseInt(sy.value, 10);
+        img.style.objectPosition = x + "% " + y + "%"; d.photo_crop = { x: x, y: y };
+        clearTimeout(tmr); tmr = setTimeout(function () {
+          btApi.put("/admin/invitations/events/" + S.eventId + "/design", { photo_crop: d.photo_crop })
+            .then(function () { toast("Cadrage enregistré.", "success"); }).catch(function (e) { toast(e.message || "Erreur", "error"); });
+        }, 600);
+      }
+      sx.addEventListener("input", apply); sy.addEventListener("input", apply);
+      return el("div", { class: "flex items-start gap-3 mt-1" }, [frame, el("div", { class: "flex-1" }, [
+        lbl("↔ Horizontal"), sx, lbl("↕ Vertical (visages)"), sy,
+        el("p", { class: "text-[11px] text-gray-400 mt-1", text: "Réglez pour que les visages tiennent dans le cadre." })
+      ])]);
     }
 
     // 7) Aperçu skin (couleurs + titre)
@@ -432,7 +467,7 @@
     box.appendChild(ficheWrap);
     box.appendChild(field("Affiche → extraire les couleurs", afficheIn, "L'affiche n'est pas conservée : seules les couleurs sont extraites."));
     box.appendChild(paletteBox);
-    if (fam === "familial") box.appendChild(uploader("Photo du couple / client", "photo"));
+    if (fam === "familial") { box.appendChild(uploader("Photo du couple / client", "photo")); box.appendChild(field("Cadrage de la photo", photoCrop())); }
     if (fam === "corporate") box.appendChild(uploader("Logo", "logo"));
     box.appendChild(lbl("Aperçu")); box.appendChild(preview);
     box.appendChild(el("div", { class: "flex flex-wrap gap-2 mt-4" }, [btnSave, btnPub]));

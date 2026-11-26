@@ -337,6 +337,7 @@ def _design_admin_out(db: Session, ev, d: Optional[InvitationDesign]) -> dict:
         "theme_override": d.theme_override if d else None,
         "fiche": (d.fiche if d else None) or {},
         "vip": d.vip if d else None,
+        "photo_crop": d.photo_crop if d else None,
         "has_photo": bool(d and d.photo_sha),
         "has_logo": bool(d and d.logo_sha),
         "photo_sha": d.photo_sha if d else None,
@@ -374,6 +375,20 @@ def admin_get_design(event_id: int, db: Session = Depends(get_db), user: User = 
     return _design_admin_out(db, ev, d)
 
 
+@router.get("/admin/invitations/events/{event_id}/design/photo")
+def admin_design_photo_view(event_id: int, which: str = Query("photo", max_length=10),
+                            db: Session = Depends(get_db), user: User = Depends(manager)):
+    """Sert la photo/logo stockée pour l'aperçu/recadrage côté admin (cloisonné owner)."""
+    ev, st = _load(db, event_id, user)
+    d = db.query(InvitationDesign).filter(InvitationDesign.event_id == ev.id).first()
+    data, mime = (None, None)
+    if d:
+        data, mime = (d.logo_data, d.logo_mime) if which == "logo" else (d.photo_data, d.photo_mime)
+    if not data:
+        raise HTTPException(404, "Aucune image")
+    return Response(bytes(data), media_type=mime or "image/jpeg", headers={"Cache-Control": "no-store"})
+
+
 @router.put("/admin/invitations/events/{event_id}/design")
 @limiter.limit("60/minute")
 def admin_put_design(request: Request, event_id: int, data: DesignPut,
@@ -395,6 +410,8 @@ def admin_put_design(request: Request, event_id: int, data: DesignPut,
         d.theme_override = _bound_json(data.theme_override, 4000)
     if "vip" in f:
         d.vip = _bound_json(data.vip, 2000)
+    if "photo_crop" in f:
+        d.photo_crop = _bound_json(data.photo_crop, 500)
     if "status" in f and data.status:
         if data.status == "pret" and not d.modele_id:
             raise HTTPException(400, "Choisissez un gabarit avant de publier le design")

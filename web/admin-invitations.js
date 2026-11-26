@@ -423,6 +423,7 @@
     } else {
       ficheWrap.appendChild(el("p", { class: "text-sm text-gray-400", text: "Choisissez un cadre pour remplir le contenu." }));
     }
+    ficheWrap.addEventListener("input", function () { clearTimeout(pvTimer); pvTimer = setTimeout(pushPreview, 250); });
 
     // 5) Affiche → palette
     var paletteBox = el("div", { class: "flex flex-wrap gap-2 mt-2" });
@@ -444,6 +445,7 @@
         if (!fin.files[0]) return;
         _upload("/design/" + which, fin.files[0], function () {
           state.textContent = "✓ chargé";
+          if (pvImgUrl[which]) { try { URL.revokeObjectURL(pvImgUrl[which]); } catch (e) {} delete pvImgUrl[which]; }
           if (which === "photo") { d.has_photo = true; var ci = document.getElementById("inv-crop-img"); if (ci) loadCropImg(ci); }
           else d.has_logo = true;
           toast(label + " chargé.", "success"); renderSkinPreview();
@@ -481,6 +483,7 @@
       function apply() {
         var x = parseInt(sx.value, 10), y = parseInt(sy.value, 10), z = parseFloat(sz.value);
         img.style.cssText = istyle(x, y, z); d.photo_crop = { zoom: z, x: x, y: y };
+        pushPreview();
         clearTimeout(tmr); tmr = setTimeout(function () {
           btApi.put("/admin/invitations/events/" + S.eventId + "/design", { photo_crop: d.photo_crop })
             .then(function () { toast("Cadrage enregistré.", "success"); }).catch(function (e) { toast(e.message || "Erreur", "error"); });
@@ -495,6 +498,45 @@
 
     // 7) Aperçu skin (couleurs + titre)
     var preview = el("div", { class: "rounded-xl p-4 mt-2", id: "inv-skin-preview" });
+
+    // Aperçu live : iframe de la page invité en mode preview (même moteur de rendu, aucun doublon)
+    var pvReady = false, pvImgUrl = {}, pvTimer = null;
+    var previewFrame = el("iframe", {
+      id: "inv-live-preview",
+      src: new URL("invitation.html?preview=1", location.href).href,
+      style: "width:100%;height:560px;border:1px solid #e5e7eb;border-radius:14px;background:#fff;display:block",
+      onload: function () { pvReady = true; pushPreview(); }
+    });
+    function pvEnsureImages(cb) {
+      var need = [];
+      if (fam === "familial" && d.has_photo && !pvImgUrl.photo) need.push("photo");
+      if (fam === "corporate" && d.has_logo && !pvImgUrl.logo) need.push("logo");
+      if (!need.length) return cb();
+      var left = need.length;
+      need.forEach(function (which) {
+        fetch(BT_API + "/admin/invitations/events/" + S.eventId + "/design/photo?which=" + which,
+          { headers: { Authorization: "Bearer " + btAuth.getToken() } })
+          .then(function (r) { return r.ok ? r.blob() : null; })
+          .then(function (b) { if (b) pvImgUrl[which] = URL.createObjectURL(b); })
+          .catch(function () {})
+          .then(function () { if (--left === 0) cb(); });
+      });
+    }
+    function pushPreview() {
+      if (!pvReady) return;
+      pvEnsureImages(function () {
+        var skin = (d.theme_override && d.theme_override.couleurs) ? d.theme_override : (d.modele && d.modele.skin) || { couleurs: {} };
+        var payload = {
+          event_title: S.ev.title, event_date_label: S.ev.event_date_label || "", location: S.ev.location || "", status: "ok",
+          design: {
+            famille: fam, cadre: d.cadre ? d.cadre.code : null, scenes: (d.cadre && d.cadre.scenes) || {},
+            skin: skin, fiche: collectFiche(),
+            photo_url: pvImgUrl.photo || "", logo_url: pvImgUrl.logo || "", photo_crop: d.photo_crop || null
+          }
+        };
+        var win = previewFrame.contentWindow; if (win) win.postMessage({ type: "goevent-preview", payload: payload }, "*");
+      });
+    }
     function renderSkinPreview() {
       var skin = (d.theme_override && d.theme_override.couleurs) ? d.theme_override : (d.modele && d.modele.skin) || { couleurs: {} };
       var c = skin.couleurs || {};
@@ -505,6 +547,9 @@
       preview.appendChild(el("div", { style: "display:flex;gap:6px;margin-top:10px" }, ["fond", "accent", "clair", "texte"].map(function (k) {
         return el("span", { title: k + " " + (c[k] || ""), style: "width:26px;height:26px;border-radius:6px;border:1px solid #0001;background:" + (c[k] || "#fff") });
       })));
+      var cadreNom = d.cadre ? ((S.cadres.filter(function (cc) { return cc.code === d.cadre.code; })[0] || {}).name || d.cadre.code) : null;
+      preview.appendChild(el("div", { style: "font-size:11px;color:" + (c.muted || "#6b7280") + ";margin-top:10px", text: cadreNom ? ("Mise en page « " + cadreNom + " »") : "Choisissez un cadre." }));
+      pushPreview();
     }
 
     // 8) Actions
@@ -541,6 +586,7 @@
     if (fam === "familial") { box.appendChild(uploader("Photo du couple / client", "photo")); box.appendChild(field("Cadrage de la photo", photoCrop())); }
     if (fam === "corporate") box.appendChild(uploader("Logo", "logo"));
     box.appendChild(lbl("Aperçu")); box.appendChild(preview);
+    box.appendChild(lbl("Aperçu live (ce que verra l'invité)")); box.appendChild(previewFrame);
     box.appendChild(el("div", { class: "flex flex-wrap gap-2 mt-4" }, [btnSave, btnPub]));
     renderSkinPreview();
   }

@@ -125,8 +125,9 @@
 
     /* ── 10 cadres familiaux : chaque code a sa structure ── */
     .ph-empty { background: color-mix(in srgb, var(--d-accent) 14%, var(--d-clair)); }
-    /* object-position : point focal par défaut haut-centre (visages du couple) ; surchargé par --ph-pos si l'admin a recadré */
-    .fp [class$="-ph"] img { width: 100%; height: 100%; object-fit: cover; object-position: var(--ph-pos, center 28%); display: block; }
+    /* Cadrage photo : point focal (--ph-pos) + zoom (--ph-zoom), réglés par l'admin et stockés dans photo_crop */
+    .fp [class$="-ph"] { background: color-mix(in srgb, var(--d-accent) 8%, var(--d-clair)); }
+    .fp [class$="-ph"] img { width: 100%; height: 100%; object-fit: cover; object-position: var(--ph-pos, center 28%); transform: scale(var(--ph-zoom, 1)); transform-origin: var(--ph-pos, center 28%); display: block; }
     /* b1 Papier-décoré : photo haut + bandeau ethnique */
     .fp-b1 .b1-ph { width: 100%; aspect-ratio: 4/3; overflow: hidden; }
     .fp-b1 .b1-band { height: 14px; background: repeating-linear-gradient(135deg, var(--d-accent) 0 9px, var(--d-accentD) 9px 18px); }
@@ -351,9 +352,10 @@
       function _imgdiv(p, cls) {
         var u = _photo(p);
         if (!u) return '<div class="' + cls + ' ph-empty"></div>';
-        var c = p.design.photo_crop || {}, pos = "";
-        if (c.x != null || c.y != null) pos = ' style="--ph-pos:' + (c.x == null ? 50 : c.x) + '% ' + (c.y == null ? 28 : c.y) + '%"';
-        return '<div class="' + cls + '"' + pos + '><img src="' + esc(u) + '" alt=""></div>';
+        var c = p.design.photo_crop || {};
+        var x = c.x == null ? 50 : c.x, y = c.y == null ? 28 : c.y, z = c.zoom == null ? 1 : c.zoom;
+        var st = ' style="--ph-pos:' + x + '% ' + y + '%;--ph-zoom:' + z + '"';
+        return '<div class="' + cls + '"' + st + '><img src="' + esc(u) + '" alt=""></div>';
       }
 
       // ── 10 structures familiales distinctes (chaque cadre a sa mise en page) ──

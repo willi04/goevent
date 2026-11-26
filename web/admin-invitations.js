@@ -400,8 +400,9 @@
         .catch(function () {});
     }
     function photoCrop() {
-      var crop = d.photo_crop || {}, cx = crop.x == null ? 50 : crop.x, cy = crop.y == null ? 28 : crop.y;
-      var img = el("img", { id: "inv-crop-img", style: "width:100%;height:100%;object-fit:cover;object-position:" + cx + "% " + cy + "%" });
+      var crop = d.photo_crop || {}, cx = crop.x == null ? 50 : crop.x, cy = crop.y == null ? 28 : crop.y, cz = crop.zoom == null ? 1 : crop.zoom;
+      function istyle(x, y, z) { return "width:100%;height:100%;object-fit:cover;object-position:" + x + "% " + y + "%;transform:scale(" + z + ");transform-origin:" + x + "% " + y + "%"; }
+      var img = el("img", { id: "inv-crop-img", style: istyle(cx, cy, cz) });
       // Aperçu À LA FORME DU CADRE choisi (rond, hexagone, arche…) pour régler sans ouvrir le lien
       var shapes = {
         b1: { w: 150, ar: "4/3" }, b2: { w: 150, ar: "3/2", extra: "border:2px solid #d1d5db" },
@@ -413,21 +414,22 @@
       var sh = shapes[(d.cadre && d.cadre.code)] || { w: 130, ar: "1/1" };
       var frame = el("div", { style: "width:" + sh.w + "px;flex:0 0 " + sh.w + "px;aspect-ratio:" + sh.ar + ";overflow:hidden;background:#f3f4f6;border:1px solid #e5e7eb;" + (sh.extra || "") }, [img]);
       if (d.has_photo) loadCropImg(img);
+      var sz = el("input", { type: "range", min: "0.8", max: "3", step: "0.05", value: String(cz), class: "w-full" });
       var sx = el("input", { type: "range", min: "0", max: "100", value: String(cx), class: "w-full" });
       var sy = el("input", { type: "range", min: "0", max: "100", value: String(cy), class: "w-full" });
       var tmr;
       function apply() {
-        var x = parseInt(sx.value, 10), y = parseInt(sy.value, 10);
-        img.style.objectPosition = x + "% " + y + "%"; d.photo_crop = { x: x, y: y };
+        var x = parseInt(sx.value, 10), y = parseInt(sy.value, 10), z = parseFloat(sz.value);
+        img.style.cssText = istyle(x, y, z); d.photo_crop = { zoom: z, x: x, y: y };
         clearTimeout(tmr); tmr = setTimeout(function () {
           btApi.put("/admin/invitations/events/" + S.eventId + "/design", { photo_crop: d.photo_crop })
             .then(function () { toast("Cadrage enregistré.", "success"); }).catch(function (e) { toast(e.message || "Erreur", "error"); });
         }, 600);
       }
-      sx.addEventListener("input", apply); sy.addEventListener("input", apply);
+      sz.addEventListener("input", apply); sx.addEventListener("input", apply); sy.addEventListener("input", apply);
       return el("div", { class: "flex items-start gap-3 mt-1" }, [frame, el("div", { class: "flex-1" }, [
-        lbl("↔ Horizontal"), sx, lbl("↕ Vertical (visages)"), sy,
-        el("p", { class: "text-[11px] text-gray-400 mt-1", text: "Réglez pour que les visages tiennent dans le cadre." })
+        lbl("🔍 Zoom"), sz, lbl("↔ Horizontal"), sx, lbl("↕ Vertical"), sy,
+        el("p", { class: "text-[11px] text-gray-400 mt-1", text: "Zoomez puis déplacez pour caler les visages dans le cadre." })
       ])]);
     }
 

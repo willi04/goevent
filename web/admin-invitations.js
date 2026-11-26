@@ -297,12 +297,43 @@
   function _listToText(arr, keys) {
     return (arr || []).map(function (o) { return keys.map(function (k) { return o[k] || ""; }).join(" | "); }).join("\n");
   }
+  // Détection auto des colonnes : l'organisateur écrit librement, pas besoin de « | ».
+  //  • Si la ligne contient « | » ou une tabulation → colonnes explicites (respectées telles quelles).
+  //  • Sinon : l'heure en tête est reconnue (18h, 9h30, 18:30, 9.00…), puis le reste est
+  //    découpé sur les séparateurs forts (tiret entouré d'espaces, tabulation, « · », 2+ espaces).
+  //    Sans séparateur fort, tout le reste va dans la 1re colonne restante (jamais coupé sur un simple espace).
+  function _smartLine(line, keys) {
+    var l = line.trim(); if (!l) return null;
+    var o = {};
+    if (/[|\t]/.test(l)) {                                   // colonnes explicites
+      var pe = l.split(/\s*[|\t]\s*/);
+      keys.forEach(function (k, i) { if (pe[i] && pe[i].trim()) o[k] = pe[i].trim(); });
+      return Object.keys(o).length ? o : null;
+    }
+    var rest = l, ki = 0;
+    var timeKey = /heure|hour|time/i.test(keys[0] || "") ? keys[0] : null;
+    if (timeKey) {
+      var m = /^\s*(\d{1,2})\s*[h:.]\s*(\d{2})?\b/i.exec(l);  // 18h / 9h30 / 18:30 / 9.00
+      if (m) {
+        o[timeKey] = m[2] ? (m[1] + "h" + m[2]) : (m[1] + "h");
+        rest = l.slice(m[0].length).replace(/^\s*[-–—:·.)\]]+\s*/, "").trim();
+        ki = 1;
+      }
+    }
+    var remKeys = keys.slice(ki);
+    var parts = rest.split(/\s+[-–—]\s+|\s{2,}|\s*·\s*/).map(function (x) { return x.trim(); }).filter(Boolean);
+    if (parts.length <= 1) {
+      if (remKeys[0] && rest) o[remKeys[0]] = rest;
+    } else {
+      parts.forEach(function (pv, i) {
+        if (remKeys[i]) o[remKeys[i]] = pv;
+        else if (remKeys.length) o[remKeys[remKeys.length - 1]] += " · " + pv;   // surplus → dernière colonne
+      });
+    }
+    return Object.keys(o).length ? o : null;
+  }
   function _textToList(txt, keys) {
-    // séparateurs flexibles : « | », tabulation (collage Excel) ou « ; »
-    return (txt || "").split("\n").map(function (l) { return l.trim(); }).filter(Boolean).map(function (l) {
-      var p = l.split(/\t|\||;/).map(function (x) { return x.trim(); }), o = {};
-      keys.forEach(function (k, i) { if (p[i]) o[k] = p[i]; }); return o;
-    });
+    return (txt || "").split(/\r?\n/).map(function (l) { return _smartLine(l, keys); }).filter(Boolean);
   }
 
   // Ordre + libellés FR + exemples des champs de la fiche (indépendant de l'ordre JSONB)
@@ -317,7 +348,7 @@
       { k: "intro", l: "Introduction", t: "textarea", ph: "C'est avec joie que nous vous convions à célébrer notre union." },
       { k: "body", l: "Texte principal", t: "textarea" },
       { k: "closing", l: "Formule de fin", ph: "Votre présence est notre plus beau cadeau." },
-      { k: "programme", l: "Programme", t: "list", ph: "15h00 | Cérémonie | Cathédrale" }
+      { k: "programme", l: "Programme", t: "list", ph: "15h00 Cérémonie à la Cathédrale\n18h00 Vin d'honneur\n20h00 Dîner dansant" }
     ],
     corporate: [
       { k: "organisateur", l: "Organisateur", ph: "AXION Group" },
@@ -325,9 +356,9 @@
       { k: "sous_titre", l: "Sous-titre", ph: "L'IA au service de l'Afrique centrale" },
       { k: "lieu", l: "Lieu", ph: "Ledger Plaza, Bangui" },
       { k: "cta", l: "Bouton d'action (CTA)", ph: "Confirmer ma présence" },
-      { k: "intervenants", l: "Intervenants", t: "list", ph: "David Koyt | CEO | PayGo Africa" },
-      { k: "sessions", l: "Programme / sessions", t: "list", ph: "09h00 | Ouverture | D. Koyt" },
-      { k: "sponsors", l: "Sponsors", t: "list", ph: "Orange CA | " }
+      { k: "intervenants", l: "Intervenants", t: "list", ph: "David Koyt — CEO — PayGo Africa\nMarie Nzé — Directrice — Orange CA" },
+      { k: "sessions", l: "Programme / sessions", t: "list", ph: "09h00 Ouverture par D. Koyt\n10h30 Panel IA & Afrique" },
+      { k: "sponsors", l: "Sponsors", t: "list", ph: "Orange CA\nEcobank" }
     ]
   };
 
@@ -378,7 +409,8 @@
           node = el("textarea", { class: "input-field", rows: String(Math.max(3, (val || []).length + 1)),
             placeholder: sp.ph || keys.join(" | "), text: _listToText(val, keys) });
           node._keys = keys;
-          help = "Une ligne par entrée · colonnes : " + keys.join(", ") + " · séparez par « | » ou une tabulation (collage Excel/tableur OK).";
+          help = "Une ligne par entrée (colonnes détectées : " + keys.join(", ") + "). Écrivez librement — ex. « 18h00 Accueil des invités ». L'heure et les colonnes sont reconnues automatiquement ; un « | » ou une tabulation force la séparation si besoin.";
+          node._import = true;
         } else if (type === "textarea") {
           node = el("textarea", { class: "input-field", rows: "2", placeholder: sp.ph || "", text: val || "" });
         } else {
@@ -386,6 +418,7 @@
         }
         inputs[sp.k] = node;
         ficheWrap.appendChild(field(sp.l, node, help));
+        if (node._import) ficheWrap.appendChild(importText(node));
       });
     } else {
       ficheWrap.appendChild(el("p", { class: "text-sm text-gray-400", text: "Choisissez un cadre pour remplir le contenu." }));
@@ -510,6 +543,25 @@
     box.appendChild(lbl("Aperçu")); box.appendChild(preview);
     box.appendChild(el("div", { class: "flex flex-wrap gap-2 mt-4" }, [btnSave, btnPub]));
     renderSkinPreview();
+  }
+
+  function importText(node) {
+    var fin = el("input", { type: "file", accept: ".docx,.txt,text/plain", style: "display:none" });
+    var btn = el("button", {
+      type: "button", class: "text-xs px-2 py-1 rounded border border-gray-300 text-gray-600 hover:bg-gray-50",
+      text: "⬆ Importer .docx / .txt",
+      onclick: function () { fin.value = ""; fin.click(); }
+    });
+    fin.addEventListener("change", function () {
+      if (!fin.files[0]) return;
+      _upload("/design/import-text", fin.files[0], function (res) {
+        var t = res.text || "";
+        node.value = node.value && node.value.trim() ? (node.value.replace(/\s+$/, "") + "\n" + t) : t;
+        node.dispatchEvent(new Event("input"));
+        toast("Importé — vérifiez le contenu puis Enregistrez.", "success");
+      });
+    });
+    return el("div", { class: "mt-1" }, [btn, fin]);
   }
 
   function _upload(suffix, file, onok) {

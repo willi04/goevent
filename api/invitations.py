@@ -13,6 +13,7 @@ Scanner (agent assigné / orga propriétaire) :
   POST /invitations/checkins/sync             entrées faites hors ligne
   (le scan en ligne passe par POST /scan, cf. api/tickets.py)
 """
+import io
 import json
 import secrets
 from datetime import datetime, timedelta
@@ -471,6 +472,44 @@ async def admin_design_logo(request: Request, event_id: int, file: UploadFile = 
     d.updated_by, d.updated_at = user.id, inv.utcnow()
     db.commit()
     return {"ok": True, "logo_sha": sha, "width": w, "height": h}
+
+
+@router.post("/admin/invitations/events/{event_id}/design/import-text")
+@limiter.limit("20/minute")
+async def admin_design_import_text(request: Request, event_id: int, file: UploadFile = File(...),
+                                   db: Session = Depends(get_db), user: User = Depends(manager)):
+    """Lit un .txt ou .docx et renvoie son texte brut pour pré-remplir un champ liste
+    (programme, intervenants…). Aucune interprétation : l'admin relit puis Enregistre."""
+    _load(db, event_id, user)  # cloisonnement
+    raw = await _read_upload(file, 4 * 1024 * 1024)
+    name = (file.filename or "").lower()
+    ctype = (file.content_type or "")
+    text = ""
+    if name.endswith(".txt") or ctype.startswith("text/"):
+        try:
+            text = raw.decode("utf-8")
+        except Exception:
+            text = raw.decode("latin-1", "replace")
+    elif name.endswith(".docx") or "officedocument.wordprocessingml" in ctype:
+        try:
+            from docx import Document
+            doc = Document(io.BytesIO(raw))
+            lines = []
+            for tb in doc.tables:
+                for row in tb.rows:
+                    cells = [c.text.strip() for c in row.cells]
+                    if any(cells):
+                        lines.append(" | ".join(cells))
+            for p in doc.paragraphs:
+                t = p.text.strip()
+                if t:
+                    lines.append(t)
+            text = "\n".join(lines)
+        except Exception:
+            raise HTTPException(400, "Fichier .docx illisible")
+    else:
+        raise HTTPException(400, "Formats acceptés : .docx ou .txt")
+    return {"text": text[:20000]}
 
 
 @router.delete("/admin/invitations/events/{event_id}/design/{which}")

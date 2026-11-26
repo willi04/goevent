@@ -402,7 +402,16 @@
     function photoCrop() {
       var crop = d.photo_crop || {}, cx = crop.x == null ? 50 : crop.x, cy = crop.y == null ? 28 : crop.y;
       var img = el("img", { id: "inv-crop-img", style: "width:100%;height:100%;object-fit:cover;object-position:" + cx + "% " + cy + "%" });
-      var frame = el("div", { style: "width:130px;height:130px;flex:0 0 130px;border-radius:14px;overflow:hidden;border:1px solid #e5e7eb;background:#f3f4f6" }, [img]);
+      // Aperçu À LA FORME DU CADRE choisi (rond, hexagone, arche…) pour régler sans ouvrir le lien
+      var shapes = {
+        b1: { w: 150, ar: "4/3" }, b2: { w: 150, ar: "3/2", extra: "border:2px solid #d1d5db" },
+        b3: { w: 116, ar: "3/4", extra: "border-radius:84px 84px 10px 10px" }, b4: { w: 116, ar: "3/4" },
+        b5: { w: 130, ar: "1/1" }, b6: { w: 130, ar: "1/1", extra: "border-radius:50%" }, b7: { w: 130, ar: "1/1" },
+        b8: { w: 90, ar: "1/1", extra: "border-radius:50%" }, b9: { w: 170, ar: "16/10" },
+        b10: { w: 130, ar: "1/1", extra: "clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);border:0" }
+      };
+      var sh = shapes[(d.cadre && d.cadre.code)] || { w: 130, ar: "1/1" };
+      var frame = el("div", { style: "width:" + sh.w + "px;flex:0 0 " + sh.w + "px;aspect-ratio:" + sh.ar + ";overflow:hidden;background:#f3f4f6;border:1px solid #e5e7eb;" + (sh.extra || "") }, [img]);
       if (d.has_photo) loadCropImg(img);
       var sx = el("input", { type: "range", min: "0", max: "100", value: String(cx), class: "w-full" });
       var sy = el("input", { type: "range", min: "0", max: "100", value: String(cy), class: "w-full" });

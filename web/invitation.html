@@ -58,8 +58,40 @@
     body.design #pass #title { font-size: 14px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; margin: 0; }
     body.design #pass .gomark { display: inline; font-weight: 800; font-size: 15px; color: #fff; opacity: .92; }
     body.design #pass .pass-label { display: block; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; font-weight: 800; color: var(--d-accentD); margin-bottom: 2px; }
-    body.design #pass .guest { font-family: var(--d-titre); font-size: 30px; }
-    body.design #pass .qr { border-color: color-mix(in srgb, var(--d-accent) 28%, #e5e7eb); }
+    body.design #pass .guest { font-family: var(--d-titre); font-size: 26px; }
+    body.design #pass .body { padding: 16px 20px 20px; }
+    body.design #pass .seats { font-size: 13px; margin-top: 2px; }
+    body.design #pass .chips { margin-top: 8px; }
+    body.design #pass .chip { font-size: 12px; padding: 4px 10px; }
+    body.design #pass .qr { width: 196px; margin: 14px auto 4px; padding: 10px; border-radius: 16px; border-color: color-mix(in srgb, var(--d-accent) 28%, #e5e7eb); }
+    body.design #pass .hint { font-size: 11px; margin-top: 4px; }
+    body.design #pass .actions { margin-top: 12px; gap: 8px; }
+    body.design #pass .btn { font-size: 13px; padding: 10px 8px; }
+
+    /* Pass « ticket » (mode design) : bandeau, infos, perforation, QR + scan */
+    #pass.ticket { padding: 0; overflow: visible; }
+    .tk-hd { background: linear-gradient(140deg, var(--d-accent), var(--d-accentD)); color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 16px 22px; }
+    .tk-hd-l { font-weight: 800; font-size: 16px; letter-spacing: .06em; }
+    .gomark2 { font-weight: 800; font-size: 15px; opacity: .92; }
+    .tk-info { padding: 18px 22px 14px; }
+    .tk-eye { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; font-weight: 800; color: var(--d-muted); }
+    .tk-name { font-family: var(--d-titre); font-size: 30px; line-height: 1.05; font-weight: 700; color: var(--d-texte); margin: 2px 0 14px; }
+    .tk-stats { display: flex; gap: 26px; }
+    .tk-stl { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; font-weight: 800; color: var(--d-muted); }
+    .tk-stv { font-size: 19px; font-weight: 800; color: var(--d-accentD); margin-top: 2px; }
+    .tk-perf { height: 0; border-top: 2px dashed color-mix(in srgb, var(--d-texte) 22%, transparent); margin: 4px 20px; position: relative; }
+    .tk-perf::before, .tk-perf::after { content: ""; position: absolute; top: -11px; width: 20px; height: 20px; border-radius: 50%; background: var(--d-fond); }
+    .tk-perf::before { left: -30px; } .tk-perf::after { right: -30px; }
+    .tk-qrzone { display: flex; gap: 18px; align-items: center; padding: 18px 22px 20px; }
+    .tk-qr { width: 150px; flex: 0 0 150px; aspect-ratio: 1; background: #fff; border: 1px solid color-mix(in srgb, var(--d-accent) 28%, #e5e7eb); border-radius: 16px; padding: 8px; }
+    .tk-qr img { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+    .tk-scan-t { font-weight: 800; font-size: 20px; color: var(--d-texte); line-height: 1.15; }
+    .tk-scan-s { font-size: 13px; color: var(--d-muted); margin-top: 6px; line-height: 1.4; }
+    .tk-pill { display: inline-block; margin-top: 10px; background: color-mix(in srgb, var(--d-accent) 14%, #fff); color: var(--d-accentD); font-weight: 800; font-size: 13px; padding: 6px 12px; border-radius: 999px; }
+    .tk-banner { margin: 14px 22px; border-radius: 12px; padding: 12px 14px; font-size: 14px; font-weight: 600; }
+    .tk-actions { display: flex; gap: 10px; padding: 0 22px 20px; align-items: center; }
+    .tkbtn { flex: 1; text-align: center; text-decoration: none; font-weight: 700; font-size: 13px; padding: 10px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--d-texte) 14%, transparent); color: var(--d-texte); }
+    .tk-off { font-size: 11px; color: var(--d-muted); }
 
     /* ── Couche design (lot 6) : faire-part / page + programme ── */
     #exp { margin-bottom: 16px; }
@@ -98,11 +130,16 @@
     .env { position: relative; width: 300px; height: 200px; cursor: pointer; }
     /* billet DANS l'enveloppe : TOUJOURS derrière la face avant (z2 < z3) → il émerge par le haut, jamais superposé */
     .env .letter { position: absolute; left: 22px; right: 22px; top: 30px; height: 150px; background: var(--d-clair); border-radius: 8px 8px 10px 10px;
-                   box-shadow: 0 10px 22px rgba(0,0,0,.22); display: flex; align-items: center; justify-content: center; text-align: center; padding: 16px; z-index: 2; }
-    .env .letter .nm { font-family: var(--d-titre); font-size: 24px; font-weight: 600; color: var(--d-texte); opacity: 0; }
+                   box-shadow: 0 10px 22px rgba(0,0,0,.22); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 14px; z-index: 2; }
+    .env .letter .le-in { opacity: 0; }
+    .env .letter .le-eye { font-size: 10px; letter-spacing: .16em; text-transform: uppercase; font-weight: 800; color: var(--d-accentD); }
+    .env .letter .nm { font-family: var(--d-titre); font-size: 25px; line-height: 1.05; font-weight: 600; color: var(--d-texte); margin: 5px 0 0; }
+    .env .letter .le-rule { width: 38px; height: 2px; border-radius: 2px; background: var(--d-accent); margin: 9px auto 7px; }
+    .env .letter .le-date { font-size: 12px; font-weight: 700; color: var(--d-muted); }
+    .env .letter .le-for { font-size: 11px; font-weight: 700; color: var(--d-accentD); margin-top: 3px; }
     #env.go .letter { animation: letterout 1.7s cubic-bezier(.22,1,.36,1) 1.3s forwards; }   /* glisse hors de l'enveloppe */
     @keyframes letterout { from { transform: translateY(0); } to { transform: translateY(-186px); } }
-    #env.go .letter .nm { animation: nmfade .8s ease 1.9s forwards; }       /* le texte apparaît en sortant */
+    #env.go .letter .le-in { animation: nmfade .8s ease 1.9s forwards; }    /* le contenu apparaît en sortant */
     @keyframes nmfade { to { opacity: 1; } }
     /* face avant OPAQUE : cache le billet, et masque la part encore À L'INTÉRIEUR pendant qu'il sort */
     .env .front { position: absolute; inset: 0; background: var(--d-accent); border-radius: 12px; z-index: 3; overflow: hidden; box-shadow: inset 0 7px 12px -7px rgba(0,0,0,.4); }
@@ -276,11 +313,21 @@
       }
 
       function openEnvelope(p, onDone) {
-        var d = p.design, f = d.fiche || {};
-        var nm = (d.famille === "corporate") ? (f.titre || p.event_title) : (f.display_names || p.guest_name || p.event_title);
+        var d = p.design, f = d.fiche || {}, corp = d.famille === "corporate";
+        var eye = corp ? (f.organisateur || "") : (f.eyebrow || "");
+        var title = corp ? (f.titre || p.event_title) : (f.display_names || p.event_title);
+        var date = f.date_label || p.event_date_label || "";
+        var first = (p.guest_name || "").trim().split(/\s+/)[0] || "";
+        var forwho = /^[A-Za-zÀ-ÿ'’-]{2,}$/.test(first) ? ("Pour " + first) : "";
         var env = $("env");
         env.innerHTML = '<div class="env" id="env-card">'
-          + '<div class="letter"><div class="nm">' + esc(nm) + '</div></div>'
+          + '<div class="letter"><div class="le-in">'
+          + (eye ? '<div class="le-eye">' + esc(eye) + '</div>' : '')
+          + '<div class="nm">' + esc(title) + '</div>'
+          + '<div class="le-rule"></div>'
+          + (date ? '<div class="le-date">' + esc(date) + '</div>' : '')
+          + (forwho ? '<div class="le-for">' + esc(forwho) + '</div>' : '')
+          + '</div></div>'
           + '<div class="front"></div>'
           + '<div class="flap"></div><div class="seal">✦</div>'
           + '<div class="env-hint">Touchez pour ouvrir</div></div>';
@@ -295,14 +342,51 @@
         env.addEventListener("click", go);
       }
 
+      // Pass « ticket » façon maquette (mode design) : remplace le contenu de #pass.
+      function fillTicket(p, offline) {
+        var corp = p.design.famille === "corporate";
+        var noQr = false, msg = null, cls = "warn";
+        if (p.status === "partial") { msg = p.seats_used + " / " + p.seats + " déjà entré(s) — pass encore valable."; }
+        else if (p.status === "complete") { msg = "Pass déjà utilisé (" + p.seats_used + "/" + p.seats + ")."; }
+        else if (p.status === "revoked") { msg = "Ce pass a été annulé par l'organisateur."; cls = "bad"; noQr = true; }
+        else if (p.status === "cancelled") { msg = "Cet événement a été annulé."; cls = "bad"; noQr = true; }
+        else if (p.status === "inactive") { msg = "Invitation en préparation. Revenez un peu plus tard."; noQr = true; }
+        var stats = [["PLACES", String(p.seats)]];
+        if (p.table) stats.push(["TABLE", p.table]);
+        if (p.category) stats.push([corp ? "RÔLE" : "CATÉGORIE", p.category]);
+        var statsHtml = stats.map(function (s) {
+          return '<div class="tk-st"><div class="tk-stl">' + esc(s[0]) + '</div><div class="tk-stv">' + esc(s[1]) + '</div></div>';
+        }).join("");
+        var mid = noQr
+          ? '<div class="tk-banner ' + cls + '">' + esc(msg) + '</div>'
+          : (msg ? '<div class="tk-banner ' + cls + '">' + esc(msg) + '</div>' : '')
+            + '<div class="tk-qrzone"><div class="tk-qr"><img id="qr" alt="QR Code d\'entrée"></div>'
+            + '<div class="tk-scan"><div class="tk-scan-t">Scannez à l\'entrée</div>'
+            + '<div class="tk-scan-s">Pass nominatif · valable hors ligne.<br>Un seul passage autorisé.</div>'
+            + '<span class="tk-pill">✓ Anti-fraude</span></div></div>';
+        $("pass").className = "card ticket";
+        $("pass").innerHTML =
+            '<div class="tk-hd"><span class="tk-hd-l">' + (corp ? "BADGE" : "PASS D'ENTRÉE") + '</span><span class="gomark2">GoEvent.</span></div>'
+          + '<div class="tk-info"><div class="tk-eye">' + (corp ? "PARTICIPANT" : "INVITÉ") + '</div>'
+          + '<div class="tk-name">' + esc(p.guest_name || "") + '</div>'
+          + '<div class="tk-stats">' + statsHtml + '</div></div>'
+          + '<div class="tk-perf"></div>'
+          + mid
+          + '<div class="tk-actions">'
+          + '<a class="tkbtn" href="' + API + "/invitations/pass/" + encodeURIComponent(token) + '/calendar.ics">📅 Calendrier</a>'
+          + (p.location ? '<a class="tkbtn" target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(p.location) + '">📍 Itinéraire</a>' : "")
+          + (offline ? '<span class="tk-off">Hors connexion</span>' : "")
+          + '</div>';
+        if (!noQr && typeof qrcode === "function") { var img = $("qr"); if (img) img.src = qrDataUrl(p.pass_url); }
+      }
+
       function renderDesign(p, offline) {
         applySkin(p.design.skin || {});
         $("loading").classList.add("hidden");
         var exp = $("exp");
         exp.innerHTML = renderFairePart(p) + renderProgramme(p);
         exp.classList.remove("hidden");
-        fillPass(p, offline);
-        var pl = $("pass-label"); if (pl) pl.textContent = p.category || "Invité";
+        fillTicket(p, offline);
         $("pass").classList.remove("hidden");
         document.title = (p.event_title || "Invitation") + " | Invitation";
         var canOpen = p.design.enveloppe && ["revoked", "cancelled", "inactive"].indexOf(p.status) === -1;

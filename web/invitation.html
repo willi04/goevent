@@ -202,6 +202,80 @@
     .fp-b10::before { top: 12px; left: 12px; border-right: 0; border-bottom: 0; }
     .fp-b10::after { bottom: 12px; right: 12px; border-left: 0; border-top: 0; }
 
+    /* ── Corporate : fragments partagés (agenda, sponsors) ── */
+    .agenda { text-align: left; margin: 14px 0 6px; }
+    .ag-row { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid color-mix(in srgb, var(--d-accent) 16%, transparent); }
+    .ag-row:last-child { border-bottom: 0; }
+    .ag-h { flex: 0 0 56px; font-weight: 800; color: var(--d-accentD); font-size: 14px; }
+    .agenda-num .ag-h { flex: 0 0 28px; height: 28px; border-radius: 50%; text-align: center; line-height: 28px; background: var(--d-accent); color: #fff; font-size: 13px; }
+    .ag-b { flex: 1; } .ag-b b { display: block; color: var(--d-texte); font-size: 15px; } .ag-b i { font-style: normal; font-size: 13px; color: var(--d-muted); }
+    .spon { margin-top: 20px; }
+    .spon-t { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--d-muted); font-weight: 800; margin-bottom: 8px; }
+    .spon-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+    .spon-i { font-size: 13px; font-weight: 700; color: var(--d-texte); background: color-mix(in srgb, var(--d-accent) 8%, #fff); border: 1px solid color-mix(in srgb, var(--d-accent) 18%, transparent); border-radius: 8px; padding: 6px 12px; display: inline-flex; align-items: center; }
+    .spon-i img { height: 24px; display: block; }
+
+    /* c1 Keynote */
+    .fp-c1 .c1-bar { height: 10px; background: linear-gradient(90deg, var(--d-accent), var(--d-accentD)); }
+    .fp-c1 .titre { font-size: 38px; }
+    /* c2 Badge-first */
+    .fp-c2 .c2-badge { position: relative; max-width: 300px; margin: 10px auto 4px; padding: 30px 22px 22px; background: var(--d-clair); border: 1px solid color-mix(in srgb, var(--d-accent) 22%, #e5e7eb); border-radius: 16px; box-shadow: 0 14px 30px rgba(0,0,0,.12); }
+    .fp-c2 .c2-hole { position: absolute; top: 11px; left: 50%; transform: translateX(-50%); width: 54px; height: 8px; border-radius: 6px; background: color-mix(in srgb, var(--d-accent) 30%, #cbd5e1); }
+    .fp-c2 .c2-tag { display: inline-block; background: var(--d-accent); color: #fff; font-weight: 800; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; padding: 5px 12px; border-radius: 999px; margin: 6px 0 10px; }
+    .fp-c2 .c2-badge .titre { font-size: 26px; margin: 4px 0; }
+    .fp-c2 .c2-dl { margin-top: 10px; }
+    .fp-c2 .logo { height: 38px; }
+    /* c3 Affiche-pro / Lancement */
+    .fp-c3 .c3-panel { background: linear-gradient(160deg, var(--d-accent), var(--d-accentD)); color: #fff; padding: 42px 24px 34px; text-align: center; }
+    .fp-c3 .c3-panel .titre { color: #fff; font-size: 42px; }
+    .fp-c3 .c3-panel .sous { color: rgba(255,255,255,.9); }
+    .fp-c3 .c3-panel .logo { filter: brightness(0) invert(1); opacity: .95; }
+    .fp-c3 .c3-tag { display: inline-block; border: 1.5px solid rgba(255,255,255,.7); color: #fff; font-weight: 800; font-size: 11px; letter-spacing: .2em; text-transform: uppercase; padding: 5px 14px; border-radius: 999px; margin-bottom: 14px; }
+    /* c4 Gala */
+    .fp.corp.fp-c4 { background: color-mix(in srgb, var(--d-texte) 90%, #000); }
+    .fp-c4 .fp-in { color: #ece3cf; }
+    .fp-c4 .titre { color: var(--d-accent); font-size: 36px; }
+    .fp-c4 .sous { color: #d8cdb4; }
+    .fp-c4 .when, .fp-c4 .where { color: #ece3cf; }
+    .fp-c4 .c4-eye { font-size: 12px; letter-spacing: .24em; text-transform: uppercase; color: var(--d-accent); font-weight: 800; }
+    .fp-c4 .c4-rule { width: 70px; height: 1px; background: var(--d-accent); margin: 14px auto; position: relative; }
+    .fp-c4 .c4-rule::before { content: "◆"; position: absolute; top: -8px; left: 50%; transform: translateX(-50%); color: var(--d-accent); font-size: 10px; background: color-mix(in srgb, var(--d-texte) 90%, #000); padding: 0 6px; }
+    .fp-c4 .logo { filter: brightness(0) invert(1); opacity: .85; }
+    /* c5 Webinaire / Live */
+    .fp-c5 .c5-screen { position: relative; aspect-ratio: 16/9; background: linear-gradient(135deg, color-mix(in srgb, var(--d-accent) 88%, #000), var(--d-accentD)); border-radius: 14px; margin-bottom: 18px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .fp-c5 .c5-live { position: absolute; top: 12px; left: 12px; display: inline-flex; align-items: center; gap: 6px; background: rgba(0,0,0,.45); color: #fff; font-weight: 800; font-size: 11px; letter-spacing: .1em; padding: 5px 10px; border-radius: 999px; }
+    .fp-c5 .c5-live i { width: 8px; height: 8px; border-radius: 50%; background: #ff3b30; box-shadow: 0 0 0 0 rgba(255,59,48,.6); animation: c5pulse 1.6s infinite; }
+    @keyframes c5pulse { 70% { box-shadow: 0 0 0 7px rgba(255,59,48,0); } 100% { box-shadow: 0 0 0 0 rgba(255,59,48,0); } }
+    .fp-c5 .c5-play { width: 56px; height: 56px; border-radius: 50%; background: rgba(255,255,255,.92); color: var(--d-accent); display: flex; align-items: center; justify-content: center; font-size: 20px; padding-left: 4px; }
+    /* c6 Agenda */
+    .fp-c6 .c6-head { background: linear-gradient(160deg, var(--d-accent), var(--d-accentD)); color: #fff; padding: 26px 24px 22px; text-align: center; }
+    .fp-c6 .c6-head .titre, .fp-c6 .c6-head .eyebrow, .fp-c6 .c6-head .sous, .fp-c6 .c6-head .when, .fp-c6 .c6-head .where { color: #fff; }
+    .fp-c6 .c6-head .titre { font-size: 30px; }
+    .fp-c6 .c6-head .logo { filter: brightness(0) invert(1); }
+    .c6-lbl, .c7-lbl, .c10-lbl { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--d-accentD); font-weight: 800; margin-bottom: 6px; text-align: left; }
+    /* c7 Speakers grid */
+    .fp-c7 .spk-grid { grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 6px; }
+    .fp-c7 .spk-grid .av { width: 72px; height: 72px; }
+    .fp-c7 .spk-grid .nm { font-size: 13px; }
+    .fp-c7 .spk-grid .ro { font-size: 11px; }
+    .fp-c7 .spk-grid .co { font-size: 10px; }
+    .fp-c7 .titre { font-size: 28px; margin-bottom: 10px; }
+    /* c8 Minimal / AG */
+    .fp-c8 .fp-in { padding: 40px 28px 44px; }
+    .fp-c8 .c8-rule { height: 1px; background: color-mix(in srgb, var(--d-texte) 20%, transparent); margin: 20px 0; }
+    .fp-c8 .titre { font-size: 30px; font-weight: 700; }
+    .fp-c8 .eyebrow { letter-spacing: .2em; }
+    /* c9 Expo / Salon */
+    .fp-c9 .c9-hall { background: linear-gradient(135deg, var(--d-accent), var(--d-accentD)); color: #fff; padding: 34px 24px; text-align: center; position: relative; overflow: hidden; }
+    .fp-c9 .c9-hall::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, rgba(255,255,255,.07) 0 2px, transparent 2px 26px); }
+    .fp-c9 .c9-hall .titre { color: #fff; font-size: 34px; position: relative; }
+    .fp-c9 .c9-hall .logo { filter: brightness(0) invert(1); position: relative; }
+    .fp-c9 .c9-tag { display: inline-block; background: rgba(255,255,255,.18); color: #fff; font-weight: 800; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; padding: 5px 14px; border-radius: 999px; margin-bottom: 12px; position: relative; }
+    /* c10 Formation / Atelier */
+    .fp-c10 .c10-tag { display: inline-block; background: color-mix(in srgb, var(--d-accent) 14%, #fff); color: var(--d-accentD); font-weight: 800; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; padding: 5px 12px; border-radius: 999px; margin-bottom: 8px; }
+    .fp-c10 .titre { font-size: 30px; }
+    .fp-c10 .c10-lbl { margin-top: 12px; }
+
     /* ── Enveloppe (ouverture pro, sans zoom) : le billet SORT de l'intérieur, séquence ~3,5 s ── */
     #env { position: fixed; inset: 0; background: var(--d-fond); display: flex; align-items: center; justify-content: center; z-index: 50; }
     #env.go { animation: envgone .6s ease 3.2s forwards; }                 /* le faire-part n'apparaît qu'après ~3,2 s */
@@ -372,32 +446,66 @@
         b10: function (p) { return '<div class="fp card fp-b10"><div class="fp-in"><div class="b10-hex">' + _imgdiv(p, "b10-ph") + '</div><div class="b10-deco"></div>' + _eye(p) + '<div class="names">' + _names(p) + '</div>' + _verset(p) + _texts(p) + _dl(p) + '</div></div>'; }
       };
 
-      function fpCorporate(p) {
-        var d = p.design, f = d.fiche || {}, parts = ['<div class="fp-in">'];
-        if (d.logo_url) parts.push('<img class="logo" src="' + esc(mediaUrl(d.logo_url)) + '" alt="">');
-        if (f.organisateur) parts.push('<div class="eyebrow">' + esc(f.organisateur) + '</div>');
-        parts.push('<div class="titre">' + esc(f.titre || p.event_title) + '</div>');
-        if (f.sous_titre) parts.push('<div class="sous">' + esc(f.sous_titre) + '</div>');
-        var when = f.date_label || p.event_date_label, where = f.lieu || p.location;
-        if (when) parts.push('<div class="when">🗓 ' + esc(when) + '</div>');
-        if (where) parts.push('<div class="where">📍 ' + esc(where) + '</div>');
-        if (f.intervenants && f.intervenants.length) {
-          var sp = ['<div class="spk">'];
-          f.intervenants.slice(0, 6).forEach(function (s) {
-            sp.push('<div class="s"><div class="av">' + (s.photo ? '<img src="' + esc(mediaUrl(s.photo)) + '" alt="">' : '') + '</div>'
-              + '<div class="nm">' + esc(s.nom || "") + '</div>'
-              + (s.role ? '<div class="ro">' + esc(s.role) + '</div>' : '')
-              + (s.societe ? '<div class="co">' + esc(s.societe) + '</div>' : '') + '</div>');
-          });
-          sp.push('</div>'); parts.push(sp.join(''));
-        }
-        if (f.cta) parts.push('<span class="cta">' + esc(f.cta) + '</span>');
-        parts.push('</div>');
-        return '<div class="fp card corp">' + parts.join('') + '</div>';
+      // ── Fragments corporate réutilisés ──
+      function _cLogo(p) { return p.design.logo_url ? '<img class="logo" src="' + esc(mediaUrl(p.design.logo_url)) + '" alt="">' : ""; }
+      function _cOrg(p) { var o = _f(p).organisateur; return o ? '<div class="eyebrow">' + esc(o) + '</div>' : ""; }
+      function _cTitle(p) { return '<div class="titre">' + esc(_f(p).titre || p.event_title) + '</div>'; }
+      function _cSub(p) { var s = _f(p).sous_titre; return s ? '<div class="sous">' + esc(s) + '</div>' : ""; }
+      function _cDL(p) { var f = _f(p), w = f.date_label || p.event_date_label, l = f.lieu || p.location, o = ""; if (w) o += '<div class="when">🗓 ' + esc(w) + '</div>'; if (l) o += '<div class="where">📍 ' + esc(l) + '</div>'; return o; }
+      function _cCta(p) { var c = _f(p).cta; return c ? '<span class="cta">' + esc(c) + '</span>' : ""; }
+      function _cSpk(p, max, cls) {
+        var f = _f(p); if (!f.intervenants || !f.intervenants.length) return "";
+        var sp = ['<div class="' + (cls || "spk") + '">'];
+        f.intervenants.slice(0, max || 6).forEach(function (s) {
+          sp.push('<div class="s"><div class="av">' + (s.photo ? '<img src="' + esc(mediaUrl(s.photo)) + '" alt="">' : "") + '</div>'
+            + '<div class="nm">' + esc(s.nom || "") + '</div>'
+            + (s.role ? '<div class="ro">' + esc(s.role) + '</div>' : "")
+            + (s.societe ? '<div class="co">' + esc(s.societe) + '</div>' : "") + '</div>');
+        });
+        sp.push('</div>'); return sp.join("");
+      }
+      function _cSpon(p) {
+        var f = _f(p); if (!f.sponsors || !f.sponsors.length) return "";
+        var o = ['<div class="spon"><div class="spon-t">Avec le soutien de</div><div class="spon-row">'];
+        f.sponsors.slice(0, 10).forEach(function (s) {
+          o.push('<span class="spon-i">' + (s.logo ? '<img src="' + esc(mediaUrl(s.logo)) + '" alt="">' : esc(s.nom || "")) + '</span>');
+        });
+        o.push('</div></div>'); return o.join("");
+      }
+      function _cSess(p, max, numbered) {
+        var f = _f(p); if (!f.sessions || !f.sessions.length) return "";
+        var o = ['<div class="agenda' + (numbered ? ' agenda-num' : '') + '">'], n = 0;
+        f.sessions.slice(0, max || 14).forEach(function (s) {
+          n++;
+          o.push('<div class="ag-row">'
+            + '<span class="ag-h">' + esc(numbered ? String(n) : (s.heure || "")) + '</span>'
+            + '<span class="ag-b"><b>' + esc(s.titre || "") + '</b>'
+            + (s.intervenant ? '<i>' + esc(s.intervenant) + '</i>' : "") + '</span></div>');
+        });
+        o.push('</div>'); return o.join("");
+      }
+
+      // ── 10 structures corporate distinctes ──
+      var FP_CORP = {
+        c1: function (p) { return '<div class="fp card corp fp-c1"><div class="c1-bar"></div><div class="fp-in">' + _cLogo(p) + _cOrg(p) + _cTitle(p) + _cSub(p) + _cDL(p) + _cSpk(p, 6) + _cSpon(p) + _cCta(p) + '</div></div>'; },
+        c2: function (p) { return '<div class="fp card corp fp-c2"><div class="fp-in"><div class="c2-badge"><span class="c2-hole"></span>' + _cLogo(p) + '<div class="c2-tag">Badge d\'accès</div>' + _cTitle(p) + _cSub(p) + '<div class="c2-dl">' + _cDL(p) + '</div></div>' + _cCta(p) + '</div></div>'; },
+        c3: function (p) { return '<div class="fp card corp fp-c3"><div class="c3-panel"><div class="c3-tag">Lancement</div>' + _cLogo(p) + _cTitle(p) + _cSub(p) + '</div><div class="fp-in">' + _cOrg(p) + _cDL(p) + _cCta(p) + '</div></div>'; },
+        c4: function (p) { return '<div class="fp card corp fp-c4"><div class="fp-in">' + _cLogo(p) + '<div class="c4-eye">' + esc(_f(p).organisateur || "Soirée de gala") + '</div><div class="c4-rule"></div>' + _cTitle(p) + _cSub(p) + '<div class="c4-rule"></div>' + _cDL(p) + _cCta(p) + '</div></div>'; },
+        c5: function (p) { return '<div class="fp card corp fp-c5"><div class="fp-in"><div class="c5-screen"><span class="c5-live"><i></i>EN DIRECT</span><div class="c5-play">▶</div></div>' + _cLogo(p) + _cOrg(p) + _cTitle(p) + _cSub(p) + _cDL(p) + _cSpk(p, 4) + _cCta(p) + '</div></div>'; },
+        c6: function (p) { return '<div class="fp card corp fp-c6"><div class="c6-head">' + _cLogo(p) + _cOrg(p) + _cTitle(p) + _cSub(p) + _cDL(p) + '</div><div class="fp-in"><div class="c6-lbl">Programme de la journée</div>' + _cSess(p, 14) + _cCta(p) + '</div></div>'; },
+        c7: function (p) { return '<div class="fp card corp fp-c7"><div class="fp-in">' + _cOrg(p) + _cTitle(p) + '<div class="c7-lbl">Nos intervenants</div>' + _cSpk(p, 6, "spk spk-grid") + _cSub(p) + _cDL(p) + _cCta(p) + '</div></div>'; },
+        c8: function (p) { return '<div class="fp card corp fp-c8"><div class="fp-in">' + _cLogo(p) + '<div class="c8-rule"></div>' + _cOrg(p) + _cTitle(p) + _cSub(p) + '<div class="c8-rule"></div>' + _cDL(p) + _cCta(p) + '</div></div>'; },
+        c9: function (p) { return '<div class="fp card corp fp-c9"><div class="c9-hall"><div class="c9-tag">Salon · Expo</div>' + _cLogo(p) + _cTitle(p) + '</div><div class="fp-in">' + _cSub(p) + _cDL(p) + _cSpon(p) + _cCta(p) + '</div></div>'; },
+        c10: function (p) { return '<div class="fp card corp fp-c10"><div class="fp-in">' + _cLogo(p) + '<div class="c10-tag">Atelier · Formation</div>' + _cTitle(p) + _cSub(p) + _cDL(p) + '<div class="c10-lbl">Au programme</div>' + _cSess(p, 12, true) + _cCta(p) + '</div></div>'; }
+      };
+
+      function fpCorporate(p) {   // fallback générique (cadre inconnu)
+        return '<div class="fp card corp fp-c1"><div class="c1-bar"></div><div class="fp-in">'
+          + _cLogo(p) + _cOrg(p) + _cTitle(p) + _cSub(p) + _cDL(p) + _cSpk(p, 6) + _cSpon(p) + _cCta(p) + '</div></div>';
       }
 
       function renderFairePart(p) {
-        if (p.design.famille === "corporate") return fpCorporate(p);
+        if (p.design.famille === "corporate") return (FP_CORP[p.design.cadre] || fpCorporate)(p);
         return (FP_FAM[p.design.cadre] || FP_FAM.b1)(p);
       }
 

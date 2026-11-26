@@ -42,7 +42,7 @@ from core.config import (
 )
 from core.security import hash_pin, log_security_event
 from models.event import Event
-from models.invitation import EventGuest, GuestCheckin, InvitationPack, PrivateEventSettings
+from models.invitation import EventGuest, GuestCheckin, InvitationDesign, InvitationPack, PrivateEventSettings
 from models.user import User
 
 TZ = ZoneInfo("Africa/Bangui")
@@ -1029,6 +1029,12 @@ def purge_due(db: Session, force_event_id: Optional[int] = None) -> int:
              EventGuest.purged: True}, synchronize_session=False)
         db.query(GuestCheckin).filter(GuestCheckin.event_id == st.event_id).update(
             {GuestCheckin.device_id: None, GuestCheckin.reason: None}, synchronize_session=False)
+        # Design : efface photo/logo (bytea) + fiche/vip (noms, textes) — données personnelles
+        db.query(InvitationDesign).filter(InvitationDesign.event_id == st.event_id).update(
+            {InvitationDesign.photo_data: None, InvitationDesign.photo_mime: None, InvitationDesign.photo_sha: None,
+             InvitationDesign.logo_data: None, InvitationDesign.logo_mime: None, InvitationDesign.logo_sha: None,
+             InvitationDesign.fiche: {}, InvitationDesign.vip: None, InvitationDesign.theme_override: None,
+             InvitationDesign.photo_crop: None, InvitationDesign.status: "brouillon"}, synchronize_session=False)
         st.client_phone = None
         st.track_token = None
         st.signup_open = False

@@ -81,24 +81,25 @@
     .prog .lb { font-weight: 700; color: var(--d-texte); }
     .prog .ds { font-size: 13px; color: var(--d-muted); margin-top: 2px; }
 
-    /* ── Enveloppe (ouverture pro, sans zoom) ── */
+    /* ── Enveloppe (ouverture pro, sans zoom) : fermée, le billet est CACHÉ à l'intérieur ── */
     #env { position: fixed; inset: 0; background: var(--d-fond); display: flex; align-items: center; justify-content: center; z-index: 50; }
-    #env.go .env { transform: translateY(-130%); opacity: 0; transition: transform .6s cubic-bezier(.4,0,.2,1) .5s, opacity .5s ease .6s; }
-    .env { position: relative; width: 300px; height: 200px; cursor: pointer; transition: transform .6s, opacity .5s; }
-    .env .back { position: absolute; inset: 0; background: var(--d-accentD); border-radius: 12px; }
-    .env .pocket { position: absolute; inset: 0; border-radius: 12px; overflow: hidden; }
-    .env .pocket::before, .env .pocket::after { content: ""; position: absolute; bottom: 0; width: 56%; height: 100%; background: var(--d-accent); }
-    .env .pocket::before { left: 0; clip-path: polygon(0 0, 0 100%, 100% 100%); }
-    .env .pocket::after { right: 0; clip-path: polygon(100% 0, 0 100%, 100% 100%); }
-    .env .letter { position: absolute; left: 12px; right: 12px; top: 14px; bottom: 10px; background: var(--d-clair); border-radius: 8px; box-shadow: 0 6px 16px rgba(0,0,0,.18);
-                   display: flex; align-items: center; justify-content: center; text-align: center; padding: 14px; transition: transform .6s cubic-bezier(.4,0,.2,1); z-index: 1; }
+    #env.go { animation: envgone .55s ease 1.05s forwards; }
+    @keyframes envgone { to { opacity: 0; visibility: hidden; } }
+    .env { position: relative; width: 300px; height: 200px; cursor: pointer; }
+    /* billet glissé dans l'enveloppe : derrière la face avant (z2 < z3) → invisible tant que c'est fermé */
+    .env .letter { position: absolute; left: 20px; right: 20px; top: 66px; height: 120px; background: var(--d-clair); border-radius: 8px;
+                   box-shadow: 0 8px 18px rgba(0,0,0,.20); display: flex; align-items: center; justify-content: center; text-align: center; padding: 14px; z-index: 2; }
     .env .letter .nm { font-family: var(--d-titre); font-size: 24px; font-weight: 600; color: var(--d-texte); }
-    #env.go .letter { transform: translateY(-26px); }
-    .env .flap { position: absolute; top: 0; left: 0; right: 0; height: 50%; background: var(--d-accentD); transform-origin: top; border-radius: 12px 12px 0 0;
-                 clip-path: polygon(0 0, 100% 0, 50% 100%); transition: transform .7s cubic-bezier(.5,0,.2,1); z-index: 3; }
-    #env.go .flap { transform: rotateX(180deg); z-index: 0; }
-    .env .seal { position: absolute; top: calc(50% - 20px); left: calc(50% - 20px); width: 40px; height: 40px; border-radius: 50%; background: var(--d-accent);
-                 color: #fff; display: flex; align-items: center; justify-content: center; font-size: 18px; z-index: 4; box-shadow: 0 3px 8px rgba(0,0,0,.25); transition: opacity .3s; }
+    #env.go .letter { animation: letterout 1s cubic-bezier(.4,0,.2,1) .35s forwards; }
+    @keyframes letterout { 0% { transform: translateY(0); z-index: 2; } 2% { z-index: 6; } 100% { transform: translateY(-152px); z-index: 6; } }
+    /* face avant OPAQUE : cache le billet quand l'enveloppe est fermée */
+    .env .body { position: absolute; inset: 0; background: var(--d-accent); border-radius: 12px; z-index: 3; overflow: hidden; }
+    .env .body::after { content: ""; position: absolute; inset: 0; background: linear-gradient(135deg, transparent 49.4%, rgba(0,0,0,.13) 49.7%, transparent 50%); }
+    .env .flap { position: absolute; top: 0; left: 0; right: 0; height: 52%; background: var(--d-accentD); transform-origin: top; border-radius: 12px 12px 0 0;
+                 clip-path: polygon(0 0, 100% 0, 50% 100%); transition: transform .75s cubic-bezier(.5,0,.2,1); z-index: 4; }
+    #env.go .flap { transform: rotateX(180deg); z-index: 1; }
+    .env .seal { position: absolute; top: calc(52% - 20px); left: calc(50% - 20px); width: 40px; height: 40px; border-radius: 50%; background: var(--d-accent);
+                 color: #fff; display: flex; align-items: center; justify-content: center; font-size: 18px; z-index: 5; box-shadow: 0 3px 8px rgba(0,0,0,.25); transition: opacity .3s; }
     #env.go .seal { opacity: 0; }
     .env-hint { position: absolute; left: 0; right: 0; top: calc(100% + 18px); text-align: center; font-size: 13px; color: var(--d-muted); transition: opacity .3s; }
     #env.go .env-hint { opacity: 0; }
@@ -265,8 +266,8 @@
         var nm = (d.famille === "corporate") ? (f.titre || p.event_title) : (f.display_names || p.guest_name || p.event_title);
         var env = $("env");
         env.innerHTML = '<div class="env" id="env-card">'
-          + '<div class="back"></div><div class="pocket"></div>'
           + '<div class="letter"><div class="nm">' + esc(nm) + '</div></div>'
+          + '<div class="body"></div>'
           + '<div class="flap"></div><div class="seal">✦</div>'
           + '<div class="env-hint">Touchez pour ouvrir</div></div>';
         env.classList.remove("hidden");

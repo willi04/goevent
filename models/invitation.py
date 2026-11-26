@@ -19,6 +19,7 @@ from sqlalchemy import (
     Boolean, Column, DateTime, ForeignKey, Index, Integer, LargeBinary, String, Text, UniqueConstraint, text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import deferred
 
 from core.database import Base
 
@@ -239,10 +240,12 @@ class InvitationDesign(Base):
     vip            = Column(JSONB, nullable=True)      # {salon_label, acces_prioritaire} (corporate)
     # Photo client / logo : image uploadée RÉ-ENCODÉE (Pillow), métadonnées retirées, servie
     # derrière le pass_token (jamais énumérable). Octets stockés en base comme InvitationPage.cover.
-    photo_data     = Column(LargeBinary, nullable=True)
+    # deferred : les octets ne sont PAS chargés par une lecture normale du design
+    # (pass invité, aperçu admin…) ; seuls les routes qui servent l'image y accèdent.
+    photo_data     = deferred(Column(LargeBinary, nullable=True))
     photo_mime     = Column(String(40), nullable=True)
     photo_sha      = Column(String(64), nullable=True)    # version (cache navigateur)
-    logo_data      = Column(LargeBinary, nullable=True)
+    logo_data      = deferred(Column(LargeBinary, nullable=True))
     logo_mime      = Column(String(40), nullable=True)
     logo_sha       = Column(String(64), nullable=True)
     status         = Column(String(10), nullable=False, default="brouillon")      # brouillon | pret

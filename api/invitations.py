@@ -453,6 +453,7 @@ async def admin_design_photo(request: Request, event_id: int, file: UploadFile =
         raise HTTPException(400, "Image illisible : envoyez un JPEG/PNG valide")
     d.photo_data, d.photo_mime, d.photo_sha = b, mime, sha
     d.updated_by, d.updated_at = user.id, inv.utcnow()
+    log_security_event(db, "invitation_design_photo", request, user.id, "event %d : photo client (%dx%d)" % (ev.id, w, h))
     db.commit()
     return {"ok": True, "photo_sha": sha, "width": w, "height": h}
 
@@ -470,6 +471,7 @@ async def admin_design_logo(request: Request, event_id: int, file: UploadFile = 
         raise HTTPException(400, "Image illisible : envoyez un JPEG/PNG valide")
     d.logo_data, d.logo_mime, d.logo_sha = b, mime, sha
     d.updated_by, d.updated_at = user.id, inv.utcnow()
+    log_security_event(db, "invitation_design_logo", request, user.id, "event %d : logo (%dx%d)" % (ev.id, w, h))
     db.commit()
     return {"ok": True, "logo_sha": sha, "width": w, "height": h}
 
@@ -480,7 +482,7 @@ async def admin_design_import_text(request: Request, event_id: int, file: Upload
                                    db: Session = Depends(get_db), user: User = Depends(manager)):
     """Lit un .txt ou .docx et renvoie son texte brut pour pré-remplir un champ liste
     (programme, intervenants…). Aucune interprétation : l'admin relit puis Enregistre."""
-    _load(db, event_id, user)  # cloisonnement
+    ev, st = _load(db, event_id, user)  # cloisonnement
     raw = await _read_upload(file, 4 * 1024 * 1024)
     name = (file.filename or "").lower()
     ctype = (file.content_type or "")
@@ -509,7 +511,11 @@ async def admin_design_import_text(request: Request, event_id: int, file: Upload
             raise HTTPException(400, "Fichier .docx illisible")
     else:
         raise HTTPException(400, "Formats acceptés : .docx ou .txt")
-    return {"text": text[:20000]}
+    text = text[:20000]
+    log_security_event(db, "invitation_design_import", request, user.id,
+                       "event %d : import %s (%d car.)" % (ev.id, (name or ctype or "fichier"), len(text)))
+    db.commit()
+    return {"text": text}
 
 
 @router.delete("/admin/invitations/events/{event_id}/design/{which}")
@@ -526,6 +532,7 @@ def admin_design_del_image(request: Request, event_id: int, which: str,
         else:
             d.logo_data = d.logo_mime = d.logo_sha = None
         d.updated_by, d.updated_at = user.id, inv.utcnow()
+        log_security_event(db, "invitation_design_image_deleted", request, user.id, "event %d : %s supprimé" % (ev.id, which))
         db.commit()
     return {"ok": True}
 

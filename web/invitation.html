@@ -143,6 +143,43 @@
     .prog .tm { font-weight: 800; color: var(--d-accentD); min-width: 64px; }
     .prog .lb { font-weight: 700; color: var(--d-texte); }
     .prog .ds { font-size: 13px; color: var(--d-muted); margin-top: 2px; }
+    /* ── Variantes par cadre familial : date/lieu (dl-*) et programme (pg-*) ── */
+    .dl-cal { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 18px; text-align: left; }
+    .dl-cal .leaf { width: 74px; border-radius: 12px; overflow: hidden; border: 1px solid rgba(127,127,127,.3); background: var(--d-clair); text-align: center; flex: 0 0 74px; }
+    .dl-cal .leaf .m { background: var(--d-accent); color: #fff; font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; padding: 4px 0; }
+    .dl-cal .leaf .d { font-family: var(--d-titre); font-size: 34px; font-weight: 700; line-height: 1; padding: 6px 0 2px; color: var(--d-texte); }
+    .dl-cal .leaf .w { font-size: 11px; color: var(--d-muted); padding-bottom: 6px; text-transform: capitalize; }
+    .dl-cal .info { font-size: 14px; font-weight: 600; color: var(--d-texte); line-height: 1.5; }
+    .dl-tk { display: grid; grid-template-columns: 1fr 1fr; margin-top: 18px; border-top: 1px solid var(--d-accent); border-bottom: 1px solid var(--d-accent); text-align: left; }
+    .dl-tk > div { padding: 10px 12px; }
+    .dl-tk > div + div { border-left: 1px solid var(--d-accent); }
+    .dl-tk .k { font-size: 10px; letter-spacing: .16em; text-transform: uppercase; font-weight: 800; color: var(--d-accentD); }
+    .dl-tk .v { font-size: 14px; font-weight: 600; color: var(--d-texte); margin-top: 2px; }
+    .dl-orn { margin-top: 16px; font-family: var(--d-titre); color: var(--d-texte); }
+    .dl-orn .o { color: var(--d-accent); letter-spacing: .4em; font-size: 12px; }
+    .dl-orn .dt { font-style: italic; font-size: 19px; margin: 4px 0; }
+    .dl-orn .lc { font-size: 14px; letter-spacing: .08em; text-transform: uppercase; color: var(--d-muted); }
+    .dl-big { margin-top: 18px; }
+    .dl-big .n { font-family: var(--d-titre); font-weight: 700; font-size: 30px; letter-spacing: .14em; color: var(--d-texte); }
+    .dl-big .lc { font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: var(--d-muted); margin-top: 6px; }
+    .dl-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 16px; }
+    .dl-chips span { padding: 7px 12px; border-radius: 999px; font-size: 13px; font-weight: 700; background: rgba(255,255,255,.18); border: 1px solid rgba(127,127,127,.35); color: inherit; }
+    .pg-tl .row { border-top: 0; position: relative; padding-left: 46px; }
+    .pg-tl .row::before { content: ""; position: absolute; left: 27px; top: 0; bottom: 0; width: 2px; background: var(--d-accent); opacity: .35; }
+    .pg-tl .row::after { content: ""; position: absolute; left: 22px; top: 20px; width: 12px; height: 12px; border-radius: 50%; background: var(--d-accent); }
+    .pg-tl .row:first-of-type::before { top: 20px; }
+    .pg-tl .row:last-child::before { bottom: auto; height: 20px; }
+    .pg-cards .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 14px 18px 20px; }
+    .pg-cards .it { border-radius: 14px; padding: 12px; background: var(--d-fond); border: 1px solid rgba(127,127,127,.2); }
+    .pg-cards .it .tm { font-family: var(--d-titre); font-size: 22px; font-weight: 700; color: var(--d-accentD); }
+    .pg-orn { text-align: center; }
+    .pg-orn .prog-t { text-align: center; }
+    .pg-orn .it { padding: 12px 22px; }
+    .pg-orn .it + .it::before { content: "✦"; display: block; color: var(--d-accent); font-size: 11px; margin-bottom: 10px; }
+    .pg-orn .it .tm { font-family: var(--d-titre); font-style: italic; font-size: 17px; color: var(--d-accentD); }
+    .pg-num .row { border-top: 0; align-items: baseline; }
+    .pg-num .row .tm { font-family: var(--d-titre); font-size: 30px; line-height: 1; min-width: 44px; color: var(--d-accent); opacity: .8; }
+    .pg-num .row .hr { font-size: 12px; font-weight: 800; color: var(--d-accentD); letter-spacing: .06em; }
     /* Infos pratiques (tenue, contact, cadeaux) : même carte que le programme */
     .infos .tm { min-width: 76px; }
     .infos .dot { display: inline-block; width: 16px; height: 16px; border-radius: 50%; margin: 6px 6px 0 0; border: 1px solid rgba(127,127,127,.35); vertical-align: middle; }
@@ -476,7 +513,30 @@
       function _eye(p) { var e = _f(p).eyebrow; return e ? '<div class="eyebrow">' + esc(e) + '</div>' : ""; }
       function _verset(p) { var f = _f(p); return f.verset ? '<div class="verset">« ' + esc(f.verset) + ' »' + (f.reference ? '<span class="ref">' + esc(f.reference) + '</span>' : "") + '</div>' : ""; }
       function _texts(p) { var f = _f(p), o = ""; ["intro", "body", "closing"].forEach(function (k) { if (f[k]) o += '<p class="txt">' + esc(f[k]) + '</p>'; }); return o; }
-      function _dl(p) { var f = _f(p), w = f.date_label || p.dates_label || p.event_date_label, l = f.lieu || p.location, o = ""; if (w) o += '<div class="when">🗓 ' + esc(w) + '</div>'; if (l) o += '<div class="where">📍 ' + esc(l) + '</div>'; return o; }
+      // Date et lieu : présentation propre à chaque cadre familial (sinon : 🗓 / 📍 empilés)
+      var DL_STYLE = { b1: "cal", b6: "cal", b2: "tk", b9: "tk", b3: "orn", b10: "orn", b8: "big", b4: "chips", b5: "chips", b7: "orn" };
+      var PG_STYLE = { b1: "tl", b5: "tl", b6: "cards", b4: "cards", b7: "cards", b3: "orn", b10: "orn", b8: "num", b2: "list", b9: "list" };
+      function _parts(p) {   // jour / mois / jour de semaine à l'heure de Bangui (événement d'un seul jour)
+        if (!p.event_date || p.multi_session) return null;
+        try {
+          var d = new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(p.event_date) ? p.event_date : p.event_date + "Z"), o = { timeZone: "Africa/Bangui" };
+          return { d: d.toLocaleDateString("fr-FR", Object.assign({ day: "numeric" }, o)), m: d.toLocaleDateString("fr-FR", Object.assign({ month: "short" }, o)).replace(".", ""),
+                   w: d.toLocaleDateString("fr-FR", Object.assign({ weekday: "long" }, o)), y: d.toLocaleDateString("fr-FR", Object.assign({ year: "numeric" }, o)),
+                   mm: d.toLocaleDateString("fr-FR", Object.assign({ month: "2-digit" }, o)), dd: d.toLocaleDateString("fr-FR", Object.assign({ day: "2-digit" }, o)),
+                   h: d.toLocaleTimeString("fr-FR", Object.assign({ hour: "2-digit", minute: "2-digit" }, o)).replace(":", "h") };
+        } catch (e) { return null; }
+      }
+      function _dl(p) {
+        var f = _f(p), w = f.date_label || p.dates_label || p.event_date_label, l = f.lieu || p.location, st = DL_STYLE[p.design.cadre], x = _parts(p);
+        if (!w && !l) return "";
+        if (st === "cal" && x) return '<div class="dl-cal"><div class="leaf"><div class="m">' + esc(x.m) + '</div><div class="d">' + esc(x.d) + '</div><div class="w">' + esc(x.w) + '</div></div>'
+          + '<div class="info">' + esc(f.date_label || ("à " + x.h)) + (l ? '<br>📍 ' + esc(l) : '') + '</div></div>';
+        if (st === "tk") return '<div class="dl-tk"><div><div class="k">Quand</div><div class="v">' + esc(w || "") + '</div></div><div><div class="k">Où</div><div class="v">' + esc(l || "") + '</div></div></div>';
+        if (st === "orn") return '<div class="dl-orn"><div class="o">✦ ✦ ✦</div>' + (w ? '<div class="dt">' + esc(w) + '</div>' : '') + (l ? '<div class="lc">' + esc(l) + '</div>' : '') + '<div class="o">✦ ✦ ✦</div></div>';
+        if (st === "big" && x) return '<div class="dl-big"><div class="n">' + esc(x.dd + " · " + x.mm + " · " + x.y) + '</div><div class="lc">' + esc((f.date_label ? f.date_label + " · " : "") + (l || "")) + '</div></div>';
+        if (st === "chips") return '<div class="dl-chips">' + (w ? '<span>🗓 ' + esc(w) + '</span>' : '') + (l ? '<span>📍 ' + esc(l) + '</span>' : '') + '</div>';
+        var o = ""; if (w) o += '<div class="when">🗓 ' + esc(w) + '</div>'; if (l) o += '<div class="where">📍 ' + esc(l) + '</div>'; return o;
+      }
       function _imgdiv(p, cls) {
         var u = _photo(p);
         if (!u) return '<div class="' + cls + ' ph-empty"></div>';
@@ -604,14 +664,24 @@
         var list = corp ? (f.sessions || []) : (f.programme || []);
         if (!d.scenes || !d.scenes.programme || !list.length) return "";
         if (corp && (d.cadre === "c5" || d.cadre === "c6" || d.cadre === "c10")) return "";   // déroulé / agenda déjà dans le faire-part
-        var rows = ['<div class="prog-t">Programme</div>'];
-        list.forEach(function (it) {
-          var lb = corp ? (it.titre || "") : (it.label || "");
-          var ds = corp ? (it.intervenant || "") : (it.desc || "");
-          rows.push('<div class="row"><div class="tm">' + esc(it.heure || "") + '</div><div><div class="lb">' + esc(lb) + '</div>'
-            + (ds ? '<div class="ds">' + esc(ds) + '</div>' : '') + '</div></div>');
-        });
-        return '<div class="prog card">' + rows.join('') + '</div>';
+        var st = corp ? "list" : (PG_STYLE[d.cadre] || "list"), rows = ['<div class="prog-t">Programme</div>'];
+        var item = function (it) { return { tm: it.heure || "", lb: corp ? (it.titre || "") : (it.label || ""), ds: corp ? (it.intervenant || "") : (it.desc || "") }; };
+        if (st === "cards") {
+          rows.push('<div class="grid">' + list.map(function (it) { var x = item(it);
+            return '<div class="it"><div class="tm">' + esc(x.tm) + '</div><div class="lb">' + esc(x.lb) + '</div>' + (x.ds ? '<div class="ds">' + esc(x.ds) + '</div>' : '') + '</div>'; }).join("") + '</div>');
+        } else if (st === "orn") {
+          list.forEach(function (it) { var x = item(it);
+            rows.push('<div class="it"><div class="tm">' + esc(x.tm) + '</div><div class="lb">' + esc(x.lb) + '</div>' + (x.ds ? '<div class="ds">' + esc(x.ds) + '</div>' : '') + '</div>'); });
+        } else if (st === "num") {
+          list.forEach(function (it, i) { var x = item(it);
+            rows.push('<div class="row"><div class="tm">' + (i + 1) + '</div><div>' + (x.tm ? '<div class="hr">' + esc(x.tm) + '</div>' : '') + '<div class="lb">' + esc(x.lb) + '</div>'
+              + (x.ds ? '<div class="ds">' + esc(x.ds) + '</div>' : '') + '</div></div>'); });
+        } else {
+          list.forEach(function (it) { var x = item(it);
+            rows.push('<div class="row"><div class="tm">' + esc(x.tm) + '</div><div><div class="lb">' + esc(x.lb) + '</div>'
+              + (x.ds ? '<div class="ds">' + esc(x.ds) + '</div>' : '') + '</div></div>'); });
+        }
+        return '<div class="prog card' + (st !== "list" ? " pg-" + st : "") + '">' + rows.join('') + '</div>';
       }
 
       function openEnvelope(p, onDone) {

@@ -326,6 +326,19 @@ bout en bout sans intervention, 1 retrait réussi, analyse des
   sur une base déjà seedée = script `scripts/AAAA-MM_*.sql` passé à la main
   AVANT le déploiement (ex. `2026-11_lot6_cadres_c2_c5.sql`,
   `2026-11_lot6_ouverture_corporate.sql`).
+- **Envoi des pass sur WhatsApp** : le message part du compte WhatsApp ouvert
+  sur l'appareil qui envoie (le site ne peut pas choisir le numéro). Envoyer
+  depuis le compte WhatsApp Business GoEvent (numéro du CMS
+  `invitations.contact.whatsapp`, affiché au-dessus de la liste des invités),
+  jamais depuis un numéro personnel : sur un téléphone Android, choisir
+  « Envoyer avec WhatsApp Business » (mémorisé sur l'appareil) ; sur
+  ordinateur, connecter WhatsApp Web / Desktop au compte GoEvent (appareil
+  lié). Envoyer par vagues ; demander au client de prévenir ses invités que le
+  lien viendra de ce numéro. Message par défaut selon le type (familial ou
+  pro, protocolaire, sans émoji), lien seul sur sa ligne, « Envoyé par
+  GoEvent pour … ». Aperçu du lien : carte « Vous êtes invité(e) » /
+  « Invitation » ; vérifier avec
+  `curl -s -A "WhatsApp/2.23" https://goevent.africa/i/<jeton> | grep og:`.
 - **Catégories (événements pro)** : la colonne « Catégorie » de la liste
   règle la couleur du badge (c2) et l'accueil : VIP, officiel, protocole,
   ministre, ambassadeur, honneur… reçoivent l'enveloppe officielle, les

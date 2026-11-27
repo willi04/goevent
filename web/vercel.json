@@ -21,6 +21,17 @@
     },
     {
       "source": "/i/:token",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(WhatsApp|whatsapp|facebookexternalhit|facebookcatalog|Facebot|meta-externalagent|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|SkypeUriPreview|Pinterest|Snapchat|Viber|Googlebot|bingbot|Applebot).*"
+        }
+      ],
+      "destination": "/api/og-pass?t=:token"
+    },
+    {
+      "source": "/i/:token",
       "destination": "/invitation.html?t=:token"
     },
     {

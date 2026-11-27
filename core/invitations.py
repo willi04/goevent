@@ -54,11 +54,24 @@ MAX_IMPORT_ROWS = 2000
 _PASS_RE = re.compile(r"/i/([A-Za-z0-9_-]{20,64})(?:[/?#]|$)")
 _TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]{20,64}$")
 
+# Message par défaut selon la famille du type d'événement. Le lien est seul sur sa ligne (aperçu
+# WhatsApp plus net) et l'expéditeur est nommé : les pass partent du numéro GoEvent, que la
+# plupart des invités n'ont pas en contact.
 DEFAULT_MESSAGE = (
     "Bonjour {nom} 🌸\n"
     "{hote} a le plaisir de vous inviter à {evenement}, le {date} à {lieu}.\n"
-    "Voici votre pass personnel ({places}) : {lien}\n"
-    "Présentez-le simplement à l'entrée. Au plaisir de vous y voir !"
+    "Voici votre pass personnel ({places}) :\n"
+    "{lien}\n"
+    "Présentez-le simplement à l'entrée. Au plaisir de vous y voir !\n"
+    "— Envoyé par GoEvent pour {hote}"
+)
+DEFAULT_MESSAGE_PRO = (
+    "Bonjour {nom},\n"
+    "{hote} a l'honneur de vous convier à {evenement}, le {date} à {lieu}.\n"
+    "Votre pass d'accès personnel ({places}) :\n"
+    "{lien}\n"
+    "Merci de le présenter à l'accueil.\n"
+    "— Envoyé par GoEvent pour {hote}"
 )
 MESSAGE_VARS = ("nom", "hote", "evenement", "date", "lieu", "places", "table", "lien")
 
@@ -87,6 +100,16 @@ EVENT_TYPES = (
     {"code": "autre", "label": "Autre", "famille": None, "acces": None, "suggere": None},
 )
 _EVENT_TYPE_CODES = {t["code"] for t in EVENT_TYPES}
+_EVENT_FAMILLE = {t["code"]: t["famille"] for t in EVENT_TYPES}
+
+
+def event_famille(event_type: Optional[str]) -> str:
+    """« corporate » | « familial » (type inconnu, « autre » ou ancien dossier : familial)."""
+    return _EVENT_FAMILLE.get(event_type or "") or "familial"
+
+
+def default_message(st: PrivateEventSettings) -> str:
+    return DEFAULT_MESSAGE_PRO if event_famille(st.event_type) == "corporate" else DEFAULT_MESSAGE
 
 
 def check_event_type(v: Optional[str]) -> Optional[str]:
@@ -394,7 +417,7 @@ def render_message(ev: Event, st: PrivateEventSettings, g: EventGuest) -> str:
         "date": fmt_date_fr(ev.event_date), "lieu": ev.location or "", "places": places_label(g.seats),
         "table": g.table_label or "", "lien": pass_url(g.token) if g.token else "",
     }
-    tpl = st.message_template or DEFAULT_MESSAGE
+    tpl = st.message_template or default_message(st)
     return re.sub(r"\{(%s)\}" % "|".join(MESSAGE_VARS), lambda m: values[m.group(1)], tpl)
 
 

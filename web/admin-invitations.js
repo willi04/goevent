@@ -1387,6 +1387,7 @@
     return block("Invités", [importBox,
       el("div", { class: "flex flex-wrap items-center gap-2 mb-3" }, [search, filter, el("span", { class: "flex-1" }), sendBtn]),
       el("p", { class: "text-[11px] text-gray-500 mb-2", text: "« Envoyer au suivant » ouvre WhatsApp avec le message prêt pour le prochain invité non servi : appuyez sur Envoyer dans WhatsApp, revenez ici, recommencez." }),
+      senderNote(),
       el("p", { id: "inv-nophone", class: "hidden text-xs font-semibold text-amber-800 bg-amber-50 rounded-xl p-3 mb-2" }),
       el("div", { id: "inv-paper", class: "hidden flex flex-wrap items-center gap-2 text-xs font-semibold text-orange-900 bg-orange-50 rounded-xl p-3 mb-2" }),
       el("div", { id: "inv-guests" })]);
@@ -1577,12 +1578,42 @@
     ]);
   }
 
+  // ── Expéditeur : le message part du compte WhatsApp ouvert sur CET appareil (le site ne peut
+  // pas le choisir). Android : on peut forcer l'appli WhatsApp Business (compte GoEvent).
+  var IS_ANDROID = /Android/i.test(navigator.userAgent || "");
+  function waApp() { try { return localStorage.getItem("goevent_wa_app") === "w4b" ? "w4b" : "wa"; } catch (e) { return "wa"; } }
+  function fmtPhone(d) { d = String(d || ""); return d.indexOf("236") === 0 && d.length === 11 ? "+236 " + d.slice(3).replace(/(\d{2})(?=\d)/g, "$1 ") : "+" + d; }
+  // api.whatsapp.com/send?phone=…&text=… → lien Android qui ouvre WhatsApp Business (repli : le lien d'origine)
+  function waBusinessLink(url) {
+    var q = url.split("?")[1] || "", ph = (q.match(/(?:^|&)phone=(\d{6,15})(?:&|$)/) || [])[1], tx = (q.match(/(?:^|&)text=([^&]*)/) || [])[1];
+    if (!ph) return url;
+    return "intent://send/?phone=" + ph + (tx ? "&text=" + tx : "") + "#Intent;scheme=whatsapp;package=com.whatsapp.w4b;S.browser_fallback_url=" + encodeURIComponent(url) + ";end";
+  }
+  function senderNote() {
+    var num = S.meta && S.meta.sender_whatsapp;
+    var box = el("div", { class: "text-[11px] text-gray-600 bg-gray-50 rounded-xl p-3 mb-2", "data-sender": "1" }, [
+      el("p", { text: "Expéditeur : les pass partent du compte WhatsApp ouvert sur cet appareil." + (num ? " Utilisez le compte GoEvent " + fmtPhone(num) + " (WhatsApp Business), pas un numéro personnel." : "") })]);
+    if (IS_ANDROID) {
+      var sel = el("select", { class: "input-field text-xs mt-2", style: "max-width:260px", onchange: function () {
+        try { localStorage.setItem("goevent_wa_app", sel.value); } catch (e) {}
+      } }, [["wa", "Envoyer avec WhatsApp"], ["w4b", "Envoyer avec WhatsApp Business"]].map(function (o) {
+        return el("option", { value: o[0], text: o[1], selected: waApp() === o[0] ? "selected" : null });
+      }));
+      box.appendChild(sel);
+    }
+    return box;
+  }
+
   // Ouvre WhatsApp (clic utilisateur → pas de blocage de fenêtre) puis marque « envoyé »
   function sendGuest(g) {
     if (!S.ev.quota) { toast("Activez un pack avant d'envoyer les pass.", "error"); return; }
-    var w = window.open(g.wa_url, "_blank");
-    if (w) w.opener = null;
-    else { toast("Le navigateur a bloqué l'ouverture de WhatsApp : autorisez les fenêtres pour ce site.", "error"); return; }
+    if (IS_ANDROID && waApp() === "w4b") {
+      location.href = waBusinessLink(g.wa_url);              // ouvre l'appli ; la page reste sous elle
+    } else {
+      var w = window.open(g.wa_url, "_blank");
+      if (w) w.opener = null;
+      else { toast("Le navigateur a bloqué l'ouverture de WhatsApp : autorisez les fenêtres pour ce site.", "error"); return; }
+    }
     btApi.post("/admin/invitations/guests/" + g.id + "/sent").then(function () {
       S.queue = S.queue.filter(function (id) { return id !== g.id; });
       loadGuests();
@@ -1871,7 +1902,7 @@
   function messageBlock() {
     var ev = S.ev, m = S.meta;
     var ta = el("textarea", { class: "input-field text-sm", rows: "6", maxlength: "1000" });
-    ta.value = ev.message_template || m.default_message;
+    ta.value = ev.message_template || ev.default_message || m.default_message;   // défaut selon le type (familial / pro)
     var save = el("button", { class: "action-btn btn-primary text-xs", text: "Enregistrer le message", onclick: function () {
       btApi.patch("/admin/invitations/events/" + ev.id, { message_template: ta.value }).then(function () { toast("Message enregistré.", "success"); reloadEvent().then(loadGuests); })
         .catch(function (e) { toast(e.message || "Erreur", "error"); });

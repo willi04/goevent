@@ -372,7 +372,10 @@ Les textes, images et liens des pages publiques sont modifiables depuis
   `?v=<sha>` (cache immuable). Description publique distincte de
   `events.description` (note interne, jamais publiée). Aperçu WhatsApp /
   Facebook : fonction Vercel `web/api/og-signup.js` pour les robots sur
-  `/r/:slug` et les alias. Page au gabarit du checkout, police Plus Jakarta
+  `/r/:slug` et les alias. Lien d'un pass (`/i/:token`) : `web/api/og-pass.js`
+  lit `GET /invitations/pass/{token}/preview` (événement seulement, jamais le
+  nom, le numéro ni la catégorie de l'invité ; 404 si pass ou événement
+  annulé) ; image fixe par famille `web/og/invitation-famille|pro.png`. Page au gabarit du checkout, police Plus Jakarta
   Sans hébergée (`web/fonts`, OFL), aucun script tiers. Jusqu'à 3 pass par
   numéro (noms différents ; même nom + même numéro = déjà inscrit).
 - **Inscription libre** : page générique `inscription.html`

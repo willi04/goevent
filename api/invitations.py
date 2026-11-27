@@ -42,6 +42,7 @@ from models.invitation import (
     InvitationPage, PrivateEventSettings,
 )
 from models.invitation_catalog import InvFormula
+from models.site_content import SiteContent
 from models.user import User
 from schemas.invitation import (
     AgentIn, AgentManualIn, CoverIn, DesignPut, GuestImportIn, GuestPatch, ManualCheckinIn, OwnerIn, PackCancelIn,
@@ -199,12 +200,23 @@ def _phone(v: Optional[str]) -> Optional[str]:
 # BACK-OFFICE — événements privés
 # ════════════════════════════════════════════════════════════
 
+def _sender_whatsapp(db: Session) -> Optional[str]:
+    """Numéro WhatsApp GoEvent (CMS) affiché au back-office comme expéditeur attendu des pass."""
+    for key in ("invitations.contact.whatsapp", "global.contact.whatsapp"):
+        row = db.get(SiteContent, key)
+        v = re.sub(r"\D", "", (row.value if row else "") or "")
+        if 8 <= len(v) <= 15:
+            return v
+    return None
+
+
 @router.get("/admin/invitations/meta")
 def admin_meta(db: Session = Depends(get_db), user: User = Depends(manager)):
     c = cat.full_catalog(db, include_archived=False)
     return {"formulas": c["formulas"], "packs": [p for p in c["packs"] if p["available"]], "options": c["options"],
             "catalog_settings": c["settings"], "units": c["units"],
             "channels": inv.channels(), "default_message": inv.DEFAULT_MESSAGE,
+            "sender_whatsapp": _sender_whatsapp(db),
             "message_vars": list(inv.MESSAGE_VARS), "can_activate": is_admin(user), "can_edit_catalog": is_admin(user),
             "event_types": list(inv.EVENT_TYPES),
             "retention_days": inv.INVITATION_RETENTION_DAYS}
@@ -276,6 +288,7 @@ def admin_get_event(event_id: int, db: Session = Depends(get_db), user: User = D
     out = _event_summary(db, ev, st, owners)
     out.update({"description": ev.description, "client_phone": st.client_phone, "host_label": st.host_label,
                 "message_template": st.message_template, "message_is_default": st.message_template is None,
+                "default_message": inv.default_message(st),
                 "track_url": inv.track_url(st.track_token) if st.track_token else None,
                 "purge_after": _iso(st.purge_after), "packs": [_pack_out(p) for p in packs],
                 "agents": [{"id": a.id, "full_name": a.full_name, "phone_number": a.phone_number} for a in agents],
@@ -1392,6 +1405,23 @@ def public_pass(request: Request, token: str, db: Session = Depends(get_db)):
         design["cat"] = idesign.category_style(g.category)   # couleur d'accréditation + accueil officiel
         payload["design"] = design
     return _no_store(payload)
+
+
+@router.get("/invitations/pass/{token}/preview")
+@limiter.limit("30/minute", key_func=path_token_key)
+@limiter.shared_limit(PUBLIC_IP_CEILING, scope="public_token_pages")
+def public_pass_preview(request: Request, token: str, db: Session = Depends(get_db)):
+    """Aperçu du lien envoyé sur WhatsApp (lu par web/api/og-pass.js pour les robots d'aperçu).
+    L'ÉVÉNEMENT seulement : jamais le nom, le numéro ou la catégorie de l'invité, car l'aperçu
+    passe par les serveurs de la messagerie. Pass annulé ou événement annulé : 404."""
+    g, ev, st = _pass_guest(db, token)
+    if g.revoked_at or not ev.is_active:
+        raise HTTPException(404, "Pass introuvable")
+    sessions = sess.list_sessions(db, ev.id)
+    return JSONResponse({"event_title": ev.title, "when": sess.dates_label(sessions) or inv.fmt_date_fr(ev.event_date),
+                         "location": ev.location, "host_label": st.host_label or st.client_name,
+                         "famille": inv.event_famille(st.event_type)},
+                        headers={"Cache-Control": "private, max-age=300", "X-Robots-Tag": "noindex"})
 
 
 @router.get("/invitations/pass/{token}/media/{media_id}")

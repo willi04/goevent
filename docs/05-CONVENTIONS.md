@@ -296,7 +296,8 @@ SlowAPI. Les valeurs typiques déjà utilisées dans le code :
   ouvre le même lien.
 - Design des invitations (lot 6) : `PUT …/design` `60/minute`, envois
   d'images / palette / import de texte `20/minute`, photos d'intervenants
-  `30/minute` ; images publiques du pass `90-120/minute` par jeton
+  `30/minute` ; images publiques du pass `90-120/minute` par jeton, aperçu
+  du lien (`/preview`) `30/minute` par jeton
   (`path_token_key`) + plafond commun `PUBLIC_IP_CEILING`.
 
 Clé lue dans le corps de la requête (numéro, email, jeton) : slowapi ne sait

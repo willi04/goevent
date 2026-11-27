@@ -366,10 +366,23 @@
     ]
   };
 
+  // Photos des intervenants : rattachées au NOM (survit au réordonnancement des lignes)
+  function _spkKey(nom) { return String(nom || "").trim().toLowerCase().replace(/\s+/g, " "); }
+  function _mediaBlob(id, img) {
+    S.mediaBlobs = S.mediaBlobs || {};
+    if (S.mediaBlobs[id]) { img.src = S.mediaBlobs[id]; return; }
+    fetch(BT_API + "/admin/invitations/events/" + S.eventId + "/design/media/" + id, { headers: { Authorization: "Bearer " + btAuth.getToken() } })
+      .then(function (r) { return r.ok ? r.blob() : Promise.reject(); })
+      .then(function (b) { S.mediaBlobs[id] = URL.createObjectURL(b); img.src = S.mediaBlobs[id]; })
+      .catch(function () {});
+  }
+
   function renderDesign(box) {
     var d = S.design, fiche = d.fiche, fam = (d.cadre && d.cadre.famille) || d._fam || "familial";
     d._fam = fam;
     box.innerHTML = "";
+    var photoMap = {};
+    (fiche.intervenants || []).forEach(function (it) { if (it && it.photo && it.nom) photoMap[_spkKey(it.nom)] = it.photo; });
 
     // 1) Statut + famille
     var statut = el("span", { class: "text-[11px] font-bold px-2 py-1 rounded-full " + (d.status === "pret" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"), text: d.status === "pret" ? "Publié (visible par les invités)" : "Brouillon" });
@@ -423,6 +436,7 @@
         inputs[sp.k] = node;
         ficheWrap.appendChild(field(sp.l, node, help));
         if (node._import) ficheWrap.appendChild(importText(node));
+        if (sp.k === "intervenants" && /photo/.test(type)) ficheWrap.appendChild(speakerPhotos(node));
       });
     } else {
       ficheWrap.appendChild(el("p", { class: "text-sm text-gray-400", text: "Choisissez un cadre pour remplir le contenu." }));
@@ -516,6 +530,49 @@
       preview.appendChild(el("div", { style: "font-size:11px;color:" + (c.muted || "#6b7280") + ";margin-top:10px", text: cadreNom ? ("Mise en page « " + cadreNom + " » — rendu complet sur la page invité.") : "Choisissez un cadre." }));
     }
 
+    // 4 bis) Photos des intervenants : une ligne par intervenant saisi ci-dessus
+    function speakerPhotos(node) {
+      var wrap = el("div", { class: "mt-2 space-y-2" });
+      var tmr;
+      function draw() {
+        wrap.innerHTML = "";
+        var rows = _textToList(node.value, node._keys).filter(function (r) { return r.nom; });
+        wrap.appendChild(lbl("Photos des intervenants"));
+        if (!rows.length) { wrap.appendChild(el("p", { class: "text-xs text-gray-400", text: "Saisissez les intervenants ci-dessus : une ligne apparaîtra ici pour chacun." })); return; }
+        rows.forEach(function (r) {
+          var key = _spkKey(r.nom), ref = photoMap[key];
+          var img = el("img", { alt: "", style: "width:100%;height:100%;object-fit:cover" + (ref ? "" : ";display:none") });
+          if (ref) _mediaBlob(ref.slice(1), img);
+          var initials = el("span", { class: "text-xs font-bold text-gray-500", text: ref ? "" : r.nom.split(/\s+/).map(function (w) { return w.charAt(0); }).join("").slice(0, 2).toUpperCase() });
+          var av = el("div", { style: "width:44px;height:44px;flex:0 0 44px;border-radius:50%;overflow:hidden;background:#f3f4f6;border:1px solid #e5e7eb;display:flex;align-items:center;justify-content:center" }, [img, initials]);
+          var fin = el("input", { type: "file", accept: "image/jpeg,image/png,image/webp", style: "display:none" });
+          fin.addEventListener("change", function () {
+            if (!fin.files[0]) return;
+            _upload("/design/media", fin.files[0], function (res) {
+              photoMap[key] = res.ref; draw();
+              toast("Photo ajoutée — cliquez « Enregistrer » pour l'appliquer.", "success");
+            });
+          });
+          var actions = [el("button", { type: "button", class: "text-xs px-2 py-1 rounded border border-gray-300 text-gray-600 hover:bg-gray-50",
+            text: ref ? "Changer" : "📷 Ajouter une photo", onclick: function () { fin.value = ""; fin.click(); } }), fin];
+          if (ref) actions.push(el("button", { type: "button", class: "text-xs px-2 py-1 rounded text-red-600 hover:bg-red-50", text: "Retirer",
+            onclick: function () {
+              btApi.delete("/admin/invitations/events/" + S.eventId + "/design/media/" + ref.slice(1))
+                .then(function () { delete photoMap[key]; draw(); toast("Photo retirée.", "success"); })
+                .catch(function (e) { toast(e.message || "Erreur", "error"); });
+            } }));
+          wrap.appendChild(el("div", { class: "flex items-center gap-3" }, [av,
+            el("div", { class: "flex-1 min-w-0" }, [el("div", { class: "text-sm font-semibold text-gray-800 truncate", text: r.nom }),
+              el("div", { class: "text-[11px] text-gray-400 truncate", text: [r.role, r.societe].filter(Boolean).join(" · ") })]),
+            el("div", { class: "flex items-center gap-1" }, actions)]));
+        });
+        wrap.appendChild(el("p", { class: "text-[11px] text-gray-400", text: "Photo rattachée au nom : si vous renommez un intervenant, rechoisissez sa photo. JPEG, PNG ou WebP ; recadrée en rond sur l'invitation." }));
+      }
+      node.addEventListener("input", function () { clearTimeout(tmr); tmr = setTimeout(draw, 400); });
+      draw();
+      return wrap;
+    }
+
     // 8) Actions
     function collectFiche() {
       var out = {};
@@ -523,6 +580,7 @@
         var n = inputs[k];
         out[k] = n._keys ? _textToList(n.value, n._keys) : (n.value || "").trim();
       });
+      (out.intervenants || []).forEach(function (r) { var ref = photoMap[_spkKey(r.nom)]; if (ref) r.photo = ref; });
       return out;
     }
     function save(status) {

@@ -11,6 +11,7 @@ EventGuest           : un pass nominatif (1 à 20 places), jeton aléatoire.
 GuestCheckin         : journal des entrées (en ligne, hors ligne, manuelle).
 EventSession         : séances d'un événement sur plusieurs jours (une entrée par séance).
 InvitationPage       : présentation publique (affiche, description) de la page d'inscription.
+InvitationDesign     : fiche visuelle (lot 6) ; InvDesignMedia : photos des intervenants.
 InvitationPack       : pack payé (taille × niveau de service), activé par l'admin.
 """
 from datetime import datetime
@@ -253,3 +254,22 @@ class InvitationDesign(Base):
     updated_by     = Column(Integer, ForeignKey("users.id"), nullable=True)
     updated_at     = Column(DateTime, nullable=True)
     created_at     = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class InvDesignMedia(Base):
+    """Images secondaires d'un design (lot 6) : photos des intervenants (cadres corporate c1, c5,
+    c7…). Référencées dans la fiche par « m<id> » (intervenants[].photo), jamais par une URL.
+    Image ré-encodée (Pillow), servie derrière le pass_token. Table NEUVE (create_all au boot) ;
+    supprimée à la purge J+30 et avec l'événement (CASCADE). Octets différés (jamais chargés
+    par une lecture de liste)."""
+    __tablename__ = "inv_design_media"
+    id         = Column(Integer, primary_key=True, index=True)
+    event_id   = Column(Integer, ForeignKey("events.id", ondelete="CASCADE"), nullable=False, index=True)
+    kind       = Column(String(20), nullable=False, default="intervenant")
+    data       = deferred(Column(LargeBinary, nullable=False))
+    mime       = Column(String(40), nullable=False)
+    sha        = Column(String(64), nullable=False)
+    width      = Column(Integer, nullable=True)
+    height     = Column(Integer, nullable=True)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

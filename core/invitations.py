@@ -43,7 +43,7 @@ from core.config import (
 from core.security import hash_pin, log_security_event
 from models.event import Event
 from models.invitation import (
-    EventGuest, GuestCheckin, InvitationDesign, InvitationPack, InvitationPage, PrivateEventSettings,
+    EventGuest, GuestCheckin, InvDesignMedia, InvitationDesign, InvitationPack, InvitationPage, PrivateEventSettings,
 )
 from models.user import User
 
@@ -1020,7 +1020,7 @@ def purge_after_event(db: Session, ev: Event) -> datetime:
 
 def purge_due(db: Session, force_event_id: Optional[int] = None) -> int:
     """Anonymise les listes d'invités dont la date de conservation est passée : invités, journal
-    d'entrées, design (photo, logo, fiche) et page d'inscription (affiche, description)."""
+    d'entrées, design (photo, logo, fiche, photos des intervenants) et page d'inscription (affiche, description)."""
     q = db.query(PrivateEventSettings).filter(PrivateEventSettings.purged_at.is_(None))
     q = q.filter(PrivateEventSettings.event_id == force_event_id) if force_event_id else \
         q.filter(PrivateEventSettings.purge_after <= utcnow())
@@ -1039,6 +1039,7 @@ def purge_due(db: Session, force_event_id: Optional[int] = None) -> int:
              InvitationDesign.fiche: {}, InvitationDesign.vip: None, InvitationDesign.theme_override: None,
              InvitationDesign.photo_crop: None, InvitationDesign.photo_url: None, InvitationDesign.logo_url: None,
              InvitationDesign.status: "brouillon"}, synchronize_session=False)
+        db.query(InvDesignMedia).filter(InvDesignMedia.event_id == st.event_id).delete(synchronize_session=False)
         # Page d'inscription : affiche (souvent une photo des hôtes) + description publique
         db.query(InvitationPage).filter(InvitationPage.event_id == st.event_id).update(
             {InvitationPage.cover_data: None, InvitationPage.cover_sha: None, InvitationPage.cover_width: None,

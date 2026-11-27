@@ -112,7 +112,9 @@
     .spk { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; }
     .spk .s { text-align: center; }
     .spk .av { width: 84px; height: 84px; border-radius: 50%; margin: 0 auto 8px; overflow: hidden; border: 2px solid var(--d-accent); background: color-mix(in srgb, var(--d-accent) 12%, #fff); }
+    .spk .av { display: flex; align-items: center; justify-content: center; }
     .spk .av img { width: 100%; height: 100%; object-fit: cover; }
+    .spk .av .ini { font-family: var(--d-titre); font-weight: 800; font-size: 26px; letter-spacing: .02em; color: var(--d-accentD); }
     .spk .nm { font-weight: 800; font-size: 15px; color: var(--d-texte); }
     .spk .ro { font-size: 13px; color: var(--d-accentD); font-weight: 700; }
     .spk .co { font-size: 12px; color: var(--d-muted); }
@@ -470,7 +472,8 @@
         var sp = ['<div class="' + (cls || "spk") + '">'];
         f.intervenants.slice(0, max || 6).forEach(function (s) {
           var ph = mediaUrl(s.photo);
-          sp.push('<div class="s"><div class="av">' + (ph ? '<img src="' + esc(ph) + '" alt="">' : "") + '</div>'
+          var ini = String(s.nom || "").trim().split(/\s+/).map(function (w) { return w.charAt(0); }).join("").slice(0, 2).toUpperCase();
+          sp.push('<div class="s"><div class="av">' + (ph ? '<img src="' + esc(ph) + '" alt="">' : '<span class="ini">' + esc(ini) + '</span>') + '</div>'
             + '<div class="nm">' + esc(s.nom || "") + '</div>'
             + (s.role ? '<div class="ro">' + esc(s.role) + '</div>' : "")
             + (s.societe ? '<div class="co">' + esc(s.societe) + '</div>' : "") + '</div>');

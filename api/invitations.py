@@ -38,7 +38,7 @@ from core.permissions import get_current_admin, is_admin, normalize_role, requir
 from core.security import get_current_user, hash_pin, log_security_event
 from models.event import Event
 from models.invitation import (
-    EventGuest, EventSession, GuestCheckin, InvitationDesign, InvModele, InvModeleCadre, InvitationPack,
+    EventGuest, EventSession, GuestCheckin, InvDesignMedia, InvitationDesign, InvModele, InvModeleCadre, InvitationPack,
     InvitationPage, PrivateEventSettings,
 )
 from models.invitation_catalog import InvFormula
@@ -535,6 +535,8 @@ def _design_admin_out(db: Session, ev, d: Optional[InvitationDesign]) -> dict:
         "has_logo": bool(d and d.logo_sha),
         "photo_sha": d.photo_sha if d else None,
         "logo_sha": d.logo_sha if d else None,
+        "media": [{"ref": "m%d" % i, "id": i, "sha": sha} for i, sha in db.query(InvDesignMedia.id, InvDesignMedia.sha)
+                  .filter(InvDesignMedia.event_id == ev.id).order_by(InvDesignMedia.id).all()],
     }
 
 
@@ -599,7 +601,9 @@ def admin_put_design(request: Request, event_id: int, data: DesignPut,
             d.modele_id = None
     try:
         if "fiche" in f:
-            d.fiche = idesign.sanitize_fiche(_bound_json(data.fiche, 20000), _design_champs(db, d.modele_id))
+            d.fiche = idesign.sanitize_fiche(_bound_json(data.fiche, 20000), _design_champs(db, d.modele_id),
+                                             _media_refs(db, ev.id))
+            _drop_orphan_media(db, ev.id, d.fiche)
         if "theme_override" in f:
             d.theme_override = idesign.sanitize_theme(_bound_json(data.theme_override, 4000))
         if "vip" in f:
@@ -709,6 +713,103 @@ async def admin_design_import_text(request: Request, event_id: int, file: Upload
                        "event %d : import %s (%d car.)" % (ev.id, (name or ctype or "fichier")[:60], len(text)))
     db.commit()
     return {"text": text}
+
+
+# ── photos des intervenants (inv_design_media) ───────────────────────
+MAX_DESIGN_MEDIA = 30          # par événement (intervenants affichés : 6 au plus par cadre, marge pour l'admin)
+
+
+def _media_refs(db: Session, event_id: int) -> set:
+    return {"m%d" % i for (i,) in db.query(InvDesignMedia.id).filter(InvDesignMedia.event_id == event_id).all()}
+
+
+def _fiche_refs(fiche: Optional[dict]) -> set:
+    out = set()
+    for rows in (fiche or {}).values():
+        if isinstance(rows, list):
+            for r in rows:
+                if isinstance(r, dict):
+                    out.update(v for k, v in r.items() if k in ("photo", "logo") and isinstance(v, str))
+    return out
+
+
+def _drop_orphan_media(db: Session, event_id: int, fiche: Optional[dict]) -> None:
+    """Images plus référencées par la fiche enregistrée et téléversées il y a plus d'1 h : supprimées
+    (marge d'1 h : photo téléversée mais fiche pas encore enregistrée)."""
+    used = _fiche_refs(fiche)
+    old = inv.utcnow() - timedelta(hours=1)
+    ids = [i for (i,) in db.query(InvDesignMedia.id).filter(InvDesignMedia.event_id == event_id,
+                                                             InvDesignMedia.created_at < old).all()
+           if "m%d" % i not in used]
+    if ids:
+        db.query(InvDesignMedia).filter(InvDesignMedia.id.in_(ids)).delete(synchronize_session=False)
+
+
+def _media_row(db: Session, event_id: int, media_id: int) -> InvDesignMedia:
+    m = db.query(InvDesignMedia).filter(InvDesignMedia.id == media_id, InvDesignMedia.event_id == event_id).first()
+    if not m:
+        raise HTTPException(404, "Image introuvable")
+    return m
+
+
+@router.post("/admin/invitations/events/{event_id}/design/media")
+@limiter.limit("30/minute")
+async def admin_design_media_upload(request: Request, event_id: int, file: UploadFile = File(...),
+                                    db: Session = Depends(get_db), user: User = Depends(manager)):
+    """Photo d'intervenant : ré-encodée (JPEG 500 px), renvoie sa référence « m<id> » à placer
+    dans fiche.intervenants[].photo (enregistrée avec la fiche)."""
+    ev, st = _load_writable(db, event_id, user)
+    n = db.query(InvDesignMedia.id).filter(InvDesignMedia.event_id == ev.id).count()
+    if n >= MAX_DESIGN_MEDIA:
+        raise HTTPException(409, "%d photos maximum par événement : supprimez-en une." % MAX_DESIGN_MEDIA)
+    raw = await _read_upload(file, idesign.MAX_UPLOAD_BYTES)
+    try:
+        b, mime, sha, w, h = idesign.reencode_image(raw, "intervenant")
+    except idesign.ImageRejected as e:
+        raise HTTPException(400, str(e))
+    except Exception:
+        raise HTTPException(400, "Image illisible : envoyez un JPEG, PNG ou WebP valide")
+    m = InvDesignMedia(event_id=ev.id, kind="intervenant", data=b, mime=mime, sha=sha, width=w, height=h,
+                       created_by=user.id)
+    db.add(m)
+    db.flush()
+    log_security_event(db, "invitation_design_media", request, user.id,
+                       "event %d : photo intervenant m%d (%dx%d)" % (ev.id, m.id, w, h))
+    db.commit()
+    return {"ref": "m%d" % m.id, "id": m.id, "sha": sha, "width": w, "height": h}
+
+
+@router.get("/admin/invitations/events/{event_id}/design/media/{media_id}")
+def admin_design_media_view(event_id: int, media_id: int, db: Session = Depends(get_db),
+                            user: User = Depends(manager)):
+    ev, st = _load(db, event_id, user)
+    m = _media_row(db, ev.id, media_id)
+    return Response(bytes(m.data), media_type=m.mime, headers={"Cache-Control": "private, no-store"})
+
+
+@router.delete("/admin/invitations/events/{event_id}/design/media/{media_id}")
+@limiter.limit("60/minute")
+def admin_design_media_delete(request: Request, event_id: int, media_id: int, db: Session = Depends(get_db),
+                              user: User = Depends(manager)):
+    """Supprime l'image et la retire de la fiche (jamais de référence morte côté invité)."""
+    ev, st = _load(db, event_id, user)
+    m = _media_row(db, ev.id, media_id)
+    ref = "m%d" % m.id
+    db.delete(m)
+    d = db.query(InvitationDesign).filter(InvitationDesign.event_id == ev.id).first()
+    if d and d.fiche and ref in _fiche_refs(d.fiche):
+        fiche = json.loads(json.dumps(d.fiche))
+        for rows in fiche.values():
+            if isinstance(rows, list):
+                for r in rows:
+                    if isinstance(r, dict):
+                        for k in ("photo", "logo"):
+                            if r.get(k) == ref:
+                                r.pop(k)
+        d.fiche = fiche
+    log_security_event(db, "invitation_design_media_deleted", request, user.id, "event %d : %s supprimée" % (ev.id, ref))
+    db.commit()
+    return {"ok": True}
 
 
 @router.delete("/admin/invitations/events/{event_id}/design/{which}")
@@ -1181,12 +1282,27 @@ def _design_payload(db: Session, event_id: int, token: str) -> Optional[dict]:
         return None
     scenes = cad.scenes or {}
     q = "/invitations/pass/%s/" % token
+    fiche = d.fiche or {}
+    refs = _fiche_refs(fiche)
+    if refs:                             # « m<id> » → URL versionnée (une requête, sans les octets)
+        shas = {"m%d" % i: sha for i, sha in db.query(InvDesignMedia.id, InvDesignMedia.sha)
+                .filter(InvDesignMedia.event_id == event_id).all()}
+        fiche = json.loads(json.dumps(fiche))
+        for rows in fiche.values():
+            if isinstance(rows, list):
+                for r in rows:
+                    if isinstance(r, dict):
+                        for k in ("photo", "logo"):
+                            if k in r:
+                                ref = r.pop(k)
+                                if ref in shas:
+                                    r[k] = "%smedia/%s?v=%s" % (q, ref[1:], shas[ref][:12])
     return {
         "cadre": cad.code,
         "famille": cad.famille,
         "scenes": scenes,
         "skin": d.theme_override or mod.skin or {},   # theme_override = palette ajustée depuis l'affiche
-        "fiche": d.fiche or {},
+        "fiche": fiche,
         "photo_url": (q + "photo?v=" + d.photo_sha) if d.photo_sha else (d.photo_url or None),
         "logo_url": (q + "logo?v=" + d.logo_sha) if d.logo_sha else (d.logo_url or None),
         "enveloppe": bool(mod.enveloppe and scenes.get("enveloppe")),
@@ -1225,6 +1341,21 @@ def public_pass(request: Request, token: str, db: Session = Depends(get_db)):
     if design:                           # couche visuelle lot 6 ; absente = pass classique
         payload["design"] = design
     return _no_store(payload)
+
+
+@router.get("/invitations/pass/{token}/media/{media_id}")
+@limiter.limit("120/minute", key_func=path_token_key)
+@limiter.shared_limit(PUBLIC_IP_CEILING, scope="public_token_pages")
+def public_pass_media(request: Request, token: str, media_id: int, db: Session = Depends(get_db)):
+    """Photo d'intervenant d'un design PRÊT, derrière le pass_token ; l'image doit appartenir à
+    l'événement du pass (sinon 404 : pas d'énumération entre événements)."""
+    g, ev, st = _pass_guest(db, token)
+    if not db.query(InvitationDesign.event_id).filter(InvitationDesign.event_id == ev.id,
+                                                      InvitationDesign.status == "pret").first():
+        raise HTTPException(404, "Image introuvable")
+    m = _media_row(db, ev.id, media_id)
+    return Response(bytes(m.data), media_type=m.mime,
+                    headers={"Cache-Control": "private, max-age=31536000, immutable", "X-Robots-Tag": "noindex"})
 
 
 def _serve_design_image(db: Session, token: str, which: str) -> Response:

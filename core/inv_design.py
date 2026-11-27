@@ -25,6 +25,8 @@ _ALLOWED = ("JPEG", "PNG", "WEBP")
 _PALETTE_SAMPLE = 120                      # on travaille sur une vignette
 _PHOTO_MAX = 1400                          # côté max d'une photo servie
 _LOGO_MAX = 600
+_SPEAKER_MAX = 500                         # photo d'intervenant (affichée en rond ≤ 84 px, écrans x3)
+MEDIA_REF = re.compile(r"^m[0-9]{1,10}$")  # référence d'image dans la fiche : « m<id> » (inv_design_media)
 
 
 def _hex(rgb) -> str:
@@ -107,8 +109,8 @@ def extract_palette(data: bytes) -> dict:
 
 def reencode_image(data: bytes, kind: str = "photo") -> tuple:
     """Ré-encode une image uploadée. Retourne (octets, mime, sha256, w, h).
-    kind='logo' garde la transparence (PNG) ; 'photo' sort en JPEG."""
-    mx = _LOGO_MAX if kind == "logo" else _PHOTO_MAX
+    kind='logo' garde la transparence (PNG) ; 'photo' et 'intervenant' sortent en JPEG."""
+    mx = {"logo": _LOGO_MAX, "intervenant": _SPEAKER_MAX}.get(kind, _PHOTO_MAX)
     im = _open(data, mx)
     im.thumbnail((mx, mx))
     out = io.BytesIO()
@@ -117,6 +119,11 @@ def reencode_image(data: bytes, kind: str = "photo") -> tuple:
         im.save(out, format="PNG", optimize=True)
         mime = "image/png"
     else:
+        if im.mode in ("RGBA", "LA") or (im.mode == "P" and "transparency" in im.info):
+            im = im.convert("RGBA")
+            bg = Image.new("RGB", im.size, (255, 255, 255))   # transparence → fond blanc (pas noir)
+            bg.paste(im, mask=im.split()[-1])
+            im = bg
         im = im.convert("RGB")
         im.save(out, format="JPEG", quality=82, optimize=True)
         mime = "image/jpeg"
@@ -134,9 +141,9 @@ FONTS = ("Plus Jakarta Sans", "Fraunces", "Cormorant Garamond", "Playfair Displa
 _TEXT_MAX = {"text": 300, "textarea": 2000}
 _LIST_MAX_ITEMS = 40
 _LIST_CELL_MAX = 300
-# Colonnes d'image dans les listes (intervenants[].photo, sponsors[].logo) : aucune image
-# externe n'est servie aux invités (fuite d'IP vers des tiers) tant qu'il n'existe pas
-# d'upload par entrée → ignorées.
+# Colonnes d'image dans les listes (intervenants[].photo, sponsors[].logo) : jamais d'URL
+# (fuite d'IP des invités vers des tiers) ; seule une référence « m<id> » vers une image
+# téléversée pour CET événement (inv_design_media) est gardée.
 _LIST_IMAGE_KEYS = ("photo", "logo")
 
 
@@ -158,8 +165,9 @@ def _list_keys(kind: str):
     return [k.strip() for k in m.group(1).split(",")] if m else None
 
 
-def sanitize_fiche(fiche, champs: dict) -> dict:
-    """Fiche typée selon `champs` du cadre : text / textarea / list[a,b,c]. Le reste est ignoré."""
+def sanitize_fiche(fiche, champs: dict, media_refs=frozenset()) -> dict:
+    """Fiche typée selon `champs` du cadre : text / textarea / list[a,b,c]. Le reste est ignoré.
+    `media_refs` : références « m<id> » des images de l'événement (autres valeurs d'image ignorées)."""
     if fiche is None:
         return {}
     if not isinstance(fiche, dict):
@@ -185,12 +193,16 @@ def sanitize_fiche(fiche, champs: dict) -> dict:
                 raise ValueError("%s : format de ligne invalide" % key)
             r = {}
             for c in cols:
-                if c in _LIST_IMAGE_KEYS or c not in row:
+                if c not in row:
+                    continue
+                if c in _LIST_IMAGE_KEYS:
+                    if isinstance(row[c], str) and row[c] in media_refs:
+                        r[c] = row[c]
                     continue
                 v = _txt(row[c], _LIST_CELL_MAX, "%s (%s)" % (key, c))
                 if v:
                     r[c] = v
-            if r:
+            if any(k not in _LIST_IMAGE_KEYS for k in r):      # une image seule ne fait pas une ligne
                 clean.append(r)
         if clean:
             out[key] = clean

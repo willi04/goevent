@@ -41,6 +41,14 @@ CHAMPS_CORPORATE = {
     "sponsors":     "list[nom,logo]",
 }
 
+# Cadres au contenu propre (lot 6, nov. 2026) : c2 Accréditation, c5 Cérémonie officielle
+CHAMPS_BY_CODE = {
+    "c2": {"organisateur": "text", "titre": "text", "sous_titre": "text", "logo_url": "image", "lieu": "text",
+           "consignes": "textarea"},
+    "c5": {"organisateur": "text", "formule": "text", "titre": "text", "sous_titre": "text", "logo_url": "image",
+           "lieu": "text", "sessions": "list[heure,titre,intervenant]"},
+}
+
 # scenes : enveloppe (animation d'ouverture) + page + programme + credential.
 # pass = "pass" (grand public) | "badge" (corporate, société/rôle).
 FAMILIAL_SCENES   = {"enveloppe": True,  "page": True, "programme": True,  "pass": "pass"}
@@ -66,10 +74,10 @@ FAMILIAL = [
 # ── Bibliothèque corporate (C1-C10) : (code, nom, structure, scenes, types) ──
 CORPORATE = [
     ("c1",  "Keynote",              "Titre fort + date/lieu + intervenants + teaser agenda", CORP_SCENES,      ["conference", "sommet"]),
-    ("c2",  "Badge-first",          "Le badge nominatif est le héros",                        CORP_SCENES,      ["acces_controle", "entreprise"]),
+    ("c2",  "Accréditation",        "Carte nominative colorée selon la catégorie (presse, staff…)", CORP_SCENES, ["accreditation", "conference", "salon"]),
     ("c3",  "Affiche-pro / Lancement","Affiche produit, titre bold, CTA",                     CORP_SCENES,      ["lancement", "produit"]),
     ("c4",  "Gala corporate",       "Élégant, logo, sobre",                                   CORP_SCENES,      ["gala", "soiree"]),
-    ("c5",  "Webinaire / Live",     "Événement en ligne, lien, « EN DIRECT »",                CORP_SCENES,      ["webinaire", "live"]),
+    ("c5",  "Cérémonie officielle", "Formule protocolaire, filets, déroulé numéroté",          CORP_SCENES,      ["ceremonie", "institutionnel", "ag"]),
     ("c6",  "Agenda / Programme",   "La timeline comme héros",                                CORP_SCENES_AGEN, ["seminaire", "journee_pro"]),
     ("c7",  "Speakers grid",        "Grille de portraits d'intervenants",                     CORP_SCENES,      ["conference", "sommet"]),
     ("c8",  "Minimal corporate",    "Marque + titre, très aéré",                              CORP_SCENES,      ["ag", "institutionnel"]),
@@ -86,7 +94,7 @@ def _rows():
                          _struct=struct))
     for i, (code, name, struct, scenes, types) in enumerate(CORPORATE, start=1):
         rows.append(dict(code=code, famille="corporate", name=name, scenes=scenes,
-                         champs=CHAMPS_CORPORATE, suggest_for=types, sort_order=i,
+                         champs=CHAMPS_BY_CODE.get(code, CHAMPS_CORPORATE), suggest_for=types, sort_order=i,
                          _struct=struct))
     return rows
 

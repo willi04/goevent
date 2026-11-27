@@ -31,10 +31,10 @@ SKINS = [
     ("b10", "Art déco — Noir & or",             "sombre", {"fond": "#141310", "accent": "#c9a24b", "accentD": "#a8863a", "clair": "#1a1813", "texte": "#f3ead3", "muted": "#9a8f72"}, "Marcellus",           {"style": "art-deco", "hexagone": True}),
     # ── Corporate (enveloppe = False) ──
     ("c1",  "Keynote — Nuit azur",              "sombre", {"fond": "#13151b", "accent": "#4da3ff", "accentD": "#2f78c7", "clair": "#191c24", "texte": "#eaf0f8", "muted": "#8a93a3", "vip": "#f0b030"}, "Plus Jakarta Sans", {}),
-    ("c2",  "Badge-first — Indigo",             "clair",  {"fond": "#eef0f6", "accent": "#4f46e5", "accentD": "#3a32c0", "clair": "#ffffff", "texte": "#1a1b2e", "muted": "#767a95", "vip": "#e0a82e"}, "Plus Jakarta Sans", {}),
+    ("c2",  "Accréditation — Ardoise",          "clair",  {"fond": "#eef1f5", "accent": "#0f172a", "accentD": "#334155", "clair": "#ffffff", "texte": "#0f172a", "muted": "#64748b"}, "Plus Jakarta Sans", {}),
     ("c3",  "Lancement — Néon",                 "sombre", {"fond": "#140a2a", "accent": "#6d28d9", "accent2": "#db2777", "highlight": "#ffd84d", "clair": "#1b1230", "texte": "#f3ecff", "muted": "#b9a8d6"}, "Plus Jakarta Sans", {"degrade": True}),
     ("c4",  "Gala — Or sombre",                 "sombre", {"fond": "#0e1420", "accent": "#c9a860", "accentD": "#ecd9a8", "clair": "#141b29", "texte": "#eef2f6", "muted": "#8a94a6"}, "Cormorant Garamond",  {"sobre": True}),
-    ("c5",  "Webinaire / Live — Cyan",          "sombre", {"fond": "#0f1218", "accent": "#35d0c0", "live": "#ff4d57", "clair": "#161a22", "texte": "#eef2f7", "muted": "#88909e"}, "Plus Jakarta Sans",   {"badge_live": True}),
+    ("c5",  "Cérémonie officielle — Marine & or", "clair", {"fond": "#f5f3ee", "accent": "#1f3a5f", "accentD": "#8a6d2f", "clair": "#ffffff", "texte": "#1b2433", "muted": "#6b7280"}, "Playfair Display", {"filet": "double"}),
     ("c6",  "Agenda — Vert institutionnel",     "clair",  {"fond": "#f3f6f3", "accent": "#157a4e", "accentD": "#0f5c3a", "clair": "#ffffff", "texte": "#16261e", "muted": "#6f7c74"}, "Plus Jakarta Sans",   {"timeline": True}),
     ("c7",  "Speakers grid — Ambre",            "clair",  {"fond": "#faf5ee", "accent": "#e07a24", "accentD": "#b85c12", "clair": "#ffffff", "texte": "#241a12", "muted": "#8a7c6c"}, "Plus Jakarta Sans",   {"grille": "portraits"}),
     ("c8",  "Minimal corporate — Bleu",         "clair",  {"fond": "#ffffff", "accent": "#2563eb", "clair": "#f4f6fb", "texte": "#0f1115", "muted": "#767d8c"}, "Plus Jakarta Sans",                       {"aere": True}),

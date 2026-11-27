@@ -247,13 +247,6 @@
     /* c1 Keynote */
     .fp-c1 .c1-bar { height: 10px; background: linear-gradient(90deg, var(--d-accent), var(--d-accentD)); }
     .fp-c1 .titre { font-size: 38px; }
-    /* c2 Badge-first */
-    .fp-c2 .c2-badge { position: relative; max-width: 300px; margin: 10px auto 4px; padding: 30px 22px 22px; background: var(--d-clair); border: 1px solid color-mix(in srgb, var(--d-accent) 22%, #e5e7eb); border-radius: 16px; box-shadow: 0 14px 30px rgba(0,0,0,.12); }
-    .fp-c2 .c2-hole { position: absolute; top: 11px; left: 50%; transform: translateX(-50%); width: 54px; height: 8px; border-radius: 6px; background: color-mix(in srgb, var(--d-accent) 30%, #cbd5e1); }
-    .fp-c2 .c2-tag { display: inline-block; background: var(--d-accent); color: #fff; font-weight: 800; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; padding: 5px 12px; border-radius: 999px; margin: 6px 0 10px; }
-    .fp-c2 .c2-badge .titre { font-size: 26px; margin: 4px 0; }
-    .fp-c2 .c2-dl { margin-top: 10px; }
-    .fp-c2 .logo { height: 38px; }
     /* c3 Affiche-pro / Lancement */
     .fp-c3 .c3-panel { background: linear-gradient(160deg, var(--d-accent), var(--d-accentD)); color: #fff; padding: 42px 24px 34px; text-align: center; }
     .fp-c3 .c3-panel .titre { color: #fff; font-size: 42px; }
@@ -270,12 +263,24 @@
     .fp-c4 .c4-rule { width: 70px; height: 1px; background: var(--d-accent); margin: 14px auto; position: relative; }
     .fp-c4 .c4-rule::before { content: "◆"; position: absolute; top: -8px; left: 50%; transform: translateX(-50%); color: var(--d-accent); font-size: 10px; background: var(--d-clair); padding: 0 6px; }
     .fp-c4 .logo { filter: brightness(0) invert(1); opacity: .85; }
-    /* c5 Webinaire / Live */
-    .fp-c5 .c5-screen { position: relative; aspect-ratio: 16/9; background: linear-gradient(135deg, color-mix(in srgb, var(--d-accent) 88%, #000), var(--d-accentD)); border-radius: 14px; margin-bottom: 18px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-    .fp-c5 .c5-live { position: absolute; top: 12px; left: 12px; display: inline-flex; align-items: center; gap: 6px; background: rgba(0,0,0,.45); color: #fff; font-weight: 800; font-size: 11px; letter-spacing: .1em; padding: 5px 10px; border-radius: 999px; }
-    .fp-c5 .c5-live i { width: 8px; height: 8px; border-radius: 50%; background: #ff3b30; box-shadow: 0 0 0 0 rgba(255,59,48,.6); animation: c5pulse 1.6s infinite; }
-    @keyframes c5pulse { 70% { box-shadow: 0 0 0 7px rgba(255,59,48,0); } 100% { box-shadow: 0 0 0 0 rgba(255,59,48,0); } }
-    .fp-c5 .c5-play { width: 56px; height: 56px; border-radius: 50%; background: rgba(255,255,255,.92); color: var(--d-accent); display: flex; align-items: center; justify-content: center; font-size: 20px; padding-left: 4px; }
+    /* c2 Accréditation : carte nominative, couleur selon la catégorie de l'invité (presse, staff…) */
+    .fp-c2 .c2-acc { margin: 18px auto 4px; max-width: 320px; border-radius: 16px; overflow: hidden; border: 1px solid rgba(127,127,127,.25); background: var(--d-clair); text-align: center; }
+    .fp-c2 .c2-acc-k { background: var(--cat); color: #fff; font-weight: 800; font-size: 11px; letter-spacing: .18em; text-transform: uppercase; padding: 8px 12px; }
+    .fp-c2 .c2-acc-c { font-weight: 900; font-size: 26px; letter-spacing: .04em; text-transform: uppercase; color: var(--cat); padding: 14px 12px 2px; }
+    .fp-c2 .c2-acc-n { font-family: var(--d-titre); font-weight: 700; font-size: 20px; color: var(--d-texte); padding: 0 12px 16px; }
+    .fp-c2 .c2-cons { margin-top: 14px; font-size: 13px; color: var(--d-muted); white-space: pre-line; text-align: left; border-left: 3px solid var(--d-accent); padding: 4px 0 4px 12px; }
+    .fp-c2 .logo { height: 38px; }
+    /* c5 Cérémonie officielle : sobre, filets doubles, déroulé protocolaire */
+    .fp-c5 .fp-in { text-align: center; }
+    .fp-c5 .c5-rule { height: 4px; border-top: 1px solid var(--d-accent); border-bottom: 1px solid var(--d-accent); width: 120px; margin: 14px auto; }
+    .fp-c5 .c5-form { font-family: var(--d-titre); font-style: italic; font-size: 16px; color: var(--d-texte); margin: 6px 0 2px; }
+    .fp-c5 .c5-der { margin-top: 18px; text-align: left; }
+    .fp-c5 .c5-der-t { text-align: center; font-size: 11px; letter-spacing: .18em; text-transform: uppercase; font-weight: 800; color: var(--d-accentD); margin-bottom: 8px; }
+    .fp-c5 .c5-step { display: flex; gap: 12px; padding: 9px 0; border-top: 1px solid rgba(127,127,127,.2); }
+    .fp-c5 .c5-n { flex: 0 0 26px; height: 26px; border-radius: 50%; border: 1px solid var(--d-accent); color: var(--d-accentD); font-weight: 800; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+    .fp-c5 .c5-step b { display: block; color: var(--d-texte); }
+    .fp-c5 .c5-step i { display: block; font-size: 13px; color: var(--d-muted); }
+    .fp-c5 .c5-step .h { font-size: 12px; font-weight: 800; color: var(--d-accentD); }
     /* c6 Agenda */
     .fp-c6 .c6-head { background: linear-gradient(160deg, var(--d-accent), var(--d-accentD)); color: #fff; padding: 26px 24px 22px; text-align: center; }
     .fp-c6 .c6-head .titre, .fp-c6 .c6-head .eyebrow, .fp-c6 .c6-head .sous, .fp-c6 .c6-head .when, .fp-c6 .c6-head .where { color: #fff; }
@@ -339,8 +344,6 @@
     @supports not (color: color-mix(in srgb, red 50%, white)) {
       .ph-empty, .fp [class$="-ph"], .spk .av, body.design .chip, .tk-pill, .spon-i:not(.lg), .fp-c10 .c10-tag { background: var(--d-clair); }
       .tk-pill { color: var(--d-texte); border: 1px solid var(--d-accent); }
-      .fp-c2 .c2-hole { background: #cbd5e1; }
-      .fp-c5 .c5-screen { background: var(--d-accentD); }
       .tk-qr, body.design #pass .qr { border-color: #e5e7eb; }
       .tk-perf, .prog .row, .ag-row, .fp-c8 .c8-rule { border-color: rgba(127,127,127,.3); }
       body.design .btn, .tkbtn { border-color: rgba(127,127,127,.35); }
@@ -541,16 +544,35 @@
       // ── 10 structures corporate distinctes ──
       var FP_CORP = {
         c1: function (p) { return '<div class="fp card corp fp-c1"><div class="c1-bar"></div><div class="fp-in">' + _cLogo(p) + _cOrg(p) + _cTitle(p) + _cSub(p) + _cDL(p) + _cSpk(p, 6) + _cSpon(p) + '</div></div>'; },
-        c2: function (p) { return '<div class="fp card corp fp-c2"><div class="fp-in"><div class="c2-badge"><span class="c2-hole"></span>' + _cLogo(p) + '<div class="c2-tag">Badge d\'accès</div>' + _cTitle(p) + _cSub(p) + '<div class="c2-dl">' + _cDL(p) + '</div></div>' + '</div></div>'; },
+        c2: function (p) { var cat = p.category || "Participant"; return '<div class="fp card corp fp-c2"><div class="fp-in">' + _cLogo(p) + _cOrg(p) + _cTitle(p) + _cSub(p) + _cDL(p) + '<div class="c2-acc" style="--cat:' + catColor(cat) + '"><div class="c2-acc-k">Accréditation</div><div class="c2-acc-c">' + esc(cat) + '</div><div class="c2-acc-n">' + esc(p.guest_name || "") + '</div></div>' + (_f(p).consignes ? '<div class="c2-cons">' + esc(_f(p).consignes) + '</div>' : '') + '</div></div>'; },
         c3: function (p) { return '<div class="fp card corp fp-c3"><div class="c3-panel"><div class="c3-tag">Lancement</div>' + _cLogo(p) + _cTitle(p) + _cSub(p) + '</div><div class="fp-in">' + _cOrg(p) + _cDL(p) + '</div></div>'; },
         c4: function (p) { return '<div class="fp card corp fp-c4"><div class="fp-in">' + _cLogo(p) + '<div class="c4-eye">' + esc(_f(p).organisateur || "Soirée de gala") + '</div><div class="c4-rule"></div>' + _cTitle(p) + _cSub(p) + '<div class="c4-rule"></div>' + _cDL(p) + '</div></div>'; },
-        c5: function (p) { return '<div class="fp card corp fp-c5"><div class="fp-in"><div class="c5-screen"><span class="c5-live"><i></i>EN DIRECT</span><div class="c5-play">▶</div></div>' + _cLogo(p) + _cOrg(p) + _cTitle(p) + _cSub(p) + _cDL(p) + _cSpk(p, 4) + '</div></div>'; },
+        c5: function (p) { var fo = _f(p).formule; return '<div class="fp card corp fp-c5"><div class="fp-in">' + _cLogo(p) + _cOrg(p) + '<div class="c5-rule"></div>' + (fo ? '<div class="c5-form">' + esc(fo) + '</div>' : '') + _cTitle(p) + _cSub(p) + '<div class="c5-rule"></div>' + _cDL(p) + _cDeroule(p) + '</div></div>'; },
         c6: function (p) { return '<div class="fp card corp fp-c6"><div class="c6-head">' + _cLogo(p) + _cOrg(p) + _cTitle(p) + _cSub(p) + _cDL(p) + '</div><div class="fp-in"><div class="c6-lbl">Programme de la journée</div>' + _cSess(p, 14) + '</div></div>'; },
         c7: function (p) { return '<div class="fp card corp fp-c7"><div class="fp-in">' + _cOrg(p) + _cTitle(p) + '<div class="c7-lbl">Nos intervenants</div>' + _cSpk(p, 6, "spk spk-grid") + _cSub(p) + _cDL(p) + '</div></div>'; },
         c8: function (p) { return '<div class="fp card corp fp-c8"><div class="fp-in">' + _cLogo(p) + '<div class="c8-rule"></div>' + _cOrg(p) + _cTitle(p) + _cSub(p) + '<div class="c8-rule"></div>' + _cDL(p) + '</div></div>'; },
         c9: function (p) { return '<div class="fp card corp fp-c9"><div class="c9-hall"><div class="c9-tag">Salon · Expo</div>' + _cLogo(p) + _cTitle(p) + '</div><div class="fp-in">' + _cSub(p) + _cDL(p) + _cSpon(p) + '</div></div>'; },
         c10: function (p) { return '<div class="fp card corp fp-c10"><div class="fp-in">' + _cLogo(p) + '<div class="c10-tag">Atelier · Formation</div>' + _cTitle(p) + _cSub(p) + _cDL(p) + '<div class="c10-lbl">Au programme</div>' + _cSess(p, 12, true) + '</div></div>'; }
       };
+
+      // Couleur d'accréditation selon la catégorie de l'invité (valeurs fixes : jamais de couleur saisie)
+      function catColor(cat) {
+        var c = String(cat || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        if (/presse|media|journal/.test(c)) return "#2563eb";
+        if (/vip|officiel|protocole|honneur/.test(c)) return "#b8954a";
+        if (/intervenant|speaker|orateur|panel/.test(c)) return "#7c3aed";
+        if (/staff|organisa|equipe|benevole/.test(c)) return "#334155";
+        if (/prestataire|traiteur|technique|securite|logistique/.test(c)) return "#ea580c";
+        return "var(--d-accent)";
+      }
+      // Déroulé protocolaire (c5) : sessions numérotées, personnalité en dessous
+      function _cDeroule(p) {
+        var f = _f(p); if (!f.sessions || !f.sessions.length) return "";
+        return '<div class="c5-der"><div class="c5-der-t">Déroulé protocolaire</div>' + f.sessions.slice(0, 14).map(function (s, i) {
+          return '<div class="c5-step"><span class="c5-n">' + (i + 1) + '</span><span>' + (s.heure ? '<span class="h">' + esc(s.heure) + '</span>' : '')
+            + '<b>' + esc(s.titre || "") + '</b>' + (s.intervenant ? '<i>' + esc(s.intervenant) + '</i>' : '') + '</span></div>';
+        }).join("") + '</div>';
+      }
 
       function fpCorporate(p) {   // fallback générique (cadre inconnu)
         return '<div class="fp card corp fp-c1"><div class="c1-bar"></div><div class="fp-in">'
@@ -581,7 +603,7 @@
         var d = p.design, f = d.fiche || {}, corp = d.famille === "corporate";
         var list = corp ? (f.sessions || []) : (f.programme || []);
         if (!d.scenes || !d.scenes.programme || !list.length) return "";
-        if (corp && (d.cadre === "c6" || d.cadre === "c10")) return "";   // agenda déjà dans le faire-part
+        if (corp && (d.cadre === "c5" || d.cadre === "c6" || d.cadre === "c10")) return "";   // déroulé / agenda déjà dans le faire-part
         var rows = ['<div class="prog-t">Programme</div>'];
         list.forEach(function (it) {
           var lb = corp ? (it.titre || "") : (it.label || "");
@@ -655,7 +677,8 @@
             + '<span class="tk-pill">✓ Anti-fraude</span></div></div>';
         $("pass").className = "card ticket";
         $("pass").innerHTML =
-            '<div class="tk-hd"><span class="tk-hd-l">' + (corp ? "BADGE" : "PASS D'ENTRÉE") + '</span><span class="gomark2">GoEvent.</span></div>'
+            '<div class="tk-hd"' + (p.design.cadre === "c2" ? ' style="background:' + catColor(p.category) + '"' : '') + '><span class="tk-hd-l">'
+          + (p.design.cadre === "c2" ? "ACCRÉDITATION" : corp ? "BADGE" : "PASS D'ENTRÉE") + '</span><span class="gomark2">GoEvent.</span></div>'
           + '<div class="tk-info"><div class="tk-eye">' + (corp ? "PARTICIPANT" : "INVITÉ") + '</div>'
           + '<div class="tk-name">' + esc(p.guest_name || "") + '</div>'
           + '<div class="tk-stats">' + statsHtml + '</div></div>'

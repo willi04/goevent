@@ -81,6 +81,7 @@ EVENT_TYPES = (
     {"code": "formation", "label": "Formation", "famille": "corporate", "acces": "ouvert", "suggere": "formation"},
     {"code": "salon", "label": "Salon / exposition", "famille": "corporate", "acces": "ouvert", "suggere": "salon"},
     {"code": "lancement", "label": "Lancement de produit", "famille": "corporate", "acces": "ouvert", "suggere": "lancement"},
+    {"code": "ceremonie", "label": "Cérémonie officielle", "famille": "corporate", "acces": "liste", "suggere": "ceremonie"},
     {"code": "gala", "label": "Gala d'entreprise", "famille": "corporate", "acces": "liste", "suggere": "gala"},
     {"code": "soiree", "label": "Soirée privée", "famille": "corporate", "acces": "liste", "suggere": "soiree"},
     {"code": "autre", "label": "Autre", "famille": None, "acces": None, "suggere": None},

@@ -100,17 +100,33 @@ def _pack_out(p: InvitationPack) -> dict:
             "commission_rate_bp": p.commission_rate_bp}
 
 
+def _event_summaries(db: Session, rows: list, owners: Optional[dict] = None) -> list:
+    """Résumés de plusieurs événements privés en un nombre FIXE de requêtes (chiffres, packs,
+    comportements, formules chargés en lot : id.in_(...) + regroupement en mémoire), quel que soit
+    le nombre d'événements. rows = [(Event, PrivateEventSettings)]."""
+    ids = [ev.id for ev, _ in rows]
+    stats = inv.stats_many(db, ids)
+    quotas = inv.quota_many(db, ids)
+    features = cat.features_many(db, [(ev.id, st.service_level) for ev, st in rows])
+    labels = cat.formula_labels(db, [st.service_level for _, st in rows])
+    out = []
+    for ev, st in rows:
+        o = (owners or {}).get(st.owner_id) if st.owner_id else None
+        s = stats[ev.id]
+        out.append({"id": ev.id, "title": ev.title, "event_date": _iso(ev.event_date),
+                    "owner_id": st.owner_id, "owner_name": o.full_name if o else None,
+                    "owner_code": o.sales_code if o else None, "source_quote_id": st.source_quote_id,
+                    "event_date_label": inv.fmt_date_fr(ev.event_date), "location": ev.location,
+                    "client_name": st.client_name, "service_level": st.service_level, "event_type": st.event_type,
+                    "formula_name": labels.get(st.service_level) if st.service_level else None,
+                    "quota": quotas[ev.id], "listed": s["expected"],     # places listées = places des pass non annulés
+                    "features": features[ev.id], "stats": s,
+                    "purged": bool(st.purged_at), "purge_after": _iso(st.purge_after)})
+    return out
+
+
 def _event_summary(db: Session, ev: Event, st: PrivateEventSettings, owners: Optional[dict] = None) -> dict:
-    o = (owners or {}).get(st.owner_id) if st.owner_id else None
-    return {"id": ev.id, "title": ev.title, "event_date": _iso(ev.event_date),
-            "owner_id": st.owner_id, "owner_name": o.full_name if o else None,
-            "owner_code": o.sales_code if o else None, "source_quote_id": st.source_quote_id,
-            "event_date_label": inv.fmt_date_fr(ev.event_date), "location": ev.location,
-            "client_name": st.client_name, "service_level": st.service_level, "event_type": st.event_type,
-            "formula_name": cat.formula_label(db, st.service_level),
-            "quota": inv.quota(db, ev.id), "listed": inv.seats_listed(db, ev.id),
-            "features": cat.event_features(db, ev.id, st.service_level), "stats": inv.stats(db, ev.id),
-            "purged": bool(st.purged_at), "purge_after": _iso(st.purge_after)}
+    return _event_summaries(db, [(ev, st)], owners)[0]
 
 
 def _scope(user: User, st: PrivateEventSettings) -> None:
@@ -206,7 +222,7 @@ def admin_list_events(owner_id: Optional[int] = None, db: Session = Depends(get_
         q = q.filter(PrivateEventSettings.owner_id == owner_id if owner_id else PrivateEventSettings.owner_id.is_(None))
     rows = q.order_by(Event.event_date.desc()).limit(300).all()
     owners = {u.id: u for u in db.query(User).filter(User.id.in_({st.owner_id for _, st in rows if st.owner_id})).all()}
-    return {"events": [_event_summary(db, ev, st, owners) for ev, st in rows],
+    return {"events": _event_summaries(db, rows, owners),
             "summary": cat.revenue_summary(db, None if sees_all_sales(user) else user.id)}
 
 

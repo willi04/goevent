@@ -323,16 +323,37 @@ def event_features(db: Session, event_id: int, formula_code: Optional[str] = Non
     """Union des comportements des commandes actives. Sans commande : ceux de la formule choisie
     pour l'événement (préparation avant paiement)."""
     orders = active_orders(db, event_id)
+    f = None
+    if not orders and formula_code:
+        f = db.query(InvFormula).filter(InvFormula.code == formula_code).first()
+    return _features(orders, f, formula_code)
+
+
+def _features(orders: list, formula, formula_code: Optional[str]) -> dict:
     if orders:
         out = {k: False for k in FEATURES}
         for p in orders:
             for k, v in order_features(p).items():
                 out[k] = out[k] or v
         return out
-    f = db.query(InvFormula).filter(InvFormula.code == formula_code).first() if formula_code else None
-    if f:
-        return {k: bool(getattr(f, k)) for k in FEATURES}
+    if formula:
+        return {k: bool(getattr(formula, k)) for k in FEATURES}
     return dict(LEGACY_FEATURES.get(formula_code or "", LEGACY_FEATURES["autonome"]))
+
+
+def features_many(db: Session, items) -> dict:
+    """event_features() pour plusieurs événements : items = [(event_id, code de formule)].
+    Deux requêtes au total (commandes actives, formules) au lieu de 1 à 2 par événement."""
+    items = list(items)
+    if not items:
+        return {}
+    orders = {}
+    for p in (db.query(InvitationPack).filter(InvitationPack.event_id.in_({i for i, _ in items}),
+                                              InvitationPack.status == "actif").order_by(InvitationPack.id).all()):
+        orders.setdefault(p.event_id, []).append(p)
+    codes = {c for _, c in items if c}
+    formulas = {f.code: f for f in db.query(InvFormula).filter(InvFormula.code.in_(codes)).all()} if codes else {}
+    return {i: _features(orders.get(i, []), formulas.get(c) if c else None, c) for i, c in items}
 
 
 def agents_included_total(db: Session, event_id: int) -> int:
@@ -350,6 +371,13 @@ def formula_label(db: Session, code: Optional[str]) -> Optional[str]:
         return None
     f = db.query(InvFormula).filter(InvFormula.code == code).first()
     return f.name if f else code
+
+
+def formula_labels(db: Session, codes) -> dict:
+    """formula_label() pour plusieurs codes, en une requête."""
+    codes = {c for c in codes if c}
+    names = dict(db.query(InvFormula.code, InvFormula.name).filter(InvFormula.code.in_(codes)).all()) if codes else {}
+    return {c: names.get(c, c) for c in codes}
 
 
 def revenue_summary(db: Session, owner_id: Optional[int] = None) -> dict:

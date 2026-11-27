@@ -43,7 +43,8 @@ from core.config import (
 from core.security import hash_pin, log_security_event
 from models.event import Event
 from models.invitation import (
-    EventGuest, GuestCheckin, InvDesignMedia, InvitationDesign, InvitationPack, InvitationPage, PrivateEventSettings,
+    EventGuest, EventSession, GuestCheckin, InvDesignMedia, InvitationDesign, InvitationPack, InvitationPage,
+    PrivateEventSettings,
 )
 from models.user import User
 
@@ -254,6 +255,17 @@ def quota(db: Session, event_id: int) -> int:
                .filter(InvitationPack.event_id == event_id, InvitationPack.status == "actif").scalar() or 0)
 
 
+def quota_many(db: Session, event_ids) -> dict:
+    """quota() pour plusieurs événements en UNE requête (liste du back-office)."""
+    ids = list(set(event_ids))
+    if not ids:
+        return {}
+    got = dict(db.query(InvitationPack.event_id, func.sum(InvitationPack.size))
+               .filter(InvitationPack.event_id.in_(ids), InvitationPack.status == "actif")
+               .group_by(InvitationPack.event_id).all())
+    return {i: int(got.get(i) or 0) for i in ids}
+
+
 def seats_listed(db: Session, event_id: int, exclude_guest: Optional[int] = None) -> int:
     q = db.query(func.coalesce(func.sum(EventGuest.seats), 0)).filter(
         EventGuest.event_id == event_id, EventGuest.revoked_at.is_(None))
@@ -268,30 +280,55 @@ def require_active(db: Session, event_id: int):
 
 
 def stats(db: Session, event_id: int) -> dict:
-    row = db.query(
+    return stats_many(db, [event_id])[event_id]
+
+
+def stats_many(db: Session, event_ids) -> dict:
+    """Chiffres de plusieurs événements en un nombre FIXE de requêtes (2, ou 5 s'il y a des séances),
+    quel que soit le nombre d'événements : plus de N+1 sur la liste du back-office."""
+    ids = list(set(event_ids))
+    if not ids:
+        return {}
+    guests = {r[0]: r[1:] for r in db.query(
+        EventGuest.event_id,
         func.coalesce(func.sum(EventGuest.seats), 0),
         func.coalesce(func.sum(EventGuest.seats_used), 0),
         func.count(EventGuest.id),
         func.count(EventGuest.sent_at),
         func.count(EventGuest.first_checkin_at),
-    ).filter(EventGuest.event_id == event_id, EventGuest.revoked_at.is_(None)).one()
+    ).filter(EventGuest.event_id.in_(ids), EventGuest.revoked_at.is_(None)).group_by(EventGuest.event_id).all()}
+    conflicts = dict(db.query(GuestCheckin.event_id, func.count(GuestCheckin.id)).filter(
+        GuestCheckin.event_id.in_(ids), GuestCheckin.conflict == True).group_by(GuestCheckin.event_id).all())  # noqa: E712
+    sessions, per, back = {}, {}, {}
+    for x in (db.query(EventSession).filter(EventSession.event_id.in_(ids))
+              .order_by(EventSession.event_id, EventSession.starts_at, EventSession.id).all()):
+        sessions.setdefault(x.event_id, []).append(x)
+    if sessions:
+        with_sessions = list(sessions)
+        for eid, sid, n in db.query(GuestCheckin.event_id, GuestCheckin.session_id, func.sum(GuestCheckin.count)).filter(
+                GuestCheckin.event_id.in_(with_sessions), GuestCheckin.reentry == False,  # noqa: E712
+                GuestCheckin.conflict == False, GuestCheckin.session_id.isnot(None)).group_by(  # noqa: E712
+                GuestCheckin.event_id, GuestCheckin.session_id).all():
+            per.setdefault(eid, {})[sid] = n
+        for eid, sid, n in db.query(GuestCheckin.event_id, GuestCheckin.session_id, func.count(GuestCheckin.id)).filter(
+                GuestCheckin.event_id.in_(with_sessions), GuestCheckin.reentry == True).group_by(  # noqa: E712
+                GuestCheckin.event_id, GuestCheckin.session_id).all():
+            back.setdefault(eid, {})[sid] = n
+    now = utcnow()
+    return {i: _stats_out(guests.get(i, (0, 0, 0, 0, 0)), conflicts.get(i), sessions.get(i, []),
+                          per.get(i, {}), back.get(i, {}), now) for i in ids}
+
+
+def _stats_out(row, conflicts, sessions, per, back, now) -> dict:
     expected, entered = int(row[0]), int(row[1])
-    conflicts = db.query(func.count(GuestCheckin.id)).filter(
-        GuestCheckin.event_id == event_id, GuestCheckin.conflict == True).scalar()  # noqa: E712
     out = {"passes": int(row[2]), "passes_sent": int(row[3]), "passes_arrived": int(row[4]),
            "conflicts": int(conflicts or 0), "session": None, "sessions": []}
-    sessions = sess.list_sessions(db, event_id)
     if sessions:
         # Chiffres de la séance en cours (sinon la dernière commencée) ; détail par séance.
-        per = dict(db.query(GuestCheckin.session_id, func.sum(GuestCheckin.count)).filter(
-            GuestCheckin.event_id == event_id, GuestCheckin.reentry == False,  # noqa: E712
-            GuestCheckin.conflict == False, GuestCheckin.session_id.isnot(None)).group_by(GuestCheckin.session_id).all())
-        back = dict(db.query(GuestCheckin.session_id, func.count(GuestCheckin.id)).filter(
-            GuestCheckin.event_id == event_id, GuestCheckin.reentry == True).group_by(GuestCheckin.session_id).all())  # noqa: E712
-        ref = sess.reference_session(sessions, utcnow())
+        ref = sess.reference_session(sessions, now)
         out["sessions"] = [{"id": x.id, "label": x.label, "display": sess.session_label(x),
                             "entered": int(per.get(x.id) or 0), "reentries": int(back.get(x.id) or 0)} for x in sessions]
-        out["session"] = {"id": ref.id, "label": ref.label, "current": sess.find_session(sessions, utcnow()) is ref}
+        out["session"] = {"id": ref.id, "label": ref.label, "current": sess.find_session(sessions, now) is ref}
         entered = int(per.get(ref.id) or 0)
     entered_shown = min(entered, expected) if expected else entered
     out.update({"expected": expected, "entered": entered_shown, "remaining": max(0, expected - entered),

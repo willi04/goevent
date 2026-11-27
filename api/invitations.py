@@ -15,7 +15,6 @@ Scanner (agent assigné / orga propriétaire) :
   POST /invitations/checkins/sync             entrées faites hors ligne
   (le scan en ligne passe par POST /scan, cf. api/tickets.py)
 """
-import io
 import json
 import re
 import secrets
@@ -488,7 +487,7 @@ def _bound_json(value, limit: int):
 
 
 async def _read_upload(file: UploadFile, max_bytes: int) -> bytes:
-    raw = await file.read()
+    raw = await file.read(max_bytes + 1)          # lecture bornée : jamais le fichier entier en mémoire
     if not raw:
         raise HTTPException(400, "Fichier vide")
     if len(raw) > max_bytes:
@@ -632,8 +631,10 @@ async def admin_design_palette(request: Request, event_id: int, file: UploadFile
     raw = await _read_upload(file, idesign.MAX_UPLOAD_BYTES)
     try:
         tokens = idesign.extract_palette(raw)
+    except idesign.ImageRejected as e:
+        raise HTTPException(400, str(e))
     except Exception:
-        raise HTTPException(400, "Image illisible : envoyez un JPEG/PNG valide")
+        raise HTTPException(400, "Image illisible : envoyez un JPEG, PNG ou WebP valide")
     return {"couleurs": tokens}
 
 
@@ -646,8 +647,10 @@ async def admin_design_photo(request: Request, event_id: int, file: UploadFile =
     raw = await _read_upload(file, idesign.MAX_UPLOAD_BYTES)
     try:
         b, mime, sha, w, h = idesign.reencode_image(raw, "photo")
+    except idesign.ImageRejected as e:
+        raise HTTPException(400, str(e))
     except Exception:
-        raise HTTPException(400, "Image illisible : envoyez un JPEG/PNG valide")
+        raise HTTPException(400, "Image illisible : envoyez un JPEG, PNG ou WebP valide")
     d.photo_data, d.photo_mime, d.photo_sha = b, mime, sha
     d.updated_by, d.updated_at = user.id, inv.utcnow()
     log_security_event(db, "invitation_design_photo", request, user.id, "event %d : photo client (%dx%d)" % (ev.id, w, h))
@@ -664,8 +667,10 @@ async def admin_design_logo(request: Request, event_id: int, file: UploadFile = 
     raw = await _read_upload(file, idesign.MAX_UPLOAD_BYTES)
     try:
         b, mime, sha, w, h = idesign.reencode_image(raw, "logo")
+    except idesign.ImageRejected as e:
+        raise HTTPException(400, str(e))
     except Exception:
-        raise HTTPException(400, "Image illisible : envoyez un JPEG/PNG valide")
+        raise HTTPException(400, "Image illisible : envoyez un JPEG, PNG ou WebP valide")
     d.logo_data, d.logo_mime, d.logo_sha = b, mime, sha
     d.updated_by, d.updated_at = user.id, inv.utcnow()
     log_security_event(db, "invitation_design_logo", request, user.id, "event %d : logo (%dx%d)" % (ev.id, w, h))
@@ -677,40 +682,31 @@ async def admin_design_logo(request: Request, event_id: int, file: UploadFile = 
 @limiter.limit("20/minute")
 async def admin_design_import_text(request: Request, event_id: int, file: UploadFile = File(...),
                                    db: Session = Depends(get_db), user: User = Depends(manager)):
-    """Lit un .txt ou .docx et renvoie son texte brut pour pré-remplir un champ liste
-    (programme, intervenants…). Aucune interprétation : l'admin relit puis Enregistre."""
+    """Lit un .txt, .docx ou .xlsx et renvoie son texte (colonnes séparées par des tabulations)
+    pour pré-remplir un champ liste (programme, intervenants…). Aucune interprétation : l'admin
+    relit puis Enregistre. .docx / .xlsx : même lecteur que l'import des invités
+    (core/invitations.file_to_text : 2 Mo, garde anti zip-bomb, anciens .doc/.xls refusés)."""
     ev, st = _load_writable(db, event_id, user)  # cloisonnement + refus après purge
-    raw = await _read_upload(file, 4 * 1024 * 1024)
+    raw = await _read_upload(file, inv.MAX_FILE_BYTES)
     name = (file.filename or "").lower()
-    ctype = (file.content_type or "")
-    text = ""
-    if name.endswith(".txt") or ctype.startswith("text/"):
+    ctype = (file.content_type or "").lower()
+    if name.endswith((".docx", ".xlsx", ".xlsm")):
+        text = inv.file_to_text(name, raw)["text"]
+    elif "wordprocessingml" in ctype or "spreadsheetml" in ctype:
+        text = inv.file_to_text("fichier." + ("docx" if "wordprocessingml" in ctype else "xlsx"), raw)["text"]
+    elif name.endswith(".txt") or ctype == "text/plain":
+        if b"\x00" in raw[:4096]:
+            raise HTTPException(400, "Fichier texte illisible.")
         try:
-            text = raw.decode("utf-8")
-        except Exception:
-            text = raw.decode("latin-1", "replace")
-    elif name.endswith(".docx") or "officedocument.wordprocessingml" in ctype:
-        try:
-            from docx import Document
-            doc = Document(io.BytesIO(raw))
-            lines = []
-            for tb in doc.tables:
-                for row in tb.rows:
-                    cells = [c.text.strip() for c in row.cells]
-                    if any(cells):
-                        lines.append(" | ".join(cells))
-            for p in doc.paragraphs:
-                t = p.text.strip()
-                if t:
-                    lines.append(t)
-            text = "\n".join(lines)
-        except Exception:
-            raise HTTPException(400, "Fichier .docx illisible")
+            text = raw.decode("utf-8-sig")
+        except UnicodeDecodeError:
+            text = raw.decode("latin-1")
+        text = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", "", text.replace("\r\n", "\n").replace("\r", "\n"))
     else:
-        raise HTTPException(400, "Formats acceptés : .docx ou .txt")
+        raise HTTPException(400, "Formats acceptés : .docx, .xlsx ou .txt")
     text = text[:20000]
     log_security_event(db, "invitation_design_import", request, user.id,
-                       "event %d : import %s (%d car.)" % (ev.id, (name or ctype or "fichier"), len(text)))
+                       "event %d : import %s (%d car.)" % (ev.id, (name or ctype or "fichier")[:60], len(text)))
     db.commit()
     return {"text": text}
 

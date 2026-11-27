@@ -20,6 +20,8 @@ import re
 from PIL import Image, ImageOps
 
 MAX_UPLOAD_BYTES = 8 * 1024 * 1024        # 8 Mo : refus au-delà (anti-DoS)
+MAX_PIXELS = 30_000_000                    # anti « bombe de décompression » (comme invitation_media)
+_ALLOWED = ("JPEG", "PNG", "WEBP")
 _PALETTE_SAMPLE = 120                      # on travaille sur une vignette
 _PHOTO_MAX = 1400                          # côté max d'une photo servie
 _LOGO_MAX = 600
@@ -43,10 +45,23 @@ def _mix(rgb, target, t):
     return tuple(rgb[i] + (target[i] - rgb[i]) * t for i in range(3))
 
 
-def _open(data: bytes) -> Image.Image:
-    im = Image.open(io.BytesIO(data))
-    im = ImageOps.exif_transpose(im)      # respecte l'orientation, puis on jette l'EXIF
-    return im
+class ImageRejected(Exception):
+    """Image refusée avant décodage (format, dimensions) : message affichable."""
+
+
+def _open(data: bytes, target: int) -> Image.Image:
+    """Ouvre une image NON FIABLE. Format et dimensions contrôlés sur l'en-tête, AVANT décodage :
+    une image de 12 000 × 12 000 px pèse quelques Ko compressée mais ~576 Mo décodée (instance
+    Render 512 Mo). JPEG : décodage directement à l'échelle utile (draft), sans pleine résolution."""
+    try:
+        im = Image.open(io.BytesIO(data), formats=_ALLOWED)
+    except Exception:
+        raise ImageRejected("Image illisible : envoyez un JPEG, PNG ou WebP valide")
+    if im.width * im.height > MAX_PIXELS:
+        raise ImageRejected("Image trop grande (%d mégapixels maximum)" % (MAX_PIXELS // 1_000_000))
+    if im.format == "JPEG":
+        im.draft(im.mode, (target, target))
+    return ImageOps.exif_transpose(im)    # respecte l'orientation, puis on jette l'EXIF
 
 
 def extract_palette(data: bytes) -> dict:
@@ -54,8 +69,9 @@ def extract_palette(data: bytes) -> dict:
     Heuristique : couleurs dominantes d'une vignette, triées par usage ;
     accent = la plus saturée parmi les dominantes ; fond = la plus claire ;
     texte = contraste lisible. L'admin peut tout ajuster derrière."""
-    im = _open(data).convert("RGB")
-    im.thumbnail((_PALETTE_SAMPLE, _PALETTE_SAMPLE))
+    im = _open(data, _PALETTE_SAMPLE)
+    im.thumbnail((_PALETTE_SAMPLE, _PALETTE_SAMPLE))   # vignette AVANT conversion (mémoire)
+    im = im.convert("RGB")
     q = im.quantize(colors=8, method=Image.Quantize.MEDIANCUT).convert("RGB")
     pal = sorted(q.getcolors(maxcolors=4096) or [], reverse=True)   # [(count, (r,g,b)), …] du + fréquent au -
     cols = [c for _, c in pal] or [(240, 240, 240)]
@@ -92,8 +108,8 @@ def extract_palette(data: bytes) -> dict:
 def reencode_image(data: bytes, kind: str = "photo") -> tuple:
     """Ré-encode une image uploadée. Retourne (octets, mime, sha256, w, h).
     kind='logo' garde la transparence (PNG) ; 'photo' sort en JPEG."""
-    im = _open(data)
     mx = _LOGO_MAX if kind == "logo" else _PHOTO_MAX
+    im = _open(data, mx)
     im.thumbnail((mx, mx))
     out = io.BytesIO()
     if kind == "logo" and im.mode in ("RGBA", "LA", "P"):

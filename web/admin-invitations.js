@@ -555,10 +555,10 @@
   }
 
   function importText(node) {
-    var fin = el("input", { type: "file", accept: ".docx,.txt,text/plain", style: "display:none" });
+    var fin = el("input", { type: "file", accept: ".docx,.xlsx,.txt,text/plain", style: "display:none" });
     var btn = el("button", {
       type: "button", class: "text-xs px-2 py-1 rounded border border-gray-300 text-gray-600 hover:bg-gray-50",
-      text: "⬆ Importer .docx / .txt",
+      text: "⬆ Importer .docx / .xlsx / .txt",
       onclick: function () { fin.value = ""; fin.click(); }
     });
     fin.addEventListener("change", function () {

@@ -326,6 +326,14 @@ bout en bout sans intervention, 1 retrait réussi, analyse des
   sur une base déjà seedée = script `scripts/AAAA-MM_*.sql` passé à la main
   AVANT le déploiement (ex. `2026-11_lot6_cadres_c2_c5.sql`,
   `2026-11_lot6_ouverture_corporate.sql`).
+- **Envoi par l'équipe (avant le déploiement)** : `private_event_settings` est
+  lue par les routes chaudes → passer sur Neon AVANT le push :
+  `ALTER TABLE private_event_settings ADD COLUMN IF NOT EXISTS send_requested_at TIMESTAMP, ADD COLUMN IF NOT EXISTS send_requested_by INTEGER REFERENCES users(id);`
+  (copie exacte dans `core/migrations.py`). Le commercial prépare et clique
+  « Demander l'envoi à l'équipe » ; l'envoi se fait par l'admin ou par un
+  compte staff « Envoi WhatsApp » (Équipe → Nouvel employé → Fonction), qui ne
+  voit que Invitations → « Envois WhatsApp ». Traçabilité :
+  `invitation_send_requested`, `invitation_send_request_cancelled`.
 - **Envoi des pass sur WhatsApp** : le message part du compte WhatsApp ouvert
   sur l'appareil qui envoie (le site ne peut pas choisir le numéro). Envoyer
   depuis le compte WhatsApp Business GoEvent (numéro du CMS

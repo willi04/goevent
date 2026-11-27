@@ -86,6 +86,7 @@ def _capabilities_for(user: User) -> dict:
         "invitations_manage": False,
         "invitations_activate": False,
         "invitations_catalog": False,      # modifier le catalogue des packs (admin seul)
+        "invitations_send": False,         # envoyer les pass depuis le WhatsApp GoEvent (admin, staff « envoi »)
     }
     
     if role == "admin":
@@ -119,6 +120,9 @@ def _capabilities_for(user: User) -> dict:
                 "ads_slides_read": True,
                 "ads_slides_write": True,
             })
+        elif fn == "envoi":
+            # Onglet Invitations réduit à la file « Envois » (pas de dashboard : chiffres business)
+            caps.update({"invitations_send": True})
         elif fn == "designer":
             caps.update({
                 "view_dashboard": True,

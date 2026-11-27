@@ -268,6 +268,12 @@ MIGRATIONS = [
         "private_event_settings.event_type (lot 6)",
         "ALTER TABLE private_event_settings ADD COLUMN IF NOT EXISTS event_type VARCHAR(30)",
     ),
+    # ── Envoi par l'équipe (staff « envoi ») : même table, même règle → ALTER à la main AVANT le push.
+    (
+        "private_event_settings.send_requested_at (envoi équipe)",
+        "ALTER TABLE private_event_settings ADD COLUMN IF NOT EXISTS send_requested_at TIMESTAMP, "
+        "ADD COLUMN IF NOT EXISTS send_requested_by INTEGER REFERENCES users(id)",
+    ),
 ]
 
 

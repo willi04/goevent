@@ -34,7 +34,8 @@ from core import sessions as sess
 from core.config import settings
 from core.database import get_db
 from core.limiter import PUBLIC_IP_CEILING, hit_or_429, limiter, path_token_key, user_key
-from core.permissions import get_current_admin, is_admin, normalize_role, require_staff_function, sees_all_sales
+from core.permissions import (can_send_invitations, get_current_admin, is_admin, normalize_role, require_staff_function,
+                              sees_all_sales)
 from core.security import get_current_user, hash_pin, log_security_event
 from models.event import Event
 from models.invitation import (
@@ -53,6 +54,7 @@ from schemas.invitation_catalog import OrderIn
 
 router = APIRouter(tags=["invitations"])
 manager = require_staff_function("commercial")   # admin + commercial (pas le CM)
+sender = require_staff_function("envoi")         # admin + staff « envoi » : file des envois WhatsApp, rien d'autre
 
 
 # ── sérialisation ────────────────────────────────────────────────────
@@ -72,14 +74,16 @@ def _guest_status(g: EventGuest) -> str:
     return "to_print" if g.paper else "pending"
 
 
-def _guest_out(ev: Event, st: PrivateEventSettings, g: EventGuest) -> dict:
+def _guest_out(ev: Event, st: PrivateEventSettings, g: EventGuest, send: bool = False) -> dict:
+    """send : lien WhatsApp prêt à envoyer — seulement pour qui envoie depuis le numéro GoEvent
+    (admin, staff « envoi »). Un commercial ne l'a jamais : il demande l'envoi à l'équipe."""
     msg = inv.render_message(ev, st, g) if g.token else ""
     return {"id": g.id, "full_name": g.full_name, "phone": g.phone, "seats": g.seats, "seats_used": g.seats_used,
             "table_label": g.table_label, "category": g.category, "status": _guest_status(g),
             "sent_at": _iso(g.sent_at), "first_checkin_at": _iso(g.first_checkin_at),
             "last_checkin_at": _iso(g.last_checkin_at), "revoked_at": _iso(g.revoked_at),
             "pass_url": inv.pass_url(g.token) if g.token else None, "paper": g.paper,
-            "wa_url": inv.wa_url(g.phone, msg) if g.token and not g.paper else None, "message": msg}
+            "wa_url": inv.wa_url(g.phone, msg) if send and g.token and not g.paper else None, "message": msg}
 
 
 def _pack_out(p: InvitationPack) -> dict:
@@ -122,7 +126,8 @@ def _event_summaries(db: Session, rows: list, owners: Optional[dict] = None) -> 
                     "formula_name": labels.get(st.service_level) if st.service_level else None,
                     "quota": quotas[ev.id], "listed": s["expected"],     # places listées = places des pass non annulés
                     "features": features[ev.id], "stats": s,
-                    "purged": bool(st.purged_at), "purge_after": _iso(st.purge_after)})
+                    "purged": bool(st.purged_at), "purge_after": _iso(st.purge_after),
+                    "send_requested_at": _iso(st.send_requested_at)})
     return out
 
 
@@ -218,7 +223,7 @@ def admin_meta(db: Session = Depends(get_db), user: User = Depends(manager)):
             "channels": inv.channels(), "default_message": inv.DEFAULT_MESSAGE,
             "sender_whatsapp": _sender_whatsapp(db),
             "message_vars": list(inv.MESSAGE_VARS), "can_activate": is_admin(user), "can_edit_catalog": is_admin(user),
-            "event_types": list(inv.EVENT_TYPES),
+            "event_types": list(inv.EVENT_TYPES), "can_send": can_send_invitations(user),
             "retention_days": inv.INVITATION_RETENTION_DAYS}
 
 
@@ -929,7 +934,7 @@ def admin_guests(event_id: int, q: Optional[str] = Query(None, max_length=80),
     paper_total = db.query(EventGuest.id).filter(
         EventGuest.event_id == ev.id, EventGuest.paper == True, EventGuest.revoked_at.is_(None),  # noqa: E712
         EventGuest.token.isnot(None)).count()
-    return {"total": total, "page": page, "limit": limit, "guests": [_guest_out(ev, st, g) for g in rows],
+    return {"total": total, "page": page, "limit": limit, "guests": [_guest_out(ev, st, g, can_send_invitations(user)) for g in rows],
             "send_queue": pending_ids,
             # Pass jamais envoyés faute de numéro : à compléter ou à transmettre à la main (« Copier le lien »)
             "pending_without_phone": db.query(EventGuest.id).filter(
@@ -941,7 +946,7 @@ def admin_guests(event_id: int, q: Optional[str] = Query(None, max_length=80),
 @router.get("/admin/invitations/guests/{guest_id}")
 def admin_guest(guest_id: int, db: Session = Depends(get_db), user: User = Depends(manager)):
     g, ev, st = _guest(db, guest_id, user)
-    return _guest_out(ev, st, g)
+    return _guest_out(ev, st, g, can_send_invitations(user))
 
 
 @router.post("/admin/invitations/events/{event_id}/guests/import")
@@ -993,7 +998,7 @@ def admin_update_guest(request: Request, guest_id: int, data: GuestPatch, db: Se
     if "category" in f:
         g.category = (data.category or "").strip() or None
     db.commit()
-    return _guest_out(ev, st, g)
+    return _guest_out(ev, st, g, can_send_invitations(user))
 
 
 @router.post("/admin/invitations/guests/{guest_id}/revoke")
@@ -1004,7 +1009,7 @@ def admin_revoke(request: Request, guest_id: int, db: Session = Depends(get_db),
         g.revoked_at = inv.utcnow()
         db.commit()
         log_security_event(db, "invitation_pass_revoked", request, user.id, "pass %d (event %d)" % (g.id, ev.id))
-    return _guest_out(ev, st, g)
+    return _guest_out(ev, st, g, can_send_invitations(user))
 
 
 @router.post("/admin/invitations/guests/{guest_id}/restore")
@@ -1021,7 +1026,7 @@ def admin_restore(request: Request, guest_id: int, db: Session = Depends(get_db)
         g.revoked_at = None
         db.commit()
         log_security_event(db, "invitation_pass_restored", request, user.id, "pass %d (event %d)" % (g.id, ev.id))
-    return _guest_out(ev, st, g)
+    return _guest_out(ev, st, g, can_send_invitations(user))
 
 
 @router.post("/admin/invitations/guests/{guest_id}/regenerate")
@@ -1032,19 +1037,120 @@ def admin_regenerate(request: Request, guest_id: int, db: Session = Depends(get_
     g.token, g.token_hash, g.sent_at, g.sent_by = tok, inv.token_hash(tok), None, None
     db.commit()
     log_security_event(db, "invitation_pass_regenerated", request, user.id, "pass %d (event %d)" % (g.id, ev.id))
-    return _guest_out(ev, st, g)
+    return _guest_out(ev, st, g, can_send_invitations(user))
 
 
 @router.post("/admin/invitations/guests/{guest_id}/sent")
 @limiter.limit("600/minute")
-def admin_mark_sent(request: Request, guest_id: int, db: Session = Depends(get_db), user: User = Depends(manager)):
-    g, ev, st = _guest(db, guest_id, user, lock=True)
+def admin_mark_sent(request: Request, guest_id: int, db: Session = Depends(get_db), user: User = Depends(sender)):
+    g, ev, st = _send_guest(db, guest_id, user)
     inv.require_active(db, ev.id)
     if g.revoked_at:
         raise HTTPException(400, "Pass annulé.")
     g.sent_at, g.sent_by = inv.utcnow(), user.id
     db.commit()
-    return _guest_out(ev, st, g)
+    return _guest_out(ev, st, g, can_send_invitations(user))
+
+
+# ════════════════════════════════════════════════════════════
+# ENVOI PAR L'ÉQUIPE GoEvent — le commercial demande, l'admin / le staff « envoi » envoie
+# ════════════════════════════════════════════════════════════
+
+def _pending_q(db: Session, event_ids):
+    """Pass à envoyer par WhatsApp : non envoyés, non annulés, avec numéro, hors pass papier."""
+    return db.query(EventGuest).filter(
+        EventGuest.event_id.in_(event_ids), EventGuest.sent_at.is_(None), EventGuest.revoked_at.is_(None),
+        EventGuest.phone.isnot(None), EventGuest.token.isnot(None), EventGuest.paper == False)  # noqa: E712
+
+
+def _send_scope(db: Session, event_id: int, user: User, lock: bool = False):
+    """Staff « envoi » : seulement les événements dont l'envoi est DEMANDÉ (sinon 404, pas
+    d'énumération). Admin : tous. Jamais après la purge."""
+    ev = inv.get_private_event(db, event_id, lock=lock)
+    st = inv.get_settings(db, ev.id)
+    if not is_admin(user) and not st.send_requested_at:
+        raise HTTPException(404, "Événement privé introuvable")
+    if st.purged_at:
+        raise HTTPException(400, "Liste supprimée (conservation de 30 jours dépassée).")
+    return ev, st
+
+
+def _send_guest(db: Session, guest_id: int, user: User):
+    g = db.query(EventGuest).filter(EventGuest.id == guest_id).with_for_update().first()
+    if not g:
+        raise HTTPException(404, "Invité introuvable")
+    ev, st = _send_scope(db, g.event_id, user)
+    return g, ev, st
+
+
+def _mask(phone: Optional[str]) -> str:
+    return ("… " + phone[-2:]) if phone and len(phone) > 2 else ""
+
+
+@router.post("/admin/invitations/events/{event_id}/send-request")
+@limiter.limit("30/minute")
+def admin_send_request(request: Request, event_id: int, db: Session = Depends(get_db), user: User = Depends(manager)):
+    """Le commercial (ou l'admin) confie l'envoi des pass à l'équipe GoEvent."""
+    ev, st = _load(db, event_id, user, lock=True)
+    if st.purged_at:
+        raise HTTPException(400, "Liste supprimée (conservation de 30 jours dépassée).")
+    inv.require_active(db, ev.id)
+    if not _pending_q(db, [ev.id]).count():
+        raise HTTPException(400, "Aucun pass à envoyer par WhatsApp (tous envoyés, ou invités sans numéro).")
+    if not st.send_requested_at:
+        st.send_requested_at, st.send_requested_by = inv.utcnow(), user.id
+        db.commit()
+        log_security_event(db, "invitation_send_requested", request, user.id, "event %d" % ev.id)
+    return {"send_requested_at": _iso(st.send_requested_at)}
+
+
+@router.delete("/admin/invitations/events/{event_id}/send-request")
+@limiter.limit("30/minute")
+def admin_send_request_cancel(request: Request, event_id: int, db: Session = Depends(get_db), user: User = Depends(manager)):
+    ev, st = _load(db, event_id, user, lock=True)
+    if st.send_requested_at:
+        st.send_requested_at, st.send_requested_by = None, None
+        db.commit()
+        log_security_event(db, "invitation_send_request_cancelled", request, user.id, "event %d" % ev.id)
+    return {"send_requested_at": None}
+
+
+@router.get("/admin/invitations/sends")
+def admin_sends(db: Session = Depends(get_db), user: User = Depends(sender)):
+    """File des envois : événements dont l'envoi est demandé et qui ont encore des pass à envoyer.
+    Rien d'autre (ni prix, ni client au-delà du nom, ni recettes)."""
+    rows = (db.query(Event, PrivateEventSettings)
+            .join(PrivateEventSettings, PrivateEventSettings.event_id == Event.id)
+            .filter(Event.visibility == "private", Event.is_active == True,  # noqa: E712
+                    PrivateEventSettings.send_requested_at.isnot(None), PrivateEventSettings.purged_at.is_(None))
+            .order_by(PrivateEventSettings.send_requested_at).limit(200).all())
+    ids = [ev.id for ev, _ in rows]
+    counts = dict(_pending_q(db, ids).with_entities(EventGuest.event_id, func.count(EventGuest.id))
+                  .group_by(EventGuest.event_id).all()) if ids else {}
+    by = {u.id: u.full_name for u in db.query(User).filter(User.id.in_({st.send_requested_by for _, st in rows if st.send_requested_by})).all()}
+    return {"sender_whatsapp": _sender_whatsapp(db), "events": [
+        {"id": ev.id, "title": ev.title, "event_date_label": inv.fmt_date_fr(ev.event_date), "location": ev.location,
+         "host_label": st.host_label or st.client_name, "pending": counts.get(ev.id, 0),
+         "requested_at": _iso(st.send_requested_at), "requested_by": by.get(st.send_requested_by)}
+        for ev, st in rows if counts.get(ev.id)]}
+
+
+@router.get("/admin/invitations/sends/{event_id}")
+def admin_send_event(event_id: int, db: Session = Depends(get_db), user: User = Depends(sender)):
+    """Pass à envoyer d'un événement : nom, places, numéro masqué, lien WhatsApp prêt (message compris)."""
+    ev, st = _send_scope(db, event_id, user)
+    inv.require_active(db, ev.id)
+    pend = _pending_q(db, [ev.id]).order_by(EventGuest.full_name, EventGuest.id).limit(2000).all()
+    out = []
+    for g in pend:
+        msg = inv.render_message(ev, st, g)
+        out.append({"id": g.id, "full_name": g.full_name, "seats": g.seats, "phone_hint": _mask(g.phone),
+                    "wa_url": inv.wa_url(g.phone, msg)})
+    sent = db.query(func.count(EventGuest.id)).filter(EventGuest.event_id == ev.id, EventGuest.sent_at.isnot(None),
+                                                      EventGuest.paper == False).scalar()  # noqa: E712
+    return {"event": {"id": ev.id, "title": ev.title, "event_date_label": inv.fmt_date_fr(ev.event_date),
+                      "location": ev.location, "host_label": st.host_label or st.client_name},
+            "sender_whatsapp": _sender_whatsapp(db), "pending": out, "sent": sent}
 
 
 @router.delete("/admin/invitations/guests/{guest_id}")
@@ -1067,7 +1173,7 @@ def admin_manual_checkin(request: Request, guest_id: int, data: ManualCheckinIn,
     g, ev, st = _guest(db, guest_id, user)
     inv.require_active(db, ev.id)
     g = inv.manual_checkin(db, user, g, data.count, data.reason.strip(), request)
-    return _guest_out(ev, st, g)
+    return _guest_out(ev, st, g, can_send_invitations(user))
 
 
 @router.get("/admin/invitations/events/{event_id}/paper.pdf")

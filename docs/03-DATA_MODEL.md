@@ -75,7 +75,8 @@ Colonnes essentielles :
 - `pin_hash` : code PIN à 4 chiffres haché via bcrypt.
 - `role` : `"fan"`, `"organizer"`, `"agent"`, `"admin"`, ou une valeur
   correspondant à une fonction staff.
-- `staff_function` : `"commercial"`, `"cm"`, `"designer"` — définit les
+- `staff_function` : `"commercial"`, `"cm"`, `"designer"`, `"envoi"` (envoie les
+  pass d'invitation depuis le WhatsApp GoEvent, rien d'autre) — définit les
   capacités pour les comptes staff internes (voir
   `api/staff.py::_capabilities_for`).
 - `orange_money` : numéro de réception des retraits pour les
@@ -372,7 +373,9 @@ rétroactivement.
   révocable), `purge_after` (date + 30 j), `purged_at`, `event_type`
   (lot 6 : liste fermée `core/invitations.EVENT_TYPES` — mariage, dot,
   conférence, salon… ; NULL = non précisé ; donne la famille de cadres
-  suggérée et l'ordre des onglets de la fiche).
+  suggérée et l'ordre des onglets de la fiche), `send_requested_at|by`
+  (envoi des pass demandé à l'équipe GoEvent par le commercial ; NULL = non
+  demandé).
 - `event_guests` : `token` (unique, aléatoire) + `token_hash` (SHA-256, liste
   hors ligne), `full_name`, `phone` (E.164), `category`, `table_label`,
   `seats` (1-20), `seats_used`, `revoked_at`, `sent_at`, `first/last_checkin_at`,

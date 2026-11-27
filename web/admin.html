@@ -377,7 +377,7 @@
           <button
               onclick="showTab('invitations')"
               data-tab="invitations"
-              data-capability="invitations_manage"
+              data-capability="invitations_manage|invitations_send"
               class="tab-btn w-full text-left flex items-center gap-3"
           >
             <span class="material-symbols-outlined text-lg">mail</span>
@@ -499,7 +499,7 @@
           <button
               onclick="showTab('invitations')"
               data-tab="invitations"
-              data-capability="invitations_manage"
+              data-capability="invitations_manage|invitations_send"
               class="tab-btn flex-shrink-0"
           >
             <span class="material-symbols-outlined text-lg">mail</span>
@@ -1074,6 +1074,7 @@
                   <option value="commercial">Commercial — Responsable commercial &amp; opérations</option>
                   <option value="cm">CM — Community Manager (gère aussi les affiches pour l'instant)</option>
                   <option value="designer">Designer — Designer dédié (RÉSERVÉ, non recruté)</option>
+                  <option value="envoi">Envoi WhatsApp — Envoie les pass depuis le téléphone GoEvent (rien d'autre)</option>
                 </select>
               </div>
               <div>
@@ -1480,6 +1481,7 @@
               commercial: { title: "GoEvent Régie", subtitle: "Espace Commercial" },
               cm: { title: "GoEvent Communauté", subtitle: "Espace Community Manager" },
               designer: { title: "GoEvent Affiches", subtitle: "Espace Designer" },
+              envoi: { title: "GoEvent Invitations", subtitle: "Envoi des pass" },
           };
       
           let key;
@@ -1502,7 +1504,8 @@
           // Boucle sur tous les boutons (sidebar desktop ET mobile) qui ont data-capability
           document.querySelectorAll("[data-capability]").forEach(btn => {
               const required = btn.getAttribute("data-capability");
-              const allowed = caps[required] === true;
+              // « a|b » : l'une des capacités suffit (ex. Invitations : gestion OU envoi seul)
+              const allowed = required.split("|").some((c) => caps[c] === true);
               if (!allowed) {
                   btn.style.display = "none";
               }
@@ -1527,6 +1530,7 @@
               { tab: "fbpacks",       cap: "fb_packages_manage" },
               { tab: "content",       cap: "content_manage" },
               { tab: "invitations",   cap: "invitations_manage" },
+              { tab: "invitations",   cap: "invitations_send" },
           ];
       
           for (const { tab, cap } of priorityOrder) {
@@ -1558,13 +1562,13 @@
           fbpacks:       "fb_packages_manage",
           refunds:       "view_finance",
           content:       "content_manage",
-          invitations:   "invitations_manage",
+          invitations:   "invitations_manage|invitations_send",
       };
       
       function showTab(tab) {
           // Garde-fou côté client : refuse l'affichage si capability manquante
           const requiredCap = TAB_CAPABILITIES[tab];
-          if (requiredCap && !hasCapability(requiredCap)) {
+          if (requiredCap && !requiredCap.split("|").some(hasCapability)) {
               btToast("Vous n'avez pas accès à cette section.", "error");
               return;
           }
@@ -1931,6 +1935,7 @@
                   if (fn === "commercial") return '<span class="badge badge-blue">Commercial</span>';
                   if (fn === "cm") return '<span class="badge" style="background:#ede9fe;color:#5b21b6">CM</span>';
                   if (fn === "designer") return '<span class="badge" style="background:#fce7f3;color:#9d174d">Designer</span>';
+                  if (fn === "envoi") return '<span class="badge" style="background:#dcfce7;color:#166534">Envoi WhatsApp</span>';
                   return '<span class="badge badge-gray">—</span>';
               };
       

@@ -34,6 +34,10 @@ class PrivateEventSettings(Base):
     message_template = Column(Text, nullable=True)           # None = message par défaut
     service_level    = Column(String(20), nullable=False, default="accompagne")  # autonome | accompagne
     event_type       = Column(String(30), nullable=True)   # core/invitations.EVENT_TYPES ; NULL = dossier ancien
+    # Envoi des pass par l'équipe GoEvent (numéro GoEvent) : le commercial le demande, l'admin ou un
+    # staff « envoi » l'exécute. NULL = pas demandé. Le commercial n'a jamais les liens WhatsApp.
+    send_requested_at = Column(DateTime, nullable=True)
+    send_requested_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     track_token      = Column(String(64), nullable=True, unique=True, index=True)  # lien de suivi client
     track_created_at = Column(DateTime, nullable=True)
     purge_after      = Column(DateTime, nullable=False)       # date de l'événement + 30 j

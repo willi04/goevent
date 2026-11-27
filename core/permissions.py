@@ -34,6 +34,7 @@ STAFF_FUNCTIONS_VALIDES = (
     "commercial",  # responsable commercial & opérations
     "cm",          # community manager / traffic manager
     "designer",    # designer / responsable régie publicitaire
+    "envoi",       # envoie les pass d'invitation depuis le WhatsApp GoEvent (rien d'autre)
 )
 
 # Mapping de compatibilité — comptes legacy avec des rôles fantômes
@@ -129,6 +130,13 @@ def sees_all_sales(user: User) -> bool:
     """Portefeuilles commerciaux (lot 4.5) : qui voit les dossiers de TOUS les commerciaux.
     Aujourd'hui l'admin seul ; un futur « responsable commercial » s'ajoutera ici."""
     return is_admin(user)
+
+
+def can_send_invitations(user: User) -> bool:
+    """Envoi des pass sur WhatsApp : l'admin ou un staff « envoi » (téléphone GoEvent), jamais un
+    commercial — sinon les pass partiraient de son numéro personnel."""
+    role = normalize_role(user.role)
+    return role == "admin" or (role == "staff" and user.staff_function == "envoi")
 
 
 def is_admin_or_staff(user: User, function: Optional[str] = None) -> bool:

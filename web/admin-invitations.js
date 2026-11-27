@@ -68,6 +68,8 @@
       .catch(function () { window.prompt("Copiez :", text); });
   }
   function canActivate() { return S.meta && S.meta.can_activate; }
+  // Envoi WhatsApp : admin ou staff « envoi » (numéro GoEvent). Un commercial demande l'envoi à l'équipe.
+  function canSend() { return !!(S.meta && S.meta.can_send); }
   function sec() { return document.getElementById("section-invitations"); }
   function lbl(t) { return el("label", { class: "block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1", text: t }); }
   function field(label, node, hint) {
@@ -163,7 +165,7 @@
     var s = e.stats, t = typeOf(e.event_type);
     if (!e.quota) return ["Aucun pack activé", "#92400e", "#fef3c7"];
     if (!s.passes) return [t && t.acces === "ouvert" ? "Inscriptions à ouvrir" : "Liste à importer", "#1e40af", "#dbeafe"];
-    if (s.passes_sent < s.passes) return [(s.passes - s.passes_sent) + " pass à envoyer", "#1e40af", "#dbeafe"];
+    if (s.passes_sent < s.passes) return [(s.passes - s.passes_sent) + " pass à envoyer" + (e.send_requested_at ? " · envoi demandé" : ""), "#1e40af", "#dbeafe"];
     return ["Prêt · " + e.quota + " pers.", "#166534", "#dcfce7"];
   }
   function drawList(box) {
@@ -409,7 +411,8 @@
                                        : ["Importer la liste", function () { goTab("invites", "import"); }];
     }
     if (ev.design_status !== "pret" && !s.passes_sent) return ["Préparer l'invitation", function () { goTab("invitation"); }];
-    if (q) return ["Envoyer au suivant (" + q + ")", function () { if (S.tab !== "invites") goTab("invites"); sendNext(); }];
+    if (q && canSend()) return ["Envoyer au suivant (" + q + ")", function () { if (S.tab !== "invites") goTab("invites"); sendNext(); }];
+    if (q && !ev.send_requested_at) return ["Demander l'envoi (" + q + ")", function () { if (S.tab !== "invites") goTab("invites"); requestSend(); }];
     if (!ev.agents.length) return ["Ajouter un agent", function () { goTab("jourj", "agents"); }];
     return ["Suivre les arrivées", function () { goTab("jourj"); }];
   }
@@ -1383,11 +1386,13 @@
       [["", "Tous"], ["pending", "À envoyer"], ["sent", "Envoyés"], ["paper", "Pass papier"], ["arrived", "Entrés"], ["not_arrived", "Pas encore arrivés"], ["revoked", "Annulés"]].map(function (o) {
         return el("option", { value: o[0], text: o[1], selected: S.status === o[0] ? "selected" : null });
       }));
-    var sendBtn = el("button", { class: "action-btn text-xs", id: "inv-send-next", style: "background:#25d366;color:#fff", onclick: sendNext });
+    var sendBtn = canSend() ? el("button", { class: "action-btn text-xs", id: "inv-send-next", style: "background:#25d366;color:#fff", onclick: sendNext })
+                            : el("span", { id: "inv-send-request" });
     return block("Invités", [importBox,
       el("div", { class: "flex flex-wrap items-center gap-2 mb-3" }, [search, filter, el("span", { class: "flex-1" }), sendBtn]),
-      el("p", { class: "text-[11px] text-gray-500 mb-2", text: "« Envoyer au suivant » ouvre WhatsApp avec le message prêt pour le prochain invité non servi : appuyez sur Envoyer dans WhatsApp, revenez ici, recommencez." }),
-      senderNote(),
+      canSend() ? el("p", { class: "text-[11px] text-gray-500 mb-2", text: "« Envoyer au suivant » ouvre WhatsApp avec le message prêt pour le prochain invité non servi : appuyez sur Envoyer dans WhatsApp, revenez ici, recommencez." })
+                : el("p", { class: "text-[11px] text-gray-500 mb-2", text: "Les pass partent du WhatsApp GoEvent, envoyés par l'équipe : une fois la liste et l'invitation prêtes, cliquez « Demander l'envoi »." }),
+      canSend() ? senderNote() : null,
       el("p", { id: "inv-nophone", class: "hidden text-xs font-semibold text-amber-800 bg-amber-50 rounded-xl p-3 mb-2" }),
       el("div", { id: "inv-paper", class: "hidden flex flex-wrap items-center gap-2 text-xs font-semibold text-orange-900 bg-orange-50 rounded-xl p-3 mb-2" }),
       el("div", { id: "inv-guests" })]);
@@ -1473,6 +1478,19 @@
     var box = document.getElementById("inv-guests"), d = S.guests;
     var btn = document.getElementById("inv-send-next");
     renderTop();
+    var rq = document.getElementById("inv-send-request");
+    if (rq && S.queue) {
+      rq.innerHTML = "";
+      if (S.ev.send_requested_at) {
+        rq.appendChild(el("span", { class: "text-xs font-bold px-3 py-2 rounded-xl", style: "background:#dcfce7;color:#166534",
+          text: "✓ Envoi demandé le " + dt(S.ev.send_requested_at) + (S.queue.length ? " · " + S.queue.length + " en attente" : " · tout est envoyé") }));
+        rq.appendChild(act("Annuler la demande", "background:#f3f4f6;color:#374151", cancelSend));
+      } else {
+        var b = act(S.queue.length ? "Demander l'envoi à l'équipe (" + S.queue.length + ")" : "Aucun pass à envoyer", "background:#25d366;color:#fff", requestSend);
+        b.disabled = !S.queue.length || !S.ev.quota;
+        rq.appendChild(b);
+      }
+    }
     if (btn && S.queue) {
       // « Tous les pass sont envoyés » seulement s'il ne reste vraiment rien à envoyer
       btn.textContent = S.queue.length ? "Envoyer au suivant sur WhatsApp (" + S.queue.length + ")"
@@ -1618,6 +1636,17 @@
       S.queue = S.queue.filter(function (id) { return id !== g.id; });
       loadGuests();
     }).catch(function (e) { toast(e.message || "Erreur", "error"); });
+  }
+  function requestSend() {
+    if (!S.ev.quota) { toast("Activez un pack avant de demander l'envoi.", "error"); return; }
+    if (S.ev.design_status !== "pret" && !window.confirm("L'invitation n'est pas publiée : les invités recevront le pass simple, sans le design. Demander l'envoi quand même ?")) return;
+    btApi.post("/admin/invitations/events/" + S.eventId + "/send-request").then(function () {
+      toast("Envoi demandé : l'équipe GoEvent enverra les pass depuis le numéro GoEvent.", "success"); reloadEvent();
+    }).catch(function (e) { toast(e.message || "Erreur", "error"); });
+  }
+  function cancelSend() {
+    btApi.delete("/admin/invitations/events/" + S.eventId + "/send-request").then(function () { toast("Demande d'envoi annulée.", "success"); reloadEvent(); })
+      .catch(function (e) { toast(e.message || "Erreur", "error"); });
   }
   function sendNext() {
     if (!S.queue.length) return;
@@ -1969,6 +1998,7 @@
   function navTabs(active) {
     var tabs = [["events", "Événements", loadList], ["quotes", "Devis", openQuotes], ["sales", "Ventes & commissions", openSales],
                 ["catalog", "Catalogue", function () { openCatalog("formulas"); }]];
+    if (canSend()) tabs.push(["sends", "Envois WhatsApp", openSends]);
     return el("div", { class: "flex flex-wrap gap-1 mb-5 p-1 bg-gray-100 rounded-2xl w-fit", role: "tablist" }, tabs.map(function (t) {
       var on = t[0] === active;
       return el("button", { role: "tab", "aria-selected": on ? "true" : "false",
@@ -2744,14 +2774,86 @@
   }
 
   // ════════════════════════════════════════════════════════════════
+  // ENVOIS WHATSAPP — file de l'équipe (admin, staff « envoi »)
+  // ════════════════════════════════════════════════════════════════
+  function sendOnly() { return S.sendOnly; }   // staff « envoi » : cette vue et rien d'autre
+  function openSends() {
+    stopTimer();
+    S.view = "sends";
+    var root = sec();
+    root.innerHTML = '<div class="card p-6 empty-state">Chargement…</div>';
+    btApi.get("/admin/invitations/sends").then(function (d) {
+      if (S.meta) S.meta.sender_whatsapp = d.sender_whatsapp; else S.meta = { sender_whatsapp: d.sender_whatsapp, can_send: true };
+      root.innerHTML = "";
+      if (!sendOnly()) root.appendChild(navTabs("sends"));
+      root.appendChild(el("h2", { class: "text-xl font-black text-gray-900", text: "Envois WhatsApp" }));
+      root.appendChild(el("p", { class: "text-xs text-gray-500 mt-1 mb-3", text: "Événements dont l'envoi des pass a été demandé. Ouvrez-en un, puis « Envoyer au suivant » jusqu'au bout." }));
+      root.appendChild(senderNote());
+      if (!d.events.length) { root.appendChild(el("div", { class: "card p-6 empty-state", text: "Aucun envoi en attente." })); return; }
+      root.appendChild(el("div", { class: "grid gap-3 md:grid-cols-2" }, d.events.map(function (e) {
+        return el("button", { class: "card p-4 text-left hover:shadow-md transition-all", "data-send-event": String(e.id), onclick: function () { openSendEvent(e.id); } }, [
+          el("div", { class: "flex justify-between items-start gap-2" }, [el("p", { class: "font-black text-gray-900", text: e.title }),
+            el("span", { class: "text-[10px] font-black px-2 py-0.5 rounded-full whitespace-nowrap", style: "color:#1e40af;background:#dbeafe", text: e.pending + " à envoyer" })]),
+          el("p", { class: "text-xs text-gray-500 mt-1", text: e.event_date_label + (e.location ? " · " + e.location : "") }),
+          el("p", { class: "text-xs text-gray-500", text: "Demandé le " + dt(e.requested_at) + (e.requested_by ? " par " + e.requested_by : "") }),
+        ]);
+      })));
+    }).catch(function (e) { root.innerHTML = ""; root.appendChild(el("div", { class: "card p-6 text-sm text-red-600", text: e.message || "Erreur" })); });
+  }
+  function openSendEvent(id) {
+    var root = sec();
+    root.innerHTML = '<div class="card p-6 empty-state">Chargement…</div>';
+    btApi.get("/admin/invitations/sends/" + id).then(function (d) {
+      var queue = d.pending.slice();
+      root.innerHTML = "";
+      root.appendChild(el("button", { class: "text-sm font-bold text-primary mb-3", text: "← Tous les envois", onclick: openSends }));
+      root.appendChild(el("h2", { class: "text-xl font-black text-gray-900", text: d.event.title }));
+      root.appendChild(el("p", { class: "text-xs text-gray-500 mt-1 mb-3", text: d.event.event_date_label + (d.event.location ? " · " + d.event.location : "") + " · " + d.sent + " déjà envoyé(s)" }));
+      root.appendChild(senderNote());
+      var next = el("button", { class: "action-btn text-sm mb-3", id: "send-next", style: "background:#25d366;color:#fff" });
+      var list = el("div", { class: "card divide-y divide-gray-100" });
+      function draw() {
+        next.textContent = queue.length ? "Envoyer au suivant sur WhatsApp (" + queue.length + ")" : "Tous les pass sont envoyés";
+        next.disabled = !queue.length;
+        list.innerHTML = "";
+        if (!queue.length) list.appendChild(el("p", { class: "p-4 text-sm text-gray-500", text: "Plus rien à envoyer pour cet événement." }));
+        queue.forEach(function (g) {
+          list.appendChild(el("div", { class: "flex items-center gap-3 px-4 py-3" }, [
+            el("div", { class: "flex-1 min-w-0" }, [el("p", { class: "font-bold text-sm text-gray-900 truncate", text: g.full_name }),
+              el("p", { class: "text-[11px] text-gray-500", text: g.seats + " place" + (g.seats > 1 ? "s" : "") + " · " + g.phone_hint })]),
+            act("WhatsApp", "background:#dcfce7;color:#166534", function () { send(g); }),
+          ]));
+        });
+      }
+      function send(g) {
+        if (IS_ANDROID && waApp() === "w4b") location.href = waBusinessLink(g.wa_url);
+        else {
+          var w = window.open(g.wa_url, "_blank");
+          if (w) w.opener = null;
+          else { toast("Le navigateur a bloqué l'ouverture de WhatsApp : autorisez les fenêtres pour ce site.", "error"); return; }
+        }
+        btApi.post("/admin/invitations/guests/" + g.id + "/sent").then(function () {
+          queue = queue.filter(function (x) { return x.id !== g.id; }); draw();
+        }).catch(function (e) { toast(e.message || "Erreur", "error"); });
+      }
+      next.onclick = function () { if (queue.length) send(queue[0]); };
+      root.appendChild(next); root.appendChild(list); draw();
+    }).catch(function (e) { toast(e.message || "Erreur", "error"); openSends(); });
+  }
+
+  // ════════════════════════════════════════════════════════════════
   // ENTRÉE (appelée par showTab('invitations'))
   // ════════════════════════════════════════════════════════════════
   window.invInit = function () {
+    // Staff « envoi » : uniquement la file des envois (aucune autre route ne lui répond)
+    var hc = typeof hasCapability === "function" ? hasCapability : function () { return false; };
+    if (!hc("invitations_manage") && hc("invitations_send")) { S.sendOnly = true; openSends(); return; }
     var start = function () {
       if (S.view === "event" && S.eventId) openEvent(S.eventId);
       else if (S.view === "catalog") openCatalog();
       else if (S.view === "quotes") openQuotes();
       else if (S.view === "sales") openSales();
+      else if (S.view === "sends") openSends();
       else loadList();
     };
     if (S.meta) { start(); return; }

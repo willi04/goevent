@@ -110,7 +110,7 @@ def _event_summary(db: Session, ev: Event, st: PrivateEventSettings, owners: Opt
             "formula_name": cat.formula_label(db, st.service_level),
             "quota": inv.quota(db, ev.id), "listed": inv.seats_listed(db, ev.id),
             "features": cat.event_features(db, ev.id, st.service_level), "stats": inv.stats(db, ev.id),
-            "purged": bool(st.purged_at)}
+            "purged": bool(st.purged_at), "purge_after": _iso(st.purge_after)}
 
 
 def _scope(user: User, st: PrivateEventSettings) -> None:

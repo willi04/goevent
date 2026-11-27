@@ -92,8 +92,10 @@
 
   // ════════════════════════════════════════════════════════════════
   // LISTE DES ÉVÉNEMENTS PRIVÉS
+  // Rangée par urgence : Aujourd'hui · À venir (du plus proche au plus lointain) · Passés (du plus
+  // récent) · Archivés (purgés). Recherche et filtre par type dans le navigateur (300 dossiers max).
   // ════════════════════════════════════════════════════════════════
-  var EVF = { owner: "" };
+  var EVF = { owner: "", q: "", type: "" };
   function loadList() {
     stopTimer();
     S.view = "list";
@@ -102,23 +104,15 @@
     loadSellers().then(function () {
       return btApi.get("/admin/invitations/events" + (EVF.owner !== "" ? "?owner_id=" + EVF.owner : ""));
     }).then(function (d) {
+      S.list = d.events;
       root.innerHTML = "";
       root.appendChild(navTabs("events"));
-      root.appendChild(el("div", { class: "flex flex-wrap justify-between items-start gap-3 mb-5" }, [
+      root.appendChild(el("div", { class: "flex flex-wrap justify-between items-start gap-3 mb-4" }, [
         el("div", {}, [
           el("h2", { class: "text-xl font-black text-gray-900", text: "Invitations digitales" }),
           el("p", { class: "text-xs text-gray-500 mt-1", text: "Événements privés (mariages, dots, galas…) : liste d'invités, pass QR nominatifs envoyés par WhatsApp, contrôle à l'entrée, suivi des arrivées." }),
         ]),
-        el("div", { class: "flex flex-wrap gap-2 items-center" }, [
-          canActivate() ? (function () {
-            var ow = el("select", { class: "input-field", style: "max-width:220px" }, [el("option", { value: "", text: "Tous les dossiers" }), el("option", { value: "0", text: "Administration (maison)" })]
-              .concat((S.sellers || []).map(function (x) { return el("option", { value: String(x.id), text: x.full_name }); })));
-            ow.value = EVF.owner;
-            ow.addEventListener("change", function () { EVF.owner = ow.value; loadList(); });
-            return ow;
-          })() : null,
-          el("button", { class: "action-btn btn-primary", text: "+ Nouvel événement privé", onclick: eventModal }),
-        ]),
+        el("button", { class: "action-btn btn-primary", text: "+ Nouvel événement privé", onclick: eventModal }),
       ]));
       if (d.summary) {
         var sm = d.summary;
@@ -129,23 +123,126 @@
         root.appendChild(el("div", { class: "card p-6 empty-state", text: "Aucun événement privé pour l'instant." }));
         return;
       }
-      var grid = el("div", { class: "grid gap-3 md:grid-cols-2" });
-      d.events.forEach(function (e) {
-        var s = e.stats;
-        var packTxt = e.quota ? e.quota + " pers. · " + (e.formula_name || "") : "Aucun pack activé";
-        grid.appendChild(el("button", { class: "card p-4 text-left hover:shadow-md transition-all", onclick: function () { openEvent(e.id); } }, [
-          el("div", { class: "flex justify-between items-start gap-2" }, [
-            el("p", { class: "font-black text-gray-900", text: e.title }),
-            el("span", { class: "text-[10px] font-black px-2 py-0.5 rounded-full " + (e.quota ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"), text: packTxt }),
-          ]),
-          el("p", { class: "text-xs text-gray-500 mt-1", text: (typeLabel(e.event_type) ? typeLabel(e.event_type) + " · " : "") + e.event_date_label + " · " + (e.location || "") }),
-          el("p", { class: "text-xs text-gray-500", text: "Client : " + e.client_name + (e.purged ? " · liste supprimée" : "") +
-            (canActivate() ? " · " + (e.owner_name ? e.owner_name + (e.owner_code ? " (" + e.owner_code + ")" : "") : "Maison") : "") }),
-          el("p", { class: "text-sm font-bold text-gray-800 mt-2", text: s.entered + " / " + s.expected + " entrés · " + s.passes_sent + "/" + s.passes + " pass envoyés" }),
-        ]));
-      });
-      root.appendChild(grid);
+      var q = el("input", { class: "input-field", style: "flex:1;min-width:200px", placeholder: "Rechercher : titre, client, lieu", value: EVF.q });
+      var ty = el("select", { class: "input-field", style: "max-width:200px" }, [["", "Tous les types"], ["familial", "Célébrations familiales"],
+        ["corporate", "Professionnel"], ["none", "Type non renseigné"]].map(function (o) { return el("option", { value: o[0], text: o[1] }); }));
+      ty.value = EVF.type;
+      var box = el("div");
+      q.addEventListener("input", function () { EVF.q = q.value; clearTimeout(S._lt); S._lt = setTimeout(function () { drawList(box); }, 150); });
+      ty.addEventListener("change", function () { EVF.type = ty.value; drawList(box); });
+      var filters = [q, ty];
+      if (canActivate()) {
+        var ow = el("select", { class: "input-field", style: "max-width:220px" }, [el("option", { value: "", text: "Tous les dossiers" }), el("option", { value: "0", text: "Administration (maison)" })]
+          .concat((S.sellers || []).map(function (x) { return el("option", { value: String(x.id), text: x.full_name }); })));
+        ow.value = EVF.owner;
+        ow.addEventListener("change", function () { EVF.owner = ow.value; loadList(); });
+        filters.push(ow);
+      }
+      root.appendChild(el("div", { class: "flex flex-wrap gap-2 mb-4" }, filters));
+      root.appendChild(box);
+      drawList(box);
     }).catch(function (e) { root.innerHTML = ""; root.appendChild(el("div", { class: "card p-6 text-red-600 text-sm", text: e.message || "Erreur" })); });
+  }
+
+  // Jours calendaires à l'heure de Bangui (pas d'heure UTC : un événement à 23 h reste « aujourd'hui »)
+  function bgDay(iso) { return iso ? bgParts(iso).date : null; }
+  function daysBetween(a, b) { return Math.round((new Date(b + "T12:00:00Z") - new Date(a + "T12:00:00Z")) / 86400000); }
+  function shortDay(ymd, withYear) {
+    return new Date(ymd + "T12:00:00Z").toLocaleDateString("fr-FR", { timeZone: "UTC", weekday: "short", day: "numeric", month: "short", year: withYear ? "numeric" : undefined });
+  }
+  function norm(v) { return String(v || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, ""); }
+  // Fin réelle (dernière séance comprise) = date de purge − durée de conservation
+  function endDay(e) {
+    if (!e.purge_after) return bgDay(e.event_date);
+    var d = new Date((/[zZ]|[+-]\d\d:?\d\d$/.test(e.purge_after) ? e.purge_after : e.purge_after + "Z"));
+    d.setUTCDate(d.getUTCDate() - (S.meta.retention_days || 30));
+    return bgParts(d.toISOString()).date;
+  }
+  // Une seule info utile par dossier (même logique que « Prochaine étape » de la fiche)
+  function listAction(e) {
+    var s = e.stats, t = typeOf(e.event_type);
+    if (!e.quota) return ["Aucun pack activé", "#92400e", "#fef3c7"];
+    if (!s.passes) return [t && t.acces === "ouvert" ? "Inscriptions à ouvrir" : "Liste à importer", "#1e40af", "#dbeafe"];
+    if (s.passes_sent < s.passes) return [(s.passes - s.passes_sent) + " pass à envoyer", "#1e40af", "#dbeafe"];
+    return ["Prêt · " + e.quota + " pers.", "#166534", "#dcfce7"];
+  }
+  function drawList(box) {
+    var today = bgDay(new Date().toISOString()), year = today.slice(0, 4), f = norm(EVF.q);
+    var rows = (S.list || []).filter(function (e) {
+      var t = typeOf(e.event_type);
+      if (EVF.type === "none" && t) return false;
+      if (EVF.type && EVF.type !== "none" && (!t || t.famille !== EVF.type)) return false;
+      return !f || norm([e.title, e.client_name, e.location, e.owner_name, typeLabel(e.event_type)].join(" ")).indexOf(f) >= 0;
+    });
+    var now = [], next = [], past = [], arch = [];
+    rows.forEach(function (e) {
+      var a = bgDay(e.event_date), z = endDay(e);
+      e._a = a; e._z = z;
+      if (e.purged) arch.push(e);
+      else if (a > today) next.push(e);
+      else if (z >= today) now.push(e);
+      else past.push(e);
+    });
+    next.sort(function (x, y) { return x.event_date < y.event_date ? -1 : 1; });
+    now.sort(function (x, y) { return x.event_date < y.event_date ? -1 : 1; });
+    past.sort(function (x, y) { return x._z > y._z ? -1 : 1; });
+    arch.sort(function (x, y) { return x._z > y._z ? -1 : 1; });
+    box.innerHTML = "";
+    if (!rows.length) { box.appendChild(el("div", { class: "card p-6 empty-state", text: "Aucun dossier ne correspond." })); return; }
+    function head(t, n) { return el("p", { class: "text-[11px] font-black uppercase tracking-widest text-gray-400 mt-2 mb-2", text: t + " · " + n }); }
+    function chip(txt, fg, bg) { return el("span", { class: "text-[10px] font-black px-2 py-0.5 rounded-full whitespace-nowrap", style: "color:" + fg + ";background:" + bg, text: txt }); }
+    function meta(e) {
+      return (typeLabel(e.event_type) ? typeLabel(e.event_type) + " · " : "") + shortDay(e._a, e._a.slice(0, 4) !== year) +
+        (e._z !== e._a ? " → " + shortDay(e._z, false) : "") + (e.location ? " · " + e.location : "");
+    }
+    function owner(e) { return canActivate() ? " · " + (e.owner_name ? e.owner_name + (e.owner_code ? " (" + e.owner_code + ")" : "") : "Maison") : ""; }
+    function card(e, live) {
+      var n = daysBetween(today, e._a), act = listAction(e), s = e.stats;
+      var when = live ? chip("Aujourd'hui", "#991b1b", "#fee2e2") : n === 1 ? chip("Demain", "#92400e", "#fef3c7")
+        : n <= 30 ? chip("J-" + n, n <= 7 ? "#92400e" : "#374151", n <= 7 ? "#fef3c7" : "#f3f4f6")
+        : chip(n < 60 ? "dans " + Math.round(n / 7) + " semaines" : "dans " + Math.round(n / 30) + " mois", "#374151", "#f3f4f6");
+      return el("button", { class: "card p-4 text-left hover:shadow-md transition-all", onclick: function () { openEvent(e.id); } }, [
+        el("div", { class: "flex justify-between items-start gap-2" }, [el("p", { class: "font-black text-gray-900", text: e.title }), when]),
+        el("p", { class: "text-xs text-gray-500 mt-1", text: meta(e) }),
+        el("p", { class: "text-xs text-gray-500", text: "Client : " + e.client_name + owner(e) }),
+        el("div", { class: "flex flex-wrap justify-between items-center gap-2 mt-2" }, [
+          el("span", { class: "text-sm font-bold text-gray-800", text: live ? s.entered + " / " + s.expected + " entrés" : s.passes_sent + " / " + s.passes + " pass envoyés" }),
+          chip(act[0], act[1], act[2]),
+        ]),
+      ]);
+    }
+    function line(e) {
+      var s = e.stats, until = e.purge_after ? new Date(bgDay(e.purge_after) + "T12:00:00Z").toLocaleDateString("fr-FR", { timeZone: "UTC", day: "numeric", month: "short" }) : "";
+      var right = e.purged ? chip("Données supprimées", "#6b7280", "#f3f4f6") : !e.quota ? chip("Aucun pack", "#6b7280", "#f3f4f6")
+        : chip((canActivate() ? "Bilan avant le " : "Suppression le ") + until, "#92400e", "#fef3c7");
+      // Téléphone : empilé ; à partir de sm : 3 colonnes alignées
+      return el("button", { class: "w-full text-left flex flex-col gap-1 sm:grid sm:gap-2 sm:items-center px-4 py-3 hover:bg-gray-50", style: "grid-template-columns:minmax(0,2fr) minmax(0,1.3fr) 11rem",
+        onclick: function () { openEvent(e.id); } }, [
+        el("div", { class: "min-w-0" }, [el("p", { class: "font-bold text-sm text-gray-900 truncate", text: e.title }),
+          el("p", { class: "text-[11px] text-gray-500 truncate", text: (typeLabel(e.event_type) ? typeLabel(e.event_type) + " · " : "") + "Client : " + e.client_name + owner(e) })]),
+        el("p", { class: "text-xs text-gray-600", text: shortDay(e._a, e._a.slice(0, 4) !== year) + (e._z !== e._a ? " → " + shortDay(e._z, false) : "") +
+          " · " + s.entered + " / " + s.expected + " entrés" }),
+        el("div", { class: "sm:text-right" }, [right]),
+      ]);
+    }
+    function table(list, max) {
+      var t = el("div", { class: "card divide-y divide-gray-100 mb-4 overflow-hidden" }), shown = max ? list.slice(0, max) : list;
+      shown.forEach(function (e) { t.appendChild(line(e)); });
+      if (max && list.length > max) t.appendChild(el("button", { class: "w-full text-center text-xs font-bold text-gray-500 py-3 hover:bg-gray-50",
+        text: "Voir les " + (list.length - max) + " autres", onclick: function () { t.replaceWith(table(list, 0)); } }));
+      return t;
+    }
+    if (now.length) {
+      box.appendChild(head("Aujourd'hui", now.length));
+      box.appendChild(el("div", { class: "grid gap-3 md:grid-cols-2 mb-4" }, now.map(function (e) { return card(e, true); })));
+    }
+    box.appendChild(head("À venir", next.length));
+    box.appendChild(next.length ? el("div", { class: "grid gap-3 md:grid-cols-2 mb-4" }, next.map(function (e) { return card(e, false); }))
+      : el("p", { class: "text-sm text-gray-400 mb-4", text: "Aucun événement à venir." }));
+    if (past.length) { box.appendChild(head("Passés", past.length)); box.appendChild(table(past, 8)); }
+    if (arch.length) {
+      box.appendChild(el("details", { class: "mb-4" }, [el("summary", { class: "cursor-pointer text-[11px] font-black uppercase tracking-widest text-gray-400 mb-2", text: "Archivés (données supprimées) · " + arch.length }), table(arch, 0)]));
+    }
   }
 
   function eventModal(ev) {

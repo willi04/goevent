@@ -12,10 +12,15 @@ Deux utilitaires, sans dépendance lourde (Pillow déjà présent via reportlab)
 
 3. sanitize_fiche / sanitize_theme / sanitize_vip : contenu saisi au back-office,
    typé et borné avant stockage (rendu HTML côté invité).
+
+4. category_style(catégorie) : couleur d'accréditation et accueil protocolaire d'un
+   invité selon sa catégorie (texte libre de la liste). Source unique : la page invité
+   et le bloc Design de l'admin reçoivent le résultat, ils ne recalculent rien.
 """
 import hashlib
 import io
 import re
+import unicodedata
 from typing import Optional
 
 from PIL import Image, ImageOps
@@ -298,3 +303,31 @@ def sanitize_vip(vip):
     if "acces_prioritaire" in vip:
         out["acces_prioritaire"] = bool(vip["acces_prioritaire"])
     return out or None
+
+
+# ── Catégories d'invités (texte libre de la liste importée) ──────────────────
+# Mots-clés (sans accents, minuscules) → couleur du badge c2 + « officiel » : ces invités
+# reçoivent l'enveloppe officielle (carton) au lieu du badge, même en conférence / salon.
+# Les officiels passent en premier (« VIP Presse » = officiel).
+OFFICIAL_COLOR = "#b8954a"
+_CATEGORY_RULES = (
+    (re.compile(r"vip|officiel|protocole|honneur|ministre|ministere|ambassad|autorite|delegation|excellence|prefet|\bmaire\b"), OFFICIAL_COLOR, True),
+    (re.compile(r"presse|media|journal"), "#2563eb", False),
+    (re.compile(r"intervenant|speaker|orateur|panel|conferencier|paneliste"), "#7c3aed", False),
+    (re.compile(r"staff|organisa|equipe|benevole"), "#334155", False),
+    (re.compile(r"prestataire|traiteur|technique|securite|logistique"), "#ea580c", False),
+)
+
+
+def _fold(s: str) -> str:
+    s = unicodedata.normalize("NFD", s or "")
+    return "".join(c for c in s if unicodedata.category(c) != "Mn").lower()
+
+
+def category_style(category: Optional[str]) -> dict:
+    """{"color": "#rrggbb" | None (= couleur du gabarit), "official": bool}."""
+    c = _fold(category or "")
+    for rx, color, official in _CATEGORY_RULES:
+        if rx.search(c):
+            return {"color": color, "official": official}
+    return {"color": None, "official": False}

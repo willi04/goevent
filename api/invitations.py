@@ -23,7 +23,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import JSONResponse, Response
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -572,7 +572,18 @@ def _design_admin_out(db: Session, ev, d: Optional[InvitationDesign]) -> dict:
         "logo_sha": d.logo_sha if d else None,
         "media": [{"ref": "m%d" % i, "id": i, "sha": sha} for i, sha in db.query(InvDesignMedia.id, InvDesignMedia.sha)
                   .filter(InvDesignMedia.event_id == ev.id).order_by(InvDesignMedia.id).all()],
+        "categories": _design_categories(db, ev.id),
     }
+
+
+def _design_categories(db: Session, event_id: int) -> list:
+    """Catégories de la liste (une requête GROUP BY) avec leur rendu : l'admin voit, avant
+    l'envoi, la couleur de badge et qui reçoit l'enveloppe officielle. Aucun nom d'invité."""
+    rows = (db.query(EventGuest.category, func.count(EventGuest.id))
+            .filter(EventGuest.event_id == event_id, EventGuest.revoked_at.is_(None), EventGuest.purged.is_(False))
+            .group_by(EventGuest.category).all())
+    out = [dict(name=c, count=n, **idesign.category_style(c)) for c, n in rows]
+    return sorted(out, key=lambda x: (-x["count"], x["name"] or ""))
 
 
 @router.get("/admin/invitations/cadres")
@@ -1378,6 +1389,7 @@ def public_pass(request: Request, token: str, db: Session = Depends(get_db)):
     }
     design = _design_payload(db, ev.id, token)
     if design:                           # couche visuelle lot 6 ; absente = pass classique
+        design["cat"] = idesign.category_style(g.category)   # couleur d'accréditation + accueil officiel
         payload["design"] = design
     return _no_store(payload)
 

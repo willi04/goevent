@@ -787,6 +787,33 @@
         } }));
       p.appendChild(el("div", { class: "flex flex-wrap gap-2" }, acts));
       p.appendChild(el("p", { class: "text-[11px] text-gray-400 mt-1", text: "L'affiche n'est pas conservée : seules les couleurs sont reprises (la police du modèle ne change pas)." }));
+      if (W.fam === "corporate" && W.cadre) p.appendChild(categoriesLegend(W.cadre));
+    }
+
+    // Corporate : ce que chaque catégorie de la liste verra à l'ouverture (badge, enveloppe officielle)
+    // et sa couleur. Règles calculées par l'API (core/inv_design.category_style), rien n'est deviné ici.
+    var OPEN_BADGE = { c1: 1, c2: 1, c3: 1, c7: 1, c9: 1 }, OPEN_OFFICIAL = { c4: 1, c5: 1 };
+    function categoriesLegend(cad) {
+      var cats = S.design.categories || [], opens = !!(cad.scenes && cad.scenes.enveloppe), coloured = cad.code === "c2";
+      var skin = (W.theme_override && W.theme_override.couleurs) || (W.modele && W.modele.skin && W.modele.skin.couleurs) || {};
+      var box = el("div", { class: "mt-4 rounded-xl border border-gray-200 p-3", "data-cats": "1" }, [lbl("Catégories de votre liste")]);
+      if (!cats.length) {
+        box.appendChild(el("p", { class: "text-[11px] text-gray-500", text: "Aucun invité pour l'instant. La catégorie vient de la colonne « Catégorie » de l'import (ex. VIP, Officiel, Presse, Staff, Intervenant)." }));
+        return box;
+      }
+      cats.forEach(function (c) {
+        var how = !opens ? "sans animation" : (OPEN_OFFICIAL[cad.code] || (OPEN_BADGE[cad.code] && c.official)) ? "enveloppe officielle" : OPEN_BADGE[cad.code] ? "badge qui descend" : "sans animation";
+        var dot = (coloured || c.official) && c.color ? c.color : (skin.accent || "#9ca3af");
+        box.appendChild(el("div", { class: "flex items-center gap-2 text-xs py-1", "data-cat": c.name || "" }, [
+          el("span", { style: "width:12px;height:12px;border-radius:50%;flex:0 0 12px;background:" + dot }),
+          el("span", { class: "font-semibold text-gray-800", text: c.name || "Sans catégorie" }),
+          el("span", { class: "text-gray-500", text: c.count + " invité" + (c.count > 1 ? "s" : "") }),
+          el("span", { class: "ml-auto text-gray-600", text: how + (coloured && !c.color ? " · couleur du modèle" : "") })]));
+      });
+      box.appendChild(el("p", { class: "text-[11px] text-gray-500 mt-2", text: "VIP, officiel, protocole, ministre, ambassadeur, honneur… : enveloppe officielle et or. "
+        + (coloured ? "Presse, staff, intervenant, prestataire ont chacun leur couleur ; les autres prennent la couleur du modèle. " : "")
+        + "La catégorie se règle dans la liste des invités (import ou « Modifier »)." }));
+      return box;
     }
 
     // ── 2. Contenu : fiche typée du cadre (reconstruite au changement de cadre, saisie conservée)
@@ -1344,7 +1371,7 @@
     var report = el("div", { id: "inv-import-report" });
     var importBox = el("details", { class: "mb-4", id: "inv-import", open: S.ev.listed ? null : "open" }, [
       el("summary", { class: "cursor-pointer font-bold text-sm text-primary mb-2", text: "Importer des invités" }),
-      el("p", { class: "text-[11px] text-gray-500 mb-2", text: "Fichier Excel (.xlsx), Word (.docx, tableau), CSV, ou copier-coller. Colonnes dans cet ordre : Nom, Téléphone (8 chiffres = +236, ou format international), Places (1 à 20, défaut 1), Table, Catégorie, Papier (« oui » = pass imprimé ; vide = papier seulement si pas de numéro) — ou une ligne de titres (« Nom », « Téléphone »…). Anciens formats .doc / .xls : enregistrez-les d'abord en .docx / .xlsx." }),
+      el("p", { class: "text-[11px] text-gray-500 mb-2", text: "Fichier Excel (.xlsx), Word (.docx, tableau), CSV, ou copier-coller. Colonnes dans cet ordre : Nom, Téléphone (8 chiffres = +236, ou format international), Places (1 à 20, défaut 1), Table, Catégorie (ex. VIP, Officiel, Presse, Staff, Intervenant : elle règle la couleur du badge et l'enveloppe officielle des événements pro), Papier (« oui » = pass imprimé ; vide = papier seulement si pas de numéro) — ou une ligne de titres (« Nom », « Téléphone »…). Anciens formats .doc / .xls : enregistrez-les d'abord en .docx / .xlsx." }),
       paste,
       el("div", { class: "flex flex-wrap items-center gap-3 mt-2" }, [file,
         el("button", { class: "action-btn btn-primary text-xs", text: "Vérifier la liste", onclick: function () { runImport(paste.value, true); } })]),

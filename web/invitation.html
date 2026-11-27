@@ -469,6 +469,62 @@
     .m-b10 .cn.d { bottom: 12px; right: 12px; border-left: 0; border-top: 0; }
     .m-b10 .eye, .m-b10 .nm { color: var(--d-accent); }
     .m-b10 .nm { font-weight: 400; font-size: 30px; letter-spacing: .04em; }
+    /* ── Enveloppe officielle (corporate c4 c5 + invités officiels) : sobre, filet or, carton protocolaire ── */
+    .env.official .back { background: var(--d-fond); }
+    .env.official .pk i { background: var(--d-clair); }
+    .env.official .pk .l, .env.official .pk .r { filter: brightness(.97); }
+    .env.official .pk::after { display: none; }
+    .env.official .ofr { position: absolute; inset: 7px; border: 1px solid var(--o-gold); border-radius: 3px; z-index: 4; pointer-events: none; opacity: .85; }
+    .env.official .flap { background: var(--d-fond); }
+    .env.official .flap svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .env.official .flap path { stroke: var(--o-gold); }
+    .env.official .seal { width: 44px; height: 44px; left: calc(50% - 22px); top: calc(56% - 22px); border-radius: 50%; color: #3b2a0c; font-size: 14px; letter-spacing: .04em;
+      background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.45), rgba(255,255,255,0) 50%), linear-gradient(135deg, #e9d29a, #c9a860 45%, #8a6a2a);
+      box-shadow: 0 3px 8px rgba(0,0,0,.3), inset 0 0 0 3px rgba(255,255,255,.25), inset 0 0 0 5px rgba(0,0,0,.12); }
+    .env.official .who { bottom: 28px; font-style: normal; font-size: 22px; color: var(--d-texte); }
+    .env.official .who .k { display: block; font-family: "Plus Jakarta Sans", sans-serif; font-size: 8.5px; letter-spacing: .2em; text-transform: uppercase; font-weight: 800; opacity: .75; margin-bottom: 2px; }
+    .env.official .from { color: var(--o-gold); opacity: 1; bottom: 12px; }
+    .env.official .env-hint { animation: none; }
+    .m-off { background: var(--d-clair); color: var(--d-texte); border-radius: 2px; padding: 16px 22px; }
+    .m-off::before { content: ""; position: absolute; inset: 7px; border: 1px solid var(--o-gold); }
+    .m-off::after { content: ""; position: absolute; inset: 10px; border: 1px solid var(--o-gold); opacity: .45; }
+    .m-off .lg { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--o-gold); display: flex; align-items: center; justify-content: center; overflow: hidden;
+                 font-family: var(--d-titre); font-size: 11px; font-weight: 700; color: var(--o-gold); margin-bottom: 5px; }
+    .m-off .lg img { max-width: 80%; max-height: 80%; object-fit: contain; }
+    .m-off .org { font-size: 8.5px; letter-spacing: .18em; text-transform: uppercase; font-weight: 800; color: var(--o-gold); max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .m-off .fo { font-family: var(--d-titre); font-style: italic; font-size: 12px; margin: 4px 0 2px; opacity: .85; }
+    .m-off .ti { font-family: var(--d-titre); font-size: 22px; line-height: 1.1; font-weight: 600; max-width: 100%; overflow-wrap: anywhere; }
+    .m-off .ti.long { font-size: 17px; }
+    .m-off .gr { width: 44px; height: 1px; background: var(--o-gold); margin: 7px auto; }
+    .m-off .dt { font-size: 10.5px; font-weight: 700; opacity: .8; }
+    .m-off .pp { font-size: 8px; letter-spacing: .14em; text-transform: uppercase; font-weight: 800; color: var(--o-gold); margin-top: 5px; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    /* ── Badge qui descend (corporate c1 c2 c3 c7 c9) : ~2 s, un toucher passe ── */
+    #env.badge { align-items: flex-start; padding: 0; }
+    #env.badge.go { animation: envgone .4s ease 1.7s forwards; }
+    .bdg-wrap { transform-origin: 50% 0; }
+    .bdg { position: relative; width: 230px; height: 470px; cursor: pointer; outline: none; }
+    .bdg-drop { position: absolute; inset: 0; animation: bdrop .65s cubic-bezier(.2,.9,.3,1.12) both; }
+    @keyframes bdrop { from { transform: translateY(-110vh); } to { transform: translateY(0); } }
+    .bdg-sw { position: absolute; inset: 0; transform-origin: 50% 0; animation: bswing 1s ease-in-out .6s both; }
+    @keyframes bswing { 0% { transform: rotate(0); } 25% { transform: rotate(4deg); } 55% { transform: rotate(-2.5deg); } 80% { transform: rotate(1deg); } 100% { transform: rotate(0); } }
+    .bdg .strap { position: absolute; top: -12px; width: 22px; height: 172px; transform-origin: 50% 0; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); overflow: hidden;
+                  background-image: repeating-linear-gradient(180deg, transparent 0 18px, rgba(255,255,255,.22) 18px 20px); }
+    .bdg .strap.l { left: 70px; transform: rotate(-14deg); } .bdg .strap.r { right: 70px; transform: rotate(14deg); }
+    .bdg .strap span { position: absolute; inset: 0; writing-mode: vertical-rl; font-size: 8px; font-weight: 800; letter-spacing: .3em; color: rgba(255,255,255,.8); line-height: 22px; white-space: nowrap; }
+    .bdg .clip { position: absolute; left: calc(50% - 14px); top: 150px; width: 28px; height: 26px; border-radius: 6px 6px 4px 4px; background: linear-gradient(180deg, #e5e7eb, #9ca3af); box-shadow: 0 2px 4px rgba(0,0,0,.25); z-index: 2; }
+    .bdg .clip::after { content: ""; position: absolute; left: 8px; right: 8px; top: 5px; height: 6px; border-radius: 3px; background: #6b7280; }
+    .bdg .bcard { position: absolute; left: 15px; right: 15px; top: 168px; height: 290px; background: #fff; border-radius: 14px; box-shadow: 0 18px 36px rgba(0,0,0,.35); overflow: hidden; z-index: 1; color: #0f172a; text-align: center; }
+    .bdg .hole { position: absolute; left: calc(50% - 16px); top: 8px; width: 32px; height: 7px; border-radius: 4px; background: rgba(0,0,0,.18); z-index: 2; }
+    .bdg .hd { height: 112px; padding: 24px 14px 0; box-sizing: border-box; }
+    .bdg .hd .o { font-size: 9px; letter-spacing: .2em; font-weight: 800; text-transform: uppercase; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bdg .hd .t { font-weight: 800; font-size: 15px; margin-top: 4px; line-height: 1.15; max-height: 35px; overflow: hidden; }
+    .bdg .av { width: 64px; height: 64px; border-radius: 50%; margin: -32px auto 0; background: #f3f4f6; border: 4px solid #fff; display: flex; align-items: center; justify-content: center;
+               font-weight: 800; font-size: 20px; color: #334155; position: relative; }
+    .bdg .nm { font-weight: 800; font-size: 19px; margin-top: 8px; padding: 0 10px; line-height: 1.15; max-height: 44px; overflow: hidden; }
+    .bdg .rl { display: inline-block; margin-top: 8px; padding: 5px 14px; border-radius: 999px; font-size: 10px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; max-width: 80%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .bdg .rlbar { position: absolute; left: 0; right: 0; bottom: 34px; height: 30px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; letter-spacing: .3em; text-transform: uppercase; overflow: hidden; white-space: nowrap; }
+    .bdg .ft { position: absolute; left: 0; right: 0; bottom: 0; height: 34px; border-top: 1px dashed #e5e7eb; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; font-size: 9.5px; font-weight: 700; color: #64748b; }
+    .bdg .ft b { color: #0f172a; }
     /* ── Page invité : ligne personnelle + bouton « Mon pass » ── */
     .for-line { text-align: center; font-size: 13px; color: var(--d-muted); margin: 0 0 12px; }
     .for-line b { color: var(--d-texte); }
@@ -612,6 +668,7 @@
         r.setProperty("--d-titre", fontStack(SERIF[pol.titre] ? pol.titre : "Plus Jakarta Sans"));
         var orn = skin.ornements || {}, acc = hex(c.accent, "#00502c");
         r.setProperty("--d-hl", hex(c.highlight, acc));
+        r.setProperty("--d-acc2", hex(c.accent2, hex(c.accentD, acc)));
         r.setProperty("--d-sage", hex(orn.sage, "#8a9a7b"));
         r.setProperty("--d-onacc", onColor(acc, [hex(c.fond, "#f3f4f1"), hex(c.texte, "#111827")]));
         document.body.classList.add("design");
@@ -718,7 +775,7 @@
       // ── 10 structures corporate distinctes ──
       var FP_CORP = {
         c1: function (p) { return '<div class="fp card corp fp-c1"><div class="c1-bar"></div><div class="fp-in">' + _cLogo(p) + _cOrg(p) + _cTitle(p) + _cSub(p) + _cDL(p) + _cSpk(p, 6) + _cSpon(p) + '</div></div>'; },
-        c2: function (p) { var cat = p.category || "Participant"; return '<div class="fp card corp fp-c2"><div class="fp-in">' + _cLogo(p) + _cOrg(p) + _cTitle(p) + _cSub(p) + _cDL(p) + '<div class="c2-acc" style="--cat:' + catColor(cat) + '"><div class="c2-acc-k">Accréditation</div><div class="c2-acc-c">' + esc(cat) + '</div><div class="c2-acc-n">' + esc(p.guest_name || "") + '</div></div>' + (_f(p).consignes ? '<div class="c2-cons">' + esc(_f(p).consignes) + '</div>' : '') + '</div></div>'; },
+        c2: function (p) { var cat = p.category || "Participant"; return '<div class="fp card corp fp-c2"><div class="fp-in">' + _cLogo(p) + _cOrg(p) + _cTitle(p) + _cSub(p) + _cDL(p) + '<div class="c2-acc" style="--cat:' + catColor(p) + '"><div class="c2-acc-k">Accréditation</div><div class="c2-acc-c">' + esc(cat) + '</div><div class="c2-acc-n">' + esc(p.guest_name || "") + '</div></div>' + (_f(p).consignes ? '<div class="c2-cons">' + esc(_f(p).consignes) + '</div>' : '') + '</div></div>'; },
         c3: function (p) { return '<div class="fp card corp fp-c3"><div class="c3-panel"><div class="c3-tag">Lancement</div>' + _cLogo(p) + _cTitle(p) + _cSub(p) + '</div><div class="fp-in">' + _cOrg(p) + _cDL(p) + '</div></div>'; },
         c4: function (p) { return '<div class="fp card corp fp-c4"><div class="fp-in">' + _cLogo(p) + '<div class="c4-eye">' + esc(_f(p).organisateur || "Soirée de gala") + '</div><div class="c4-rule"></div>' + _cTitle(p) + _cSub(p) + '<div class="c4-rule"></div>' + _cDL(p) + '</div></div>'; },
         c5: function (p) { var fo = _f(p).formule; return '<div class="fp card corp fp-c5"><div class="fp-in">' + _cLogo(p) + _cOrg(p) + '<div class="c5-rule"></div>' + (fo ? '<div class="c5-form">' + esc(fo) + '</div>' : '') + _cTitle(p) + _cSub(p) + '<div class="c5-rule"></div>' + _cDL(p) + _cDeroule(p) + '</div></div>'; },
@@ -730,15 +787,11 @@
       };
 
       // Couleur d'accréditation selon la catégorie de l'invité (valeurs fixes : jamais de couleur saisie)
-      function catColor(cat) {
-        var c = String(cat || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        if (/presse|media|journal/.test(c)) return "#2563eb";
-        if (/vip|officiel|protocole|honneur/.test(c)) return "#b8954a";
-        if (/intervenant|speaker|orateur|panel/.test(c)) return "#7c3aed";
-        if (/staff|organisa|equipe|benevole/.test(c)) return "#334155";
-        if (/prestataire|traiteur|technique|securite|logistique/.test(c)) return "#ea580c";
-        return "var(--d-accent)";
-      }
+      // Couleur de catégorie (accréditation, badge, bandeau du pass) : calculée par l'API
+      // (core/inv_design.category_style, source unique) ; à défaut, l'accent du gabarit.
+      function catHex(p) { var c = p.design && p.design.cat; return (c && HEX.test(c.color || "")) ? c.color : null; }
+      function catColor(p) { return catHex(p) || "var(--d-accent)"; }
+      function isOfficial(p) { return !!(p.design && p.design.famille === "corporate" && p.design.cat && p.design.cat.official === true); }
       // Déroulé protocolaire (c5) : sessions numérotées, personnalité en dessous
       function _cDeroule(p) {
         var f = _f(p); if (!f.sessions || !f.sessions.length) return "";
@@ -837,23 +890,59 @@
         return eye + nm + r + dt + fo;
       }
 
-      function openEnvelope(p, onDone) {
+      // Ouverture selon le cadre et l'invité : enveloppe (familial), enveloppe officielle (c4 c5 et
+      // invités officiels), badge (c1 c2 c3 c7 c9) ; rien ailleurs.
+      var BADGE_CADRES = { c1: 1, c2: 1, c3: 1, c7: 1, c9: 1 }, OFFICIAL_CADRES = { c4: 1, c5: 1 };
+      function openingKind(p) {
+        var d = p.design;
+        if (!d.enveloppe) return null;
+        if (d.famille !== "corporate") return "env";
+        if (OFFICIAL_CADRES[d.cadre] || (BADGE_CADRES[d.cadre] && isOfficial(p))) return "official";
+        return BADGE_CADRES[d.cadre] ? "badge" : null;
+      }
+      // Initiales d'une organisation : « AXION Group » → AG, « Ministère du Numérique » → MN
+      var STOP = { de: 1, du: 1, des: 1, la: 1, le: 1, les: 1, et: 1, pour: 1, aux: 1, au: 1, the: 1, of: 1, and: 1 };
+      function orgInitials(t) {
+        var w = String(t || "").replace(/\b[ldLD]['’]/g, "").split(/[\s\-]+/).filter(function (x) { return x && !STOP[x.toLowerCase()]; });
+        var ini = w.slice(0, 2).map(function (x) { var m = x.match(/[A-Za-zÀ-ÖØ-öø-ÿ]/); return m ? m[0].toUpperCase() : ""; }).join("");
+        return ini || "✦";
+      }
+      function shortDate(p) { var x = _parts(p); return x ? x.d + " " + x.m + " " + x.y : (p.dates_label || ""); }
+      function cartonHtml(p, mono) {
+        var d = p.design, f = d.fiche || {}, logo = mediaUrl(d.logo_url), org = f.organisateur || p.host_label || "";
+        var title = f.titre || p.event_title || "", date = f.date_label || p.dates_label || p.event_date_label || "", who = (p.guest_name || "").trim();
+        return '<div class="lg">' + (logo ? '<img src="' + esc(logo) + '" alt="">' : esc(mono)) + '</div>'
+          + (org ? '<div class="org">' + esc(org) + '</div>' : "")
+          + '<div class="fo">' + esc(f.formule || "a l'honneur de vous convier à") + '</div>'
+          + '<div class="ti' + (title.length > 30 ? " long" : "") + '">' + esc(title) + '</div><div class="gr"></div>'
+          + (date ? '<div class="dt">' + esc(date) + '</div>' : "")
+          + '<div class="pp">Carton personnel' + (who ? " · " + esc(who) : "") + '</div>';
+      }
+
+      function openEnvelope(p, official) {
         var d = p.design, f = d.fiche || {}, corp = d.famille === "corporate";
-        var mono = monogram(corp ? (f.organisateur || p.event_title) : (f.display_names || p.event_title));
-        var who = (p.guest_name || "").trim(), env = $("env");
-        env.innerHTML = '<div class="env-wrap"><div class="env-idle"><div class="env" id="env-card" role="button" tabindex="0" aria-label="Ouvrir l\'invitation">'
+        var mono = official ? orgInitials(f.organisateur || p.host_label || p.event_title)
+                            : monogram(corp ? (f.organisateur || p.event_title) : (f.display_names || p.event_title));
+        var who = (p.guest_name || "").trim(), env = $("env"), from = official ? (f.organisateur || p.host_label) : p.host_label;
+        if (official) {   // or lisible : clair sur fond sombre, plus soutenu sur fond clair
+          var cl = ((d.skin || {}).couleurs || {}).clair;
+          env.style.setProperty("--o-gold", _lum(hex(cl, "#ffffff")) < .2 ? "#c9a860" : "#a8843f");
+        }
+        env.className = "hidden";
+        env.innerHTML = '<div class="env-wrap"><div class="' + (official ? "" : "env-idle") + '"><div class="env' + (official ? " official" : "") + '" id="env-card" role="button" tabindex="0" aria-label="Ouvrir l\'invitation">'
           + '<div class="back"></div>'
-          + '<div class="letter m-' + esc(d.cadre) + '">' + letterHtml(p, mono) + '</div>'
-          + '<div class="pk"><i class="b"></i><i class="l"></i><i class="r"></i></div>'
-          + (who ? '<div class="who' + (who.length > 22 ? " long" : "") + '">' + esc(who) + '</div>' : "")
-          + (p.host_label ? '<div class="from">De la part de ' + esc(p.host_label) + '</div>' : "")
-          + '<div class="flap"></div><div class="seal">' + esc(mono) + '</div>'
+          + '<div class="letter ' + (official ? "m-off" : "m-" + esc(d.cadre)) + '">' + (official ? cartonHtml(p, mono) : letterHtml(p, mono)) + '</div>'
+          + '<div class="pk"><i class="b"></i><i class="l"></i><i class="r"></i></div>' + (official ? '<div class="ofr"></div>' : "")
+          + (who ? '<div class="who' + (who.length > 22 ? " long" : "") + '">' + (official ? '<span class="k">À l\'attention de</span>' : "") + esc(who) + '</div>' : "")
+          + (from ? '<div class="from">' + (official ? "" : "De la part de ") + esc(from) + '</div>' : "")
+          + '<div class="flap">' + (official ? '<svg viewBox="0 0 320 119" preserveAspectRatio="none" aria-hidden="true"><path d="M0 0 L160 119 L320 0" fill="none" stroke-width="2"/></svg>' : "") + '</div>'
+          + '<div class="seal">' + esc(mono) + '</div>'
           + '<div class="env-hint">Touchez pour ouvrir</div></div></div></div>';
         var sc = Math.min(1, (window.innerWidth - 24) / 320);          // petits écrans : on réduit le tout
         if (sc < 1) env.firstChild.style.transform = "scale(" + sc.toFixed(3) + ")";
         env.classList.remove("hidden");
         var step = 0, t = null;
-        function done() { env.classList.add("hidden"); env.innerHTML = ""; if (onDone) onDone(); }
+        function done() { env.classList.add("hidden"); env.innerHTML = ""; }
         function tap() {
           if (step === 0) {                                             // 1er toucher : ouverture
             step = 1; env.classList.add("go");
@@ -865,7 +954,36 @@
         }
         env.addEventListener("click", tap);
         $("env-card").addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); tap(); } });
-        try { $("env-card").focus({ preventScroll: true }); } catch (e) {}
+      }
+
+      // Badge qui descend : joué dès l'affichage (≈2 s), un toucher ou Entrée passe.
+      function openBadge(p) {
+        var d = p.design, f = d.fiche || {}, env = $("env"), c2 = d.cadre === "c2", cat = p.category || "Participant";
+        var org = f.organisateur || p.host_label || "", title = f.titre || p.event_title || "", name = (p.guest_name || "").trim();
+        var acc = hex(((d.skin || {}).couleurs || {}).accent, "#00502c"), cc = catHex(p) || acc;
+        var bg = c2 ? cc : "linear-gradient(135deg, var(--d-accent), var(--d-acc2))";   // hex validé ou valeur fixe
+        var fg = c2 ? onColor(cc, []) : "var(--d-onacc)", strap = c2 ? cc : "var(--d-accentD)";
+        var ini = name.split(/\s+/).slice(0, 2).map(function (x) { var m = x.match(/[A-Za-zÀ-ÖØ-öø-ÿ]/); return m ? m[0].toUpperCase() : ""; }).join("") || "✦";
+        var txt = (org || title).toUpperCase(), band = [txt, txt, txt, txt, txt, txt].join("  ·  ");
+        var col = 'style="background:' + bg + ';color:' + fg + '"';
+        env.className = "hidden badge";
+        env.innerHTML = '<div class="bdg-wrap"><div class="bdg" id="env-card" role="button" tabindex="0" aria-label="Passer l\'animation"><div class="bdg-drop"><div class="bdg-sw">'
+          + '<div class="strap l" style="background-color:' + strap + '"><span>' + esc(band) + '</span></div>'
+          + '<div class="strap r" style="background-color:' + strap + '"><span>' + esc(band) + '</span></div><div class="clip"></div>'
+          + '<div class="bcard"><div class="hole"></div><div class="hd" ' + col + '>' + (org ? '<div class="o">' + esc(org) + '</div>' : "")
+          + '<div class="t">' + esc(title) + '</div></div><div class="av">' + esc(ini) + '</div><div class="nm">' + esc(name) + '</div>'
+          + (c2 ? '<div class="rlbar" ' + col + '>' + esc(cat) + '</div>' : '<div class="rl" ' + col + '>' + esc(cat) + '</div>')
+          + '<div class="ft"><span>' + esc(shortDate(p)) + '</span><b>QR sur votre pass ↓</b></div></div>'
+          + '</div></div></div></div>';
+        var sc = Math.min(1.3, (window.innerHeight - 20) / 470, (window.innerWidth - 20) / 230);   // grand sur mobile, réduit si l'écran est petit
+        if (sc !== 1) env.firstChild.style.transform = "scale(" + sc.toFixed(3) + ")";
+        env.classList.remove("hidden"); env.classList.add("go");
+        try { localStorage.setItem("goevent_env:" + token, "1"); } catch (e) {}   // jouée d'elle-même : vue dès l'affichage
+        var over = false, t = setTimeout(done, 2150);
+        function done() { if (over) return; over = true; clearTimeout(t); env.className = "hidden"; env.innerHTML = ""; }
+        function skip() { if (over) return; env.classList.add("skip"); setTimeout(done, 260); }
+        env.addEventListener("click", skip);
+        $("env-card").addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); skip(); } });
       }
 
       // Règle d'entrée affichée sous le QR (places du pass ; séances : valable à chacune)
@@ -900,7 +1018,7 @@
             + '<span class="tk-pill">✓ Anti-fraude</span></div></div>';
         $("pass").className = "card ticket";
         $("pass").innerHTML =
-            '<div class="tk-hd"' + (p.design.cadre === "c2" ? ' style="background:' + catColor(p.category) + '"' : '') + '><span class="tk-hd-l">'
+            '<div class="tk-hd"' + (corp && (p.design.cadre === "c2" || isOfficial(p)) ? ' style="background:' + catColor(p) + '"' : '') + '><span class="tk-hd-l">'
           + (p.design.cadre === "c2" ? "ACCRÉDITATION" : corp ? "BADGE" : "PASS D'ENTRÉE") + '</span><span class="gomark2">GoEvent.</span></div>'
           + '<div class="tk-info"><div class="tk-eye">' + (corp ? "PARTICIPANT" : "INVITÉ") + '</div>'
           + '<div class="tk-name">' + esc(p.guest_name || "") + '</div>'
@@ -955,8 +1073,9 @@
         var seen = false;
         try { seen = localStorage.getItem("goevent_env:" + token) === "1"; } catch (e) {}
         var calm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        var canOpen = p.design.enveloppe && p.status === "valid" && !offline && !seen && !calm && !first;
-        if (canOpen) openEnvelope(p, null);
+        var kind = (p.status === "valid" && !offline && !seen && !calm && !first) ? openingKind(p) : null;
+        if (kind === "badge") openBadge(p);
+        else if (kind) openEnvelope(p, kind === "official");
       }
 
       function renderPass(p, offline) {

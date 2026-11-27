@@ -403,6 +403,12 @@ Les textes, images et liens des pages publiques sont modifiables depuis
   et polices filtrées, polices auto-hébergées `web/fonts/`) ; repli sur le
   pass classique si le rendu échoue. L'enveloppe animée s'ouvre une seule
   fois par pass (stockage local) et jamais en « moins d'animations ».
+  Ouverture : enveloppe (familial), badge qui descend (corporate c1 c2 c3 c7
+  c9), enveloppe officielle (c4 c5 et, dans tous ces cadres, les invités
+  « officiels »). La catégorie de l'invité (texte libre de la liste) est
+  interprétée par `core/inv_design.category_style` (source unique : couleur
+  d'accréditation + officiel) ; le pass reçoit `design.cat`, le design admin
+  `categories` (comptes par catégorie, sans nom).
 
 ### Flux 7 bis : Listes d'événements (lot 5)
 

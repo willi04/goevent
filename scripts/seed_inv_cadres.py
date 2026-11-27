@@ -54,6 +54,9 @@ CHAMPS_BY_CODE = {
 FAMILIAL_SCENES   = {"enveloppe": True,  "page": True, "programme": True,  "pass": "pass"}
 CORP_SCENES       = {"enveloppe": False, "page": True, "programme": False, "pass": "badge"}
 CORP_SCENES_AGEN  = {"enveloppe": False, "page": True, "programme": True,  "pass": "badge"}
+# Ouverture animée côté corporate : badge qui descend (c1 c2 c3 c7 c9) ou enveloppe officielle
+# (c4 c5, et les invités officiels de tous ces cadres). c6 c8 c10 : aucune (efficacité).
+CORP_SCENES_OPEN  = {"enveloppe": True,  "page": True, "programme": False, "pass": "badge"}
 
 FAM_TYPES = ["mariage", "dot", "fiancailles", "bapteme", "anniversaire"]
 
@@ -73,15 +76,15 @@ FAMILIAL = [
 
 # ── Bibliothèque corporate (C1-C10) : (code, nom, structure, scenes, types) ──
 CORPORATE = [
-    ("c1",  "Keynote",              "Titre fort + date/lieu + intervenants + teaser agenda", CORP_SCENES,      ["conference", "sommet"]),
-    ("c2",  "Accréditation",        "Carte nominative colorée selon la catégorie (presse, staff…)", CORP_SCENES, ["accreditation", "conference", "salon"]),
-    ("c3",  "Affiche-pro / Lancement","Affiche produit, titre bold, CTA",                     CORP_SCENES,      ["lancement", "produit"]),
-    ("c4",  "Gala corporate",       "Élégant, logo, sobre",                                   CORP_SCENES,      ["gala", "soiree"]),
-    ("c5",  "Cérémonie officielle", "Formule protocolaire, filets, déroulé numéroté",          CORP_SCENES,      ["ceremonie", "institutionnel", "ag"]),
+    ("c1",  "Keynote",              "Titre fort + date/lieu + intervenants + teaser agenda", CORP_SCENES_OPEN, ["conference", "sommet"]),
+    ("c2",  "Accréditation",        "Carte nominative colorée selon la catégorie (presse, staff…)", CORP_SCENES_OPEN, ["accreditation", "conference", "salon"]),
+    ("c3",  "Affiche-pro / Lancement","Affiche produit, titre bold, CTA",                     CORP_SCENES_OPEN, ["lancement", "produit"]),
+    ("c4",  "Gala corporate",       "Élégant, logo, sobre",                                   CORP_SCENES_OPEN, ["gala", "soiree"]),
+    ("c5",  "Cérémonie officielle", "Formule protocolaire, filets, déroulé numéroté",          CORP_SCENES_OPEN, ["ceremonie", "institutionnel", "ag"]),
     ("c6",  "Agenda / Programme",   "La timeline comme héros",                                CORP_SCENES_AGEN, ["seminaire", "journee_pro"]),
-    ("c7",  "Speakers grid",        "Grille de portraits d'intervenants",                     CORP_SCENES,      ["conference", "sommet"]),
+    ("c7",  "Speakers grid",        "Grille de portraits d'intervenants",                     CORP_SCENES_OPEN, ["conference", "sommet"]),
     ("c8",  "Minimal corporate",    "Marque + titre, très aéré",                              CORP_SCENES,      ["ag", "institutionnel"]),
-    ("c9",  "Expo / Salon",         "Stand, numéro de stand, plan",                           CORP_SCENES,      ["salon", "expo"]),
+    ("c9",  "Expo / Salon",         "Stand, numéro de stand, plan",                           CORP_SCENES_OPEN, ["salon", "expo"]),
     ("c10", "Formation / Atelier",  "Workshop, places limitées, matériel",                    CORP_SCENES_AGEN, ["formation", "atelier"]),
 ]
 

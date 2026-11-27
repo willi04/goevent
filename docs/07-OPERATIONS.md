@@ -324,7 +324,13 @@ bout en bout sans intervention, 1 retrait réussi, analyse des
   chaudes). Catalogue : `scripts/seed_inv_cadres.py` puis
   `scripts/seed_inv_modeles.py` (idempotents) ; un changement de données
   sur une base déjà seedée = script `scripts/AAAA-MM_*.sql` passé à la main
-  AVANT le déploiement (ex. `2026-11_lot6_cadres_c2_c5.sql`).
+  AVANT le déploiement (ex. `2026-11_lot6_cadres_c2_c5.sql`,
+  `2026-11_lot6_ouverture_corporate.sql`).
+- **Catégories (événements pro)** : la colonne « Catégorie » de la liste
+  règle la couleur du badge (c2) et l'accueil : VIP, officiel, protocole,
+  ministre, ambassadeur, honneur… reçoivent l'enveloppe officielle, les
+  autres le badge. Le bloc Design (« Catégories de votre liste ») montre qui
+  reçoit quoi avant l'envoi ; corriger une catégorie : liste → « Modifier ».
 - Traçabilité : `invitation_page_updated`, `invitation_cover_updated|removed`, `invitation_report_csv`, `invitation_sessions_updated`, `invitation_signup_settings`, `invitation_self_signup`,
   `invitation_event_created|updated`, `invitation_guests_imported`,
   `invitation_pack_activated|cancelled`, `invitation_pass_revoked|restored|regenerated`,

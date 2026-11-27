@@ -15,6 +15,8 @@ Le FK cadre_id est résolu par le `code` du cadre (seedé à l'étape 1).
 import json
 import sys
 
+CORP_OPENING = ("c1", "c2", "c3", "c4", "c5", "c7", "c9")   # = cadres en CORP_SCENES_OPEN (seed_inv_cadres)
+
 # (cadre_code, nom_gabarit, mode, couleurs, police_titre, ornements)
 # couleurs : fond, accent, clair (cartes), texte (+ accent2/highlight optionnels).
 SKINS = [
@@ -29,7 +31,7 @@ SKINS = [
     ("b8",  "Minimal typographique — Terre",    "clair",  {"fond": "#f4f1e8", "accent": "#b5603a", "accentD": "#97451f", "clair": "#fbf9f3", "texte": "#1c1b19", "muted": "#9a9488"}, "Fraunces",            {"style": "typo-geante"}),
     ("b9",  "Magazine / bandeau — Festif",      "clair",  {"fond": "#fbf6ef", "accent": "#e4559a", "accentD": "#c93b80", "highlight": "#f2a93c", "clair": "#fffdf9", "texte": "#241f2b", "muted": "#8d8597"}, "Fraunces",     {"masthead": True, "teal": "#2bb3a3"}),
     ("b10", "Art déco — Noir & or",             "sombre", {"fond": "#141310", "accent": "#c9a24b", "accentD": "#a8863a", "clair": "#1a1813", "texte": "#f3ead3", "muted": "#9a8f72"}, "Marcellus",           {"style": "art-deco", "hexagone": True}),
-    # ── Corporate (enveloppe = False) ──
+    # ── Corporate (ouverture animée : c1 c2 c3 c4 c5 c7 c9 — badge ou enveloppe officielle) ──
     ("c1",  "Keynote — Nuit azur",              "sombre", {"fond": "#13151b", "accent": "#4da3ff", "accentD": "#2f78c7", "clair": "#191c24", "texte": "#eaf0f8", "muted": "#8a93a3", "vip": "#f0b030"}, "Plus Jakarta Sans", {}),
     ("c2",  "Accréditation — Ardoise",          "clair",  {"fond": "#eef1f5", "accent": "#0f172a", "accentD": "#334155", "clair": "#ffffff", "texte": "#0f172a", "muted": "#64748b"}, "Plus Jakarta Sans", {}),
     ("c3",  "Lancement — Néon",                 "sombre", {"fond": "#140a2a", "accent": "#6d28d9", "accent2": "#db2777", "highlight": "#ffd84d", "clair": "#1b1230", "texte": "#f3ecff", "muted": "#b9a8d6"}, "Plus Jakarta Sans", {"degrade": True}),
@@ -59,7 +61,7 @@ def _rows():
         sort = i if fam == "familial" else i - 10
         rows.append(dict(code=code, famille=fam, name=name,
                          skin=_skin_json(couleurs, titre, orn, mode),
-                         enveloppe=(fam == "familial"), sort_order=sort))
+                         enveloppe=(fam == "familial" or code in CORP_OPENING), sort_order=sort))
     return rows
 
 

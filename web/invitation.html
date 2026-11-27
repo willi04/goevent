@@ -233,8 +233,10 @@
     .spon { margin-top: 20px; }
     .spon-t { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--d-muted); font-weight: 800; margin-bottom: 8px; }
     .spon-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
-    .spon-i { font-size: 13px; font-weight: 700; color: var(--d-texte); background: color-mix(in srgb, var(--d-accent) 8%, #fff); border: 1px solid color-mix(in srgb, var(--d-accent) 18%, transparent); border-radius: 8px; padding: 6px 12px; display: inline-flex; align-items: center; }
+    /* Pastille sponsor : fond = couleur des cartes (sombre sur skin sombre) → texte toujours lisible ; logo : fond blanc */
+    .spon-i { font-size: 13px; font-weight: 700; color: var(--d-texte); background: var(--d-clair); background: color-mix(in srgb, var(--d-accent) 10%, var(--d-clair)); border: 1px solid color-mix(in srgb, var(--d-accent) 18%, transparent); border-radius: 8px; padding: 6px 12px; display: inline-flex; align-items: center; }
     .spon-i img { height: 24px; display: block; }
+    .spon-i.lg { background: #fff; }
 
     /* c1 Keynote */
     .fp-c1 .c1-bar { height: 10px; background: linear-gradient(90deg, var(--d-accent), var(--d-accentD)); }
@@ -329,7 +331,7 @@
     /* Navigateurs sans color-mix() (WebView Android < Chrome 111, fréquentes en RCA) : la déclaration
        est ignorée ; ces replis gardent des fonds et bordures lisibles. */
     @supports not (color: color-mix(in srgb, red 50%, white)) {
-      .ph-empty, .fp [class$="-ph"], .spk .av, body.design .chip, .tk-pill, .spon-i, .fp-c10 .c10-tag { background: var(--d-clair); }
+      .ph-empty, .fp [class$="-ph"], .spk .av, body.design .chip, .tk-pill, .spon-i:not(.lg), .fp-c10 .c10-tag { background: var(--d-clair); }
       .tk-pill { color: var(--d-texte); border: 1px solid var(--d-accent); }
       .fp-c2 .c2-hole { background: #cbd5e1; }
       .fp-c5 .c5-screen { background: var(--d-accentD); }
@@ -485,7 +487,7 @@
         b6: function (p) { return '<div class="fp card fp-b6"><div class="fp-in"><div class="b6-med">' + _imgdiv(p, "b6-ph") + '<span class="b6-ring"></span></div>' + _eye(p) + '<div class="names">' + _names(p) + '</div>' + _verset(p) + _texts(p) + _dl(p) + '</div></div>'; },
         b7: function (p) { return '<div class="fp card fp-b7"><div class="fp-in"><div class="b7-pola">' + _imgdiv(p, "b7-ph") + '<div class="b7-cap">' + _names(p) + '</div></div>' + _eye(p) + _verset(p) + _texts(p) + _dl(p) + '</div></div>'; },
         b8: function (p) { return '<div class="fp card fp-b8"><div class="fp-in"><div class="b8-vign">' + _imgdiv(p, "b8-ph") + '</div>' + _eye(p) + '<div class="names b8-names">' + _names(p) + '</div>' + _verset(p) + _texts(p) + _dl(p) + '</div></div>'; },
-        b9: function (p) { return '<div class="fp card fp-b9"><div class="b9-mast"><span>Faire-part</span><span>GoEvent.</span></div>' + _imgdiv(p, "b9-ph") + '<div class="fp-in">' + _eye(p) + '<div class="names">' + _names(p) + '</div>' + _verset(p) + _texts(p) + _dl(p) + '</div></div>'; },
+        b9: function (p) { return '<div class="fp card fp-b9"><div class="b9-mast"><span>Faire-part</span><span>' + esc(String(p.event_date || "").slice(0, 4)) + '</span></div>' + _imgdiv(p, "b9-ph") + '<div class="fp-in">' + _eye(p) + '<div class="names">' + _names(p) + '</div>' + _verset(p) + _texts(p) + _dl(p) + '</div></div>'; },
         b10: function (p) { return '<div class="fp card fp-b10"><div class="fp-in"><div class="b10-hex">' + _imgdiv(p, "b10-ph") + '</div><div class="b10-deco"></div>' + _eye(p) + '<div class="names">' + _names(p) + '</div>' + _verset(p) + _texts(p) + _dl(p) + '</div></div>'; }
       };
 
@@ -513,7 +515,7 @@
         var o = ['<div class="spon"><div class="spon-t">Avec le soutien de</div><div class="spon-row">'];
         f.sponsors.slice(0, 10).forEach(function (s) {
           var lg = mediaUrl(s.logo);
-          o.push('<span class="spon-i">' + (lg ? '<img src="' + esc(lg) + '" alt="">' : esc(s.nom || "")) + '</span>');
+          o.push('<span class="spon-i' + (lg ? ' lg' : '') + '">' + (lg ? '<img src="' + esc(lg) + '" alt="">' : esc(s.nom || "")) + '</span>');
         });
         o.push('</div></div>'); return o.join("");
       }

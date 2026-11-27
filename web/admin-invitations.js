@@ -592,7 +592,13 @@
       { k: "intro", l: "Introduction", t: "textarea", ph: "C'est avec joie que nous vous convions à célébrer notre union." },
       { k: "body", l: "Texte principal", t: "textarea" },
       { k: "closing", l: "Formule de fin", ph: "Votre présence est notre plus beau cadeau." },
-      { k: "programme", l: "Programme", t: "list", ph: "15h00 Cérémonie à la Cathédrale\n18h00 Vin d'honneur\n20h00 Dîner dansant" }
+      { k: "programme", l: "Programme", t: "list", ph: "15h00 Cérémonie à la Cathédrale\n18h00 Vin d'honneur\n20h00 Dîner dansant" },
+      { sec: "Infos pratiques", hint: "Affichées sous le faire-part (la tenue aussi dans l'enveloppe). Toutes facultatives." },
+      { k: "tenue", l: "Tenue souhaitée", ph: "Pagne du mariage, tenue blanche…" },
+      { k: "tenue_couleurs", l: "Couleurs de la tenue (3 au plus)" },
+      { k: "contact_nom", l: "Contact pour les invités", ph: "Tante Odile (famille de la mariée)" },
+      { k: "contact_tel", l: "Numéro WhatsApp du contact", ph: "75 00 00 00" },
+      { k: "cadeaux", l: "Cadeaux / hommage", ph: "Une urne sera à votre disposition à l'entrée." }
     ],
     corporate: [
       { k: "organisateur", l: "Organisateur", ph: "AXION Group" },
@@ -601,7 +607,11 @@
       { k: "lieu", l: "Lieu", ph: "Ledger Plaza, Bangui" },
       { k: "intervenants", l: "Intervenants", t: "list", ph: "David Koyt — CEO — PayGo Africa\nMarie Nzé — Directrice — Orange CA" },
       { k: "sessions", l: "Programme / sessions", t: "list", ph: "09h00 Ouverture par D. Koyt\n10h30 Panel IA & Afrique" },
-      { k: "sponsors", l: "Sponsors", t: "list", ph: "Orange CA\nEcobank" }
+      { k: "sponsors", l: "Sponsors", t: "list", ph: "Orange CA\nEcobank" },
+      { sec: "Infos pratiques", hint: "Affichées sous l'invitation. Facultatives." },
+      { k: "tenue", l: "Tenue", ph: "Tenue de ville" },
+      { k: "contact_nom", l: "Contact pour les invités", ph: "Service protocole" },
+      { k: "contact_tel", l: "Numéro WhatsApp du contact", ph: "75 00 00 00" }
     ]
   };
 
@@ -690,7 +700,7 @@
       var base = (W.modele && W.modele.skin) || {};
       return W.theme_override && W.theme_override.couleurs ? Object.assign({}, base, { couleurs: Object.assign({}, base.couleurs, W.theme_override.couleurs) }) : base;
     }
-    function ficheFilled() { return Object.keys(inputs).some(function (k) { return (inputs[k].value || "").trim(); }) || Object.keys(W.fiche).some(function (k) { var v = W.fiche[k]; return Array.isArray(v) ? v.length : !!v; }); }
+    function ficheFilled() { return Object.keys(inputs).some(function (k) { return String(inputs[k].value || "").trim(); }) || Object.keys(W.fiche).some(function (k) { var v = W.fiche[k]; return Array.isArray(v) ? v.length : !!v; }); }
 
     // ── Étapes
     var STEPS = [["modele", "Modèle"], ["contenu", "Contenu"], ["photos", "Photos"]];
@@ -781,7 +791,7 @@
     panels.contenu = el("div", { class: "space-y-2" });
     panels.contenu.addEventListener("input", dirty);
     function snapshotFiche() {
-      Object.keys(inputs).forEach(function (k) { var n = inputs[k]; W.fiche[k] = n._keys ? _textToList(n.value, n._keys) : (n.value || "").trim(); });
+      Object.keys(inputs).forEach(function (k) { var n = inputs[k]; W.fiche[k] = n._get ? n._get() : n._keys ? _textToList(n.value, n._keys) : (n.value || "").trim(); });
     }
     function buildContenu() {
       snapshotFiche();
@@ -790,10 +800,20 @@
       p.innerHTML = "";
       if (!W.cadre || !W.cadre.champs) return;
       (FIELD_SPECS[W.fam] || []).forEach(function (sp) {
+        if (sp.sec) {
+          p.appendChild(el("h4", { class: "font-black text-gray-900 text-sm pt-4", text: sp.sec }));
+          if (sp.hint) p.appendChild(el("p", { class: "text-[11px] text-gray-500 -mt-1", text: sp.hint }));
+          return;
+        }
         var type = W.cadre.champs[sp.k];
         if (type == null || type === "image") return;
         var keys = _listKeys(type), val = W.fiche[sp.k], node, help = null;
-        if (keys) {
+        if (type === "colors") {
+          node = colorsInput(Array.isArray(val) ? val : []);
+        } else if (type === "phone") {
+          node = el("input", { class: "input-field", type: "tel", inputmode: "tel", maxlength: "30", placeholder: sp.ph || "", value: typeof val === "string" ? val : "" });
+          help = "8 chiffres pour un numéro centrafricain, sinon le format international (+237…). Affiché aux invités avec un bouton WhatsApp.";
+        } else if (keys) {
           node = el("textarea", { class: "input-field", rows: String(Math.max(3, (val || []).length + 1)), placeholder: sp.ph || keys.join(" | "),
             text: Array.isArray(val) ? _listToText(val, keys) : (val || "") });
           node._keys = keys;
@@ -808,6 +828,25 @@
         if (keys) p.appendChild(importText(node));
       });
       if (inputs.intervenants) p.appendChild(el("p", { class: "text-[11px] text-gray-500", text: "Photos des intervenants : étape 3 « Photos »." }));
+    }
+
+    // Couleurs de la tenue : 1 à 3 pastilles (sélecteur de couleur du navigateur)
+    function colorsInput(initial) {
+      var list = initial.slice(0, 3), wrap = el("div", { class: "flex flex-wrap items-center gap-2" });
+      function draw() {
+        wrap.innerHTML = "";
+        list.forEach(function (c, i) {
+          var inp = el("input", { type: "color", value: c, style: "width:42px;height:34px;padding:2px;border:1px solid #d1d5db;border-radius:8px;background:#fff" });
+          inp.addEventListener("input", function () { list[i] = inp.value.toLowerCase(); });
+          wrap.appendChild(el("span", { class: "inline-flex items-center gap-1" }, [inp, el("button", { type: "button", class: "text-xs text-gray-400 hover:text-red-600", "aria-label": "Retirer la couleur",
+            text: "✕", onclick: function () { list.splice(i, 1); draw(); dirty(); } })]));
+        });
+        if (list.length < 3) wrap.appendChild(el("button", { type: "button", class: "text-xs px-2 py-1 rounded border border-gray-300 text-gray-600 hover:bg-gray-50",
+          text: list.length ? "+ Couleur" : "+ Ajouter une couleur", onclick: function () { list.push("#c0603a"); draw(); dirty(); } }));
+      }
+      draw();
+      wrap._get = function () { return list.slice(); };
+      return wrap;
     }
 
     // ── 3. Photos : photo (familial) avec recadrage direct, logo (corporate), intervenants

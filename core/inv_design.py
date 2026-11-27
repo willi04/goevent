@@ -16,6 +16,7 @@ Deux utilitaires, sans dépendance lourde (Pillow déjà présent via reportlab)
 import hashlib
 import io
 import re
+from typing import Optional
 
 from PIL import Image, ImageOps
 
@@ -145,6 +146,25 @@ _LIST_CELL_MAX = 300
 # (fuite d'IP des invités vers des tiers) ; seule une référence « m<id> » vers une image
 # téléversée pour CET événement (inv_design_media) est gardée.
 _LIST_IMAGE_KEYS = ("photo", "logo")
+# Champs pratiques communs à tous les cadres d'une famille (ajoutés au schéma du cadre lu en base :
+# pas besoin de relancer le seed). colors = 1 à 3 couleurs #rrggbb ; phone = numéro normalisé E.164.
+COMMON_FIELDS = {
+    "familial": {"tenue": "text", "tenue_couleurs": "colors", "contact_nom": "text", "contact_tel": "phone",
+                 "cadeaux": "textarea"},
+    "corporate": {"tenue": "text", "contact_nom": "text", "contact_tel": "phone"},
+}
+
+
+def champs_for(famille: Optional[str], champs: Optional[dict]) -> dict:
+    """Schéma de fiche effectif : celui du cadre + les champs pratiques de sa famille."""
+    out = dict(champs or {})
+    for fam, extra in COMMON_FIELDS.items():
+        if famille in (fam, None):
+            for k, v in extra.items():
+                out.setdefault(k, v)
+    return out
+
+
 # Champs retirés de la fiche (ignorés même si le schéma en base les liste encore) :
 # cta = « bouton » corporate sans aucune action côté invité (trompeur).
 RETIRED_FIELDS = ("cta",)
@@ -178,6 +198,27 @@ def sanitize_fiche(fiche, champs: dict, media_refs=frozenset()) -> dict:
     out = {}
     for key, kind in (champs or {}).items():
         if key not in fiche or kind == "image" or key in RETIRED_FIELDS:
+            continue
+        if kind == "colors":
+            vals = fiche[key] or []
+            if not isinstance(vals, list) or len(vals) > 3:
+                raise ValueError("%s : 3 couleurs maximum" % key)
+            clean = []
+            for v in vals:
+                if not isinstance(v, str) or not _HEX.match(v):
+                    raise ValueError("%s : couleur invalide (format #rrggbb)" % key)
+                clean.append(v.lower())
+            if clean:
+                out[key] = clean
+            continue
+        if kind == "phone":
+            raw = _txt(fiche[key], 30, key)
+            if raw:
+                from core.invitations import normalize_phone
+                try:
+                    out[key] = normalize_phone(raw)
+                except ValueError as e:
+                    raise ValueError("Téléphone du contact : %s" % e)
             continue
         cols = _list_keys(kind)
         if cols is None:

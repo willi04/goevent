@@ -143,6 +143,12 @@
     .prog .tm { font-weight: 800; color: var(--d-accentD); min-width: 64px; }
     .prog .lb { font-weight: 700; color: var(--d-texte); }
     .prog .ds { font-size: 13px; color: var(--d-muted); margin-top: 2px; }
+    /* Infos pratiques (tenue, contact, cadeaux) : même carte que le programme */
+    .infos .tm { min-width: 76px; }
+    .infos .dot { display: inline-block; width: 16px; height: 16px; border-radius: 50%; margin: 6px 6px 0 0; border: 1px solid rgba(127,127,127,.35); vertical-align: middle; }
+    .infos .act { display: inline-block; margin: 8px 8px 0 0; padding: 7px 12px; border-radius: 10px; font-size: 13px; font-weight: 700; text-decoration: none; background: var(--d-accent); color: #fff; }
+    .infos .act.alt { background: transparent; color: var(--d-texte); border: 1px solid rgba(127,127,127,.35); }
+    .infos .multi { white-space: pre-line; }
 
     /* ── 10 cadres familiaux : chaque code a sa structure ── */
     .ph-empty { background: color-mix(in srgb, var(--d-accent) 14%, var(--d-clair)); }
@@ -556,6 +562,21 @@
         return (FP_FAM[p.design.cadre] || FP_FAM.b1)(p);
       }
 
+      // Infos pratiques : tenue (+ couleurs), contact de la famille / de l'organisateur, cadeaux
+      function renderInfos(p) {
+        var f = _f(p), rows = [];
+        var cols = (Array.isArray(f.tenue_couleurs) ? f.tenue_couleurs : []).filter(function (c) { return HEX.test(c); }).slice(0, 3);
+        if (f.tenue || cols.length) rows.push(['Tenue', esc(f.tenue || "") + (cols.length ? '<div>' + cols.map(function (c) { return '<span class="dot" style="background:' + c + '"></span>'; }).join("") + '</div>' : "")]);
+        var tel = String(f.contact_tel || "").replace(/[^0-9]/g, "");
+        if (f.contact_nom || tel.length >= 8) rows.push(['Contact', esc(f.contact_nom || "") + (tel.length >= 8
+          ? '<div><a class="act" href="https://wa.me/' + tel + '" target="_blank" rel="noopener noreferrer">WhatsApp</a><a class="act alt" href="tel:+' + tel + '">Appeler</a></div>' : "")]);
+        if (f.cadeaux) rows.push(['Cadeaux', '<span class="multi">' + esc(f.cadeaux) + '</span>']);
+        if (!rows.length) return "";
+        return '<div class="prog infos card"><div class="prog-t">Infos pratiques</div>' + rows.map(function (r) {
+          return '<div class="row"><div class="tm">' + r[0] + '</div><div class="lb" style="font-weight:600">' + r[1] + '</div></div>';
+        }).join("") + '</div>';
+      }
+
       function renderProgramme(p) {
         var d = p.design, f = d.fiche || {}, corp = d.famille === "corporate";
         var list = corp ? (f.sessions || []) : (f.programme || []);
@@ -586,6 +607,7 @@
           + '<div class="le-rule"></div>'
           + (date ? '<div class="le-date">' + esc(date) + '</div>' : '')
           + (forwho ? '<div class="le-for">' + esc(forwho) + '</div>' : '')
+          + (f.tenue ? '<div class="le-date">Tenue : ' + esc(f.tenue) + '</div>' : '')
           + '</div></div>'
           + '<div class="front"></div>'
           + '<div class="flap"></div><div class="seal">✦</div>'
@@ -651,7 +673,7 @@
         applySkin(p.design.skin || {});
         $("loading").classList.add("hidden");
         var exp = $("exp");
-        exp.innerHTML = renderFairePart(p) + renderProgramme(p);
+        exp.innerHTML = renderFairePart(p) + renderInfos(p) + renderProgramme(p);
         exp.classList.remove("hidden");
         fillTicket(p, offline);
         $("pass").classList.remove("hidden");

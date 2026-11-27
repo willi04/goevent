@@ -541,14 +541,14 @@ def _merge_skin(base: Optional[dict], over: Optional[dict]) -> dict:
 def _design_champs(db: Session, modele_id: Optional[int]) -> dict:
     """Schéma de fiche du cadre du gabarit ; sans gabarit : union des cadres actifs (brouillon)."""
     if modele_id:
-        row = (db.query(InvModeleCadre.champs).join(InvModele, InvModele.cadre_id == InvModeleCadre.id)
+        row = (db.query(InvModeleCadre.champs, InvModeleCadre.famille).join(InvModele, InvModele.cadre_id == InvModeleCadre.id)
                .filter(InvModele.id == modele_id).first())
         if row:
-            return row[0] or {}
+            return idesign.champs_for(row[1], row[0])
     out = {}
     for (ch,) in db.query(InvModeleCadre.champs).filter(InvModeleCadre.status == "actif").all():
         out.update(ch or {})
-    return out
+    return idesign.champs_for(None, out)
 
 
 def _design_admin_out(db: Session, ev, d: Optional[InvitationDesign]) -> dict:
@@ -559,7 +559,8 @@ def _design_admin_out(db: Session, ev, d: Optional[InvitationDesign]) -> dict:
         "status": d.status if d else "brouillon",
         "modele_id": d.modele_id if d else None,
         "modele": {"id": mod.id, "name": mod.name, "skin": mod.skin, "enveloppe": mod.enveloppe} if mod else None,
-        "cadre": {"code": cad.code, "famille": cad.famille, "scenes": cad.scenes, "champs": cad.champs} if cad else None,
+        "cadre": {"code": cad.code, "famille": cad.famille, "scenes": cad.scenes,
+                  "champs": idesign.champs_for(cad.famille, cad.champs)} if cad else None,
         "skin": _merge_skin(mod.skin if mod else None, d.theme_override if d else None) if (mod or (d and d.theme_override)) else None,
         "theme_override": d.theme_override if d else None,
         "fiche": (d.fiche if d else None) or {},
@@ -592,7 +593,8 @@ def admin_cadres(famille: Optional[str] = Query(None, max_length=20),
     for c in cadres:
         modeles = by_cadre.get(c.id, [])
         out.append({
-            "code": c.code, "famille": c.famille, "name": c.name, "scenes": c.scenes, "champs": c.champs,
+            "code": c.code, "famille": c.famille, "name": c.name, "scenes": c.scenes,
+            "champs": idesign.champs_for(c.famille, c.champs),
             "suggested": bool(event_type and c.suggest_for and event_type in c.suggest_for),
             "modeles": [{"id": m.id, "name": m.name, "skin": m.skin, "enveloppe": m.enveloppe} for m in modeles],
         })

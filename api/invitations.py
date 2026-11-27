@@ -504,6 +504,15 @@ def _get_or_create_design(db: Session, ev, st) -> InvitationDesign:
     return d
 
 
+def _merge_skin(base: Optional[dict], over: Optional[dict]) -> dict:
+    """Skin effectif = gabarit + palette ajustée. L'override (couleurs extraites de l'affiche)
+    ne remplace QUE ce qu'il contient : la police et les ornements du gabarit restent."""
+    out = dict(base or {})
+    for k, v in (over or {}).items():
+        out[k] = dict(out.get(k) or {}, **v) if isinstance(v, dict) and isinstance(out.get(k), dict) else v
+    return out
+
+
 def _design_champs(db: Session, modele_id: Optional[int]) -> dict:
     """Schéma de fiche du cadre du gabarit ; sans gabarit : union des cadres actifs (brouillon)."""
     if modele_id:
@@ -526,7 +535,7 @@ def _design_admin_out(db: Session, ev, d: Optional[InvitationDesign]) -> dict:
         "modele_id": d.modele_id if d else None,
         "modele": {"id": mod.id, "name": mod.name, "skin": mod.skin, "enveloppe": mod.enveloppe} if mod else None,
         "cadre": {"code": cad.code, "famille": cad.famille, "scenes": cad.scenes, "champs": cad.champs} if cad else None,
-        "skin": (d.theme_override if d and d.theme_override else (mod.skin if mod else None)),
+        "skin": _merge_skin(mod.skin if mod else None, d.theme_override if d else None) if (mod or (d and d.theme_override)) else None,
         "theme_override": d.theme_override if d else None,
         "fiche": (d.fiche if d else None) or {},
         "vip": d.vip if d else None,
@@ -1301,7 +1310,7 @@ def _design_payload(db: Session, event_id: int, token: str) -> Optional[dict]:
         "cadre": cad.code,
         "famille": cad.famille,
         "scenes": scenes,
-        "skin": d.theme_override or mod.skin or {},   # theme_override = palette ajustée depuis l'affiche
+        "skin": _merge_skin(mod.skin, d.theme_override),   # gabarit + palette ajustée (police conservée)
         "fiche": fiche,
         "photo_url": (q + "photo?v=" + d.photo_sha) if d.photo_sha else (d.photo_url or None),
         "logo_url": (q + "logo?v=" + d.logo_sha) if d.logo_sha else (d.logo_url or None),
@@ -1370,7 +1379,8 @@ def _serve_design_image(db: Session, token: str, which: str) -> Response:
     if not data:
         raise HTTPException(404, "Image introuvable")
     return Response(bytes(data), media_type=mime or "image/jpeg",
-                    headers={"Cache-Control": "public, max-age=86400", "X-Robots-Tag": "noindex"})
+                    # Photo du client = donnée personnelle : jamais en cache partagé (CDN) ; URL versionnée (?v=sha)
+                    headers={"Cache-Control": "private, max-age=31536000, immutable", "X-Robots-Tag": "noindex"})
 
 
 @router.get("/invitations/pass/{token}/photo")

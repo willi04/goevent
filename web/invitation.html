@@ -11,6 +11,25 @@
   <link rel="icon" href="/icons/icon-192.svg" />
   <!-- Page volontairement autonome : aucun script tiers, aucune police externe, aucun traceur. -->
   <style>
+    /* Polices du design (lot 6) : auto-hébergées (OFL, web/fonts), jamais de Google Fonts.
+       Le navigateur ne télécharge que celles réellement utilisées par le cadre affiché. */
+    @font-face { font-family: "Plus Jakarta Sans"; font-weight: 400; font-style: normal; font-display: swap; src: url(/fonts/plus-jakarta-sans/plus-jakarta-sans-latin-400-normal.woff2) format("woff2"); }
+    @font-face { font-family: "Plus Jakarta Sans"; font-weight: 600; font-style: normal; font-display: swap; src: url(/fonts/plus-jakarta-sans/plus-jakarta-sans-latin-600-normal.woff2) format("woff2"); }
+    @font-face { font-family: "Plus Jakarta Sans"; font-weight: 700; font-style: normal; font-display: swap; src: url(/fonts/plus-jakarta-sans/plus-jakarta-sans-latin-700-normal.woff2) format("woff2"); }
+    @font-face { font-family: "Plus Jakarta Sans"; font-weight: 800; font-style: normal; font-display: swap; src: url(/fonts/plus-jakarta-sans/plus-jakarta-sans-latin-800-normal.woff2) format("woff2"); }
+    @font-face { font-family: "Fraunces"; font-weight: 400; font-style: normal; font-display: swap; src: url(/fonts/fraunces/fraunces-latin-400-normal.woff2) format("woff2"); }
+    @font-face { font-family: "Fraunces"; font-weight: 400; font-style: italic; font-display: swap; src: url(/fonts/fraunces/fraunces-latin-400-italic.woff2) format("woff2"); }
+    @font-face { font-family: "Fraunces"; font-weight: 600; font-style: normal; font-display: swap; src: url(/fonts/fraunces/fraunces-latin-600-normal.woff2) format("woff2"); }
+    @font-face { font-family: "Fraunces"; font-weight: 700; font-style: normal; font-display: swap; src: url(/fonts/fraunces/fraunces-latin-700-normal.woff2) format("woff2"); }
+    @font-face { font-family: "Cormorant Garamond"; font-weight: 400; font-style: normal; font-display: swap; src: url(/fonts/cormorant-garamond/cormorant-garamond-latin-400-normal.woff2) format("woff2"); }
+    @font-face { font-family: "Cormorant Garamond"; font-weight: 400; font-style: italic; font-display: swap; src: url(/fonts/cormorant-garamond/cormorant-garamond-latin-400-italic.woff2) format("woff2"); }
+    @font-face { font-family: "Cormorant Garamond"; font-weight: 600; font-style: normal; font-display: swap; src: url(/fonts/cormorant-garamond/cormorant-garamond-latin-600-normal.woff2) format("woff2"); }
+    @font-face { font-family: "Cormorant Garamond"; font-weight: 700; font-style: normal; font-display: swap; src: url(/fonts/cormorant-garamond/cormorant-garamond-latin-700-normal.woff2) format("woff2"); }
+    @font-face { font-family: "Playfair Display"; font-weight: 400; font-style: normal; font-display: swap; src: url(/fonts/playfair-display/playfair-display-latin-400-normal.woff2) format("woff2"); }
+    @font-face { font-family: "Playfair Display"; font-weight: 400; font-style: italic; font-display: swap; src: url(/fonts/playfair-display/playfair-display-latin-400-italic.woff2) format("woff2"); }
+    @font-face { font-family: "Playfair Display"; font-weight: 600; font-style: normal; font-display: swap; src: url(/fonts/playfair-display/playfair-display-latin-600-normal.woff2) format("woff2"); }
+    @font-face { font-family: "Playfair Display"; font-weight: 700; font-style: normal; font-display: swap; src: url(/fonts/playfair-display/playfair-display-latin-700-normal.woff2) format("woff2"); }
+    @font-face { font-family: "Marcellus"; font-weight: 400; font-style: normal; font-display: swap; src: url(/fonts/marcellus/marcellus-latin-400-normal.woff2) format("woff2"); }
     :root { --green: #00502c; --green2: #006b3c; --ink: #111827; --muted: #6b7280; --line: #e5e7eb; --bg: #f3f4f1;
             /* Tokens design (lot 6), surchargés par le skin si un design existe */
             --d-fond: var(--bg); --d-accent: var(--green); --d-accentD: var(--green2);
@@ -18,7 +37,7 @@
             --d-titre: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
     * { box-sizing: border-box; }
     body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-    body.design { background: var(--d-fond); color: var(--d-texte); }
+    body.design { background: var(--d-fond); color: var(--d-texte); font-family: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
     main { max-width: 440px; margin: 0 auto; padding: 16px 16px 32px; }
     .card { background: #fff; border-radius: 28px; overflow: hidden; box-shadow: 0 12px 32px rgba(0,0,0,.08); }
     body.design .card { background: var(--d-clair); box-shadow: 0 16px 40px rgba(0,0,0,.14); }
@@ -83,12 +102,12 @@
     .tk-perf { height: 0; border-top: 2px dashed color-mix(in srgb, var(--d-texte) 22%, transparent); margin: 4px 20px; position: relative; }
     .tk-perf::before, .tk-perf::after { content: ""; position: absolute; top: -11px; width: 20px; height: 20px; border-radius: 50%; background: var(--d-fond); }
     .tk-perf::before { left: -30px; } .tk-perf::after { right: -30px; }
-    .tk-qrzone { display: flex; gap: 18px; align-items: center; padding: 18px 22px 20px; }
-    .tk-qr { width: 150px; flex: 0 0 150px; aspect-ratio: 1; background: #fff; border: 1px solid color-mix(in srgb, var(--d-accent) 28%, #e5e7eb); border-radius: 16px; padding: 8px; }
+    .tk-qrzone { display: flex; flex-direction: column; gap: 14px; align-items: center; text-align: center; padding: 18px 22px 20px; }
+    .tk-qr { width: min(320px, 100%); aspect-ratio: 1; background: #fff; border: 1px solid color-mix(in srgb, var(--d-accent) 28%, #e5e7eb); border-radius: 16px; padding: 8px; }
     .tk-qr img { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
     .tk-scan-t { font-weight: 800; font-size: 20px; color: var(--d-texte); line-height: 1.15; }
     .tk-scan-s { font-size: 13px; color: var(--d-muted); margin-top: 6px; line-height: 1.4; }
-    .tk-pill { display: inline-block; margin-top: 10px; background: color-mix(in srgb, var(--d-accent) 14%, #fff); color: var(--d-accentD); font-weight: 800; font-size: 13px; padding: 6px 12px; border-radius: 999px; }
+    .tk-pill { display: inline-block; margin-top: 10px; background: color-mix(in srgb, var(--d-accent) 14%, #fff); color: #3f3a33; color: color-mix(in srgb, var(--d-accent) 55%, #000); font-weight: 800; font-size: 13px; padding: 6px 12px; border-radius: 999px; }
     .tk-banner { margin: 14px 22px; border-radius: 12px; padding: 12px 14px; font-size: 14px; font-weight: 600; }
     .tk-actions { display: flex; gap: 10px; padding: 0 22px 20px; align-items: center; }
     .tkbtn { flex: 1; text-align: center; text-decoration: none; font-weight: 700; font-size: 13px; padding: 10px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--d-texte) 14%, transparent); color: var(--d-texte); }
@@ -235,14 +254,14 @@
     .fp-c3 .c3-panel .logo { filter: brightness(0) invert(1); opacity: .95; }
     .fp-c3 .c3-tag { display: inline-block; border: 1.5px solid rgba(255,255,255,.7); color: #fff; font-weight: 800; font-size: 11px; letter-spacing: .2em; text-transform: uppercase; padding: 5px 14px; border-radius: 999px; margin-bottom: 14px; }
     /* c4 Gala */
-    .fp.corp.fp-c4 { background: color-mix(in srgb, var(--d-texte) 90%, #000); }
+    .fp.corp.fp-c4 { background: var(--d-clair); }
     .fp-c4 .fp-in { color: #ece3cf; }
     .fp-c4 .titre { color: var(--d-accent); font-size: 36px; }
     .fp-c4 .sous { color: #d8cdb4; }
     .fp-c4 .when, .fp-c4 .where { color: #ece3cf; }
     .fp-c4 .c4-eye { font-size: 12px; letter-spacing: .24em; text-transform: uppercase; color: var(--d-accent); font-weight: 800; }
     .fp-c4 .c4-rule { width: 70px; height: 1px; background: var(--d-accent); margin: 14px auto; position: relative; }
-    .fp-c4 .c4-rule::before { content: "◆"; position: absolute; top: -8px; left: 50%; transform: translateX(-50%); color: var(--d-accent); font-size: 10px; background: color-mix(in srgb, var(--d-texte) 90%, #000); padding: 0 6px; }
+    .fp-c4 .c4-rule::before { content: "◆"; position: absolute; top: -8px; left: 50%; transform: translateX(-50%); color: var(--d-accent); font-size: 10px; background: var(--d-clair); padding: 0 6px; }
     .fp-c4 .logo { filter: brightness(0) invert(1); opacity: .85; }
     /* c5 Webinaire / Live */
     .fp-c5 .c5-screen { position: relative; aspect-ratio: 16/9; background: linear-gradient(135deg, color-mix(in srgb, var(--d-accent) 88%, #000), var(--d-accentD)); border-radius: 14px; margin-bottom: 18px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
@@ -308,6 +327,17 @@
     #env.go .seal { opacity: 0; }
     .env-hint { position: absolute; left: 0; right: 0; top: calc(100% + 18px); text-align: center; font-size: 13px; color: var(--d-muted); transition: opacity .3s; }
     #env.go .env-hint { opacity: 0; }
+    /* Navigateurs sans color-mix() (WebView Android < Chrome 111, fréquentes en RCA) : la déclaration
+       est ignorée ; ces replis gardent des fonds et bordures lisibles. */
+    @supports not (color: color-mix(in srgb, red 50%, white)) {
+      .ph-empty, .fp [class$="-ph"], .spk .av, body.design .chip, .tk-pill, .spon-i, .fp-c10 .c10-tag { background: var(--d-clair); }
+      .tk-pill { color: var(--d-texte); border: 1px solid var(--d-accent); }
+      .fp-c2 .c2-hole { background: #cbd5e1; }
+      .fp-c5 .c5-screen { background: var(--d-accentD); }
+      .tk-qr, body.design #pass .qr { border-color: #e5e7eb; }
+      .tk-perf, .prog .row, .ag-row, .fp-c8 .c8-rule { border-color: rgba(127,127,127,.3); }
+      body.design .btn, .tkbtn { border-color: rgba(127,127,127,.35); }
+    }
   </style>
 </head>
 <body>
@@ -365,7 +395,7 @@
       var num = function (v, lo, hi, d) { var n = Number(v); return isFinite(n) && v !== null && v !== "" ? Math.min(hi, Math.max(lo, n)) : d; };
 
       function qrDataUrl(text) {
-        var q = qrcode(0, "M"); q.addData(text); q.make();
+        var q = qrcode(0, "H"); q.addData(text); q.make();
         var n = q.getModuleCount(), mg = 4, total = n + 2 * mg, cell = Math.max(4, Math.floor(600 / total));
         var c = document.createElement("canvas"); c.width = c.height = cell * total;
         var g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); g.fillStyle = "#000";
@@ -436,7 +466,7 @@
       function _eye(p) { var e = _f(p).eyebrow; return e ? '<div class="eyebrow">' + esc(e) + '</div>' : ""; }
       function _verset(p) { var f = _f(p); return f.verset ? '<div class="verset">« ' + esc(f.verset) + ' »' + (f.reference ? '<span class="ref">' + esc(f.reference) + '</span>' : "") + '</div>' : ""; }
       function _texts(p) { var f = _f(p), o = ""; ["intro", "body", "closing"].forEach(function (k) { if (f[k]) o += '<p class="txt">' + esc(f[k]) + '</p>'; }); return o; }
-      function _dl(p) { var f = _f(p), w = f.date_label || p.event_date_label, l = f.lieu || p.location, o = ""; if (w) o += '<div class="when">🗓 ' + esc(w) + '</div>'; if (l) o += '<div class="where">📍 ' + esc(l) + '</div>'; return o; }
+      function _dl(p) { var f = _f(p), w = f.date_label || p.dates_label || p.event_date_label, l = f.lieu || p.location, o = ""; if (w) o += '<div class="when">🗓 ' + esc(w) + '</div>'; if (l) o += '<div class="where">📍 ' + esc(l) + '</div>'; return o; }
       function _imgdiv(p, cls) {
         var u = _photo(p);
         if (!u) return '<div class="' + cls + ' ph-empty"></div>';
@@ -465,7 +495,7 @@
       function _cOrg(p) { var o = _f(p).organisateur; return o ? '<div class="eyebrow">' + esc(o) + '</div>' : ""; }
       function _cTitle(p) { return '<div class="titre">' + esc(_f(p).titre || p.event_title) + '</div>'; }
       function _cSub(p) { var s = _f(p).sous_titre; return s ? '<div class="sous">' + esc(s) + '</div>' : ""; }
-      function _cDL(p) { var f = _f(p), w = f.date_label || p.event_date_label, l = f.lieu || p.location, o = ""; if (w) o += '<div class="when">🗓 ' + esc(w) + '</div>'; if (l) o += '<div class="where">📍 ' + esc(l) + '</div>'; return o; }
+      function _cDL(p) { var f = _f(p), w = f.date_label || p.dates_label || p.event_date_label, l = f.lieu || p.location, o = ""; if (w) o += '<div class="when">🗓 ' + esc(w) + '</div>'; if (l) o += '<div class="where">📍 ' + esc(l) + '</div>'; return o; }
       function _cCta(p) { var c = _f(p).cta; return c ? '<span class="cta">' + esc(c) + '</span>' : ""; }
       function _cSpk(p, max, cls) {
         var f = _f(p); if (!f.intervenants || !f.intervenants.length) return "";
@@ -530,6 +560,7 @@
         var d = p.design, f = d.fiche || {}, corp = d.famille === "corporate";
         var list = corp ? (f.sessions || []) : (f.programme || []);
         if (!d.scenes || !d.scenes.programme || !list.length) return "";
+        if (corp && (d.cadre === "c6" || d.cadre === "c10")) return "";   // agenda déjà dans le faire-part
         var rows = ['<div class="prog-t">Programme</div>'];
         list.forEach(function (it) {
           var lb = corp ? (it.titre || "") : (it.label || "");
@@ -544,7 +575,7 @@
         var d = p.design, f = d.fiche || {}, corp = d.famille === "corporate";
         var eye = corp ? (f.organisateur || "") : (f.eyebrow || "");
         var title = corp ? (f.titre || p.event_title) : (f.display_names || p.event_title);
-        var date = f.date_label || p.event_date_label || "";
+        var date = f.date_label || p.dates_label || p.event_date_label || "";
         var first = (p.guest_name || "").trim().split(/\s+/)[0] || "";
         var forwho = /^[A-Za-zÀ-ÿ'’-]{2,}$/.test(first) ? ("Pour " + first) : "";
         var env = $("env");
@@ -570,11 +601,19 @@
         env.addEventListener("click", go);
       }
 
+      // Règle d'entrée affichée sous le QR (places du pass ; séances : valable à chacune)
+      function passRule(p) {
+        var n = p.seats || 1, ppl = n + " personne" + (n > 1 ? "s" : "");
+        if (p.multi_session) return "Valable à chaque séance, pour " + ppl + ".";
+        return n > 1 ? "Valable pour " + ppl + " (une entrée chacune)." : "Une seule entrée.";
+      }
+
       // Pass « ticket » façon maquette (mode design) : remplace le contenu de #pass.
       function fillTicket(p, offline) {
         var corp = p.design.famille === "corporate";
         var noQr = false, msg = null, cls = "warn";
-        if (p.status === "partial") { msg = p.seats_used + " / " + p.seats + " déjà entré(s) — pass encore valable."; }
+        if (p.status === "partial") { msg = p.seats_used + " / " + p.seats + " déjà entré(s)" + (p.multi_session ? " pendant cette séance" : "") + " — pass encore valable."; }
+        else if (p.status === "complete" && p.multi_session) { msg = "Déjà entré(e) pendant cette séance. Votre pass reste valable pour les séances suivantes."; cls = "ok"; }
         else if (p.status === "complete") { msg = "Pass déjà utilisé (" + p.seats_used + "/" + p.seats + ")."; }
         else if (p.status === "revoked") { msg = "Ce pass a été annulé par l'organisateur."; cls = "bad"; noQr = true; }
         else if (p.status === "cancelled") { msg = "Cet événement a été annulé."; cls = "bad"; noQr = true; }
@@ -590,7 +629,7 @@
           : (msg ? '<div class="tk-banner ' + cls + '">' + esc(msg) + '</div>' : '')
             + '<div class="tk-qrzone"><div class="tk-qr"><img id="qr" alt="QR Code d\'entrée"></div>'
             + '<div class="tk-scan"><div class="tk-scan-t">Scannez à l\'entrée</div>'
-            + '<div class="tk-scan-s">Pass nominatif · valable hors ligne.<br>Un seul passage autorisé.</div>'
+            + '<div class="tk-scan-s">Pass nominatif · valable hors ligne.<br>' + esc(passRule(p)) + '</div>'
             + '<span class="tk-pill">✓ Anti-fraude</span></div></div>';
         $("pass").className = "card ticket";
         $("pass").innerHTML =
@@ -617,8 +656,16 @@
         fillTicket(p, offline);
         $("pass").classList.remove("hidden");
         document.title = (p.event_title || "Invitation") + " | Invitation";
-        var canOpen = p.design.enveloppe && ["revoked", "cancelled", "inactive"].indexOf(p.status) === -1;
-        if (canOpen) openEnvelope(p, null);
+        // Enveloppe : à la PREMIÈRE ouverture d'un pass valide seulement. Jamais devant l'agent (déjà
+        // ouverte, pass entamé, hors ligne) ni si l'appareil demande moins d'animations.
+        var seenKey = "goevent_env:" + token, seen = false;
+        try { seen = localStorage.getItem(seenKey) === "1"; } catch (e) {}
+        var calm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        var canOpen = p.design.enveloppe && p.status === "valid" && !offline && !seen && !calm;
+        if (canOpen) {
+          try { localStorage.setItem(seenKey, "1"); } catch (e) {}
+          openEnvelope(p, null);
+        }
       }
 
       function renderPass(p, offline) {
@@ -628,8 +675,16 @@
         document.title = (p.event_title || "Invitation") + " | Invitation";
       }
 
+      var PASS_HTML = $("pass").innerHTML, PASS_CLASS = $("pass").className;
       function show(p, offline) {
-        if (p && p.design && p.design.cadre) { try { renderDesign(p, offline); return; } catch (e) { /* fallback pass */ } }
+        if (p && p.design && p.design.cadre) {
+          try { renderDesign(p, offline); return; } catch (e) {
+            // Repli : pass classique intact (balisage d'origine, sans habillage ni faire-part partiel)
+            $("pass").innerHTML = PASS_HTML; $("pass").className = PASS_CLASS;
+            $("exp").innerHTML = ""; $("exp").classList.add("hidden"); $("env").classList.add("hidden");
+            document.body.classList.remove("design"); document.documentElement.removeAttribute("style");
+          }
+        }
         renderPass(p, offline);
       }
       function fail() { $("loading").classList.add("hidden"); $("error").classList.remove("hidden"); }

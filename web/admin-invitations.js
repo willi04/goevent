@@ -410,7 +410,9 @@
       var modeles = d._cadreModeles || (cadres.filter(function (c) { return c.code === curCode; })[0] || {}).modeles || [];
       skinSel = el("select", { class: "input-field", style: "max-width:260px", onchange: function () {
         d.modele_id = parseInt(skinSel.value, 10);
-        d.modele = modeles.filter(function (m) { return m.id === d.modele_id; })[0] || null; renderSkinPreview();
+        d.modele = modeles.filter(function (m) { return m.id === d.modele_id; })[0] || null;
+        d.theme_override = null;            // choisir un skin = reprendre SES couleurs (sinon le choix ne se voit pas)
+        renderSkinPreview(); renderPaletteReset();
       } }, modeles.map(function (m) { return el("option", { value: String(m.id), text: m.name, selected: m.id === d.modele_id ? "selected" : null }); }));
     }
 
@@ -449,10 +451,21 @@
       if (!afficheIn.files[0]) return;
       _upload("/design/palette", afficheIn.files[0], function (res) {
         d.theme_override = Object.assign({}, d.theme_override, { couleurs: res.couleurs });
-        if (d.modele) d.modele.skin = Object.assign({}, d.modele.skin, { couleurs: res.couleurs });
-        toast("Palette extraite de l'affiche.", "success"); renderSkinPreview();
+        toast("Palette extraite de l'affiche.", "success"); renderSkinPreview(); renderPaletteReset();
       });
     });
+
+    // Couleurs extraites de l'affiche : retour possible aux couleurs du gabarit
+    function renderPaletteReset() {
+      paletteBox.innerHTML = "";
+      if (!(d.theme_override && d.theme_override.couleurs)) return;
+      paletteBox.appendChild(el("span", { class: "text-xs text-gray-500", text: "Couleurs de l'affiche appliquées (la police du gabarit est conservée)." }));
+      paletteBox.appendChild(el("button", { type: "button", class: "text-xs px-2 py-1 rounded border border-gray-300 text-gray-600 hover:bg-gray-50",
+        text: "↺ Couleurs du gabarit", onclick: function () {
+          d.theme_override = null; renderSkinPreview(); renderPaletteReset();
+          toast("Couleurs du gabarit rétablies — cliquez « Enregistrer ».", "success");
+        } }));
+    }
 
     // 6) Photo / logo
     function uploader(label, which) {
@@ -605,6 +618,7 @@
     box.appendChild(ficheWrap);
     box.appendChild(field("Affiche → extraire les couleurs", afficheIn, "L'affiche n'est pas conservée : seules les couleurs sont extraites."));
     box.appendChild(paletteBox);
+    renderPaletteReset();
     if (fam === "familial") { box.appendChild(uploader("Photo du couple / client", "photo")); box.appendChild(field("Cadrage de la photo", photoCrop())); }
     if (fam === "corporate") box.appendChild(uploader("Logo", "logo"));
     box.appendChild(lbl("Aperçu")); box.appendChild(preview);

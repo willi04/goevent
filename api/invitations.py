@@ -496,6 +496,19 @@ def _get_or_create_design(db: Session, ev, st) -> InvitationDesign:
     return d
 
 
+def _design_champs(db: Session, modele_id: Optional[int]) -> dict:
+    """Schéma de fiche du cadre du gabarit ; sans gabarit : union des cadres actifs (brouillon)."""
+    if modele_id:
+        row = (db.query(InvModeleCadre.champs).join(InvModele, InvModele.cadre_id == InvModeleCadre.id)
+               .filter(InvModele.id == modele_id).first())
+        if row:
+            return row[0] or {}
+    out = {}
+    for (ch,) in db.query(InvModeleCadre.champs).filter(InvModeleCadre.status == "actif").all():
+        out.update(ch or {})
+    return out
+
+
 def _design_admin_out(db: Session, ev, d: Optional[InvitationDesign]) -> dict:
     mod = db.get(InvModele, d.modele_id) if d and d.modele_id else None
     cad = db.get(InvModeleCadre, mod.cadre_id) if mod else None
@@ -576,14 +589,18 @@ def admin_put_design(request: Request, event_id: int, data: DesignPut,
             d.modele_id = m.id
         else:
             d.modele_id = None
-    if "fiche" in f:
-        d.fiche = _bound_json(data.fiche, 20000)
-    if "theme_override" in f:
-        d.theme_override = _bound_json(data.theme_override, 4000)
-    if "vip" in f:
-        d.vip = _bound_json(data.vip, 2000)
+    try:
+        if "fiche" in f:
+            d.fiche = idesign.sanitize_fiche(_bound_json(data.fiche, 20000), _design_champs(db, d.modele_id))
+        if "theme_override" in f:
+            d.theme_override = idesign.sanitize_theme(_bound_json(data.theme_override, 4000))
+        if "vip" in f:
+            d.vip = idesign.sanitize_vip(_bound_json(data.vip, 2000))
+    except ValueError as e:
+        db.rollback()
+        raise HTTPException(400, str(e))
     if "photo_crop" in f:
-        d.photo_crop = _bound_json(data.photo_crop, 500)
+        d.photo_crop = data.photo_crop.model_dump() if data.photo_crop else None
     if "status" in f and data.status:
         if data.status == "pret" and not d.modele_id:
             raise HTTPException(400, "Choisissez un gabarit avant de publier le design")

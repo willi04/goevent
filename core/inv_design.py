@@ -9,9 +9,13 @@ Deux utilitaires, sans dépendance lourde (Pillow déjà présent via reportlab)
 2. reencode_image(bytes) : ré-encode une image uploadée (photo client, logo)
    en JPEG/PNG propre, redimensionnée, métadonnées retirées. Toute image
    uploadée est une donnée NON FIABLE : on ne sert jamais les octets d'origine.
+
+3. sanitize_fiche / sanitize_theme / sanitize_vip : contenu saisi au back-office,
+   typé et borné avant stockage (rendu HTML côté invité).
 """
 import hashlib
 import io
+import re
 
 from PIL import Image, ImageOps
 
@@ -102,3 +106,123 @@ def reencode_image(data: bytes, kind: str = "photo") -> tuple:
         mime = "image/jpeg"
     b = out.getvalue()
     return b, mime, hashlib.sha256(b).hexdigest(), im.width, im.height
+
+
+# ── Validation du contenu saisi au back-office (données NON fiables) ─────────
+# Le rendu invité (web/invitation.html) assemble du HTML : tout ce qui y arrive est
+# typé ici, côté serveur. Clés inconnues ignorées, types et longueurs bornés.
+_HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
+_CTRL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+COLOR_KEYS = ("fond", "accent", "accentD", "clair", "texte", "muted", "highlight", "accent2", "teal", "sage")
+FONTS = ("Plus Jakarta Sans", "Fraunces", "Cormorant Garamond", "Playfair Display", "Marcellus")
+_TEXT_MAX = {"text": 300, "textarea": 2000}
+_LIST_MAX_ITEMS = 40
+_LIST_CELL_MAX = 300
+# Colonnes d'image dans les listes (intervenants[].photo, sponsors[].logo) : aucune image
+# externe n'est servie aux invités (fuite d'IP vers des tiers) tant qu'il n'existe pas
+# d'upload par entrée → ignorées.
+_LIST_IMAGE_KEYS = ("photo", "logo")
+
+
+def _txt(v, n: int, label: str) -> str:
+    if v is None:
+        return ""
+    if isinstance(v, (int, float)) and not isinstance(v, bool):
+        v = str(v)
+    if not isinstance(v, str):
+        raise ValueError("%s : texte attendu" % label)
+    v = _CTRL.sub("", v).strip()
+    if len(v) > n:
+        raise ValueError("%s : %d caractères maximum" % (label, n))
+    return v
+
+
+def _list_keys(kind: str):
+    m = re.match(r"^list\[(.+)\]$", kind or "")
+    return [k.strip() for k in m.group(1).split(",")] if m else None
+
+
+def sanitize_fiche(fiche, champs: dict) -> dict:
+    """Fiche typée selon `champs` du cadre : text / textarea / list[a,b,c]. Le reste est ignoré."""
+    if fiche is None:
+        return {}
+    if not isinstance(fiche, dict):
+        raise ValueError("Fiche : format invalide")
+    out = {}
+    for key, kind in (champs or {}).items():
+        if key not in fiche or kind == "image":
+            continue
+        cols = _list_keys(kind)
+        if cols is None:
+            val = _txt(fiche[key], _TEXT_MAX.get(kind, 300), key)
+            if val:
+                out[key] = val
+            continue
+        rows = fiche[key] or []
+        if not isinstance(rows, list):
+            raise ValueError("%s : liste attendue" % key)
+        if len(rows) > _LIST_MAX_ITEMS:
+            raise ValueError("%s : %d lignes maximum" % (key, _LIST_MAX_ITEMS))
+        clean = []
+        for row in rows:
+            if not isinstance(row, dict):
+                raise ValueError("%s : format de ligne invalide" % key)
+            r = {}
+            for c in cols:
+                if c in _LIST_IMAGE_KEYS or c not in row:
+                    continue
+                v = _txt(row[c], _LIST_CELL_MAX, "%s (%s)" % (key, c))
+                if v:
+                    r[c] = v
+            if r:
+                clean.append(r)
+        if clean:
+            out[key] = clean
+    return out
+
+
+def sanitize_theme(theme):
+    """Palette ajustée : couleurs hex #rrggbb (clés connues) + polices de la liste blanche."""
+    if theme is None:
+        return None
+    if not isinstance(theme, dict):
+        raise ValueError("Palette : format invalide")
+    out = {}
+    cols = theme.get("couleurs")
+    if cols is not None:
+        if not isinstance(cols, dict):
+            raise ValueError("Palette : format invalide")
+        out["couleurs"] = {}
+        for k, v in cols.items():
+            if k not in COLOR_KEYS:
+                continue
+            if not isinstance(v, str) or not _HEX.match(v):
+                raise ValueError("Couleur « %s » invalide (format #rrggbb)" % k)
+            out["couleurs"][k] = v.lower()
+    pol = theme.get("polices")
+    if pol is not None:
+        if not isinstance(pol, dict):
+            raise ValueError("Polices : format invalide")
+        out["polices"] = {}
+        for k in ("titre", "corps"):
+            if k in pol:
+                if pol[k] not in FONTS:
+                    raise ValueError("Police « %s » non disponible" % pol[k])
+                out["polices"][k] = pol[k]
+    return out or None
+
+
+def sanitize_vip(vip):
+    """Options VIP (corporate) : libellé du salon + accès prioritaire."""
+    if vip is None:
+        return None
+    if not isinstance(vip, dict):
+        raise ValueError("VIP : format invalide")
+    out = {}
+    if "salon_label" in vip:
+        lab = _txt(vip["salon_label"], 80, "Salon VIP")
+        if lab:
+            out["salon_label"] = lab
+    if "acces_prioritaire" in vip:
+        out["acces_prioritaire"] = bool(vip["acces_prioritaire"])
+    return out or None

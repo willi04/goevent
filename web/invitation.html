@@ -355,7 +355,12 @@
       var KEY = "goevent_pass:" + token;
       var $ = function (id) { return document.getElementById(id); };
       var esc = function (s) { var d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML; };
-      var mediaUrl = function (u) { return (u && u.charAt(0) === "/") ? API + u : u; };   // photo/logo = chemin racine servi par l'API
+      // Médias : uniquement les images servies par l'API derrière le jeton (jamais d'URL externe :
+      // l'IP des invités ne part chez aucun tiers). Autre valeur → pas d'image.
+      var mediaUrl = function (u) { return (typeof u === "string" && u.indexOf("/invitations/pass/") === 0) ? API + u : ""; };
+      var HEX = /^#[0-9a-fA-F]{6}$/;
+      var hex = function (v, d) { return (typeof v === "string" && HEX.test(v)) ? v : d; };
+      var num = function (v, lo, hi, d) { var n = Number(v); return isFinite(n) && v !== null && v !== "" ? Math.min(hi, Math.max(lo, n)) : d; };
 
       function qrDataUrl(text) {
         var q = qrcode(0, "M"); q.addData(text); q.make();
@@ -409,15 +414,15 @@
       }
       function applySkin(skin) {
         var c = skin.couleurs || {}, pol = skin.polices || {}, r = document.documentElement.style;
-        r.setProperty("--d-fond", c.fond || "#f3f4f1");
-        r.setProperty("--d-accent", c.accent || "#00502c");
-        r.setProperty("--d-accentD", c.accentD || c.accent || "#006b3c");
-        r.setProperty("--d-clair", c.clair || "#ffffff");
-        r.setProperty("--d-texte", c.texte || "#111827");
-        r.setProperty("--d-muted", c.muted || "#6b7280");
-        r.setProperty("--d-titre", fontStack(pol.titre || "Plus Jakarta Sans"));
+        r.setProperty("--d-fond", hex(c.fond, "#f3f4f1"));
+        r.setProperty("--d-accent", hex(c.accent, "#00502c"));
+        r.setProperty("--d-accentD", hex(c.accentD, hex(c.accent, "#006b3c")));
+        r.setProperty("--d-clair", hex(c.clair, "#ffffff"));
+        r.setProperty("--d-texte", hex(c.texte, "#111827"));
+        r.setProperty("--d-muted", hex(c.muted, "#6b7280"));
+        r.setProperty("--d-titre", fontStack(SERIF[pol.titre] ? pol.titre : "Plus Jakarta Sans"));
         document.body.classList.add("design");
-        var meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.content = c.accent || "#00502c";
+        var meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.content = hex(c.accent, "#00502c");
       }
 
       function el(html) { var d = document.createElement("div"); d.innerHTML = html; return d.firstElementChild; }
@@ -434,7 +439,7 @@
         var u = _photo(p);
         if (!u) return '<div class="' + cls + ' ph-empty"></div>';
         var c = p.design.photo_crop || {};
-        var x = c.x == null ? 50 : c.x, y = c.y == null ? 28 : c.y, z = c.zoom == null ? 1 : c.zoom;
+        var x = num(c.x, 0, 100, 50), y = num(c.y, 0, 100, 28), z = num(c.zoom, 1, 3, 1);   // nombres bornés (injectés dans style)
         var st = ' style="--ph-pos:' + x + '% ' + y + '%;--ph-zoom:' + z + '"';
         return '<div class="' + cls + '"' + st + '><img src="' + esc(u) + '" alt=""></div>';
       }
@@ -454,7 +459,7 @@
       };
 
       // ── Fragments corporate réutilisés ──
-      function _cLogo(p) { return p.design.logo_url ? '<img class="logo" src="' + esc(mediaUrl(p.design.logo_url)) + '" alt="">' : ""; }
+      function _cLogo(p) { var u = mediaUrl(p.design.logo_url); return u ? '<img class="logo" src="' + esc(u) + '" alt="">' : ""; }
       function _cOrg(p) { var o = _f(p).organisateur; return o ? '<div class="eyebrow">' + esc(o) + '</div>' : ""; }
       function _cTitle(p) { return '<div class="titre">' + esc(_f(p).titre || p.event_title) + '</div>'; }
       function _cSub(p) { var s = _f(p).sous_titre; return s ? '<div class="sous">' + esc(s) + '</div>' : ""; }
@@ -464,7 +469,8 @@
         var f = _f(p); if (!f.intervenants || !f.intervenants.length) return "";
         var sp = ['<div class="' + (cls || "spk") + '">'];
         f.intervenants.slice(0, max || 6).forEach(function (s) {
-          sp.push('<div class="s"><div class="av">' + (s.photo ? '<img src="' + esc(mediaUrl(s.photo)) + '" alt="">' : "") + '</div>'
+          var ph = mediaUrl(s.photo);
+          sp.push('<div class="s"><div class="av">' + (ph ? '<img src="' + esc(ph) + '" alt="">' : "") + '</div>'
             + '<div class="nm">' + esc(s.nom || "") + '</div>'
             + (s.role ? '<div class="ro">' + esc(s.role) + '</div>' : "")
             + (s.societe ? '<div class="co">' + esc(s.societe) + '</div>' : "") + '</div>');
@@ -475,7 +481,8 @@
         var f = _f(p); if (!f.sponsors || !f.sponsors.length) return "";
         var o = ['<div class="spon"><div class="spon-t">Avec le soutien de</div><div class="spon-row">'];
         f.sponsors.slice(0, 10).forEach(function (s) {
-          o.push('<span class="spon-i">' + (s.logo ? '<img src="' + esc(mediaUrl(s.logo)) + '" alt="">' : esc(s.nom || "")) + '</span>');
+          var lg = mediaUrl(s.logo);
+          o.push('<span class="spon-i">' + (lg ? '<img src="' + esc(lg) + '" alt="">' : esc(s.nom || "")) + '</span>');
         });
         o.push('</div></div>'); return o.join("");
       }

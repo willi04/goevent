@@ -2,7 +2,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class PrivateEventIn(BaseModel):
@@ -139,13 +139,22 @@ class PageIn(BaseModel):
     description: Optional[str] = Field(None, max_length=2000)
 
 
+class PhotoCrop(BaseModel):
+    """Cadrage photo : point focal en % (x, y) + zoom. Nombres uniquement : ces valeurs sont
+    injectées dans le style de la page invité."""
+    model_config = ConfigDict(extra="forbid")
+    x: float = Field(50, ge=0, le=100)
+    y: float = Field(28, ge=0, le=100)
+    zoom: float = Field(1, ge=1, le=3)
+
+
 class DesignPut(BaseModel):
     """Fiche design d'un événement (lot 6). Tout est optionnel : PUT partiel.
-    `fiche` et `theme_override` sont des dicts typés côté cadre ; on borne la
-    taille (uploads = données non fiables) et on valide le statut."""
+    `fiche` (selon cadre.champs), `theme_override` et `vip` sont typés par
+    core/inv_design.sanitize_* ; `photo_crop` par PhotoCrop."""
     modele_id: Optional[int] = None
     fiche: Optional[dict] = None
     theme_override: Optional[dict] = None     # palette ajustée (depuis l'affiche ou à la main)
     vip: Optional[dict] = None
-    photo_crop: Optional[dict] = None         # cadrage photo : {x, y} point focal en %, {zoom}
+    photo_crop: Optional[PhotoCrop] = None
     status: Optional[str] = Field(None, pattern="^(brouillon|pret)$")

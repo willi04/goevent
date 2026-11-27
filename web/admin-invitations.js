@@ -293,7 +293,11 @@
     });
   }
 
-  function _listKeys(type) { var m = /^list\[(.+)\]$/.exec(type); return m ? m[1].split(",") : null; }
+  // Colonnes d'image (photo, logo) exclues : pas d'URL externe servie aux invités (filtrées aussi côté serveur)
+  function _listKeys(type) {
+    var m = /^list\[(.+)\]$/.exec(type);
+    return m ? m[1].split(",").filter(function (k) { return k !== "photo" && k !== "logo"; }) : null;
+  }
   function _listToText(arr, keys) {
     return (arr || []).map(function (o) { return keys.map(function (k) { return o[k] || ""; }).join(" | "); }).join("\n");
   }
@@ -460,7 +464,9 @@
         .catch(function () {});
     }
     function photoCrop() {
-      var crop = d.photo_crop || {}, cx = crop.x == null ? 50 : crop.x, cy = crop.y == null ? 28 : crop.y, cz = crop.zoom == null ? 1 : crop.zoom;
+      // Bornes = celles du serveur (PhotoCrop) : x, y 0-100 %, zoom 1-3 (un zoom < 1 laisse des bandes vides)
+      var crop = d.photo_crop || {}, cx = crop.x == null ? 50 : crop.x, cy = crop.y == null ? 28 : crop.y,
+          cz = Math.min(3, Math.max(1, crop.zoom == null ? 1 : crop.zoom));
       function istyle(x, y, z) { return "width:100%;height:100%;object-fit:cover;object-position:" + x + "% " + y + "%;transform:scale(" + z + ");transform-origin:" + x + "% " + y + "%"; }
       var img = el("img", { id: "inv-crop-img", style: istyle(cx, cy, cz) });
       // Aperçu À LA FORME DU CADRE choisi (rond, hexagone, arche…) pour régler sans ouvrir le lien
@@ -474,7 +480,7 @@
       var sh = shapes[(d.cadre && d.cadre.code)] || { w: 130, ar: "1/1" };
       var frame = el("div", { style: "width:" + sh.w + "px;flex:0 0 " + sh.w + "px;aspect-ratio:" + sh.ar + ";overflow:hidden;background:#f3f4f6;border:1px solid #e5e7eb;" + (sh.extra || "") }, [img]);
       if (d.has_photo) loadCropImg(img);
-      var sz = el("input", { type: "range", min: "0.8", max: "3", step: "0.05", value: String(cz), class: "w-full" });
+      var sz = el("input", { type: "range", min: "1", max: "3", step: "0.05", value: String(cz), class: "w-full" });
       var sx = el("input", { type: "range", min: "0", max: "100", value: String(cx), class: "w-full" });
       var sy = el("input", { type: "range", min: "0", max: "100", value: String(cy), class: "w-full" });
       var tmr;

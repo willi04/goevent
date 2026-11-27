@@ -347,35 +347,134 @@
     .fp-c10 .titre { font-size: 30px; }
     .fp-c10 .c10-lbl { margin-top: 12px; }
 
-    /* ── Enveloppe (ouverture pro, sans zoom) : le billet SORT de l'intérieur, séquence ~3,5 s ── */
-    #env { position: fixed; inset: 0; background: var(--d-fond); display: flex; align-items: center; justify-content: center; z-index: 50; }
-    #env.go { animation: envgone .6s ease 3.2s forwards; }                 /* le faire-part n'apparaît qu'après ~3,2 s */
+    /* ── Enveloppe (lot 6) : recto au nom de l'invité, cachet monogramme, rabat 3D, billet au motif du cadre ──
+       Séquence : toucher → cachet (0–0,3 s) → rabat (0,2–1,1 s) → billet monte (0,9–2,2 s) → s'agrandit
+       et se fond dans la page (2,4–3,1 s). Second toucher = passer. */
+    #env { position: fixed; inset: 0; background: var(--d-fond); display: flex; align-items: flex-end; justify-content: center; padding-bottom: 22vh; z-index: 50; }
+    #env.go { animation: envgone .7s ease 2.45s forwards; }
+    #env.skip { animation: envgone .25s ease forwards; }
     @keyframes envgone { to { opacity: 0; visibility: hidden; } }
-    .env { position: relative; width: 300px; height: 200px; cursor: pointer; }
-    /* billet DANS l'enveloppe : TOUJOURS derrière la face avant (z2 < z3) → il émerge par le haut, jamais superposé */
-    .env .letter { position: absolute; left: 22px; right: 22px; top: 30px; height: 150px; background: var(--d-clair); border-radius: 8px 8px 10px 10px;
-                   box-shadow: 0 10px 22px rgba(0,0,0,.22); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 14px; z-index: 2; }
-    .env .letter .le-in { opacity: 0; }
-    .env .letter .le-eye { font-size: 10px; letter-spacing: .16em; text-transform: uppercase; font-weight: 800; color: var(--d-accentD); }
-    .env .letter .nm { font-family: var(--d-titre); font-size: 25px; line-height: 1.05; font-weight: 600; color: var(--d-texte); margin: 5px 0 0; }
-    .env .letter .le-rule { width: 38px; height: 2px; border-radius: 2px; background: var(--d-accent); margin: 9px auto 7px; }
-    .env .letter .le-date { font-size: 12px; font-weight: 700; color: var(--d-muted); }
-    .env .letter .le-for { font-size: 11px; font-weight: 700; color: var(--d-accentD); margin-top: 3px; }
-    #env.go .letter { animation: letterout 1.7s cubic-bezier(.22,1,.36,1) 1.3s forwards; }   /* glisse hors de l'enveloppe */
-    @keyframes letterout { from { transform: translateY(0); } to { transform: translateY(-186px); } }
-    #env.go .letter .le-in { animation: nmfade .8s ease 1.9s forwards; }    /* le contenu apparaît en sortant */
-    @keyframes nmfade { to { opacity: 1; } }
-    /* face avant OPAQUE : cache le billet, et masque la part encore À L'INTÉRIEUR pendant qu'il sort */
-    .env .front { position: absolute; inset: 0; background: var(--d-accent); border-radius: 12px; z-index: 3; overflow: hidden; box-shadow: inset 0 7px 12px -7px rgba(0,0,0,.4); }
-    .env .front::after { content: ""; position: absolute; inset: 0; background: linear-gradient(135deg, transparent 49.4%, rgba(0,0,0,.12) 49.7%, transparent 50%); }
-    .env .flap { position: absolute; top: 0; left: 0; right: 0; height: 52%; background: var(--d-accentD); transform-origin: top; border-radius: 12px 12px 0 0;
-                 clip-path: polygon(0 0, 100% 0, 50% 100%); transition: transform 1s cubic-bezier(.5,0,.2,1) .3s; z-index: 4; }
-    #env.go .flap { transform: rotateX(180deg); z-index: 1; }
-    .env .seal { position: absolute; top: calc(52% - 20px); left: calc(50% - 20px); width: 40px; height: 40px; border-radius: 50%; background: var(--d-accent);
-                 color: #fff; display: flex; align-items: center; justify-content: center; font-size: 18px; z-index: 5; box-shadow: 0 3px 8px rgba(0,0,0,.25); transition: opacity .3s; }
-    #env.go .seal { opacity: 0; }
-    .env-hint { position: absolute; left: 0; right: 0; top: calc(100% + 18px); text-align: center; font-size: 13px; color: var(--d-muted); transition: opacity .3s; }
-    #env.go .env-hint { opacity: 0; }
+    .env-wrap { transform-origin: 50% 100%; }
+    .env { position: relative; width: 320px; height: 212px; cursor: pointer; perspective: 900px; outline: none; }
+    .env:focus-visible { box-shadow: 0 0 0 3px var(--d-accent); border-radius: 12px; }
+    .env .back { position: absolute; inset: 0; background: var(--d-accentD); border-radius: 10px; z-index: 1; }
+    .env .pk { position: absolute; inset: 0; z-index: 3; border-radius: 10px; overflow: hidden; }
+    .env .pk i { position: absolute; inset: 0; background: var(--d-accent); }
+    .env .pk .l { clip-path: polygon(0 0, 54% 54%, 0 100%); filter: brightness(.95); }
+    .env .pk .r { clip-path: polygon(100% 0, 46% 54%, 100% 100%); filter: brightness(.95); }
+    .env .pk .b { clip-path: polygon(0 100%, 50% 44%, 100% 100%); }
+    .env .pk::after { content: ""; position: absolute; inset: 0; opacity: .5; pointer-events: none;
+      background-image: radial-gradient(rgba(0,0,0,.07) 1px, transparent 1.2px), radial-gradient(rgba(255,255,255,.08) 1px, transparent 1.2px);
+      background-size: 5px 5px, 7px 7px; background-position: 0 0, 2px 3px; }
+    .env .who { position: absolute; z-index: 4; left: 12px; right: 12px; bottom: 32px; text-align: center; font-family: var(--d-titre); font-style: italic; font-size: 24px; color: var(--d-onacc);
+                white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .env .who.long { font-size: 19px; }
+    .env .from { position: absolute; z-index: 4; left: 12px; right: 12px; bottom: 14px; text-align: center; font-size: 8.5px; letter-spacing: .14em; text-transform: uppercase; font-weight: 800;
+                 color: var(--d-onacc); opacity: .72; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .env .flap { position: absolute; left: 0; right: 0; top: 0; height: 56%; background: var(--d-accentD); clip-path: polygon(0 0, 100% 0, 50% 100%); z-index: 5;
+                 transform-origin: 50% 0; border-radius: 10px 10px 0 0; }
+    .env .seal { position: absolute; z-index: 6; left: calc(50% - 25px); top: calc(56% - 25px); width: 50px; height: 50px; border-radius: 47% 53% 50% 50% / 52% 48% 52% 48%;
+                 background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.38), rgba(255,255,255,0) 48%), radial-gradient(circle at 60% 70%, rgba(0,0,0,.28), rgba(0,0,0,0) 60%), var(--d-accentD);
+                 box-shadow: 0 3px 8px rgba(0,0,0,.3), inset 0 0 0 4px rgba(0,0,0,.08); display: flex; align-items: center; justify-content: center;
+                 font-family: var(--d-titre); font-weight: 700; font-size: 15px; color: rgba(255,255,255,.92); transition: opacity .3s, transform .3s; }
+    .env-hint { position: absolute; left: 0; right: 0; top: calc(100% + 18px); text-align: center; font-size: 13px; color: var(--d-muted); transition: opacity .3s;
+                animation: hintpulse 1.8s ease-in-out infinite; }
+    @keyframes hintpulse { 50% { opacity: .45; } }
+    .env-idle { animation: envfloat 3.2s ease-in-out infinite; }
+    @keyframes envfloat { 50% { transform: translateY(-5px); } }
+    #env.go .env-idle, #env.go .env-hint { animation: none; }
+    #env.go .seal { opacity: 0; transform: scale(.6); }
+    #env.go .env-hint, #env.go .who, #env.go .from { opacity: 0; transition: opacity .3s; }
+    #env.go .flap { animation: flapopen .9s cubic-bezier(.5,0,.2,1) .2s forwards; }
+    @keyframes flapopen { 0% { transform: rotateX(0); z-index: 5; filter: none; } 55% { z-index: 5; } 56% { z-index: 1; filter: brightness(.88); } 100% { transform: rotateX(180deg); z-index: 1; filter: brightness(.88); } }
+    /* Billet : dans l'enveloppe (z2, sous la poche z3), il sort par le V puis s'agrandit en se fondant */
+    .letter { position: absolute; z-index: 2; left: 14px; right: 14px; top: 6px; height: 200px; background: var(--d-clair); border-radius: 6px; box-shadow: 0 12px 26px rgba(0,0,0,.25);
+              display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: var(--d-texte); overflow: hidden; box-sizing: border-box; padding: 16px 18px; }
+    .letter > * { position: relative; z-index: 1; }
+    #env.go .letter { animation: letterout 1.3s cubic-bezier(.22,1,.36,1) .9s forwards, letterzoom .7s ease-in 2.4s forwards; }
+    @keyframes letterout { to { transform: translateY(-170px); } }
+    @keyframes letterzoom { from { transform: translateY(-170px); } to { transform: translateY(-190px) scale(1.5); opacity: 0; } }
+    .letter .eye { font-size: 9.5px; letter-spacing: .18em; text-transform: uppercase; font-weight: 800; color: var(--d-accentD); }
+    .letter .nm { font-family: var(--d-titre); font-size: 30px; line-height: 1.05; font-weight: 600; margin: 6px 0 0; max-width: 100%; overflow-wrap: anywhere; }
+    .letter .nm.long { font-size: 23px; }
+    .letter .rule { width: 40px; height: 2px; background: var(--d-accent); margin: 10px auto 8px; border-radius: 2px; }
+    .letter .dt { font-size: 12px; font-weight: 700; color: var(--d-muted); }
+    .letter .for { font-size: 11px; font-weight: 700; color: var(--d-accentD); margin-top: 4px; }
+    /* b1 papier ethnique : frises géométriques haut/bas */
+    .m-b1::before, .m-b1::after { content: ""; position: absolute; left: 0; right: 0; height: 12px; z-index: 0;
+      background: linear-gradient(135deg, var(--d-accent) 25%, transparent 25%) -6px 0 / 12px 12px, linear-gradient(225deg, var(--d-accent) 25%, transparent 25%) -6px 0 / 12px 12px,
+                  repeating-linear-gradient(90deg, var(--d-accentD) 0 6px, var(--d-accent) 6px 12px); }
+    .m-b1::before { top: 0; } .m-b1::after { bottom: 0; transform: scaleY(-1); }
+    .m-b1 .orn { color: var(--d-accent); font-size: 13px; margin-bottom: 2px; }
+    /* b2 éditorial : cadre filet, pied date / destinataire */
+    .m-b2 { box-shadow: 0 12px 26px rgba(0,0,0,.25), inset 0 0 0 9px var(--d-clair), inset 0 0 0 10px var(--d-accent); }
+    .m-b2 .nm { font-size: 34px; font-weight: 700; letter-spacing: -.01em; }
+    .m-b2 .rule { width: 100%; height: 1px; margin: 9px 0 6px; }
+    .m-b2 .ed { display: flex; justify-content: space-between; gap: 8px; width: 100%; font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--d-accentD); }
+    /* b3 arche dorée, double filet */
+    .m-b3 { box-shadow: 0 12px 26px rgba(0,0,0,.4), inset 0 0 0 7px var(--d-clair), inset 0 0 0 8px var(--d-accent); }
+    .m-b3 .arch { position: absolute; left: 34px; right: 34px; top: 16px; bottom: 16px; border: 1px solid var(--d-accent); border-bottom: 0; border-radius: 999px 999px 0 0; z-index: 0; opacity: .7; }
+    .m-b3 .nm { font-size: 31px; color: var(--d-accent); }
+    .m-b3 .star { color: var(--d-accent); font-size: 10px; letter-spacing: .5em; margin: 6px 0 4px; }
+    /* b4 nuit : dégradé + poussière d'étoiles, filet argent */
+    .m-b4 { background: radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,.55), transparent), radial-gradient(1px 1px at 70% 20%, rgba(255,255,255,.4), transparent),
+      radial-gradient(1.5px 1.5px at 85% 70%, rgba(255,255,255,.45), transparent), radial-gradient(1px 1px at 35% 80%, rgba(255,255,255,.35), transparent),
+      radial-gradient(1px 1px at 55% 45%, rgba(255,255,255,.3), transparent), linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,0)), var(--d-clair);
+      box-shadow: 0 12px 26px rgba(0,0,0,.4), inset 0 0 0 1px var(--d-accentD); }
+    .m-b4 .nm { font-style: italic; font-weight: 400; font-size: 32px; }
+    .m-b4 .rule { background: linear-gradient(90deg, transparent, var(--d-accent), transparent); width: 120px; height: 1px; }
+    /* b5 split : bande latérale + brin de sauge */
+    .m-b5 { align-items: flex-start; text-align: left; padding-left: 34px; }
+    .m-b5::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 12px; background: var(--d-accent); }
+    .m-b5 .rule { margin-left: 0; }
+    .m-b5 .sg { position: absolute; right: 10px; bottom: 8px; width: 74px; height: 74px; z-index: 0; opacity: .85; }
+    .sg path { stroke: var(--d-sage); } .sg ellipse { fill: var(--d-sage); }
+    /* b6 couronne florale autour du monogramme */
+    .m-b6 .wr { position: relative; width: 58px; height: 58px; margin-bottom: 2px; }
+    .m-b6 .wr svg { position: absolute; inset: 0; }
+    .m-b6 .wr circle.c { stroke: var(--d-sage); } .m-b6 .wr ellipse { fill: var(--d-sage); } .m-b6 .wr circle.f { fill: var(--d-accent); }
+    .m-b6 .wr b { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--d-titre); font-size: 17px; color: var(--d-accentD); font-weight: 700; }
+    .m-b6 .nm { font-size: 27px; margin-top: 2px; }
+    .m-b6 .rule { margin: 6px auto 5px; }
+    /* b7 kraft : carte posée de travers, ruban adhésif */
+    .m-b7 { border-radius: 2px; }
+    #env .m-b7 { transform: rotate(-2.2deg); }
+    @keyframes letterout7 { from { transform: rotate(-2.2deg); } to { transform: translateY(-170px) rotate(-2.2deg); } }
+    #env.go .m-b7 { animation: letterout7 1.3s cubic-bezier(.22,1,.36,1) .9s forwards, letterzoom .7s ease-in 2.4s forwards; }
+    .m-b7 .tape { position: absolute; top: -6px; left: calc(50% - 46px); width: 92px; height: 24px; transform: rotate(3deg); z-index: 2; background: var(--d-accent); opacity: .38; }
+    .m-b7 .tape::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(45deg, rgba(255,255,255,.35) 0 6px, transparent 6px 12px); }
+    .m-b7 .nm { font-style: italic; font-weight: 400; font-size: 34px; }
+    /* b8 typo géante : date en filigrane */
+    .m-b8 { align-items: flex-start; text-align: left; padding-left: 24px; }
+    .m-b8 .wm { position: absolute; right: -4px; top: -14px; font-family: var(--d-titre); font-weight: 700; font-size: 104px; line-height: 1; color: var(--d-accent); opacity: .12; z-index: 0; letter-spacing: -.04em; }
+    .m-b8 .nm { font-weight: 700; font-size: 36px; letter-spacing: -.02em; }
+    .m-b8 .rule { margin-left: 0; width: 28px; }
+    /* b9 magazine : bandeau + confettis */
+    .m-b9 { padding-top: 38px; background: radial-gradient(3px 3px at 12% 70%, var(--d-accent), transparent), radial-gradient(3px 3px at 88% 60%, var(--d-hl), transparent),
+      radial-gradient(2.5px 2.5px at 80% 88%, var(--d-accent), transparent), radial-gradient(2.5px 2.5px at 20% 90%, var(--d-hl), transparent),
+      radial-gradient(2px 2px at 92% 35%, var(--d-accent), transparent), radial-gradient(2px 2px at 7% 42%, var(--d-hl), transparent), var(--d-clair); }
+    .m-b9 .mast { position: absolute; top: 0; left: 0; right: 0; height: 26px; background: var(--d-accent); color: var(--d-onacc); display: flex; justify-content: space-between; align-items: center;
+                  padding: 0 12px; font-size: 9.5px; font-weight: 800; letter-spacing: .16em; }
+    .m-b9 .nm { font-weight: 700; }
+    .m-b9 .rule { background: var(--d-hl); }
+    /* b10 art déco : éventail + coins */
+    .m-b10 { padding-top: 40px; box-shadow: 0 12px 26px rgba(0,0,0,.5), inset 0 0 0 6px var(--d-clair), inset 0 0 0 7px var(--d-accent); }
+    .m-b10 .fan { position: absolute; top: 7px; left: calc(50% - 46px); width: 92px; height: 46px; border-radius: 92px 92px 0 0; z-index: 0; opacity: .85;
+      background: repeating-conic-gradient(from -90deg at 50% 100%, var(--d-accent) 0 3deg, transparent 3deg 12deg);
+      -webkit-mask: radial-gradient(circle at 50% 100%, transparent 14px, #000 15px); mask: radial-gradient(circle at 50% 100%, transparent 14px, #000 15px); }
+    .m-b10 .cn { position: absolute; width: 18px; height: 18px; border: 1px solid var(--d-accent); z-index: 0; }
+    .m-b10 .cn.a { top: 12px; left: 12px; border-right: 0; border-bottom: 0; }
+    .m-b10 .cn.b { top: 12px; right: 12px; border-left: 0; border-bottom: 0; }
+    .m-b10 .cn.c { bottom: 12px; left: 12px; border-right: 0; border-top: 0; }
+    .m-b10 .cn.d { bottom: 12px; right: 12px; border-left: 0; border-top: 0; }
+    .m-b10 .eye, .m-b10 .nm { color: var(--d-accent); }
+    .m-b10 .nm { font-weight: 400; font-size: 30px; letter-spacing: .04em; }
+    /* ── Page invité : ligne personnelle + bouton « Mon pass » ── */
+    .for-line { text-align: center; font-size: 13px; color: var(--d-muted); margin: 0 0 12px; }
+    .for-line b { color: var(--d-texte); }
+    .to-pass { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 40; background: var(--d-accent); color: var(--d-onacc); text-decoration: none;
+               font-weight: 800; font-size: 14px; padding: 12px 20px; border-radius: 999px; box-shadow: 0 8px 24px rgba(0,0,0,.28); transition: opacity .2s, transform .2s; }
+    .to-pass.off { opacity: 0; pointer-events: none; transform: translate(-50%, 12px); }
     /* Navigateurs sans color-mix() (WebView Android < Chrome 111, fréquentes en RCA) : la déclaration
        est ignorée ; ces replis gardent des fonds et bordures lisibles. */
     @supports not (color: color-mix(in srgb, red 50%, white)) {
@@ -491,6 +590,17 @@
         return SERIF[n] ? '"' + n + '", Georgia, "Times New Roman", serif'
                         : '"' + n + '", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
       }
+      // Texte posé sur l'accent (enveloppe, bouton) : blanc ou la couleur du skin la plus contrastée
+      function _lum(h) {
+        var v = [1, 3, 5].map(function (i) { var x = parseInt(h.substr(i, 2), 16) / 255; return x <= .03928 ? x / 12.92 : Math.pow((x + .055) / 1.055, 2.4); });
+        return .2126 * v[0] + .7152 * v[1] + .0722 * v[2];
+      }
+      function onColor(bg, extra) {
+        var lb = _lum(bg), best = "#ffffff", bc = 0;
+        ["#ffffff"].concat(extra || []).forEach(function (c) { var l = _lum(c), r = (Math.max(l, lb) + .05) / (Math.min(l, lb) + .05); if (r > bc) { bc = r; best = c; } });
+        return best;
+      }
+
       function applySkin(skin) {
         var c = skin.couleurs || {}, pol = skin.polices || {}, r = document.documentElement.style;
         r.setProperty("--d-fond", hex(c.fond, "#f3f4f1"));
@@ -500,6 +610,10 @@
         r.setProperty("--d-texte", hex(c.texte, "#111827"));
         r.setProperty("--d-muted", hex(c.muted, "#6b7280"));
         r.setProperty("--d-titre", fontStack(SERIF[pol.titre] ? pol.titre : "Plus Jakarta Sans"));
+        var orn = skin.ornements || {}, acc = hex(c.accent, "#00502c");
+        r.setProperty("--d-hl", hex(c.highlight, acc));
+        r.setProperty("--d-sage", hex(orn.sage, "#8a9a7b"));
+        r.setProperty("--d-onacc", onColor(acc, [hex(c.fond, "#f3f4f1"), hex(c.texte, "#111827")]));
         document.body.classList.add("design");
         var meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.content = hex(c.accent, "#00502c");
       }
@@ -684,35 +798,74 @@
         return '<div class="prog card' + (st !== "list" ? " pg-" + st : "") + '">' + rows.join('') + '</div>';
       }
 
-      function openEnvelope(p, onDone) {
-        var d = p.design, f = d.fiche || {}, corp = d.famille === "corporate";
-        var eye = corp ? (f.organisateur || "") : (f.eyebrow || "");
+      // Monogramme du cachet : « Awa & Léon » → « A&L » ; un seul nom → son initiale ; sinon ✦
+      function monogram(t) {
+        var parts = String(t || "").split(/\s*(?:&|\+|\bet\b)\s*/i).filter(Boolean), L = /[A-Za-zÀ-ÖØ-öø-ÿ]/;
+        var ini = parts.slice(0, 2).map(function (x) { var m = x.trim().match(L); return m ? m[0].toUpperCase() : ""; }).filter(Boolean);
+        return ini.length === 2 ? ini[0] + "&" + ini[1] : (ini[0] || "✦");
+      }
+      var SAGE_SVG = '<svg class="sg" viewBox="0 0 80 80" aria-hidden="true"><path d="M10 74 C 30 54, 48 34, 74 8" stroke-width="1.6" fill="none"/>'
+        + [[22, 58, -70], [30, 66, 10], [38, 44, -75], [46, 52, 5], [54, 30, -80], [62, 38, 0], [68, 18, -60]].map(function (e) {
+            return '<ellipse cx="' + e[0] + '" cy="' + e[1] + '" rx="9" ry="4" opacity=".8" transform="rotate(' + e[2] + ' ' + e[0] + ' ' + e[1] + ')"/>'; }).join("") + '</svg>';
+      var WREATH_SVG = (function () {
+        var o = '<svg viewBox="0 0 60 60" aria-hidden="true"><circle class="c" cx="30" cy="30" r="24" fill="none" stroke-width="1.2"/>';
+        for (var a = 20; a < 360; a += 40) { var x = (30 + 24 * Math.cos(a * Math.PI / 180)).toFixed(1), y = (30 + 24 * Math.sin(a * Math.PI / 180)).toFixed(1);
+          o += '<ellipse cx="' + x + '" cy="' + y + '" rx="4.2" ry="2" opacity=".85" transform="rotate(' + (a + 90) + ' ' + x + ' ' + y + ')"/>'; }
+        return o + '<circle class="f" cx="30" cy="6" r="3"/><circle class="f" cx="30" cy="54" r="3"/></svg>';
+      })();
+
+      // Contenu du billet selon le cadre (motif repris du faire-part). Tout texte passe par esc().
+      function letterHtml(p, mono) {
+        var d = p.design, f = d.fiche || {}, corp = d.famille === "corporate", c = d.cadre, x = _parts(p);
         var title = corp ? (f.titre || p.event_title) : (f.display_names || p.event_title);
+        var eyeT = corp ? (f.organisateur || "") : (f.eyebrow || "");
         var date = f.date_label || p.dates_label || p.event_date_label || "";
         var first = (p.guest_name || "").trim().split(/\s+/)[0] || "";
-        var forwho = /^[A-Za-zÀ-ÿ'’-]{2,}$/.test(first) ? ("Pour " + first) : "";
-        var env = $("env");
-        env.innerHTML = '<div class="env" id="env-card">'
-          + '<div class="letter"><div class="le-in">'
-          + (eye ? '<div class="le-eye">' + esc(eye) + '</div>' : '')
-          + '<div class="nm">' + esc(title) + '</div>'
-          + '<div class="le-rule"></div>'
-          + (date ? '<div class="le-date">' + esc(date) + '</div>' : '')
-          + (forwho ? '<div class="le-for">' + esc(forwho) + '</div>' : '')
-          + (f.tenue ? '<div class="le-date">Tenue : ' + esc(f.tenue) + '</div>' : '')
-          + '</div></div>'
-          + '<div class="front"></div>'
-          + '<div class="flap"></div><div class="seal">✦</div>'
-          + '<div class="env-hint">Touchez pour ouvrir</div></div>';
+        var forT = /^[A-Za-zÀ-ÖØ-öø-ÿ'’-]{2,}$/.test(first) ? "Pour " + first : "";
+        var eye = eyeT ? '<div class="eye">' + esc(eyeT) + '</div>' : "";
+        var nm = '<div class="nm' + (String(title || "").length > 22 ? " long" : "") + '">' + esc(title) + '</div>', r = '<div class="rule"></div>';
+        var dt = date ? '<div class="dt">' + esc(date) + '</div>' : "", fo = forT ? '<div class="for">' + esc(forT) + '</div>' : "";
+        if (c === "b1") return '<div class="orn">❖</div>' + eye + nm + r + dt + fo;
+        if (c === "b2") return eye + nm + r + '<div class="ed"><span>' + esc(x ? x.dd + " · " + x.mm + " · " + x.y : date) + '</span><span>' + esc(forT) + '</span></div>';
+        if (c === "b3") return '<div class="arch"></div>' + eye + nm + '<div class="star">✦ ✦ ✦</div>' + dt + fo;
+        if (c === "b5") return SAGE_SVG + eye + nm + r + dt + fo;
+        if (c === "b6") return '<div class="wr">' + WREATH_SVG + '<b>' + esc(mono) + '</b></div>' + nm + r + dt + fo;
+        if (c === "b7") return '<div class="tape"></div>' + eye + nm + r + dt + fo;
+        if (c === "b8") return (x ? '<div class="wm">' + esc(x.dd + "." + x.mm) + '</div>' : "") + eye + nm + r + dt + fo;
+        if (c === "b9") return '<div class="mast"><span>FAIRE-PART</span><span>' + esc(String(p.event_date || "").slice(0, 4)) + '</span></div>' + eye + nm + r + dt + fo;
+        if (c === "b10") return '<div class="fan"></div><div class="cn a"></div><div class="cn b"></div><div class="cn c"></div><div class="cn d"></div>' + eye + nm + r + dt + fo;
+        return eye + nm + r + dt + fo;
+      }
+
+      function openEnvelope(p, onDone) {
+        var d = p.design, f = d.fiche || {}, corp = d.famille === "corporate";
+        var mono = monogram(corp ? (f.organisateur || p.event_title) : (f.display_names || p.event_title));
+        var who = (p.guest_name || "").trim(), env = $("env");
+        env.innerHTML = '<div class="env-wrap"><div class="env-idle"><div class="env" id="env-card" role="button" tabindex="0" aria-label="Ouvrir l\'invitation">'
+          + '<div class="back"></div>'
+          + '<div class="letter m-' + esc(d.cadre) + '">' + letterHtml(p, mono) + '</div>'
+          + '<div class="pk"><i class="b"></i><i class="l"></i><i class="r"></i></div>'
+          + (who ? '<div class="who' + (who.length > 22 ? " long" : "") + '">' + esc(who) + '</div>' : "")
+          + (p.host_label ? '<div class="from">De la part de ' + esc(p.host_label) + '</div>' : "")
+          + '<div class="flap"></div><div class="seal">' + esc(mono) + '</div>'
+          + '<div class="env-hint">Touchez pour ouvrir</div></div></div></div>';
+        var sc = Math.min(1, (window.innerWidth - 24) / 320);          // petits écrans : on réduit le tout
+        if (sc < 1) env.firstChild.style.transform = "scale(" + sc.toFixed(3) + ")";
         env.classList.remove("hidden");
-        var opened = false;
-        function go() {
-          if (opened) return; opened = true;
-          env.classList.add("go");
-          setTimeout(function () { env.classList.add("hidden"); if (onDone) onDone(); }, 3800);
+        var step = 0, t = null;
+        function done() { env.classList.add("hidden"); env.innerHTML = ""; if (onDone) onDone(); }
+        function tap() {
+          if (step === 0) {                                             // 1er toucher : ouverture
+            step = 1; env.classList.add("go");
+            try { localStorage.setItem("goevent_env:" + token, "1"); } catch (e) {}   // vue = ouverte, pas affichée
+            t = setTimeout(done, 3200);
+          } else if (step === 1) {                                      // 2e toucher : passer
+            step = 2; clearTimeout(t); env.classList.add("skip"); setTimeout(done, 260);
+          }
         }
-        $("env-card").addEventListener("click", go);
-        env.addEventListener("click", go);
+        env.addEventListener("click", tap);
+        $("env-card").addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); tap(); } });
+        try { $("env-card").focus({ preventScroll: true }); } catch (e) {}
       }
 
       // Règle d'entrée affichée sous le QR (places du pass ; séances : valable à chacune)
@@ -762,25 +915,48 @@
         if (!noQr && typeof qrcode === "function") { var img = $("qr"); if (img) img.src = qrDataUrl(p.pass_url); }
       }
 
+      // Jour J : à partir de 6 h avant le début (ou dès une entrée), le pass passe avant le faire-part.
+      function passFirst(p) {
+        if (p.status === "partial" || p.status === "complete") return true;
+        if (!p.event_date) return false;
+        var t = Date.parse(/[zZ]|[+-]\d\d:?\d\d$/.test(p.event_date) ? p.event_date : p.event_date + "Z");
+        return isFinite(t) && Date.now() >= t - 6 * 3600 * 1000;
+      }
+      function forLine(p) {
+        var n = p.seats || 1, bits = [n + " place" + (n > 1 ? "s" : "")];
+        if (p.table) bits.push("Table " + p.table);
+        return p.guest_name ? '<p class="for-line">Pour <b>' + esc(p.guest_name) + '</b> · ' + esc(bits.join(" · ")) + '</p>' : "";
+      }
+      // Bouton flottant « Mon pass » : visible tant que le pass n'est pas à l'écran (et hors enveloppe)
+      function passButton() {
+        if (!("IntersectionObserver" in window) || $("to-pass")) return;
+        var b = document.createElement("a");
+        b.id = "to-pass"; b.className = "to-pass off"; b.href = "#pass"; b.textContent = "🎫 Mon pass";
+        b.addEventListener("click", function (e) { e.preventDefault(); $("pass").scrollIntoView({ behavior: "smooth", block: "start" }); });
+        document.body.appendChild(b);
+        new IntersectionObserver(function (en) { b.classList.toggle("off", en[0].isIntersecting); }, { threshold: 0.25 }).observe($("pass"));
+      }
+
       function renderDesign(p, offline) {
         applySkin(p.design.skin || {});
         $("loading").classList.add("hidden");
         var exp = $("exp");
-        exp.innerHTML = renderFairePart(p) + renderInfos(p) + renderProgramme(p);
+        var first = passFirst(p);
+        exp.innerHTML = (first ? "" : forLine(p)) + renderFairePart(p) + renderInfos(p) + renderProgramme(p);
         exp.classList.remove("hidden");
         fillTicket(p, offline);
         $("pass").classList.remove("hidden");
+        if (first) exp.parentNode.insertBefore($("pass"), exp);         // jour J : le QR d'abord
+        passButton();
         document.title = (p.event_title || "Invitation") + " | Invitation";
         // Enveloppe : à la PREMIÈRE ouverture d'un pass valide seulement. Jamais devant l'agent (déjà
         // ouverte, pass entamé, hors ligne) ni si l'appareil demande moins d'animations.
-        var seenKey = "goevent_env:" + token, seen = false;
-        try { seen = localStorage.getItem(seenKey) === "1"; } catch (e) {}
+        // « Vue » n'est enregistré qu'au toucher : fermer la page avant d'ouvrir la laisse pour la prochaine fois.
+        var seen = false;
+        try { seen = localStorage.getItem("goevent_env:" + token) === "1"; } catch (e) {}
         var calm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        var canOpen = p.design.enveloppe && p.status === "valid" && !offline && !seen && !calm;
-        if (canOpen) {
-          try { localStorage.setItem(seenKey, "1"); } catch (e) {}
-          openEnvelope(p, null);
-        }
+        var canOpen = p.design.enveloppe && p.status === "valid" && !offline && !seen && !calm && !first;
+        if (canOpen) openEnvelope(p, null);
       }
 
       function renderPass(p, offline) {
@@ -798,6 +974,8 @@
             $("pass").innerHTML = PASS_HTML; $("pass").className = PASS_CLASS;
             $("exp").innerHTML = ""; $("exp").classList.add("hidden"); $("env").classList.add("hidden");
             document.body.classList.remove("design"); document.documentElement.removeAttribute("style");
+            var tp = $("to-pass"); if (tp) tp.remove();
+            var exp0 = $("exp"); if (exp0.nextElementSibling !== $("pass")) exp0.parentNode.insertBefore(exp0, $("pass"));
           }
         }
         renderPass(p, offline);

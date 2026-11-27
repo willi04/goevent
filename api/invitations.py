@@ -128,6 +128,15 @@ def _load(db: Session, event_id: int, user: User, lock: bool = False):
     return ev, st
 
 
+def _load_writable(db: Session, event_id: int, user: User, lock: bool = False):
+    """Comme _load, pour une ÉCRITURE de données de présentation (affiche, design…) : refusée après
+    la purge J+30, sinon des données personnelles réapparaîtraient sans jamais être repurgées."""
+    ev, st = _load(db, event_id, user, lock=lock)
+    if st.purged_at:
+        raise HTTPException(400, "Liste supprimée (conservation de 30 jours dépassée).")
+    return ev, st
+
+
 def _guest(db: Session, guest_id: int, user: User, lock: bool = False):
     q = db.query(EventGuest).filter(EventGuest.id == guest_id)
     if lock:
@@ -285,7 +294,7 @@ def _page_row(db: Session, event_id: int, user: User) -> InvitationPage:
 def admin_put_page(request: Request, event_id: int, data: PageIn, db: Session = Depends(get_db),
                    user: User = Depends(manager)):
     """Description PUBLIQUE (page d'inscription), distincte de la note interne de l'événement."""
-    ev, st = _load(db, event_id, user)
+    ev, st = _load_writable(db, event_id, user)
     text = "\n".join(inv._clean(x, 2000) or "" for x in (data.description or "").replace("\r", "").split("\n")).strip()
     _page_row(db, ev.id, user).description = text[:2000] or None
     db.commit()
@@ -298,7 +307,7 @@ def admin_put_page(request: Request, event_id: int, data: PageIn, db: Session = 
 def admin_put_cover(request: Request, event_id: int, data: CoverIn, db: Session = Depends(get_db),
                     user: User = Depends(manager)):
     """Affiche : contrôlée puis ré-encodée en JPEG par le serveur (core/invitation_media.py)."""
-    ev, st = _load(db, event_id, user)
+    ev, st = _load_writable(db, event_id, user)
     jpeg, w, h, sha = media.normalize_upload(data.image)
     row = _page_row(db, ev.id, user)
     row.cover_data, row.cover_width, row.cover_height, row.cover_sha = jpeg, w, h, sha
@@ -578,7 +587,7 @@ def admin_design_photo_view(event_id: int, which: str = Query("photo", max_lengt
 @limiter.limit("60/minute")
 def admin_put_design(request: Request, event_id: int, data: DesignPut,
                      db: Session = Depends(get_db), user: User = Depends(manager)):
-    ev, st = _load(db, event_id, user)
+    ev, st = _load_writable(db, event_id, user)
     d = _get_or_create_design(db, ev, st)
     f = data.model_fields_set
     if "modele_id" in f:
@@ -619,7 +628,7 @@ async def admin_design_palette(request: Request, event_id: int, file: UploadFile
                                db: Session = Depends(get_db), user: User = Depends(manager)):
     """Upload affiche → extraction COULEURS (Pillow). L'affiche n'est PAS stockée.
     L'admin applique/ajuste puis enregistre via theme_override (PUT)."""
-    ev, st = _load(db, event_id, user)
+    ev, st = _load_writable(db, event_id, user)
     raw = await _read_upload(file, idesign.MAX_UPLOAD_BYTES)
     try:
         tokens = idesign.extract_palette(raw)
@@ -632,7 +641,7 @@ async def admin_design_palette(request: Request, event_id: int, file: UploadFile
 @limiter.limit("20/minute")
 async def admin_design_photo(request: Request, event_id: int, file: UploadFile = File(...),
                              db: Session = Depends(get_db), user: User = Depends(manager)):
-    ev, st = _load(db, event_id, user)
+    ev, st = _load_writable(db, event_id, user)
     d = _get_or_create_design(db, ev, st)
     raw = await _read_upload(file, idesign.MAX_UPLOAD_BYTES)
     try:
@@ -650,7 +659,7 @@ async def admin_design_photo(request: Request, event_id: int, file: UploadFile =
 @limiter.limit("20/minute")
 async def admin_design_logo(request: Request, event_id: int, file: UploadFile = File(...),
                             db: Session = Depends(get_db), user: User = Depends(manager)):
-    ev, st = _load(db, event_id, user)
+    ev, st = _load_writable(db, event_id, user)
     d = _get_or_create_design(db, ev, st)
     raw = await _read_upload(file, idesign.MAX_UPLOAD_BYTES)
     try:
@@ -670,7 +679,7 @@ async def admin_design_import_text(request: Request, event_id: int, file: Upload
                                    db: Session = Depends(get_db), user: User = Depends(manager)):
     """Lit un .txt ou .docx et renvoie son texte brut pour pré-remplir un champ liste
     (programme, intervenants…). Aucune interprétation : l'admin relit puis Enregistre."""
-    ev, st = _load(db, event_id, user)  # cloisonnement
+    ev, st = _load_writable(db, event_id, user)  # cloisonnement + refus après purge
     raw = await _read_upload(file, 4 * 1024 * 1024)
     name = (file.filename or "").lower()
     ctype = (file.content_type or "")

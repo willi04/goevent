@@ -39,7 +39,6 @@ CHAMPS_CORPORATE = {
     "sessions":     "list[heure,titre,intervenant]",
     "lieu":         "text",
     "sponsors":     "list[nom,logo]",
-    "cta":          "text",
 }
 
 # scenes : enveloppe (animation d'ouverture) + page + programme + credential.

@@ -172,7 +172,7 @@ class InvitationPage(Base):
     __tablename__ = "invitation_pages"
     event_id     = Column(Integer, ForeignKey("events.id", ondelete="CASCADE"), primary_key=True)
     description  = Column(Text, nullable=True)
-    cover_data   = Column(LargeBinary, nullable=True)      # JPEG
+    cover_data   = deferred(Column(LargeBinary, nullable=True))   # JPEG ; différé : jamais chargé par db.get()
     cover_sha    = Column(String(64), nullable=True)       # version (cache navigateur / CDN)
     cover_width  = Column(Integer, nullable=True)
     cover_height = Column(Integer, nullable=True)

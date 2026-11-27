@@ -468,6 +468,8 @@ def admin_event_owner(request: Request, event_id: int, data: OwnerIn, db: Sessio
     ev, st = _load(db, event_id, user, lock=True)
     old = st.owner_id
     st.owner_id = _owner_for_new(db, user, data.owner_id)
+    db.query(InvitationDesign).filter(InvitationDesign.event_id == ev.id).update(
+        {InvitationDesign.owner_id: st.owner_id}, synchronize_session=False)   # suit le dossier
     db.commit()
     log_security_event(db, "invitation_event_owner_changed", request, user.id,
                        "event %d : %s → %s" % (ev.id, old or "maison", st.owner_id or "maison"))
@@ -558,11 +560,14 @@ def admin_cadres(famille: Optional[str] = Query(None, max_length=20),
     qy = db.query(InvModeleCadre).filter(InvModeleCadre.status == "actif")
     if famille:
         qy = qy.filter(InvModeleCadre.famille == famille)
+    cadres = qy.order_by(InvModeleCadre.famille, InvModeleCadre.sort_order).all()
+    by_cadre = {}
+    for m in (db.query(InvModele).filter(InvModele.cadre_id.in_([c.id for c in cadres]), InvModele.status == "actif")
+              .order_by(InvModele.sort_order).all()):            # une requête pour tous les cadres (plus de N+1)
+        by_cadre.setdefault(m.cadre_id, []).append(m)
     out = []
-    for c in qy.order_by(InvModeleCadre.famille, InvModeleCadre.sort_order).all():
-        modeles = (db.query(InvModele)
-                   .filter(InvModele.cadre_id == c.id, InvModele.status == "actif")
-                   .order_by(InvModele.sort_order).all())
+    for c in cadres:
+        modeles = by_cadre.get(c.id, [])
         out.append({
             "code": c.code, "famille": c.famille, "name": c.name, "scenes": c.scenes, "champs": c.champs,
             "suggested": bool(event_type and c.suggest_for and event_type in c.suggest_for),
@@ -626,7 +631,7 @@ def admin_put_design(request: Request, event_id: int, data: DesignPut,
         if data.status == "pret" and not d.modele_id:
             raise HTTPException(400, "Choisissez un gabarit avant de publier le design")
         d.status = data.status
-    d.owner_id = d.owner_id or st.owner_id
+    d.owner_id = st.owner_id             # toujours celui du dossier (le cloisonnement passe par _load)
     d.updated_by = user.id
     d.updated_at = inv.utcnow()
     db.commit()

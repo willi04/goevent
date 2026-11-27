@@ -359,7 +359,6 @@
       { k: "titre", l: "Titre de l'événement", ph: "Tech Summit 2026" },
       { k: "sous_titre", l: "Sous-titre", ph: "L'IA au service de l'Afrique centrale" },
       { k: "lieu", l: "Lieu", ph: "Ledger Plaza, Bangui" },
-      { k: "cta", l: "Bouton d'action (CTA)", ph: "Confirmer ma présence" },
       { k: "intervenants", l: "Intervenants", t: "list", ph: "David Koyt — CEO — PayGo Africa\nMarie Nzé — Directrice — Orange CA" },
       { k: "sessions", l: "Programme / sessions", t: "list", ph: "09h00 Ouverture par D. Koyt\n10h30 Panel IA & Afrique" },
       { k: "sponsors", l: "Sponsors", t: "list", ph: "Orange CA\nEcobank" }

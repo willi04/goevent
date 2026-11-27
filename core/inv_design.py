@@ -145,6 +145,9 @@ _LIST_CELL_MAX = 300
 # (fuite d'IP des invités vers des tiers) ; seule une référence « m<id> » vers une image
 # téléversée pour CET événement (inv_design_media) est gardée.
 _LIST_IMAGE_KEYS = ("photo", "logo")
+# Champs retirés de la fiche (ignorés même si le schéma en base les liste encore) :
+# cta = « bouton » corporate sans aucune action côté invité (trompeur).
+RETIRED_FIELDS = ("cta",)
 
 
 def _txt(v, n: int, label: str) -> str:
@@ -174,7 +177,7 @@ def sanitize_fiche(fiche, champs: dict, media_refs=frozenset()) -> dict:
         raise ValueError("Fiche : format invalide")
     out = {}
     for key, kind in (champs or {}).items():
-        if key not in fiche or kind == "image":
+        if key not in fiche or kind == "image" or key in RETIRED_FIELDS:
             continue
         cols = _list_keys(kind)
         if cols is None:

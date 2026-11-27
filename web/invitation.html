@@ -137,7 +137,6 @@
     .spk .nm { font-weight: 800; font-size: 15px; color: var(--d-texte); }
     .spk .ro { font-size: 13px; color: var(--d-accentD); font-weight: 700; }
     .spk .co { font-size: 12px; color: var(--d-muted); }
-    .cta { display: inline-block; margin-top: 20px; background: var(--d-accent); color: #fff; font-weight: 800; font-size: 15px; padding: 14px 22px; border-radius: 14px; }
     .prog .prog-t { font-size: 12px; letter-spacing: .16em; text-transform: uppercase; font-weight: 800; color: var(--d-accentD); padding: 20px 22px 0; }
     .prog .row { display: flex; gap: 16px; padding: 16px 22px; border-top: 1px solid color-mix(in srgb, var(--d-texte) 8%, transparent); }
     .prog .row:first-of-type { border-top: 0; }
@@ -496,7 +495,6 @@
       function _cTitle(p) { return '<div class="titre">' + esc(_f(p).titre || p.event_title) + '</div>'; }
       function _cSub(p) { var s = _f(p).sous_titre; return s ? '<div class="sous">' + esc(s) + '</div>' : ""; }
       function _cDL(p) { var f = _f(p), w = f.date_label || p.dates_label || p.event_date_label, l = f.lieu || p.location, o = ""; if (w) o += '<div class="when">🗓 ' + esc(w) + '</div>'; if (l) o += '<div class="where">📍 ' + esc(l) + '</div>'; return o; }
-      function _cCta(p) { var c = _f(p).cta; return c ? '<span class="cta">' + esc(c) + '</span>' : ""; }
       function _cSpk(p, max, cls) {
         var f = _f(p); if (!f.intervenants || !f.intervenants.length) return "";
         var sp = ['<div class="' + (cls || "spk") + '">'];
@@ -534,21 +532,21 @@
 
       // ── 10 structures corporate distinctes ──
       var FP_CORP = {
-        c1: function (p) { return '<div class="fp card corp fp-c1"><div class="c1-bar"></div><div class="fp-in">' + _cLogo(p) + _cOrg(p) + _cTitle(p) + _cSub(p) + _cDL(p) + _cSpk(p, 6) + _cSpon(p) + _cCta(p) + '</div></div>'; },
-        c2: function (p) { return '<div class="fp card corp fp-c2"><div class="fp-in"><div class="c2-badge"><span class="c2-hole"></span>' + _cLogo(p) + '<div class="c2-tag">Badge d\'accès</div>' + _cTitle(p) + _cSub(p) + '<div class="c2-dl">' + _cDL(p) + '</div></div>' + _cCta(p) + '</div></div>'; },
-        c3: function (p) { return '<div class="fp card corp fp-c3"><div class="c3-panel"><div class="c3-tag">Lancement</div>' + _cLogo(p) + _cTitle(p) + _cSub(p) + '</div><div class="fp-in">' + _cOrg(p) + _cDL(p) + _cCta(p) + '</div></div>'; },
-        c4: function (p) { return '<div class="fp card corp fp-c4"><div class="fp-in">' + _cLogo(p) + '<div class="c4-eye">' + esc(_f(p).organisateur || "Soirée de gala") + '</div><div class="c4-rule"></div>' + _cTitle(p) + _cSub(p) + '<div class="c4-rule"></div>' + _cDL(p) + _cCta(p) + '</div></div>'; },
-        c5: function (p) { return '<div class="fp card corp fp-c5"><div class="fp-in"><div class="c5-screen"><span class="c5-live"><i></i>EN DIRECT</span><div class="c5-play">▶</div></div>' + _cLogo(p) + _cOrg(p) + _cTitle(p) + _cSub(p) + _cDL(p) + _cSpk(p, 4) + _cCta(p) + '</div></div>'; },
-        c6: function (p) { return '<div class="fp card corp fp-c6"><div class="c6-head">' + _cLogo(p) + _cOrg(p) + _cTitle(p) + _cSub(p) + _cDL(p) + '</div><div class="fp-in"><div class="c6-lbl">Programme de la journée</div>' + _cSess(p, 14) + _cCta(p) + '</div></div>'; },
-        c7: function (p) { return '<div class="fp card corp fp-c7"><div class="fp-in">' + _cOrg(p) + _cTitle(p) + '<div class="c7-lbl">Nos intervenants</div>' + _cSpk(p, 6, "spk spk-grid") + _cSub(p) + _cDL(p) + _cCta(p) + '</div></div>'; },
-        c8: function (p) { return '<div class="fp card corp fp-c8"><div class="fp-in">' + _cLogo(p) + '<div class="c8-rule"></div>' + _cOrg(p) + _cTitle(p) + _cSub(p) + '<div class="c8-rule"></div>' + _cDL(p) + _cCta(p) + '</div></div>'; },
-        c9: function (p) { return '<div class="fp card corp fp-c9"><div class="c9-hall"><div class="c9-tag">Salon · Expo</div>' + _cLogo(p) + _cTitle(p) + '</div><div class="fp-in">' + _cSub(p) + _cDL(p) + _cSpon(p) + _cCta(p) + '</div></div>'; },
-        c10: function (p) { return '<div class="fp card corp fp-c10"><div class="fp-in">' + _cLogo(p) + '<div class="c10-tag">Atelier · Formation</div>' + _cTitle(p) + _cSub(p) + _cDL(p) + '<div class="c10-lbl">Au programme</div>' + _cSess(p, 12, true) + _cCta(p) + '</div></div>'; }
+        c1: function (p) { return '<div class="fp card corp fp-c1"><div class="c1-bar"></div><div class="fp-in">' + _cLogo(p) + _cOrg(p) + _cTitle(p) + _cSub(p) + _cDL(p) + _cSpk(p, 6) + _cSpon(p) + '</div></div>'; },
+        c2: function (p) { return '<div class="fp card corp fp-c2"><div class="fp-in"><div class="c2-badge"><span class="c2-hole"></span>' + _cLogo(p) + '<div class="c2-tag">Badge d\'accès</div>' + _cTitle(p) + _cSub(p) + '<div class="c2-dl">' + _cDL(p) + '</div></div>' + '</div></div>'; },
+        c3: function (p) { return '<div class="fp card corp fp-c3"><div class="c3-panel"><div class="c3-tag">Lancement</div>' + _cLogo(p) + _cTitle(p) + _cSub(p) + '</div><div class="fp-in">' + _cOrg(p) + _cDL(p) + '</div></div>'; },
+        c4: function (p) { return '<div class="fp card corp fp-c4"><div class="fp-in">' + _cLogo(p) + '<div class="c4-eye">' + esc(_f(p).organisateur || "Soirée de gala") + '</div><div class="c4-rule"></div>' + _cTitle(p) + _cSub(p) + '<div class="c4-rule"></div>' + _cDL(p) + '</div></div>'; },
+        c5: function (p) { return '<div class="fp card corp fp-c5"><div class="fp-in"><div class="c5-screen"><span class="c5-live"><i></i>EN DIRECT</span><div class="c5-play">▶</div></div>' + _cLogo(p) + _cOrg(p) + _cTitle(p) + _cSub(p) + _cDL(p) + _cSpk(p, 4) + '</div></div>'; },
+        c6: function (p) { return '<div class="fp card corp fp-c6"><div class="c6-head">' + _cLogo(p) + _cOrg(p) + _cTitle(p) + _cSub(p) + _cDL(p) + '</div><div class="fp-in"><div class="c6-lbl">Programme de la journée</div>' + _cSess(p, 14) + '</div></div>'; },
+        c7: function (p) { return '<div class="fp card corp fp-c7"><div class="fp-in">' + _cOrg(p) + _cTitle(p) + '<div class="c7-lbl">Nos intervenants</div>' + _cSpk(p, 6, "spk spk-grid") + _cSub(p) + _cDL(p) + '</div></div>'; },
+        c8: function (p) { return '<div class="fp card corp fp-c8"><div class="fp-in">' + _cLogo(p) + '<div class="c8-rule"></div>' + _cOrg(p) + _cTitle(p) + _cSub(p) + '<div class="c8-rule"></div>' + _cDL(p) + '</div></div>'; },
+        c9: function (p) { return '<div class="fp card corp fp-c9"><div class="c9-hall"><div class="c9-tag">Salon · Expo</div>' + _cLogo(p) + _cTitle(p) + '</div><div class="fp-in">' + _cSub(p) + _cDL(p) + _cSpon(p) + '</div></div>'; },
+        c10: function (p) { return '<div class="fp card corp fp-c10"><div class="fp-in">' + _cLogo(p) + '<div class="c10-tag">Atelier · Formation</div>' + _cTitle(p) + _cSub(p) + _cDL(p) + '<div class="c10-lbl">Au programme</div>' + _cSess(p, 12, true) + '</div></div>'; }
       };
 
       function fpCorporate(p) {   // fallback générique (cadre inconnu)
         return '<div class="fp card corp fp-c1"><div class="c1-bar"></div><div class="fp-in">'
-          + _cLogo(p) + _cOrg(p) + _cTitle(p) + _cSub(p) + _cDL(p) + _cSpk(p, 6) + _cSpon(p) + _cCta(p) + '</div></div>';
+          + _cLogo(p) + _cOrg(p) + _cTitle(p) + _cSub(p) + _cDL(p) + _cSpk(p, 6) + _cSpon(p) + '</div></div>';
       }
 
       function renderFairePart(p) {

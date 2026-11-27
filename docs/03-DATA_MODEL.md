@@ -36,6 +36,10 @@ définies dans `core/migrations.py` et exécutées au démarrage du backend.
 | `commissions` | `commission.py` | Commissions des commerciaux (packs invitations, lot 4.5) |
 | `invitation_quotes` | `invitation_quote.py` | Devis numérotés des commerciaux (lot 4.5) |
 | `invitation_quote_counters` | `invitation_quote.py` | Compteur annuel des numéros de devis |
+| `inv_modele_cadres` | `invitation.py` | Cadres de design des invitations (b1–b10 familial, c1–c10 corporate, lot 6) |
+| `inv_modeles` | `invitation.py` | Gabarits = skin (couleurs, polices) d'un cadre (lot 6) |
+| `invitation_design` | `invitation.py` | Design d'une invitation : gabarit choisi, fiche, photo, logo (lot 6) |
+| `inv_design_media` | `invitation.py` | Photos des intervenants d'un design corporate (lot 6) |
 | `boost_orders` | `promotion.py` | Boosts d'événements achetés par les organisateurs |
 | `fb_ad_packages` | `promotion.py` | Packs Facebook Ads gérés pour les organisateurs |
 | `homepage_content` | `cms.py` | Slides publicitaires et éditoriaux de la page d'accueil |
@@ -365,7 +369,10 @@ rétroactivement.
 - `private_event_settings` (PK `event_id`) : `client_name`, `client_phone`,
   `host_label`, `message_template` (NULL = message par défaut),
   `service_level` (`autonome|accompagne`), `track_token` (lien de suivi,
-  révocable), `purge_after` (date + 30 j), `purged_at`.
+  révocable), `purge_after` (date + 30 j), `purged_at`, `event_type`
+  (lot 6 : liste fermée `core/invitations.EVENT_TYPES` — mariage, dot,
+  conférence, salon… ; NULL = non précisé ; donne la famille de cadres
+  suggérée et l'ordre des onglets de la fiche).
 - `event_guests` : `token` (unique, aléatoire) + `token_hash` (SHA-256, liste
   hors ligne), `full_name`, `phone` (E.164), `category`, `table_label`,
   `seats` (1-20), `seats_used`, `revoked_at`, `sent_at`, `first/last_checkin_at`,
@@ -431,6 +438,31 @@ rétroactivement.
   comptées sous verrou), `inv_catalog_log` (changes JSONB {champ: [ancien,
   nouveau]}). Toutes portent `status` (active|archived), `used`,
   `sort_order`. Réglages : `site_settings["invitations_catalog"]`.
+- Design (lot 6) :
+  - `inv_modele_cadres` : `code` unique immuable (`b1`…`b10` familial,
+    `c1`…`c10` corporate), `famille`, `scenes` (JSONB : enveloppe, page,
+    programme, pass|badge), `champs` (JSONB : schéma de la fiche, types
+    `text`, `textarea`, `list[…]`, `colors`, `phone`), `suggest_for`
+    (types d'événement), `status` (actif|archive). Seedé par
+    `scripts/seed_inv_cadres.py` (idempotent, met à jour nom/scènes/champs).
+  - `inv_modeles` (gabarits) : `cadre_id` (RESTRICT), `skin` JSONB
+    (couleurs fond/accent/clair/texte, polices de la liste blanche
+    `core/inv_design.FONTS`), `enveloppe`, `public`, `status`. Seedé par
+    `scripts/seed_inv_modeles.py` (crée seulement les absents).
+  - `invitation_design` (PK `event_id`) : `modele_id` (SET NULL),
+    `theme_override` (palette retouchée), `fiche` JSONB (validée contre
+    `cadre.champs` + champs communs `core/inv_design.COMMON_FIELDS`, champs
+    retirés `RETIRED_FIELDS` ignorés), `photo_crop` ({x, y : 0-100, zoom :
+    1-3}), `vip`, `photo_data|logo_data` (bytea **deferred**, ré-encodés
+    Pillow) + `_mime`, `_sha` (version de cache), `photo_url|logo_url`
+    (chemins internes, jamais saisis), `status` (brouillon|pret : seul
+    `pret` est servi sur le pass), `owner_id` (cloisonnement commercial).
+  - `inv_design_media` : `event_id` (CASCADE), `kind` (`intervenant`),
+    `data` bytea **deferred** (≤ 500 px), `mime`, `sha`, `width|height`.
+    Référencée dans la fiche par `m<id>` (`intervenants[].photo`), jamais par
+    une URL ; 30 au plus par événement.
+  - Purge J+30 : `fiche` vidée, photo/logo/recadrage/palette effacés,
+    `inv_design_media` supprimée, design repassé en brouillon.
 
 ## Relations principales
 

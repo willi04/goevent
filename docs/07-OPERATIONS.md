@@ -313,11 +313,24 @@ bout en bout sans intervention, 1 retrait réussi, analyse des
   l'ancien. Les inscrits n'entrent pas dans la file WhatsApp. Un inscrit qui
   a perdu son pass : entrée manuelle au scanner (nom + 4 derniers chiffres).
   Alias court : une ligne dans `web/vercel.json` (ex. `/fonej`).
+- **Design des invitations (lot 6)** : fiche de l'événement → onglet
+  « Invitation » → bloc Design en 3 étapes (Modèle, Contenu, Photos) et une
+  seule barre « Enregistrer » / « Publier ». « Publier » rend le design
+  visible sur les pass, y compris ceux déjà envoyés (le lien ne change pas) ;
+  « Brouillon » reste invisible pour les invités. Les tables sont créées au démarrage ;
+  `private_event_settings.event_type` et `invitation_design.photo_data|logo_data`
+  sont dans `core/migrations.py` (à passer sur Neon AVANT le push si une
+  nouvelle colonne touche `private_event_settings`, lue par les routes
+  chaudes). Catalogue : `scripts/seed_inv_cadres.py` puis
+  `scripts/seed_inv_modeles.py` (idempotents) ; un changement de données
+  sur une base déjà seedée = script `scripts/AAAA-MM_*.sql` passé à la main
+  AVANT le déploiement (ex. `2026-11_lot6_cadres_c2_c5.sql`).
 - Traçabilité : `invitation_page_updated`, `invitation_cover_updated|removed`, `invitation_report_csv`, `invitation_sessions_updated`, `invitation_signup_settings`, `invitation_self_signup`,
   `invitation_event_created|updated`, `invitation_guests_imported`,
   `invitation_pack_activated|cancelled`, `invitation_pass_revoked|restored|regenerated`,
   `invitation_manual_checkin`, `invitation_offline_list`, `invitation_offline_sync`,
   `invitation_paper_pdf`,
+  `invitation_design_updated|photo|logo|import|media|media_deleted|image_deleted`,
   `invitation_track_link_created|revoked`, `invitation_agent_assigned|removed`,
   `invitation_purge`.
 

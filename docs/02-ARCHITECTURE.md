@@ -386,6 +386,23 @@ Les textes, images et liens des pages publiques sont modifiables depuis
   → 409, jamais le pass d'autrui. Réglages : `PUT
   /admin/invitations/events/{id}/signup` (admin + commercial propriétaire ;
   ouverture = lien choisi + pack actif).
+- **Design des invitations** (lot 6, `core/inv_design.py`, routes dans
+  `api/invitations.py`) : l'admin ou le commercial propriétaire choisit un
+  cadre et un gabarit (`GET /admin/invitations/cadres?event_type=…`,
+  cadres suggérés en tête), remplit la fiche, envoie photo / logo / photos
+  des intervenants, puis enregistre (`PUT …/events/{id}/design`, statut
+  `pret` exigé pour la publication). Toutes les écritures passent par
+  `_load_writable` (cloisonnement + refus après purge). Images : JPEG / PNG /
+  WebP, 8 Mo et 30 Mpx au plus, ré-encodées (métadonnées perdues) ; palette
+  extraite d'une affiche (`…/design/palette`) ; texte importé d'un
+  .txt / .docx / .xlsx (`…/design/import-text`, garde anti « zip bomb »).
+  Public : le pass (`GET /invitations/pass/{jeton}`) embarque le design
+  `pret` ; images servies par `…/pass/{jeton}/photo|logo|media/{id}`
+  (`private, immutable`, version par `sha`). Rendu 100 % côté
+  `invitation.html` (un gabarit HTML par cadre, texte échappé, couleurs
+  et polices filtrées, polices auto-hébergées `web/fonts/`) ; repli sur le
+  pass classique si le rendu échoue. L'enveloppe animée s'ouvre une seule
+  fois par pass (stockage local) et jamais en « moins d'animations ».
 
 ### Flux 7 bis : Listes d'événements (lot 5)
 

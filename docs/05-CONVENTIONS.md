@@ -294,6 +294,10 @@ SlowAPI. Les valeurs typiques déjà utilisées dans le code :
   (`hit_or_429`) ; `60/minute` par IP + plafond commun `600/minute`. Le
   `GET` de la page n'a que le plafond commun : tout le public d'un événement
   ouvre le même lien.
+- Design des invitations (lot 6) : `PUT …/design` `60/minute`, envois
+  d'images / palette / import de texte `20/minute`, photos d'intervenants
+  `30/minute` ; images publiques du pass `90-120/minute` par jeton
+  (`path_token_key`) + plafond commun `PUBLIC_IP_CEILING`.
 
 Clé lue dans le corps de la requête (numéro, email, jeton) : slowapi ne sait
 pas la lire → `hit_or_429(limite, scope, identité, message)` dans la route
@@ -452,7 +456,11 @@ malveillant si l'organisateur est hostile.
   ajoutée à `TOPBAR_PAGES` (`web/cms.js`) ; ne jamais y mettre une page de
   paiement, de scan, de pass ou un tableau de bord.
 - **Pages autonomes** (`invitation.html`, `suivi.html`) : pas de Tailwind CDN
-  ni de police externe. `invitations.html` (page de vente) suit au contraire
+  ni de police externe (polices du design : `web/fonts/`, woff2 + licence
+  OFL ; ajouter une police = fichiers + `@font-face` + liste blanche
+  `core/inv_design.FONTS`). Tout texte de la fiche passe par `esc()`, toute
+  couleur par le filtre hex, toute image par `mediaUrl()` (chemins internes
+  seulement). `invitations.html` (page de vente) suit au contraire
   la charte commune (menu, tiroir, pied de page, barre mobile de `bt-api.js`).
 - **Événements privés** : toute nouvelle requête publique sur `Event`
   (liste, recherche, fiche, achat, promo, partage, recommandations) filtre

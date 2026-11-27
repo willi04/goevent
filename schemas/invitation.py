@@ -16,6 +16,7 @@ class PrivateEventIn(BaseModel):
     service_level: str = Field("accompagne", max_length=20)
     message_template: Optional[str] = Field(None, max_length=1000)
     owner_id: Optional[int] = None          # admin : commercial propriétaire (vide = maison)
+    event_type: Optional[str] = Field(None, max_length=30)   # core/invitations.EVENT_TYPES
 
 
 class PrivateEventPatch(BaseModel):
@@ -29,6 +30,7 @@ class PrivateEventPatch(BaseModel):
     service_level: Optional[str] = Field(None, max_length=20)
     message_template: Optional[str] = Field(None, max_length=1000)
     reset_message: bool = False
+    event_type: Optional[str] = Field(None, max_length=30)
 
 
 class GuestRow(BaseModel):

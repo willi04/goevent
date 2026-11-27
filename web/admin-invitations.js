@@ -138,7 +138,7 @@
             el("p", { class: "font-black text-gray-900", text: e.title }),
             el("span", { class: "text-[10px] font-black px-2 py-0.5 rounded-full " + (e.quota ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"), text: packTxt }),
           ]),
-          el("p", { class: "text-xs text-gray-500 mt-1", text: e.event_date_label + " · " + (e.location || "") }),
+          el("p", { class: "text-xs text-gray-500 mt-1", text: (typeLabel(e.event_type) ? typeLabel(e.event_type) + " · " : "") + e.event_date_label + " · " + (e.location || "") }),
           el("p", { class: "text-xs text-gray-500", text: "Client : " + e.client_name + (e.purged ? " · liste supprimée" : "") +
             (canActivate() ? " · " + (e.owner_name ? e.owner_name + (e.owner_code ? " (" + e.owner_code + ")" : "") : "Maison") : "") }),
           el("p", { class: "text-sm font-bold text-gray-800 mt-2", text: s.entered + " / " + s.expected + " entrés · " + s.passes_sent + "/" + s.passes + " pass envoyés" }),
@@ -161,6 +161,9 @@
         return el("option", { value: fo.code, text: fo.name + (fo.description ? " — " + fo.description : "") });
       })),
       desc: el("textarea", { class: "input-field", rows: "2", maxlength: "2000", placeholder: "Note interne (facultatif)" }),
+      type: el("select", { class: "input-field" }, [el("option", { value: "", text: "— Choisir —" })].concat((S.meta.event_types || []).map(function (t) {
+        return el("option", { value: t.code, text: t.label });
+      }))),
     };
     var ownerSel = canActivate() && !ev ? ownerSelect(null, true) : null;
     if (ev) {
@@ -168,13 +171,14 @@
       f.client.value = ev.client_name; f.phone.value = ev.client_phone || ""; f.host.value = ev.host_label || "";
       if (!(S.meta.formulas || []).some(function (fo) { return fo.code === ev.service_level; }))
         f.service.appendChild(el("option", { value: ev.service_level, text: (ev.formula_name || ev.service_level) + " (archivée)" }));
-      f.service.value = ev.service_level; f.desc.value = ev.description || "";
+      f.service.value = ev.service_level; f.desc.value = ev.description || ""; f.type.value = ev.event_type || "";
     } else {
       var acc = (S.meta.formulas || []).filter(function (fo) { return fo.code === "accompagne"; })[0];
       if (acc) f.service.value = acc.code;
     }
     var body = el("div", { class: "space-y-3" }, [
-      field("Titre", f.title), el("div", { class: "grid sm:grid-cols-2 gap-3" }, [field("Date et heure", f.date), field("Lieu", f.location)]),
+      el("div", { class: "grid sm:grid-cols-2 gap-3" }, [field("Type d'événement", f.type, "Adapte la fiche : liste d'invités, inscription en ligne, modèles conseillés."), field("Titre", f.title)]),
+      el("div", { class: "grid sm:grid-cols-2 gap-3" }, [field("Date et heure", f.date), field("Lieu", f.location)]),
       el("div", { class: "grid sm:grid-cols-2 gap-3" }, [field("Client", f.client), field("Téléphone du client", f.phone)]),
       field("Hôte affiché sur le pass", f.host, "Vide = nom du client."), field("Formule prévue", f.service, "Le pack réellement payé (activation) fait foi."), field("Description", f.desc),
       ownerSel ? field("Commercial propriétaire", ownerSel, "Le commercial voit et gère ce dossier ; la vente lui est attribuée.") : null,
@@ -182,9 +186,10 @@
     modal(ev ? "Modifier l'événement" : "Nouvel événement privé", body, function (close) {
       var b = el("button", { class: "action-btn btn-primary", text: ev ? "Enregistrer" : "Créer", onclick: function () {
         if (!f.date.value) { toast("Indiquez la date.", "error"); return; }
+        if (!ev && !f.type.value) { toast("Choisissez le type d'événement.", "error"); return; }
         var payload = { title: f.title.value.trim(), event_date: new Date(f.date.value).toISOString(), location: f.location.value.trim(),
           client_name: f.client.value.trim(), client_phone: f.phone.value.trim() || null, host_label: f.host.value.trim() || null,
-          service_level: f.service.value, description: f.desc.value.trim() || null };
+          service_level: f.service.value, description: f.desc.value.trim() || null, event_type: f.type.value || null };
         if (ownerSel && ownerSel.value) payload.owner_id = parseInt(ownerSel.value, 10);
         b.disabled = true;
         (ev ? btApi.patch("/admin/invitations/events/" + ev.id, payload) : btApi.post("/admin/invitations/events", payload))
@@ -200,7 +205,9 @@
   // ════════════════════════════════════════════════════════════════
   function openEvent(id) {
     stopTimer();
-    S.view = "event"; S.eventId = id; S.q = ""; S.status = ""; S.page = 1; S.importRows = null;
+    S.view = "event"; S.eventId = id; S.q = ""; S.status = ""; S.page = 1; S.importRows = null; S.fold = null; S.guests = null;
+    S.tab = "apercu"; try { S.tab = sessionStorage.getItem(tabKey()) || "apercu"; } catch (e) {}
+    if (!TAB_BUILD[S.tab]) S.tab = "apercu";
     sec().innerHTML = '<div class="card p-6 empty-state">Chargement…</div>';
     btApi.get("/admin/invitations/events/" + id).then(function (ev) { S.ev = ev; renderEvent(); loadGuests(); })
       .catch(function (e) { toast(e.message || "Erreur", "error"); loadList(); });
@@ -254,24 +261,147 @@
     if (ev.purged) {
       root.appendChild(el("div", { class: "card p-4 mb-4 bg-gray-50 text-sm text-gray-600", text: "Liste d'invités supprimée (conservation de " + S.meta.retention_days + " jours dépassée) : seuls les chiffres restent." }));
     }
-    var packTxt = ev.quota ? ev.quota + " personnes" : "Aucun";
-    root.appendChild(el("div", { class: "grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4", id: "inv-kpis" }, [
-      kpi(entLabel(s), s.entered + " / " + s.expected, s.rate + " % · " + s.remaining + " restant(s)", "text-primary"),
-      kpi("Pass envoyés", s.passes_sent + " / " + s.passes, s.passes_arrived + " pass utilisés"),
-      kpi("Pack payé", packTxt, ev.quota ? ev.listed + " personne(s) dans la liste" : "Envoi et scan bloqués", ev.quota ? "text-gray-900" : "text-amber-600"),
-      kpi("Conflits hors ligne", String(s.conflicts), s.conflicts ? "Pass accepté(s) sur 2 téléphones" : "Aucun", s.conflicts ? "text-red-600" : "text-gray-900"),
-    ]));
-    root.appendChild(packBlock());
-    if (!ev.purged) root.appendChild(sessionsBlock());
-    if (!ev.purged) root.appendChild(signupBlock());
-    if (!ev.purged) root.appendChild(posterBlock());
-    if (!ev.purged) root.appendChild(guestsBlock());
-    if (!ev.purged) root.appendChild(designBlock());
-    root.appendChild(liveBlock());
-    root.appendChild(messageBlock());
-    root.appendChild(agentsBlock());
-    root.appendChild(dataBlock());
+    root.appendChild(el("div", { id: "inv-top", class: "card p-3 mb-3 sticky top-0 z-20" }));
+    renderTop();
+    var body = el("div", { id: "inv-tab-body" });
+    root.appendChild(body);
+    S.folds = {};
+    TAB_BUILD[S.tab](body, ev);
+    if (S.tab === "invites" && S.guests) renderGuests();
   }
+
+  // ── Fiche en onglets : étapes, prochaine action, cartes repliées ──────
+  var TABS = [["apercu", "Aperçu"], ["invites", "Invités"], ["invitation", "Invitation"], ["jourj", "Jour J"], ["donnees", "Données"]];
+  function typeOf(code) { return ((S.meta && S.meta.event_types) || []).filter(function (t) { return t.code === code; })[0] || null; }
+  function typeLabel(code) { var t = typeOf(code); return t ? t.label : ""; }
+  function tabKey() { return "inv_tab:" + S.eventId; }
+  function goTab(tab, focus) {
+    S.tab = tab; S.fold = focus || null;
+    try { sessionStorage.setItem(tabKey(), tab); } catch (e) {}
+    renderEvent();
+    if (focus === "import") { var d = document.getElementById("inv-import"); if (d) { d.open = true; d.scrollIntoView({ block: "start" }); } }
+    else { var top = document.getElementById("inv-top"); if (top && top.getBoundingClientRect().top < 0) top.scrollIntoView({ block: "start" }); }
+  }
+  // Inscription en ligne : utile pour un événement « ouvert » (conférence, atelier…). Toujours visible si elle
+  // est déjà configurée ou si le type n'est pas renseigné (dossiers créés avant).
+  function wantsSignup(ev) {
+    var t = typeOf(ev.event_type), su = ev.signup || {};
+    if (su.slug || su.open || su.count || ev.cover || ev.public_description || S.showSignup === ev.id) return true;
+    return !t || !t.acces || t.acces === "ouvert";
+  }
+  function steps(ev) {
+    var s = ev.stats, sent = s.passes_sent, all = s.passes, agents = ev.agents.length;
+    return [
+      { tab: "apercu", label: ev.quota ? "Pack " + ev.quota + " pers." : "Pack", st: ev.quota ? "done" : "todo" },
+      { tab: "invites", label: all ? "Invités · " + all + " pass" : "Invités", st: all ? "done" : "todo" },
+      { tab: "invitation", label: ev.design_status === "pret" ? "Invitation publiée" : "Invitation", st: ev.design_status === "pret" ? "done" : (ev.design_status ? "doing" : "todo") },
+      { tab: "invites", label: all ? "Envoi " + sent + " / " + all : "Envoi", st: !all ? "todo" : (sent >= all ? "done" : (sent ? "doing" : "todo")) },
+      { tab: "jourj", label: s.entered ? "Jour J · " + s.entered + " entrés" : "Jour J" + (agents ? " · " + agents + " agent(s)" : ""), st: s.entered ? "done" : (agents ? "doing" : "todo") },
+    ];
+  }
+  // Prochaine action utile selon l'état du dossier : un seul bouton
+  function nextAction(ev) {
+    var s = ev.stats, q = (S.queue || []).length;
+    if (ev.purged) return null;
+    if (!ev.quota) return canActivate() ? ["Activer le pack", function () { orderModal(true); }]
+                                         : ["Préparer un devis", function () { quoteModal(null, { event: S.ev }); }];
+    if (!s.passes && !(ev.signup && ev.signup.open)) {
+      var t = typeOf(ev.event_type);
+      return t && t.acces === "ouvert" ? ["Ouvrir les inscriptions", function () { goTab("invites", "signup"); }]
+                                       : ["Importer la liste", function () { goTab("invites", "import"); }];
+    }
+    if (ev.design_status !== "pret" && !s.passes_sent) return ["Préparer l'invitation", function () { goTab("invitation"); }];
+    if (q) return ["Envoyer au suivant (" + q + ")", function () { if (S.tab !== "invites") goTab("invites"); sendNext(); }];
+    if (!ev.agents.length) return ["Ajouter un agent", function () { goTab("jourj", "agents"); }];
+    return ["Suivre les arrivées", function () { goTab("jourj"); }];
+  }
+  var STEP_STYLE = { done: "background:#dcfce7;color:#166534", doing: "background:#fef3c7;color:#92400e", todo: "background:#f3f4f6;color:#6b7280" };
+  function renderTop() {
+    var top = document.getElementById("inv-top"), ev = S.ev;
+    if (!top || !ev) return;
+    top.innerHTML = "";
+    var na = nextAction(ev);
+    top.appendChild(el("div", { class: "flex flex-wrap items-center gap-2" }, steps(ev).map(function (x) {
+      return el("button", { class: "text-[11px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap", style: STEP_STYLE[x.st],
+        text: (x.st === "done" ? "✓ " : "") + x.label, onclick: function () { goTab(x.tab); } });
+    }).concat([el("span", { class: "flex-1" }), na ? el("span", { class: "text-[11px] text-gray-400 hidden sm:inline", text: "Prochaine étape" }) : null,
+      na ? el("button", { class: "action-btn btn-primary text-xs", id: "inv-next", text: na[0] + " →", onclick: na[1] }) : null])));
+    // Même style que les onglets du module (navTabs) ; défile horizontalement sur téléphone
+    top.appendChild(el("div", { class: "mt-3 overflow-x-auto" }, [el("div", { class: "flex gap-1 p-1 bg-gray-100 rounded-2xl w-max", role: "tablist" }, TABS.map(function (t) {
+      var on = t[0] === S.tab;
+      return el("button", { role: "tab", "aria-selected": on ? "true" : "false",
+        class: "px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-colors " + (on ? "bg-white shadow-sm" : "text-gray-600 hover:text-gray-900"),
+        style: on ? "color:#00502c" : null, text: t[1], onclick: on ? null : function () { goTab(t[0]); } });
+    }))]));
+  }
+  // Carte repliée : une ligne de résumé ; ouverte : le contenu du bloc. Une seule ouverte à la fois.
+  function inner(card) { var out = []; card.removeChild(card.firstChild); while (card.firstChild) out.push(card.removeChild(card.firstChild)); return out; }
+  function fold(key, title, summary, build, cta) {
+    var open = S.fold === key, card = el("div", { class: "card mb-3 " + (open ? "p-5" : "px-5 py-3"), id: "fold-" + key });
+    card.appendChild(el("div", { class: "flex flex-wrap items-center gap-2" + (open ? " mb-3" : "") }, [
+      el("h3", { class: "font-black text-gray-900", text: title }),
+      el("span", { class: "text-sm text-gray-500 flex-1 min-w-0", text: open ? "" : summary || "" }),
+      el("button", { class: "action-btn text-xs", style: "background:#f3f4f6;color:#374151", text: open ? "Fermer" : (cta || "Modifier"), onclick: function () {
+        var prev = S.fold;
+        S.fold = open ? null : key;
+        var p = prev && prev !== key && S.folds[prev] && document.getElementById("fold-" + prev);
+        if (p) p.replaceWith(S.folds[prev]());
+        card.replaceWith(S.folds[key]());
+      } }),
+    ]));
+    if (open) inner(build()).forEach(function (n) { card.appendChild(n); });
+    return card;
+  }
+  function addFold(parent, key, title, summary, build, cta) {
+    S.folds[key] = function () { return fold(key, title, summary, build, cta); };
+    parent.appendChild(S.folds[key]());
+  }
+  function purgedNote(body) {
+    body.appendChild(el("div", { class: "card p-5 text-sm text-gray-500", text: "Données supprimées après la purge : seuls les chiffres restent (onglet Aperçu)." }));
+  }
+
+  var TAB_BUILD = {
+    apercu: function (body, ev) {
+      var s = ev.stats, packTxt = ev.quota ? ev.quota + " personnes" : "Aucun";
+      body.appendChild(el("div", { class: "grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4", id: "inv-kpis" }, [
+        kpi(entLabel(s), s.entered + " / " + s.expected, s.rate + " % · " + s.remaining + " restant(s)", "text-primary"),
+        kpi("Pass envoyés", s.passes_sent + " / " + s.passes, s.passes_arrived + " pass utilisés"),
+        kpi("Pack payé", packTxt, ev.quota ? ev.listed + " personne(s) dans la liste" : "Envoi et scan bloqués", ev.quota ? "text-gray-900" : "text-amber-600"),
+        kpi("Conflits hors ligne", String(s.conflicts), s.conflicts ? "Pass accepté(s) sur 2 téléphones" : "Aucun", s.conflicts ? "text-red-600" : "text-gray-900"),
+      ]));
+      body.appendChild(packBlock());
+    },
+    invites: function (body, ev) {
+      if (ev.purged) return purgedNote(body);
+      if (wantsSignup(ev)) {
+        var su = ev.signup || {}, st = (SIGNUP_STATE[su.state] || SIGNUP_STATE.closed)[0];
+        addFold(body, "signup", "Inscription en ligne", st + " · " + (su.count || 0) + " inscrit(s)" + (ev.cover ? " · affiche ✓" : ""), function () {
+          var a = signupBlock(), b = posterBlock();
+          return block("", inner(a).concat([el("h4", { class: "font-black text-gray-900 mt-6 mb-2", text: "Page publique : affiche et description" })], inner(b)));
+        }, su.slug ? "Modifier" : "Configurer");
+      }
+      addFold(body, "message", "Message WhatsApp", ev.message_is_default ? "message par défaut" : "message personnalisé", messageBlock);
+      body.appendChild(guestsBlock());
+      if (!wantsSignup(ev)) body.appendChild(el("button", { class: "text-xs text-gray-500 underline", text: "Ouvrir aussi une inscription en ligne (lien public)",
+        onclick: function () { S.showSignup = ev.id; S.fold = "signup"; renderEvent(); } }));
+    },
+    invitation: function (body, ev) {
+      if (ev.purged) return purgedNote(body);
+      body.appendChild(designBlock());
+    },
+    jourj: function (body, ev) {
+      if (!ev.purged) {
+        var n = (ev.sessions || []).length;
+        addFold(body, "sessions", "Séances", n ? n + " séance(s) · " + (ev.dates_label || "") : "aucune : une seule entrée pour tout l'événement",
+          sessionsBlock, n ? "Modifier" : "Ajouter");
+      }
+      var onsite = ev.features && ev.features.onsite_agents;
+      addFold(body, "agents", "Agents de contrôle", ev.agents.length ? ev.agents.map(function (a) { return a.full_name; }).join(", ") +
+        (onsite && ev.quota ? " · " + ev.agents.length + " / " + (ev.agents_included || 0) + " inclus" : "") : "aucun agent", agentsBlock, ev.agents.length ? "Gérer" : "Ajouter");
+      body.appendChild(liveBlock());
+    },
+    donnees: function (body) { body.appendChild(dataBlock()); },
+  };
 
   // ── Design visuel (lot 6) ───────────────────────────────────────────
   function designBlock() {
@@ -283,7 +413,7 @@
   function loadDesign(box) {
     Promise.all([
       btApi.get("/admin/invitations/events/" + S.eventId + "/design"),
-      btApi.get("/admin/invitations/cadres")
+      btApi.get("/admin/invitations/cadres" + ((typeOf(S.ev.event_type) || {}).suggere ? "?event_type=" + encodeURIComponent(typeOf(S.ev.event_type).suggere) : ""))
     ]).then(function (r) {
       S.design = r[0]; S.cadres = r[1].cadres || [];
       if (!S.design.fiche) S.design.fiche = {};
@@ -377,7 +507,7 @@
   }
 
   function renderDesign(box) {
-    var d = S.design, fiche = d.fiche, fam = (d.cadre && d.cadre.famille) || d._fam || "familial";
+    var d = S.design, fiche = d.fiche, fam = (d.cadre && d.cadre.famille) || d._fam || (typeOf(S.ev.event_type) || {}).famille || "familial";
     d._fam = fam;
     box.innerHTML = "";
     var photoMap = {};
@@ -601,6 +731,7 @@
       if (status === "pret" && !d.modele_id) { toast("Choisissez un cadre avant de publier.", "error"); return; }
       btApi.put("/admin/invitations/events/" + S.eventId + "/design", body).then(function (res) {
         S.design = res; if (!S.design.fiche) S.design.fiche = {}; S.design._fam = fam;
+        S.ev.design_status = res.status; renderTop();
         toast(status === "pret" ? "Design publié." : (status === "brouillon" ? "Repassé en brouillon." : "Design enregistré."), "success");
         renderDesign(box);
       }).catch(function (e) { toast(e.message || "Erreur", "error"); });
@@ -667,6 +798,7 @@
         ]));
       }
       renderArrivals(d.arrivals, d.stats, d.breakdown);
+      renderTop();
     }).catch(function () {});
   }
 
@@ -963,7 +1095,7 @@
         .then(function () { e.target.value = ""; });
     } });
     var report = el("div", { id: "inv-import-report" });
-    var importBox = el("details", { class: "mb-4", open: S.ev.listed ? null : "open" }, [
+    var importBox = el("details", { class: "mb-4", id: "inv-import", open: S.ev.listed ? null : "open" }, [
       el("summary", { class: "cursor-pointer font-bold text-sm text-primary mb-2", text: "Importer des invités" }),
       el("p", { class: "text-[11px] text-gray-500 mb-2", text: "Fichier Excel (.xlsx), Word (.docx, tableau), CSV, ou copier-coller. Colonnes dans cet ordre : Nom, Téléphone (8 chiffres = +236, ou format international), Places (1 à 20, défaut 1), Table, Catégorie, Papier (« oui » = pass imprimé ; vide = papier seulement si pas de numéro) — ou une ligne de titres (« Nom », « Téléphone »…). Anciens formats .doc / .xls : enregistrez-les d'abord en .docx / .xlsx." }),
       paste,
@@ -1065,7 +1197,8 @@
   function renderGuests() {
     var box = document.getElementById("inv-guests"), d = S.guests;
     var btn = document.getElementById("inv-send-next");
-    if (btn) {
+    renderTop();
+    if (btn && S.queue) {
       // « Tous les pass sont envoyés » seulement s'il ne reste vraiment rien à envoyer
       btn.textContent = S.queue.length ? "Envoyer au suivant sur WhatsApp (" + S.queue.length + ")"
         : S.noPhone ? "Aucun invité avec numéro à envoyer" : "Tous les pass sont envoyés";
@@ -1255,10 +1388,6 @@
       track.appendChild(el("p", { class: "text-[11px] text-gray-500", text: "Lien de suivi client : inclus dans les formules qui le prévoient (aucun pack actif ne l'inclut)." }));
     }
     items.push(track);
-    if (canActivate()) items.push(el("div", { class: "flex flex-wrap items-center gap-2 mb-3" }, [
-      act("Télécharger le bilan (CSV)", "background:#dcfce7;color:#166534", function () { downloadReport(ev); }),
-      el("span", { class: "text-[11px] text-gray-500", text: "Synthèse par catégorie et par séance + invités présents hors inscription en ligne. Avant la suppression des données (" + dt(ev.purge_after) + ")." }),
-    ]));
     items.push(el("div", { id: "inv-arrivals" }, [el("p", { class: "text-xs text-gray-400", text: "Chargement des arrivées…" })]));
     setTimeout(refreshLive, 0);
     return block("Suivi en direct", items);
@@ -1516,6 +1645,11 @@
   function dataBlock() {
     var ev = S.ev, items = [el("p", { class: "text-xs text-gray-600", text: ev.purged ? "Liste anonymisée." :
       "Noms et numéros des invités supprimés automatiquement le " + dt(ev.purge_after) + " (" + S.meta.retention_days + " jours après l'événement). Ils ne servent qu'à cet événement : jamais d'export d'audience ni de publicité." })];
+    if (canActivate()) items.push(el("div", { class: "flex flex-wrap items-center gap-2 my-3" }, [
+      act("Télécharger le bilan (CSV)", "background:#dcfce7;color:#166534", function () { downloadReport(ev); }),
+      el("span", { class: "text-[11px] text-gray-500", text: "Synthèse par catégorie et par séance + invités présents hors inscription en ligne." +
+        (ev.purged ? "" : " À télécharger avant la suppression des données (" + dt(ev.purge_after) + ").") }),
+    ]));
     if (!ev.purged && canActivate()) items.push(el("button", { class: "action-btn btn-danger text-xs mt-2", text: "Supprimer la liste maintenant", onclick: function () {
       if (!window.confirm("Anonymiser dès maintenant tous les invités de cet événement ? Les pass ne fonctionneront plus. Action irréversible.")) return;
       btApi.post("/admin/invitations/purge?event_id=" + ev.id).then(function (r) { toast(r.anonymized + " invité(s) anonymisé(s).", "success"); openEvent(ev.id); })
@@ -1784,18 +1918,28 @@
       date: el("input", { class: "input-field", type: "datetime-local", value: q.event_date ? q.event_date + "T18:00" : "" }),
       location: el("input", { class: "input-field", maxlength: "200", value: q.location || "" }),
       host: el("input", { class: "input-field", maxlength: "120", placeholder: "Ex. Paul & Marie (affiché « … vous invite »)" }),
+      type: el("select", { class: "input-field" }, [el("option", { value: "", text: "— Choisir —" })].concat((S.meta.event_types || []).map(function (t) {
+        return el("option", { value: t.code, text: t.label });
+      }))),
     };
+    var guess = String(q.event_type || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    (S.meta.event_types || []).some(function (t) {
+      var lab = t.label.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      if (guess && (guess.indexOf(t.code) >= 0 || guess.indexOf(lab) >= 0)) { f.type.value = t.code; return true; }
+    });
     var body = el("div", { class: "space-y-3" }, [
       el("p", { class: "text-xs text-gray-600", text: "L'événement privé est créé au nom du client du devis " + q.number + (q.owner_name ? " et attribué à " + q.owner_name : "") + ". Vous activerez ensuite le pack au même montant (" + fcfa(q.total_fcfa) + "), après réception du paiement." }),
-      field("Titre", f.title), el("div", { class: "grid sm:grid-cols-2 gap-3" }, [field("Date et heure", f.date), field("Lieu", f.location)]),
+      el("div", { class: "grid sm:grid-cols-2 gap-3" }, [field("Type d'événement", f.type, "Adapte la fiche : liste d'invités, inscription en ligne, modèles conseillés."), field("Titre", f.title)]),
+      el("div", { class: "grid sm:grid-cols-2 gap-3" }, [field("Date et heure", f.date), field("Lieu", f.location)]),
       field("Hôte affiché sur le pass", f.host, "Vide = nom du client."),
     ]);
     modal("Créer l'événement depuis " + q.number, body, function (close) {
       var b = el("button", { class: "action-btn btn-primary", text: "Créer l'événement", onclick: function () {
         if (!f.date.value || f.title.value.trim().length < 3 || f.location.value.trim().length < 2) { toast("Titre, date et lieu obligatoires.", "error"); return; }
+        if (!f.type.value) { toast("Choisissez le type d'événement.", "error"); return; }
         b.disabled = true;
         btApi.post("/admin/invitations/quotes/" + q.id + "/convert", { title: f.title.value.trim(), event_date: new Date(f.date.value).toISOString(),
-          location: f.location.value.trim(), host_label: f.host.value.trim() || null })
+          location: f.location.value.trim(), host_label: f.host.value.trim() || null, event_type: f.type.value })
           .then(function (r) { close(); toast("Événement créé : activez le pack à réception du paiement.", "success"); openEventAndActivate(r.event_id, r.quote); })
           .catch(function (e) { b.disabled = false; toast(e.message || "Erreur", "error"); });
       } });
@@ -1804,7 +1948,9 @@
   }
   function openEventAndActivate(eventId, q) {
     stopTimer();
-    S.view = "event"; S.eventId = eventId; S.q = ""; S.status = ""; S.page = 1; S.importRows = null;
+    S.view = "event"; S.eventId = eventId; S.q = ""; S.status = ""; S.page = 1; S.importRows = null; S.fold = null; S.guests = null;
+    S.tab = "apercu"; try { S.tab = sessionStorage.getItem(tabKey()) || "apercu"; } catch (e) {}
+    if (!TAB_BUILD[S.tab]) S.tab = "apercu";
     sec().innerHTML = '<div class="card p-6 empty-state">Chargement…</div>';
     btApi.get("/admin/invitations/events/" + eventId).then(function (ev) {
       S.ev = ev; renderEvent(); loadGuests();

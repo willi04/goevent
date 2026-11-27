@@ -61,6 +61,38 @@ DEFAULT_MESSAGE = (
 )
 MESSAGE_VARS = ("nom", "hote", "evenement", "date", "lieu", "places", "table", "lien")
 
+# Type d'événement (choisi à la création) : pilote l'écran du back-office.
+#   famille : bibliothèque de cadres proposée par défaut (familial | corporate)
+#   acces   : « liste » = invités choisis par le client (import + pass nominatifs) ;
+#             « ouvert » = inscription en ligne proposée en plus (page /r/<lien>, affiche)
+#   suggere : clé des cadres conseillés (inv_modele_cadres.suggest_for)
+# None (dossiers créés avant) = comportement historique : tout est affiché.
+EVENT_TYPES = (
+    {"code": "mariage", "label": "Mariage", "famille": "familial", "acces": "liste", "suggere": "mariage"},
+    {"code": "dot", "label": "Dot", "famille": "familial", "acces": "liste", "suggere": "dot"},
+    {"code": "fiancailles", "label": "Fiançailles", "famille": "familial", "acces": "liste", "suggere": "fiancailles"},
+    {"code": "bapteme", "label": "Baptême", "famille": "familial", "acces": "liste", "suggere": "bapteme"},
+    {"code": "anniversaire", "label": "Anniversaire", "famille": "familial", "acces": "liste", "suggere": "anniversaire"},
+    {"code": "conference", "label": "Conférence", "famille": "corporate", "acces": "ouvert", "suggere": "conference"},
+    {"code": "forum", "label": "Forum", "famille": "corporate", "acces": "ouvert", "suggere": "conference"},
+    {"code": "seminaire", "label": "Séminaire", "famille": "corporate", "acces": "ouvert", "suggere": "seminaire"},
+    {"code": "atelier", "label": "Atelier", "famille": "corporate", "acces": "ouvert", "suggere": "atelier"},
+    {"code": "formation", "label": "Formation", "famille": "corporate", "acces": "ouvert", "suggere": "formation"},
+    {"code": "salon", "label": "Salon / exposition", "famille": "corporate", "acces": "ouvert", "suggere": "salon"},
+    {"code": "lancement", "label": "Lancement de produit", "famille": "corporate", "acces": "ouvert", "suggere": "lancement"},
+    {"code": "gala", "label": "Gala d'entreprise", "famille": "corporate", "acces": "liste", "suggere": "gala"},
+    {"code": "soiree", "label": "Soirée privée", "famille": "corporate", "acces": "liste", "suggere": "soiree"},
+    {"code": "autre", "label": "Autre", "famille": None, "acces": None, "suggere": None},
+)
+_EVENT_TYPE_CODES = {t["code"] for t in EVENT_TYPES}
+
+
+def check_event_type(v: Optional[str]) -> Optional[str]:
+    v = (v or "").strip().lower() or None
+    if v is not None and v not in _EVENT_TYPE_CODES:
+        raise HTTPException(400, "Type d'événement inconnu.")
+    return v
+
 _JOURS = ("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
 _MOIS = ("janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août",
          "septembre", "octobre", "novembre", "décembre")

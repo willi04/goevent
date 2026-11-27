@@ -33,6 +33,7 @@ class PrivateEventSettings(Base):
     host_label       = Column(String(120), nullable=True)    # « La famille X vous invite »
     message_template = Column(Text, nullable=True)           # None = message par défaut
     service_level    = Column(String(20), nullable=False, default="accompagne")  # autonome | accompagne
+    event_type       = Column(String(30), nullable=True)   # core/invitations.EVENT_TYPES ; NULL = dossier ancien
     track_token      = Column(String(64), nullable=True, unique=True, index=True)  # lien de suivi client
     track_created_at = Column(DateTime, nullable=True)
     purge_after      = Column(DateTime, nullable=False)       # date de l'événement + 30 j

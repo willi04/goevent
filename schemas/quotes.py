@@ -42,6 +42,7 @@ class QuoteConvertIn(BaseModel):
     event_date: str = Field(..., max_length=40)     # date + heure (ISO) ; la date du devis sert de défaut
     location: str = Field(..., min_length=2, max_length=200)
     host_label: Optional[str] = Field(None, max_length=120)
+    event_type: Optional[str] = Field(None, max_length=30)   # core/invitations.EVENT_TYPES (fiche événement)
 
 
 class CommissionPayIn(BaseModel):

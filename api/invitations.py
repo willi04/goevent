@@ -106,7 +106,7 @@ def _event_summary(db: Session, ev: Event, st: PrivateEventSettings, owners: Opt
             "owner_id": st.owner_id, "owner_name": o.full_name if o else None,
             "owner_code": o.sales_code if o else None, "source_quote_id": st.source_quote_id,
             "event_date_label": inv.fmt_date_fr(ev.event_date), "location": ev.location,
-            "client_name": st.client_name, "service_level": st.service_level,
+            "client_name": st.client_name, "service_level": st.service_level, "event_type": st.event_type,
             "formula_name": cat.formula_label(db, st.service_level),
             "quota": inv.quota(db, ev.id), "listed": inv.seats_listed(db, ev.id),
             "features": cat.event_features(db, ev.id, st.service_level), "stats": inv.stats(db, ev.id),
@@ -190,6 +190,7 @@ def admin_meta(db: Session = Depends(get_db), user: User = Depends(manager)):
             "catalog_settings": c["settings"], "units": c["units"],
             "channels": inv.channels(), "default_message": inv.DEFAULT_MESSAGE,
             "message_vars": list(inv.MESSAGE_VARS), "can_activate": is_admin(user), "can_edit_catalog": is_admin(user),
+            "event_types": list(inv.EVENT_TYPES),
             "retention_days": inv.INVITATION_RETENTION_DAYS}
 
 
@@ -212,9 +213,11 @@ def admin_list_events(owner_id: Optional[int] = None, db: Session = Depends(get_
 def create_private_event(db: Session, user: User, request: Request, *, title: str, event_date: datetime, location: str,
                          description: Optional[str], client_name: str, client_phone: Optional[str],
                          host_label: Optional[str], service_level: Optional[str], message_template: Optional[str],
-                         owner_id: Optional[int], source_quote_id: Optional[int] = None) -> Event:
+                         owner_id: Optional[int], source_quote_id: Optional[int] = None,
+                         event_type: Optional[str] = None) -> Event:
     """Création d'un événement privé (formulaire ou conversion d'un devis). Commit inclus."""
     date = inv.naive_utc(event_date)
+    event_type = inv.check_event_type(event_type)
     if date < inv.utcnow() - timedelta(days=1):
         raise HTTPException(400, "La date de l'événement est déjà passée.")
     house = inv.get_house_organizer(db)
@@ -227,6 +230,7 @@ def create_private_event(db: Session, user: User, request: Request, *, title: st
                               host_label=(host_label or "").strip() or None,
                               message_template=inv.check_template(message_template),
                               service_level=_service(db, service_level), purge_after=inv.purge_after_for(date),
+                              event_type=event_type,
                               created_by=user.id, owner_id=owner_id, source_quote_id=source_quote_id)
     db.add(st)
     db.commit()
@@ -243,7 +247,7 @@ def admin_create_event(request: Request, data: PrivateEventIn, db: Session = Dep
                               description=data.description, client_name=data.client_name,
                               client_phone=data.client_phone, host_label=data.host_label,
                               service_level=data.service_level, message_template=data.message_template,
-                              owner_id=_owner_for_new(db, user, data.owner_id))
+                              owner_id=_owner_for_new(db, user, data.owner_id), event_type=data.event_type)
     return admin_get_event(ev.id, db, user)
 
 
@@ -259,7 +263,8 @@ def admin_get_event(event_id: int, db: Session = Depends(get_db), user: User = D
                 "track_url": inv.track_url(st.track_token) if st.track_token else None,
                 "purge_after": _iso(st.purge_after), "packs": [_pack_out(p) for p in packs],
                 "agents": [{"id": a.id, "full_name": a.full_name, "phone_number": a.phone_number} for a in agents],
-                "agents_included": cat.agents_included_total(db, ev.id), "signup": _signup_out(db, ev, st)})
+                "agents_included": cat.agents_included_total(db, ev.id), "signup": _signup_out(db, ev, st),
+                "design_status": db.query(InvitationDesign.status).filter(InvitationDesign.event_id == ev.id).scalar()})
     sessions = sess.list_sessions(db, ev.id)
     locked = {sid for (sid,) in db.query(GuestCheckin.session_id).filter(
         GuestCheckin.event_id == ev.id, GuestCheckin.session_id.isnot(None)).distinct().all()}
@@ -450,6 +455,8 @@ def admin_update_event(request: Request, event_id: int, data: PrivateEventPatch,
         st.host_label = (data.host_label or "").strip() or None
     if "service_level" in f and data.service_level:
         st.service_level = _service(db, data.service_level, st.service_level)
+    if "event_type" in f:
+        st.event_type = inv.check_event_type(data.event_type)
     if data.reset_message:
         st.message_template = None
     elif "message_template" in f:

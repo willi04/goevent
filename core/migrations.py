@@ -262,6 +262,12 @@ MIGRATIONS = [
         "ADD COLUMN IF NOT EXISTS logo_mime VARCHAR(40), "
         "ADD COLUMN IF NOT EXISTS logo_sha VARCHAR(64)",
     ),
+    # ── Lot 6 : type d'événement (mariage, conférence…) : pilote l'écran du back-office.
+    # Table lue par le pass invité (route chaude) → ALTER exécuté à la main sur Neon AVANT le push.
+    (
+        "private_event_settings.event_type (lot 6)",
+        "ALTER TABLE private_event_settings ADD COLUMN IF NOT EXISTS event_type VARCHAR(30)",
+    ),
 ]
 
 

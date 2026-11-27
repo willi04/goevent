@@ -405,7 +405,7 @@ def quote_convert(request: Request, quote_id: int, data: QuoteConvertIn, db: Ses
         db, user, request, title=data.title, event_date=when, location=data.location, description=None,
         client_name=q.client_name, client_phone=q.client_phone, host_label=data.host_label,
         service_level=((q.snapshot or {}).get("formula") or {}).get("code") or "accompagne", message_template=None,
-        owner_id=owner.id if sales.is_seller(owner) else None, source_quote_id=q.id)
+        owner_id=owner.id if sales.is_seller(owner) else None, source_quote_id=q.id, event_type=data.event_type)
     q = qt.get_quote(db, quote_id, user, lock=True)
     q.event_id, q.updated_at = ev.id, datetime.utcnow()
     log_security_event(db, "invitation_quote_converted", request, user.id, "%s → événement #%d" % (q.number, ev.id))

@@ -28,6 +28,7 @@
     h1 { font-size: 24px; line-height: 1.2; margin: 8px 0 10px; font-weight: 800; }
     .meta { font-size: 14px; opacity: .92; margin: 2px 0; }
     .body { padding: 22px; text-align: center; }
+    .label { display: inline-block; background: var(--green); color: #fff; font-weight: 800; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; padding: 6px 14px; border-radius: 999px; margin: 0 0 12px; }
     .guest { font-size: 22px; font-weight: 800; margin: 0; }
     .seats { color: var(--muted); font-size: 14px; margin: 4px 0 0; }
     body.design .seats { color: var(--d-muted); }
@@ -321,6 +322,7 @@
       </div>
       <div class="body">
         <p class="pass-label" id="pass-label"></p>
+        <p class="label hidden" id="label"></p>
         <p class="guest" id="guest"></p>
         <p class="seats" id="seats"></p>
         <div class="chips" id="chips"></div>
@@ -368,18 +370,23 @@
       function fillPass(p, offline) {
         $("host").textContent = (p.host_label || "") + " vous invite";
         $("title").textContent = p.event_title || "";
-        $("date").textContent = p.event_date_label ? "🗓 " + p.event_date_label : "";
+        // Événement à séances : « 20 & 21 nov. 2026 · 7h00–16h00 » plutôt que la seule première date
+        var when = p.dates_label || p.event_date_label;
+        $("date").textContent = when ? "🗓 " + when : "";
         $("location").textContent = p.location ? "📍 " + p.location : "";
         $("guest").textContent = p.guest_name || "";
         $("seats").textContent = "Pass valable pour " + p.seats + " personne" + (p.seats > 1 ? "s" : "");
+        // Catégorie en tête du pass (PARTICIPANT, JURY…) : lisible d'un coup d'œil à l'entrée
+        $("label").textContent = p.category || "";
+        $("label").classList.toggle("hidden", !p.category);
         var chips = $("chips"); chips.innerHTML = "";
-        [p.table ? "Table " + p.table : null, p.category].forEach(function (t) {
-          if (!t) return; var s = document.createElement("span");
-          s.className = "chip" + (/vip/i.test(t) ? " vip" : ""); s.textContent = t; chips.appendChild(s);
+        [p.table ? "Table " + p.table : null].forEach(function (t) {
+          if (!t) return; var s = document.createElement("span"); s.className = "chip"; s.textContent = t; chips.appendChild(s);
         });
         var banner = $("banner"), noQr = false; banner.className = "banner hidden";
         var msg = null, cls = "ok";
         if (p.status === "partial") { msg = p.seats_used + " personne(s) sur " + p.seats + " déjà entrée(s). Le pass reste valable pour les autres."; cls = "warn"; }
+        else if (p.status === "complete" && p.multi_session) { msg = "Déjà entré(e) pendant cette séance. Votre pass reste valable pour les séances suivantes."; cls = "ok"; }
         else if (p.status === "complete") { msg = "Pass déjà utilisé : " + p.seats_used + "/" + p.seats + " personne(s) entrée(s)."; cls = "warn"; }
         else if (p.status === "revoked") { msg = "Ce pass a été annulé par l'organisateur."; cls = "bad"; noQr = true; }
         else if (p.status === "cancelled") { msg = "Cet événement a été annulé."; cls = "bad"; noQr = true; }

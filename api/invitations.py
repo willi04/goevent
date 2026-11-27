@@ -8,6 +8,8 @@ Public (sans compte, rate limit) :
   GET /invitations/pass/{token}               pass nominatif (jamais de téléphone)
   GET /invitations/pass/{token}/calendar.ics  ajout au calendrier
   GET /invitations/track/{token}              lien de suivi client : chiffres uniquement
+  GET|POST /invitations/signup/{slug}         inscription libre (page /r/<slug>) : pass immédiat
+Séances (événement sur plusieurs jours) : PUT /admin/invitations/events/{id}/sessions
 Scanner (agent assigné / orga propriétaire) :
   GET  /invitations/offline/{event_id}        liste hors ligne (empreintes des jetons)
   POST /invitations/checkins/sync             entrées faites hors ligne
@@ -15,6 +17,7 @@ Scanner (agent assigné / orga propriétaire) :
 """
 import io
 import json
+import re
 import secrets
 from datetime import datetime, timedelta
 from typing import Optional
@@ -22,23 +25,28 @@ from typing import Optional
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import JSONResponse, Response
 from sqlalchemy import or_
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from core import invitation_catalog as cat
 from core import invitations as inv
+from core import invitation_media as media
+from core import sessions as sess
+from core.config import settings
 from core.database import get_db
-from core.limiter import PUBLIC_IP_CEILING, limiter, path_token_key, user_key
+from core.limiter import PUBLIC_IP_CEILING, hit_or_429, limiter, path_token_key, user_key
 from core.permissions import get_current_admin, is_admin, normalize_role, require_staff_function, sees_all_sales
 from core.security import get_current_user, hash_pin, log_security_event
 from models.event import Event
 from models.invitation import (
-    EventGuest, GuestCheckin, InvitationDesign, InvModele, InvModeleCadre, InvitationPack, PrivateEventSettings,
+    EventGuest, EventSession, GuestCheckin, InvitationDesign, InvModele, InvModeleCadre, InvitationPack,
+    InvitationPage, PrivateEventSettings,
 )
 from models.invitation_catalog import InvFormula
 from models.user import User
 from schemas.invitation import (
-    AgentIn, AgentManualIn, DesignPut, GuestImportIn, GuestPatch, ManualCheckinIn, OwnerIn, PackCancelIn,
-    PrivateEventIn, PrivateEventPatch, SyncIn,
+    AgentIn, AgentManualIn, CoverIn, DesignPut, GuestImportIn, GuestPatch, ManualCheckinIn, OwnerIn, PackCancelIn,
+    PageIn, PrivateEventIn, PrivateEventPatch, SessionsIn, SignupIn, SignupSettingsIn, SyncIn,
 )
 from core import inv_design as idesign
 from schemas.invitation_catalog import OrderIn
@@ -243,8 +251,171 @@ def admin_get_event(event_id: int, db: Session = Depends(get_db), user: User = D
                 "track_url": inv.track_url(st.track_token) if st.track_token else None,
                 "purge_after": _iso(st.purge_after), "packs": [_pack_out(p) for p in packs],
                 "agents": [{"id": a.id, "full_name": a.full_name, "phone_number": a.phone_number} for a in agents],
-                "agents_included": cat.agents_included_total(db, ev.id)})
+                "agents_included": cat.agents_included_total(db, ev.id), "signup": _signup_out(db, ev, st)})
+    sessions = sess.list_sessions(db, ev.id)
+    locked = {sid for (sid,) in db.query(GuestCheckin.session_id).filter(
+        GuestCheckin.event_id == ev.id, GuestCheckin.session_id.isnot(None)).distinct().all()}
+    out.update({"sessions": [dict(sess.session_out(x), locked=x.id in locked) for x in sessions],
+                "dates_label": sess.dates_label(sessions), "cover": _cover_meta(db, ev.id),
+                "public_description": _public_description(db, ev.id)})
     return out
+
+
+# ── page d'inscription : affiche et description publique ─────────────
+def _cover_meta(db: Session, event_id: int) -> Optional[dict]:
+    row = db.query(InvitationPage.cover_sha, InvitationPage.cover_width, InvitationPage.cover_height,
+                   InvitationPage.updated_at).filter(InvitationPage.event_id == event_id,
+                                                     InvitationPage.cover_sha.isnot(None)).first()   # jamais cover_data ici
+    return {"sha": row[0], "width": row[1], "height": row[2], "updated_at": _iso(row[3])} if row else None
+
+
+def _public_description(db: Session, event_id: int) -> str:
+    return db.query(InvitationPage.description).filter(InvitationPage.event_id == event_id).scalar() or ""
+
+
+def _page_row(db: Session, event_id: int, user: User) -> InvitationPage:
+    row = db.get(InvitationPage, event_id) or InvitationPage(event_id=event_id)
+    row.updated_by, row.updated_at = user.id, inv.utcnow()
+    db.add(row)
+    return row
+
+
+@router.put("/admin/invitations/events/{event_id}/page")
+@limiter.limit("30/minute")
+def admin_put_page(request: Request, event_id: int, data: PageIn, db: Session = Depends(get_db),
+                   user: User = Depends(manager)):
+    """Description PUBLIQUE (page d'inscription), distincte de la note interne de l'événement."""
+    ev, st = _load(db, event_id, user)
+    text = "\n".join(inv._clean(x, 2000) or "" for x in (data.description or "").replace("\r", "").split("\n")).strip()
+    _page_row(db, ev.id, user).description = text[:2000] or None
+    db.commit()
+    log_security_event(db, "invitation_page_updated", request, user.id, "event %d : description %d car." % (ev.id, len(text)))
+    return {"public_description": _public_description(db, ev.id)}
+
+
+@router.put("/admin/invitations/events/{event_id}/cover")
+@limiter.limit("10/minute")
+def admin_put_cover(request: Request, event_id: int, data: CoverIn, db: Session = Depends(get_db),
+                    user: User = Depends(manager)):
+    """Affiche : contrôlée puis ré-encodée en JPEG par le serveur (core/invitation_media.py)."""
+    ev, st = _load(db, event_id, user)
+    jpeg, w, h, sha = media.normalize_upload(data.image)
+    row = _page_row(db, ev.id, user)
+    row.cover_data, row.cover_width, row.cover_height, row.cover_sha = jpeg, w, h, sha
+    db.commit()
+    media.og_image(jpeg, sha)   # aperçu de partage prêt avant le premier partage du lien
+    log_security_event(db, "invitation_cover_updated", request, user.id, "event %d : %dx%d, %d Ko" % (ev.id, w, h, len(jpeg) // 1024))
+    return {"cover": _cover_meta(db, ev.id)}
+
+
+@router.delete("/admin/invitations/events/{event_id}/cover")
+@limiter.limit("10/minute")
+def admin_delete_cover(request: Request, event_id: int, db: Session = Depends(get_db), user: User = Depends(manager)):
+    ev, st = _load(db, event_id, user)
+    row = _page_row(db, ev.id, user)
+    row.cover_data = row.cover_sha = row.cover_width = row.cover_height = None
+    db.commit()
+    log_security_event(db, "invitation_cover_removed", request, user.id, "event %d" % ev.id)
+    return {"cover": None}
+
+
+@router.get("/admin/invitations/events/{event_id}/cover.jpg")
+def admin_get_cover(event_id: int, db: Session = Depends(get_db), user: User = Depends(manager)):
+    ev, st = _load(db, event_id, user)
+    data = db.query(InvitationPage.cover_data).filter(InvitationPage.event_id == ev.id).scalar()
+    if not data:
+        raise HTTPException(404, "Aucune affiche")
+    return Response(data, media_type="image/jpeg", headers={"Cache-Control": "private, no-store"})
+
+
+@router.put("/admin/invitations/events/{event_id}/sessions")
+@limiter.limit("30/minute")
+def admin_sessions(request: Request, event_id: int, data: SessionsIn, db: Session = Depends(get_db),
+                   user: User = Depends(manager)):
+    """Séances (liste complète). Une séance qui a déjà des entrées ne peut être ni supprimée ni
+    déplacée (son nom et l'ouverture des portes restent modifiables). La date de l'événement
+    suit la première séance ; la conservation des données suit la dernière."""
+    ev, st = _load(db, event_id, user, lock=True)
+    if st.purged_at:
+        raise HTTPException(400, "Liste supprimée (conservation de 30 jours dépassée).")
+    current = {x.id: x for x in sess.list_sessions(db, ev.id)}
+    locked = {sid for (sid,) in db.query(GuestCheckin.session_id).filter(
+        GuestCheckin.event_id == ev.id, GuestCheckin.session_id.isnot(None)).distinct().all()}
+    items = []
+    for it in data.sessions:
+        if it.id is not None and it.id not in current:
+            raise HTTPException(400, "Séance inconnue : rechargez la page.")
+        items.append({"id": it.id, "label": it.label, "starts_at": inv.naive_utc(it.starts_at),
+                      "ends_at": inv.naive_utc(it.ends_at), "doors_before_min": it.doors_before_min})
+    items = sess.validate(items)
+    kept = {it["id"] for it in items if it["id"]}
+    for sid in locked:
+        if sid not in kept:
+            raise HTTPException(409, "« %s » a déjà des entrées : elle ne peut pas être supprimée." % current[sid].label)
+    for it in items:
+        old = current.get(it["id"]) if it["id"] else None
+        if old and old.id in locked and (old.starts_at, old.ends_at) != (it["starts_at"], it["ends_at"]):
+            raise HTTPException(409, "« %s » a déjà des entrées : ses horaires ne peuvent plus changer." % old.label)
+    for sid, old in current.items():
+        if sid not in kept:
+            db.delete(old)
+    for it in items:
+        row = current.get(it["id"]) if it["id"] else None
+        if row is None:
+            row = EventSession(event_id=ev.id)
+            db.add(row)
+        row.label, row.starts_at, row.ends_at, row.doors_before_min = (
+            it["label"], it["starts_at"], it["ends_at"], it["doors_before_min"])
+    if items:
+        ev.event_date = items[0]["starts_at"]
+    db.flush()
+    if not st.purged_at:
+        st.purge_after = inv.purge_after_event(db, ev)
+    db.commit()
+    log_security_event(db, "invitation_sessions_updated", request, user.id, "event %d : %d séance(s) %s" % (
+        ev.id, len(items), " | ".join("%s %s→%s" % (i["label"], i["starts_at"], i["ends_at"]) for i in items)[:400]))
+    return admin_get_event(ev.id, db, user)
+
+
+def _signup_out(db: Session, ev: Event, st: PrivateEventSettings) -> dict:
+    return {"open": st.signup_open, "slug": st.signup_slug, "url": inv.signup_url(st.signup_slug) if st.signup_slug else None,
+            "category": st.signup_category, "default_category": inv.SIGNUP_DEFAULT_CATEGORY, "max": st.signup_max,
+            "until": _iso(st.signup_until), "count": inv.signup_count(db, ev.id), "state": inv.signup_state(db, ev, st)}
+
+
+@router.put("/admin/invitations/events/{event_id}/signup")
+@limiter.limit("30/minute")
+def admin_signup_settings(request: Request, event_id: int, data: SignupSettingsIn, db: Session = Depends(get_db),
+                          user: User = Depends(manager)):
+    """Inscription libre : ouvre / ferme la page publique /r/<slug> et règle ses plafonds."""
+    ev, st = _load(db, event_id, user, lock=True)
+    if st.purged_at:
+        raise HTTPException(400, "Liste supprimée (conservation de 30 jours dépassée).")
+    slug = (data.slug or "").strip().lower() or None
+    if slug and not inv.SIGNUP_SLUG_RE.match(slug):
+        raise HTTPException(400, "Lien : 3 à 40 caractères, lettres minuscules, chiffres et tirets (ex. fonej-2026).")
+    if slug and db.query(PrivateEventSettings.event_id).filter(
+            PrivateEventSettings.signup_slug == slug, PrivateEventSettings.event_id != ev.id).first():
+        raise HTTPException(409, "Ce lien est déjà utilisé par un autre événement : choisissez-en un autre.")
+    if data.open and not slug:
+        raise HTTPException(400, "Choisissez le lien de la page avant d'ouvrir les inscriptions.")
+    if data.open and inv.quota(db, ev.id) <= 0:
+        raise HTTPException(400, "Activez un pack avant d'ouvrir les inscriptions.")
+    old = (st.signup_open, st.signup_slug)
+    st.signup_open = data.open
+    st.signup_slug = slug
+    st.signup_category = inv._clean(data.category, 40)
+    st.signup_max = data.max
+    st.signup_until = inv.naive_utc(data.until)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "Ce lien est déjà utilisé par un autre événement : choisissez-en un autre.")
+    log_security_event(db, "invitation_signup_settings", request, user.id, "event %d : %s/%s → %s/%s, max %s" % (
+        ev.id, "ouvert" if old[0] else "fermé", old[1] or "-", "ouvert" if st.signup_open else "fermé",
+        st.signup_slug or "-", st.signup_max or "pack"))
+    return admin_get_event(ev.id, db, user)
 
 
 @router.patch("/admin/invitations/events/{event_id}")
@@ -262,7 +433,7 @@ def admin_update_event(request: Request, event_id: int, data: PrivateEventPatch,
     if "event_date" in f and data.event_date:
         ev.event_date = inv.naive_utc(data.event_date)
         if not st.purged_at:
-            st.purge_after = inv.purge_after_for(ev.event_date)
+            st.purge_after = inv.purge_after_event(db, ev)
     if "client_name" in f and data.client_name:
         st.client_name = data.client_name.strip()
     if "client_phone" in f:
@@ -747,9 +918,73 @@ def admin_arrivals(event_id: int, db: Session = Depends(get_db), user: User = De
     rows = (db.query(GuestCheckin, EventGuest.full_name, EventGuest.table_label)
             .join(EventGuest, EventGuest.id == GuestCheckin.guest_id)
             .filter(GuestCheckin.event_id == ev.id).order_by(GuestCheckin.scanned_at.desc()).limit(30).all())
-    return {"stats": inv.stats(db, ev.id), "arrivals": [
-        {"name": n, "table": t, "count": c.count, "source": c.source, "at": _iso(c.scanned_at), "conflict": c.conflict}
+    labels = {x.id: x.label for x in sess.list_sessions(db, ev.id)}
+    return {"stats": inv.stats(db, ev.id), "breakdown": inv.breakdown(db, ev.id), "arrivals": [
+        {"name": n, "table": t, "count": c.count, "source": c.source, "at": _iso(c.scanned_at), "conflict": c.conflict,
+         "reentry": c.reentry, "session": labels.get(c.session_id)}
         for c, n, t in rows]}
+
+
+def _csv_cell(v) -> str:
+    """Cellule CSV sans injection de formule (noms saisis par des tiers, dont l'inscription libre)."""
+    v = "" if v is None else str(v)
+    return "'" + v if v[:1] in ("=", "+", "-", "@", "\t", "\r") else v
+
+
+@router.get("/admin/invitations/events/{event_id}/report.csv")
+@limiter.limit("20/minute")
+def admin_report_csv(request: Request, event_id: int, db: Session = Depends(get_db),
+                     user: User = Depends(get_current_admin)):
+    """Bilan de l'événement (admin seul, journalisé) : synthèse par catégorie et par séance, puis
+    liste nominative des invités présents HORS inscription en ligne (officiels importés).
+    Séparateur « ; » (Excel en français), UTF-8 avec BOM. À télécharger avant la purge à J+30."""
+    import csv
+    import io
+    ev, st = _load(db, event_id, user)
+    sessions = sess.list_sessions(db, ev.id)
+    b = inv.breakdown(db, ev.id)
+    cols = b["columns"]
+    buf = io.StringIO()
+    w = csv.writer(buf, delimiter=";", quoting=csv.QUOTE_MINIMAL, lineterminator="\r\n")
+    row = lambda *v: w.writerow([_csv_cell(x) for x in v])  # noqa: E731
+    now_bg = inv.local(inv.utcnow())
+    row("Bilan des entrées", ev.title)
+    row("Lieu", ev.location or "")
+    row("Dates", sess.dates_label(sessions) or inv.fmt_date_fr(ev.event_date))
+    row("Client", st.client_name)
+    row("Généré le", now_bg.strftime("%d/%m/%Y %H:%M") + " (heure de Bangui)")
+    if st.purged_at:
+        row("Attention", "Liste anonymisée (conservation de 30 jours dépassée) : seuls les chiffres restent.")
+    row()
+    row("SYNTHÈSE PAR CATÉGORIE")
+    head = ["Catégorie", "Places attendues", "Pass", "Inscrits en ligne"]
+    for col in cols:
+        head += ["%s : entrées" % col["label"]] + (["%s : retours" % col["label"]] if sessions else [])
+    row(*(head + ["Pass utilisés au moins une fois"]))
+    for r in b["categories"] + [dict(b["total"], category="TOTAL")]:
+        line = [r["category"], r["expected"], r["passes"], r["signups"]]
+        for col in cols:
+            line += [r["by"][col["key"]]["entered"]] + ([r["by"][col["key"]]["reentries"]] if sessions else [])
+        row(*(line + [r["came"]]))
+    row()
+    row("INVITÉS PRÉSENTS (hors inscription en ligne)")
+    usage = sess.usage_by_session(db, ev.id) if sessions else {}
+    present = (db.query(EventGuest).filter(EventGuest.event_id == ev.id, EventGuest.first_checkin_at.isnot(None),
+                                          or_(EventGuest.source.is_(None), EventGuest.source != "signup"))
+               .order_by(EventGuest.category, EventGuest.full_name).all())
+    row(*(["Nom", "Catégorie", "Table", "Places"] + ["%s : entrées" % x.label for x in sessions] +
+          ["Première entrée", "Pass annulé"]))
+    for g in present:
+        per = [usage.get(g.id, {}).get(x.id, 0) for x in sessions]
+        first = inv.local(g.first_checkin_at)
+        row(*([g.full_name, g.category or inv.NO_CATEGORY, g.table_label or "", g.seats] + per +
+              [first.strftime("%d/%m %H:%M") if first else "", "oui" if g.revoked_at else ""]))
+    if not present:
+        row("Aucun")
+    log_security_event(db, "invitation_report_csv", request, user.id, "event %d : %d présents nominatifs" % (ev.id, len(present)))
+    name = "bilan-%s.csv" % (re.sub(r"[^a-z0-9]+", "-", inv._clean(ev.title, 60).lower()).strip("-") or "evenement")
+    return Response("\ufeff" + buf.getvalue(), media_type="text/csv; charset=utf-8",
+                    headers={"Content-Disposition": 'attachment; filename="%s"' % name, "Cache-Control": "no-store"})
 
 
 # ── lien de suivi client ─────────────────────────────────────────────
@@ -942,19 +1177,27 @@ def _design_payload(db: Session, event_id: int, token: str) -> Optional[dict]:
 @limiter.shared_limit(PUBLIC_IP_CEILING, scope="public_token_pages")
 def public_pass(request: Request, token: str, db: Session = Depends(get_db)):
     g, ev, st = _pass_guest(db, token)
+    sessions = sess.list_sessions(db, ev.id)
+    used = g.seats_used
+    if sessions:   # séances : état du pass DANS la séance en cours (valable de nouveau à la suivante)
+        cur = sess.find_session(sessions, inv.utcnow())
+        used = sess.used_in_session(db, g.id, cur.id) if cur else 0
     if not ev.is_active:
         status = "cancelled"
     elif g.revoked_at:
         status = "revoked"
     elif inv.quota(db, ev.id) <= 0:
         status = "inactive"
+    elif not used:
+        status = "valid"
     else:
-        status = _guest_status(g) if g.seats_used else "valid"
+        status = "complete" if used >= g.seats else "partial"
     payload = {
-        "status": status, "guest_name": g.full_name, "seats": g.seats, "seats_used": g.seats_used,
+        "status": status, "guest_name": g.full_name, "seats": g.seats, "seats_used": used,
         "table": g.table_label, "category": g.category, "event_title": ev.title, "event_date": _iso(ev.event_date),
         "event_date_label": inv.fmt_date_fr(ev.event_date), "location": ev.location,
         "host_label": st.host_label or st.client_name, "pass_url": inv.pass_url(g.token),
+        "dates_label": sess.dates_label(sessions), "multi_session": len(sessions) > 1,
     }
     design = _design_payload(db, ev.id, token)
     if design:                           # couche visuelle lot 6 ; absente = pass classique
@@ -1002,14 +1245,17 @@ def public_pass_ics(request: Request, token: str, db: Session = Depends(get_db))
     g, ev, st = _pass_guest(db, token)
     start = ev.event_date or inv.utcnow()
     fmt = "%Y%m%dT%H%M%SZ"
-    body = "\r\n".join([
-        "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//GoEvent//Invitations//FR", "CALSCALE:GREGORIAN",
-        "BEGIN:VEVENT", "UID:goevent-invitation-%d@goevent.africa" % g.id,
-        "DTSTAMP:%s" % inv.utcnow().strftime(fmt), "DTSTART:%s" % start.strftime(fmt),
-        "DTEND:%s" % (start + timedelta(hours=4)).strftime(fmt),
-        "SUMMARY:%s" % _ics(ev.title), "LOCATION:%s" % _ics(ev.location or ""),
-        "DESCRIPTION:%s" % _ics("Votre pass (%s) : %s" % (inv.places_label(g.seats), inv.pass_url(g.token))),
-        "END:VEVENT", "END:VCALENDAR", ""])
+    sessions = sess.list_sessions(db, ev.id)
+    slots = [(x.starts_at, x.ends_at, "%s — %s" % (ev.title, x.label), x.id) for x in sessions] or \
+        [(start, start + timedelta(hours=4), ev.title, None)]
+    lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//GoEvent//Invitations//FR", "CALSCALE:GREGORIAN"]
+    for a, b, title, sid in slots:   # une entrée d'agenda par séance
+        lines += ["BEGIN:VEVENT", "UID:goevent-invitation-%d%s@goevent.africa" % (g.id, "-s%d" % sid if sid else ""),
+                  "DTSTAMP:%s" % inv.utcnow().strftime(fmt), "DTSTART:%s" % a.strftime(fmt), "DTEND:%s" % b.strftime(fmt),
+                  "SUMMARY:%s" % _ics(title), "LOCATION:%s" % _ics(ev.location or ""),
+                  "DESCRIPTION:%s" % _ics("Votre pass (%s) : %s" % (inv.places_label(g.seats), inv.pass_url(g.token))),
+                  "END:VEVENT"]
+    body = "\r\n".join(lines + ["END:VCALENDAR", ""])
     return Response(body, media_type="text/calendar; charset=utf-8",
                     headers={"Content-Disposition": 'attachment; filename="invitation.ics"', "Cache-Control": "no-store"})
 
@@ -1025,12 +1271,96 @@ def public_track(request: Request, token: str, db: Session = Depends(get_db)):
     if not st or not ev:
         raise HTTPException(404, "Lien de suivi invalide ou révoqué")
     s = inv.stats(db, ev.id)
-    # Chiffres uniquement : ni lieu, ni nom, ni numéro d'invité.
+    b = inv.breakdown(db, ev.id)
+    cur = b["current"]
+    # Chiffres uniquement : ni lieu, ni nom, ni numéro d'invité (catégories et séances : libellés du back-office).
     return JSONResponse({"event_title": ev.title, "event_date": _iso(ev.event_date),
                          "event_date_label": inv.fmt_date_fr(ev.event_date), "expected": s["expected"],
                          "entered": s["entered"], "remaining": s["remaining"], "rate": s["rate"],
+                         "dates_label": sess.dates_label(sess.list_sessions(db, ev.id)),
+                         "session": s["session"]["label"] if s["session"] else None,
+                         "session_current": bool(s["session"] and s["session"]["current"]),
+                         "sessions": [{"label": col["label"], "entered": b["total"]["by"][col["key"]]["entered"],
+                                       "reentries": b["total"]["by"][col["key"]]["reentries"], "current": col["key"] == cur}
+                                      for col in b["columns"]] if s["session"] else [],
+                         "categories": [{"category": r["category"], "expected": r["expected"],
+                                         "entered": r["by"][cur]["entered"]} for r in b["categories"]],
                          "updated_at": inv.utcnow().isoformat() + "Z"},
                         headers={"Cache-Control": "public, max-age=15", "X-Robots-Tag": "noindex"})
+
+
+@router.get("/invitations/signup/{slug}")
+@limiter.shared_limit(PUBLIC_IP_CEILING, scope="public_token_pages")
+def public_signup_info(request: Request, slug: str, db: Session = Depends(get_db)):
+    """Page d'inscription libre : événement + état (open | closed | ended | inactive | full).
+    Pas de limite par lien : tout le public d'un événement ouvre la même page (CGNAT)."""
+    ev, st = inv.signup_settings(db, slug)
+    sessions = sess.list_sessions(db, ev.id)
+    cover = _cover_meta(db, ev.id)
+    base = "%s/invitations/signup/%s" % (settings.PUBLIC_API_URL.rstrip("/"), slug)
+    return _no_store({"state": inv.signup_state(db, ev, st), "event_title": ev.title, "event_date": _iso(ev.event_date),
+                      "event_date_label": inv.fmt_date_fr(ev.event_date), "location": ev.location,
+                      "host_label": st.host_label or st.client_name,
+                      "category": st.signup_category or inv.SIGNUP_DEFAULT_CATEGORY,
+                      "retention_days": inv.INVITATION_RETENTION_DAYS,
+                      "dates_label": sess.dates_label(sessions), "when": sess.when_parts(sessions, ev.event_date),
+                      "multi_session": len(sessions) > 1, "description": _public_description(db, ev.id),
+                      "cover_url": "%s/cover.jpg?v=%s" % (base, cover["sha"][:12]) if cover else None,
+                      # f= : version du calcul de l'aperçu (change l'URL quand le rendu change → caches renouvelés)
+                      "og_image_url": "%s/og.jpg?v=%s&f=2" % (base, cover["sha"][:12]) if cover else None,
+                      "share_url": inv.signup_url(slug), "max_per_phone": inv.SIGNUP_MAX_PER_PHONE})
+
+
+def _public_cover(db: Session, slug: str):
+    ev, st = inv.signup_settings(db, slug)
+    row = db.query(InvitationPage.cover_data, InvitationPage.cover_sha).filter(
+        InvitationPage.event_id == ev.id, InvitationPage.cover_sha.isnot(None)).first()
+    if not row:
+        raise HTTPException(404, "Aucune affiche")
+    return row
+
+
+def _image(data: bytes, sha: str, v: Optional[str]) -> Response:
+    # Lien versionné (?v=) : immuable, mis en cache par le navigateur et le CDN ; sinon 10 min.
+    cache = "public, max-age=31536000, immutable" if v and sha.startswith(v) else "public, max-age=600"
+    return Response(data, media_type="image/jpeg", headers={"Cache-Control": cache, "ETag": '"%s"' % sha[:32],
+                                                            "X-Content-Type-Options": "nosniff"})
+
+
+@router.get("/invitations/signup/{slug}/cover.jpg")
+@limiter.shared_limit(PUBLIC_IP_CEILING, scope="public_token_pages")
+def public_signup_cover(request: Request, slug: str, v: Optional[str] = Query(None, max_length=64),
+                        db: Session = Depends(get_db)):
+    data, sha = _public_cover(db, slug)
+    return _image(data, sha, v)
+
+
+@router.get("/invitations/signup/{slug}/og.jpg")
+@limiter.shared_limit(PUBLIC_IP_CEILING, scope="public_token_pages")
+def public_signup_og(request: Request, slug: str, v: Optional[str] = Query(None, max_length=64),
+                     db: Session = Depends(get_db)):
+    """Aperçu de partage 1200×630 (WhatsApp, Facebook…) calculé depuis l'affiche."""
+    data, sha = _public_cover(db, slug)
+    return _image(media.og_image(data, sha), sha, v)
+
+
+@router.post("/invitations/signup/{slug}")
+@limiter.limit("60/minute")
+@limiter.shared_limit(PUBLIC_IP_CEILING, scope="public_token_pages")
+def public_signup(request: Request, slug: str, data: SignupIn, db: Session = Depends(get_db)):
+    """Inscription libre : crée le pass (1 place) et le renvoie aussitôt. Sans compte.
+    Limites : 10 / heure par numéro (3 personnes + erreurs de saisie), 60 / min par IP (large : CGNAT)."""
+    if data.website:
+        raise HTTPException(400, "Inscription impossible.")
+    if not data.consent:
+        raise HTTPException(400, "Cochez la case d'accord pour recevoir votre pass.")
+    phone = _phone(data.phone)
+    hit_or_429("10/hour", "signup", phone, "Trop de tentatives pour ce numéro. Réessayez dans une heure.")
+    g, ev, st = inv.self_signup(db, slug, data.full_name, phone, request)
+    link = inv.pass_url(g.token)
+    return _no_store({"guest_name": g.full_name, "category": g.category, "event_title": ev.title,
+                      "event_date_label": inv.fmt_date_fr(ev.event_date), "pass_url": link, "token": g.token,
+                      "wa_url": inv.wa_url(phone, "Mon pass pour %s : %s" % (ev.title, link))})
 
 
 # ════════════════════════════════════════════════════════════

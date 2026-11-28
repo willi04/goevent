@@ -413,14 +413,23 @@ Les textes, images et liens des pages publiques sont modifiables depuis
   d'accréditation + officiel) ; le pass reçoit `design.cat`, le design admin
   `categories` (comptes par catégorie, sans nom).
 
-- **Envoi des pass par l'équipe** : un commercial n'a jamais les liens
-  WhatsApp (`wa_url` vide, `POST …/guests/{id}/sent` refusé) : il demande
-  l'envoi (`POST|DELETE /admin/invitations/events/{id}/send-request`).
+- **Envoi des pass par l'équipe** : règle d'organisation, pas cloisonnement
+  de données. Le commercial (maître de cérémonie du dossier) n'a pas le lien
+  WhatsApp prêt (`wa_url` vide, `POST …/guests/{id}/sent` refusé) mais garde
+  les liens des pass, le message et le PDF des pass (secours du jour J) ; il
+  demande l'envoi (`POST|DELETE /admin/invitations/events/{id}/send-request`).
+  La demande est **soldée** (effacée, journal `invitation_send_completed`) dès
+  que la file est vide (dernier envoi, pass annulé, supprimé, passé en papier) :
+  des invités ajoutés ensuite attendent une nouvelle demande.
   L'admin et le staff « envoi » (`core/permissions.can_send_invitations`,
   dépendance `sender`) envoient depuis le WhatsApp GoEvent :
   `GET /admin/invitations/sends` (file, sans chiffre business) et
-  `GET /admin/invitations/sends/{id}` (pass à envoyer, numéro masqué). Le
-  staff « envoi » n'atteint que ces routes (404 si l'envoi n'est pas demandé).
+  `GET /admin/invitations/sends/{id}` (pass à envoyer + pass envoyés depuis
+  moins de 24 h, renvoyables : `invitation_pass_resent`). Le numéro est
+  masqué à l'écran mais présent dans le lien WhatsApp (sans API d'envoi,
+  WhatsApp en a besoin). Le staff « envoi » n'atteint que ces routes, et
+  seulement pour un événement à envoi demandé ou où il a envoyé depuis moins
+  de 24 h (sinon 404).
 
 ### Flux 7 bis : Listes d'événements (lot 5)
 

@@ -1391,7 +1391,8 @@
     return block("Invités", [importBox,
       el("div", { class: "flex flex-wrap items-center gap-2 mb-3" }, [search, filter, el("span", { class: "flex-1" }), sendBtn]),
       canSend() ? el("p", { class: "text-[11px] text-gray-500 mb-2", text: "« Envoyer au suivant » ouvre WhatsApp avec le message prêt pour le prochain invité non servi : appuyez sur Envoyer dans WhatsApp, revenez ici, recommencez." })
-                : el("p", { class: "text-[11px] text-gray-500 mb-2", text: "Les pass partent du WhatsApp GoEvent, envoyés par l'équipe : une fois la liste et l'invitation prêtes, cliquez « Demander l'envoi »." }),
+                : el("p", { class: "text-[11px] text-gray-500 mb-2", text: "Les pass partent du WhatsApp GoEvent, envoyés par l'équipe : une fois la liste et l'invitation prêtes, cliquez « Demander l'envoi ». "
+                  + "La demande se clôt quand tout est envoyé : des invités ajoutés ensuite demandent un nouveau clic. Vous gardez les liens et le PDF des pass pour le jour J." }),
       canSend() ? senderNote() : null,
       el("p", { id: "inv-nophone", class: "hidden text-xs font-semibold text-amber-800 bg-amber-50 rounded-xl p-3 mb-2" }),
       el("div", { id: "inv-paper", class: "hidden flex flex-wrap items-center gap-2 text-xs font-semibold text-orange-900 bg-orange-50 rounded-xl p-3 mb-2" }),
@@ -2787,15 +2788,18 @@
       root.innerHTML = "";
       if (!sendOnly()) root.appendChild(navTabs("sends"));
       root.appendChild(el("h2", { class: "text-xl font-black text-gray-900", text: "Envois WhatsApp" }));
-      root.appendChild(el("p", { class: "text-xs text-gray-500 mt-1 mb-3", text: "Événements dont l'envoi des pass a été demandé. Ouvrez-en un, puis « Envoyer au suivant » jusqu'au bout." }));
+      root.appendChild(el("p", { class: "text-xs text-gray-500 mt-1 mb-3", text: "Événements dont l'envoi des pass a été demandé. Ouvrez-en un, puis « Envoyer au suivant » jusqu'au bout. "
+        + "Ce que vous avez envoyé reste ici " + (d.resend_hours || 24) + " h pour un renvoi (WhatsApp en échec, mauvais compte)." }));
       root.appendChild(senderNote());
       if (!d.events.length) { root.appendChild(el("div", { class: "card p-6 empty-state", text: "Aucun envoi en attente." })); return; }
       root.appendChild(el("div", { class: "grid gap-3 md:grid-cols-2" }, d.events.map(function (e) {
+        var todo = e.pending > 0;
         return el("button", { class: "card p-4 text-left hover:shadow-md transition-all", "data-send-event": String(e.id), onclick: function () { openSendEvent(e.id); } }, [
           el("div", { class: "flex justify-between items-start gap-2" }, [el("p", { class: "font-black text-gray-900", text: e.title }),
-            el("span", { class: "text-[10px] font-black px-2 py-0.5 rounded-full whitespace-nowrap", style: "color:#1e40af;background:#dbeafe", text: e.pending + " à envoyer" })]),
+            el("span", { class: "text-[10px] font-black px-2 py-0.5 rounded-full whitespace-nowrap", style: todo ? "color:#1e40af;background:#dbeafe" : "color:#166534;background:#dcfce7",
+              text: todo ? e.pending + " à envoyer" : "Terminé · " + e.recent_sent + " renvoyable(s)" })]),
           el("p", { class: "text-xs text-gray-500 mt-1", text: e.event_date_label + (e.location ? " · " + e.location : "") }),
-          el("p", { class: "text-xs text-gray-500", text: "Demandé le " + dt(e.requested_at) + (e.requested_by ? " par " + e.requested_by : "") }),
+          e.requested_at ? el("p", { class: "text-xs text-gray-500", text: "Demandé le " + dt(e.requested_at) + (e.requested_by ? " par " + e.requested_by : "") }) : null,
         ]);
       })));
     }).catch(function (e) { root.innerHTML = ""; root.appendChild(el("div", { class: "card p-6 text-sm text-red-600", text: e.message || "Erreur" })); });
@@ -2808,24 +2812,38 @@
       root.innerHTML = "";
       root.appendChild(el("button", { class: "text-sm font-bold text-primary mb-3", text: "← Tous les envois", onclick: openSends }));
       root.appendChild(el("h2", { class: "text-xl font-black text-gray-900", text: d.event.title }));
-      root.appendChild(el("p", { class: "text-xs text-gray-500 mt-1 mb-3", text: d.event.event_date_label + (d.event.location ? " · " + d.event.location : "") + " · " + d.sent + " déjà envoyé(s)" }));
+      var sentN = d.sent, head = el("p", { class: "text-xs text-gray-500 mt-1 mb-3" });
+      root.appendChild(head);
       root.appendChild(senderNote());
+      var recent = (d.recent || []).slice();
       var next = el("button", { class: "action-btn text-sm mb-3", id: "send-next", style: "background:#25d366;color:#fff" });
       var list = el("div", { class: "card divide-y divide-gray-100" });
+      var again = el("div", { id: "send-recent" });
+      function row(g, label, style, fn, sub) {
+        return el("div", { class: "flex items-center gap-3 px-4 py-3" }, [
+          el("div", { class: "flex-1 min-w-0" }, [el("p", { class: "font-bold text-sm text-gray-900 truncate", text: g.full_name }),
+            el("p", { class: "text-[11px] text-gray-500", text: g.seats + " place" + (g.seats > 1 ? "s" : "") + " · " + g.phone_hint + (sub || "") })]),
+          act(label, style, fn),
+        ]);
+      }
       function draw() {
+        head.textContent = d.event.event_date_label + (d.event.location ? " · " + d.event.location : "") + " · " + sentN + " déjà envoyé(s)";
         next.textContent = queue.length ? "Envoyer au suivant sur WhatsApp (" + queue.length + ")" : "Tous les pass sont envoyés";
         next.disabled = !queue.length;
         list.innerHTML = "";
         if (!queue.length) list.appendChild(el("p", { class: "p-4 text-sm text-gray-500", text: "Plus rien à envoyer pour cet événement." }));
-        queue.forEach(function (g) {
-          list.appendChild(el("div", { class: "flex items-center gap-3 px-4 py-3" }, [
-            el("div", { class: "flex-1 min-w-0" }, [el("p", { class: "font-bold text-sm text-gray-900 truncate", text: g.full_name }),
-              el("p", { class: "text-[11px] text-gray-500", text: g.seats + " place" + (g.seats > 1 ? "s" : "") + " · " + g.phone_hint })]),
-            act("WhatsApp", "background:#dcfce7;color:#166534", function () { send(g); }),
-          ]));
-        });
+        queue.forEach(function (g) { list.appendChild(row(g, "WhatsApp", "background:#dcfce7;color:#166534", function () { send(g, false); })); });
+        again.innerHTML = "";
+        if (!recent.length) return;
+        again.appendChild(el("h3", { class: "text-sm font-black text-gray-900 mt-5 mb-1", text: "Déjà envoyés (" + recent.length + ")" }));
+        again.appendChild(el("p", { class: "text-[11px] text-gray-500 mb-2", text: "Renvoyer seulement si le message n'est pas parti (WhatsApp fermé, mauvais compte, numéro erroné corrigé par le commercial). Possible pendant " + (d.resend_hours || 24) + " h." }));
+        again.appendChild(el("div", { class: "card divide-y divide-gray-100" }, recent.map(function (g) {
+          return row(g, "Renvoyer", "background:#f3f4f6;color:#374151", function () {
+            if (window.confirm("Renvoyer le pass de " + g.full_name + " sur WhatsApp ?")) send(g, true);
+          }, g.sent_at ? " · envoyé le " + dt(g.sent_at) : "");
+        })));
       }
-      function send(g) {
+      function send(g, resend) {
         if (IS_ANDROID && waApp() === "w4b") location.href = waBusinessLink(g.wa_url);
         else {
           var w = window.open(g.wa_url, "_blank");
@@ -2833,11 +2851,16 @@
           else { toast("Le navigateur a bloqué l'ouverture de WhatsApp : autorisez les fenêtres pour ce site.", "error"); return; }
         }
         btApi.post("/admin/invitations/guests/" + g.id + "/sent").then(function () {
-          queue = queue.filter(function (x) { return x.id !== g.id; }); draw();
+          if (!resend) sentN++;
+          queue = queue.filter(function (x) { return x.id !== g.id; });
+          recent = recent.filter(function (x) { return x.id !== g.id; });
+          recent.unshift(Object.assign({}, g, { sent_at: new Date().toISOString() }));
+          draw();
+          if (resend) toast("Pass renvoyé.", "success");
         }).catch(function (e) { toast(e.message || "Erreur", "error"); });
       }
-      next.onclick = function () { if (queue.length) send(queue[0]); };
-      root.appendChild(next); root.appendChild(list); draw();
+      next.onclick = function () { if (queue.length) send(queue[0], false); };
+      root.appendChild(next); root.appendChild(list); root.appendChild(again); draw();
     }).catch(function (e) { toast(e.message || "Erreur", "error"); openSends(); });
   }
 

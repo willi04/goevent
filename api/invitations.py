@@ -998,6 +998,7 @@ def admin_update_guest(request: Request, guest_id: int, data: GuestPatch, db: Se
     if "category" in f:
         g.category = (data.category or "").strip() or None
     db.commit()
+    _settle_send_request(db, ev.id, st, user, request)   # passé en papier / numéro retiré : file peut-être vide
     return _guest_out(ev, st, g, can_send_invitations(user))
 
 
@@ -1009,6 +1010,7 @@ def admin_revoke(request: Request, guest_id: int, db: Session = Depends(get_db),
         g.revoked_at = inv.utcnow()
         db.commit()
         log_security_event(db, "invitation_pass_revoked", request, user.id, "pass %d (event %d)" % (g.id, ev.id))
+        _settle_send_request(db, ev.id, st, user, request)
     return _guest_out(ev, st, g, can_send_invitations(user))
 
 
@@ -1043,12 +1045,22 @@ def admin_regenerate(request: Request, guest_id: int, db: Session = Depends(get_
 @router.post("/admin/invitations/guests/{guest_id}/sent")
 @limiter.limit("600/minute")
 def admin_mark_sent(request: Request, guest_id: int, db: Session = Depends(get_db), user: User = Depends(sender)):
+    """Marque le pass envoyé (premier envoi ou renvoi). Staff « envoi » : pass de la file demandée,
+    ou renvoi d'un pass envoyé il y a moins de RESEND_HOURS. Dernier pass de la file → demande soldée."""
     g, ev, st = _send_guest(db, guest_id, user)
     inv.require_active(db, ev.id)
     if g.revoked_at:
         raise HTTPException(400, "Pass annulé.")
+    if g.paper or not g.phone or not g.token:
+        raise HTTPException(400, "Pass papier ou invité sans numéro : rien à envoyer sur WhatsApp.")
+    resend = bool(g.sent_at)
+    if not is_admin(user) and not st.send_requested_at and not (resend and g.sent_at >= _resend_cutoff()):
+        raise HTTPException(404, "Invité introuvable")
     g.sent_at, g.sent_by = inv.utcnow(), user.id
     db.commit()
+    if resend:
+        log_security_event(db, "invitation_pass_resent", request, user.id, "pass %d (event %d)" % (g.id, ev.id))
+    _settle_send_request(db, ev.id, st, user, request)
     return _guest_out(ev, st, g, can_send_invitations(user))
 
 
@@ -1063,12 +1075,45 @@ def _pending_q(db: Session, event_ids):
         EventGuest.phone.isnot(None), EventGuest.token.isnot(None), EventGuest.paper == False)  # noqa: E712
 
 
+RESEND_HOURS = 24   # le staff « envoi » peut renvoyer ce qu'il a envoyé (WhatsApp en échec, mauvais compte…)
+
+
+def _resend_cutoff() -> datetime:
+    return inv.utcnow() - timedelta(hours=RESEND_HOURS)
+
+
+def _recent_sent_q(db: Session, event_ids, by_user: Optional[int] = None):
+    """Pass envoyés sur WhatsApp depuis moins de RESEND_HOURS (renvoi possible). Inscrits en ligne
+    exclus (pass remis à l'inscription, jamais envoyé par l'équipe). event_ids None = tous."""
+    q = db.query(EventGuest).filter(
+        EventGuest.sent_at >= _resend_cutoff(), EventGuest.revoked_at.is_(None),
+        EventGuest.phone.isnot(None), EventGuest.token.isnot(None), EventGuest.paper == False,  # noqa: E712
+        or_(EventGuest.source.is_(None), EventGuest.source != "signup"))
+    if event_ids is not None:
+        q = q.filter(EventGuest.event_id.in_(event_ids))
+    return q.filter(EventGuest.sent_by == by_user) if by_user else q
+
+
+def _settle_send_request(db: Session, event_id: int, st: PrivateEventSettings, user: User, request=None) -> None:
+    """Plus aucun pass à envoyer → la demande d'envoi est soldée (effacée). Des invités ajoutés
+    ensuite n'entrent dans la file de l'équipe qu'après une NOUVELLE demande du commercial."""
+    if not st.send_requested_at or _pending_q(db, [event_id]).count():
+        return
+    n = db.query(func.count(EventGuest.id)).filter(
+        EventGuest.event_id == event_id, EventGuest.sent_at >= st.send_requested_at, EventGuest.paper == False,  # noqa: E712
+        or_(EventGuest.source.is_(None), EventGuest.source != "signup")).scalar()
+    st.send_requested_at, st.send_requested_by = None, None
+    db.commit()
+    log_security_event(db, "invitation_send_completed", request, user.id,
+                       "event %d : file vide, demande soldée (%d pass envoyés depuis la demande)" % (event_id, n))
+
+
 def _send_scope(db: Session, event_id: int, user: User, lock: bool = False):
-    """Staff « envoi » : seulement les événements dont l'envoi est DEMANDÉ (sinon 404, pas
-    d'énumération). Admin : tous. Jamais après la purge."""
+    """Staff « envoi » : événements dont l'envoi est DEMANDÉ, ou où il a envoyé des pass depuis
+    moins de RESEND_HOURS (renvois) ; sinon 404, pas d'énumération. Admin : tous. Jamais après la purge."""
     ev = inv.get_private_event(db, event_id, lock=lock)
     st = inv.get_settings(db, ev.id)
-    if not is_admin(user) and not st.send_requested_at:
+    if not is_admin(user) and not st.send_requested_at and not _recent_sent_q(db, [ev.id], user.id).first():
         raise HTTPException(404, "Événement privé introuvable")
     if st.purged_at:
         raise HTTPException(400, "Liste supprimée (conservation de 30 jours dépassée).")
@@ -1117,40 +1162,49 @@ def admin_send_request_cancel(request: Request, event_id: int, db: Session = Dep
 
 @router.get("/admin/invitations/sends")
 def admin_sends(db: Session = Depends(get_db), user: User = Depends(sender)):
-    """File des envois : événements dont l'envoi est demandé et qui ont encore des pass à envoyer.
-    Rien d'autre (ni prix, ni client au-delà du nom, ni recettes)."""
+    """File des envois : événements dont l'envoi est demandé (pass à envoyer), puis ceux où cet
+    utilisateur a envoyé des pass depuis moins de RESEND_HOURS (renvois). Rien d'autre (ni prix,
+    ni client au-delà du nom, ni recettes)."""
+    recent = dict(_recent_sent_q(db, None, user.id).with_entities(EventGuest.event_id, func.count(EventGuest.id))
+                  .group_by(EventGuest.event_id).all())
     rows = (db.query(Event, PrivateEventSettings)
             .join(PrivateEventSettings, PrivateEventSettings.event_id == Event.id)
             .filter(Event.visibility == "private", Event.is_active == True,  # noqa: E712
-                    PrivateEventSettings.send_requested_at.isnot(None), PrivateEventSettings.purged_at.is_(None))
-            .order_by(PrivateEventSettings.send_requested_at).limit(200).all())
-    ids = [ev.id for ev, _ in rows]
-    counts = dict(_pending_q(db, ids).with_entities(EventGuest.event_id, func.count(EventGuest.id))
-                  .group_by(EventGuest.event_id).all()) if ids else {}
+                    PrivateEventSettings.purged_at.is_(None),
+                    or_(PrivateEventSettings.send_requested_at.isnot(None), Event.id.in_(list(recent) or [0])))
+            .order_by(PrivateEventSettings.send_requested_at.asc().nulls_last(), Event.id).limit(200).all())
+    requested = [ev.id for ev, st in rows if st.send_requested_at]
+    counts = dict(_pending_q(db, requested).with_entities(EventGuest.event_id, func.count(EventGuest.id))
+                  .group_by(EventGuest.event_id).all()) if requested else {}
     by = {u.id: u.full_name for u in db.query(User).filter(User.id.in_({st.send_requested_by for _, st in rows if st.send_requested_by})).all()}
-    return {"sender_whatsapp": _sender_whatsapp(db), "events": [
+    return {"sender_whatsapp": _sender_whatsapp(db), "resend_hours": RESEND_HOURS, "events": [
         {"id": ev.id, "title": ev.title, "event_date_label": inv.fmt_date_fr(ev.event_date), "location": ev.location,
-         "host_label": st.host_label or st.client_name, "pending": counts.get(ev.id, 0),
+         "host_label": st.host_label or st.client_name, "pending": counts.get(ev.id, 0), "recent_sent": recent.get(ev.id, 0),
          "requested_at": _iso(st.send_requested_at), "requested_by": by.get(st.send_requested_by)}
-        for ev, st in rows if counts.get(ev.id)]}
+        for ev, st in rows if counts.get(ev.id) or recent.get(ev.id)]}
 
 
 @router.get("/admin/invitations/sends/{event_id}")
 def admin_send_event(event_id: int, db: Session = Depends(get_db), user: User = Depends(sender)):
-    """Pass à envoyer d'un événement : nom, places, numéro masqué, lien WhatsApp prêt (message compris)."""
+    """Pass à envoyer d'un événement (si l'envoi est demandé) et pass envoyés depuis moins de
+    RESEND_HOURS (renvoi) : nom, places, numéro masqué à l'écran, lien WhatsApp prêt (message compris).
+    Le lien contient le numéro complet : WhatsApp en a besoin (pas d'API d'envoi)."""
     ev, st = _send_scope(db, event_id, user)
     inv.require_active(db, ev.id)
-    pend = _pending_q(db, [ev.id]).order_by(EventGuest.full_name, EventGuest.id).limit(2000).all()
-    out = []
-    for g in pend:
-        msg = inv.render_message(ev, st, g)
-        out.append({"id": g.id, "full_name": g.full_name, "seats": g.seats, "phone_hint": _mask(g.phone),
-                    "wa_url": inv.wa_url(g.phone, msg)})
+
+    def item(g):
+        return {"id": g.id, "full_name": g.full_name, "seats": g.seats, "phone_hint": _mask(g.phone),
+                "wa_url": inv.wa_url(g.phone, inv.render_message(ev, st, g)), "sent_at": _iso(g.sent_at)}
+    pend = (_pending_q(db, [ev.id]).order_by(EventGuest.full_name, EventGuest.id).limit(2000).all()
+            if st.send_requested_at or is_admin(user) else [])
+    recent = _recent_sent_q(db, [ev.id]).order_by(EventGuest.sent_at.desc(), EventGuest.id).limit(500).all()
     sent = db.query(func.count(EventGuest.id)).filter(EventGuest.event_id == ev.id, EventGuest.sent_at.isnot(None),
                                                       EventGuest.paper == False).scalar()  # noqa: E712
     return {"event": {"id": ev.id, "title": ev.title, "event_date_label": inv.fmt_date_fr(ev.event_date),
                       "location": ev.location, "host_label": st.host_label or st.client_name},
-            "sender_whatsapp": _sender_whatsapp(db), "pending": out, "sent": sent}
+            "sender_whatsapp": _sender_whatsapp(db), "requested": bool(st.send_requested_at),
+            "pending": [item(g) for g in pend], "recent": [item(g) for g in recent],
+            "resend_hours": RESEND_HOURS, "sent": sent}
 
 
 @router.delete("/admin/invitations/guests/{guest_id}")
@@ -1163,6 +1217,7 @@ def admin_delete_guest(request: Request, guest_id: int, db: Session = Depends(ge
     db.delete(g)
     db.commit()
     log_security_event(db, "invitation_guest_deleted", request, user.id, "pass %d (event %d)" % (guest_id, ev.id))
+    _settle_send_request(db, ev.id, st, user, request)
     return {"deleted": guest_id}
 
 

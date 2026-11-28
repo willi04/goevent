@@ -332,8 +332,14 @@ bout en bout sans intervention, 1 retrait réussi, analyse des
   (copie exacte dans `core/migrations.py`). Le commercial prépare et clique
   « Demander l'envoi à l'équipe » ; l'envoi se fait par l'admin ou par un
   compte staff « Envoi WhatsApp » (Équipe → Nouvel employé → Fonction), qui ne
-  voit que Invitations → « Envois WhatsApp ». Traçabilité :
-  `invitation_send_requested`, `invitation_send_request_cancelled`.
+  voit que Invitations → « Envois WhatsApp ». La demande se clôt d'elle-même
+  quand il ne reste rien à envoyer ; des invités ajoutés après = nouveau clic
+  « Demander l'envoi ». Le staff « envoi » peut « Renvoyer » pendant 24 h ce
+  qu'il a envoyé (message non parti, numéro corrigé). Le commercial garde les
+  liens et le PDF des pass (secours du jour J) : il ne doit pas les envoyer
+  depuis son numéro. Traçabilité : `invitation_send_requested`,
+  `invitation_send_request_cancelled`, `invitation_send_completed`,
+  `invitation_pass_resent` (chaque envoi : `event_guests.sent_by|sent_at`).
 - **Envoi des pass sur WhatsApp** : le message part du compte WhatsApp ouvert
   sur l'appareil qui envoie (le site ne peut pas choisir le numéro). Envoyer
   depuis le compte WhatsApp Business GoEvent (numéro du CMS
